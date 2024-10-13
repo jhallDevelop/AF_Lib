@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"stdio.h": "c",
+			"af_window_cocoa.h": "c",
+			"af_window.h": "c",
+			"af_renderer.h": "c",
+			"locale": "c",
+			"__node_handle": "c",
+			"vector": "cpp",
+			"format": "cpp",
+			"glfw3.h": "c",
+			"af_input.h": "c",
+			"af_log.h": "c"
+		}
+	}
+}

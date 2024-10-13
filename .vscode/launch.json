@@ -1,0 +1,62 @@
+{
+    "configurations": [
+        {
+        "name": "BUILD_RUN_OSX",                                           
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",                             
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}/bin",
+        "environment": [],
+        "externalConsole": false,
+        "console": "integratedTerminal",  // Use integrated terminal for console
+        "MIMode": "lldb",//"gdb"
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description": "Set Disassembly Flavor to Intel",
+                "text": "-gdb-set disassembly-flavor intel",
+                "ignoreFailures": true
+            }
+        ],
+        // Task to run before launching the program
+        "preLaunchTask": "Build_OSX"    
+        
+    },
+    {
+        "name": "RUN_OSX",                                           
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",                             
+        "args": [],
+        "stopAtEntry": false,
+        "cwd": "${workspaceFolder}/bin",
+        "environment": [],
+        "externalConsole": false,
+        "console": "integratedTerminal",  // Use integrated terminal for console
+        //"MIMode": "lldb",//"gdb"
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description": "Set Disassembly Flavor to Intel",
+                "text": "-gdb-set disassembly-flavor intel",
+                "ignoreFailures": true
+            }
+        ],
+        // Task to run before launching the program
+        "preLaunchTask": ""    
+        
+    }
+],
+// Variable to hold the project name
+"version": "2.0.0"
+}

@@ -1,0 +1,41 @@
+{
+    "tasks": [
+      {
+        "label": "BUILD_OSX",
+        "type": "shell",
+        "command": "make",
+        "args": [
+          "-j"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}/build",
+          "env": {
+            "DYLD_LIBRARY_PATH": "${workspaceFolder}/bin"
+          }
+        },
+        "problemMatcher": [
+          "$gcc",
+          {
+            "owner": "cpp",
+            "severity": "warning",
+            "fileLocation": "absolute",
+            "pattern": {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning):\\s+(.*)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "severity": 4,
+              "message": 5
+            }
+          }
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "detail": ""
+      }
+    ],
+    "version": "2.0.0"
+  }
+  
