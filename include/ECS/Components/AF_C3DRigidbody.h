@@ -27,8 +27,7 @@ typedef struct {
     BOOL enabled;
     BOOL isKinematic;
     uint32_t  gravity;
-    AF_Vec3 velocity;
-    char padding [44]; 
+    Vec3 velocity;
 } AF_C3DRigidbody;
 
 /*
@@ -59,7 +58,7 @@ static inline AF_C3DRigidbody AF_C3DRigidbody_ADD(void){
 	component = AF_Component_SetHas(component, TRUE);
 	component = AF_Component_SetEnabled(component, TRUE);
 
-	AF_CRigidbody rigidbody = {
+	AF_C3DRigidbody rigidbody = {
 		//.has = true,
 		.enabled = component,
 		.isKinematic = FALSE,			// isKinematic means to be controlled by script rather than the velocity

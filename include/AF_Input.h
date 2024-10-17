@@ -32,6 +32,50 @@ typedef struct {
 
 /*
 ====================
+AF_Input
+Input struct to store the registered keys
+====================
+*/
+typedef struct {
+    // input buffer que
+    AF_Key keys[AF_INPUT_KEYS_MAPPED];
+    AF_FLOAT stick_x;
+    AF_FLOAT stick_y;
+    // Mouse
+    //int mouseDown;
+    //float mouseX;
+    //float mouseY;
+
+} AF_Input;
+
+/*
+====================
+AF_Input_Input
+Init definition
+====================
+*/
+void AF_Input_Init(void);
+
+/*
+====================
+AF_Input_Update
+Update definition
+====================
+*/
+void AF_Input_Update(AF_Input* _input);
+
+
+/*
+====================
+AF_Input_Shutdown
+Shutdown definition
+====================
+*/
+void AF_Input_Shutdown(void);
+
+
+/*
+====================
 AF_Input_EncodeKey
 Function to encode the key into a pressed state
 ====================
@@ -67,26 +111,7 @@ Function to check if the key is pressed
 static inline BOOL AF_Input_IsKeyPressed(PACKED_CHAR _encodedKey) {
     return (_encodedKey & PRESSED_MASK) != 0;  // Check if the 8th bit is set
 }
-
-/*
-====================
-AF_Input
-Input struct to store the registered keys
-====================
-*/
-typedef struct {
-    // input buffer que
-    AF_Key keys[AF_INPUT_KEYS_MAPPED];
-
-    // Mouse
-    //int mouseDown;
-    //float mouseX;
-    //float mouseY;
-
-} AF_Input;
-
 #ifdef __cplusplus
 }
 #endif
-
-#endif  // AF_INPUT_H
+#endif // AF_INPUT_H

@@ -28,10 +28,10 @@ typedef struct  {
     // TODO pack this
     BOOL has;
     BOOL enabled;
-    AF_Vec3 cameraFront;
-    AF_Vec3 cameraUp;
-    AF_Vec3 cameraRight;
-    AF_Vec3 cameraWorldUp;
+    Vec3 cameraFront;
+    Vec3 cameraUp;
+    Vec3 cameraRight;
+    Vec3 cameraWorldUp;
     AF_FLOAT yaw;
     AF_FLOAT pitch;
     AF_FLOAT fov;
@@ -43,9 +43,9 @@ typedef struct  {
     AF_FLOAT tanHalfFov;
     AF_FLOAT rangeInv;
     BOOL orthographic;
-    AF_Mat4 projectionMatrix;
-    AF_Mat4 viewMatrix;
-    AF_Vec4 backgroundColor;
+    Mat4 projectionMatrix;
+    Mat4 viewMatrix;
+    Vec4 backgroundColor;
 } AF_CCamera;
 
 /*
@@ -70,7 +70,7 @@ inline static AF_CCamera AF_CCamera_ZERO(void){
 		.windowHeight = 0,
 		.tanHalfFov = 0,
 		.rangeInv = 0,
-		.orthographic = false,
+		.orthographic = FALSE,
 		.projectionMatrix =  {{
 			{1,0,0,0},
 			{0,1,0,0},
@@ -137,7 +137,7 @@ Setup a camera component struct with settings for orthographic camera
 ====================
 */
 /*
-inline static AF_Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _window, AF_CCamera* _camera){
+inline static Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _window, AF_CCamera* _camera){
     // Get the framebuffer width and height as we work in pixels
     _camera->windowWidth = _window->frameBufferWidth;//_window->windowWidth;
     _camera->windowHeight = _window->frameBufferHeight;//_window->windowHeight;
@@ -156,7 +156,7 @@ inline static AF_Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _wind
     AF_FLOAT bottom = -orthoHeight / 2; 
 
     // Set the elements of the projection matrix
-    AF_Mat4 orthMatrix = {{
+    Mat4 orthMatrix = {{
 			{2/(right -left),0,0,0},
 			{0,2/(top-bottom),0,0},
 			{0,0,-2 / (_camera->farPlane - _camera->nearPlane),0},
@@ -164,7 +164,7 @@ inline static AF_Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _wind
 	}};
 */
 /*
-    AF_Mat4 orth_projectionMatrix = identityM4;
+    Mat4 orth_projectionMatrix = identityM4;
     orth_projectionMatrix.rows[0].x = 2 / (right - left);
     orth_projectionMatrix.rows[0].y = 0;
     orth_projectionMatrix.rows[0].z = 0;
@@ -199,15 +199,15 @@ Function to calculate the camera from based on input of yaw and pitch
 likely set from the mouse x, y coords
 ====================
 */
-static inline AF_Vec3 AF_Camera_CalculateFront(AF_FLOAT _yaw, AF_FLOAT _pitch){
+static inline Vec3 AF_Camera_CalculateFront(AF_FLOAT _yaw, AF_FLOAT _pitch){
     // calculate the new Front vector
     AF_FLOAT x = AF_Math_Cos(AF_Math_Radians(_yaw)) * AF_Math_Cos(AF_Math_Radians(_pitch));
     AF_FLOAT y = AF_Math_Sin(AF_Math_Radians(_pitch));
     AF_FLOAT z = AF_Math_Sin(AF_Math_Radians(_yaw)) * AF_Math_Cos(AF_Math_Radians(_pitch));
-    AF_Vec3 normalisedVec3 = {x, y, z};
+    Vec3 normalisedVec3 = {x, y, z};
     
-    AF_Vec3 newFront= {0,0,0}; 
-    newFront = AFV3_NORMALIZE(normalisedVec3);
+    Vec3 newFront= {0,0,0}; 
+    newFront = Vec3_NORMALIZE(normalisedVec3);
 
     return newFront;
 }

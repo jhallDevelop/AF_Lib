@@ -21,7 +21,13 @@ extern "C" {
 void CheckGLError(const char * _message);
 
 // Init
+void AF_Renderer_Init(AF_ECS* _ecs);
+void AF_Renderer_Update(AF_ECS* _ecs);
+void AF_Renderer_Shutdown(void);
+
 uint32_t AF_LIB_InitRenderer(AF_Window* _window);
+
+
 
 void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
 

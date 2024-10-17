@@ -10,12 +10,38 @@ AABB collision detection
 #ifndef AF_PHYSICS_H
 #define AF_PHYSICS_H
 #include "AF_Lib_Define.h"
+#include "ECS/Entities/AF_Entity.h"
 #include "ECS/Components/AF_CCollider.h"
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CTransform2D.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*
+====================
+AF_PHYSICS_INIT
+Definition for Physics init
+====================
+*/
+void AF_Physics_Init();
+
+/*
+====================
+AF_PHYSICS_UPDATE
+Definition for Physics update
+====================
+*/
+void AF_Physics_Update();
+
+/*
+====================
+AF_PHYSICS_SHUTDOWN
+Definition for Physics shutdown 
+====================
+*/
+void AF_Physics_Shutdown();
+
 
 /*
 ====================
@@ -136,10 +162,10 @@ static inline void AF_Physics_3DCollision_Check(AF_Entity* _entities, uint32_t _
 			// run the function pointer if collision occured
 			if(collisionResult == TRUE){
 				if(collision1.callback != NULL){
-					collision1.callback(collision1);
+					collision1.callback(&collision1);
 				}
 				if(collision2.callback != NULL){
-					collision2.callback(collision2);
+					collision2.callback(&collision2);
 				}
 			}
 		}

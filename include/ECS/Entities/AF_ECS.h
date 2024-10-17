@@ -11,7 +11,7 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 #define AF_ECS_H
 #include "AF_Entity.h"
 #include "ECS/Components/AF_Component.h"
-
+#include <stdio.h>
 #define AF_ECS_TOTAL_ENTITIES 10
 
 /*
@@ -36,6 +36,8 @@ typedef struct {
     #else
     AF_CTransform3D transforms[AF_ECS_TOTAL_ENTITIES];	// 3d transform component
     AF_C3DRigidbody rigidbodies[AF_ECS_TOTAL_ENTITIES];	// rigidbody component
+	AF_CCollider colliders[AF_ECS_TOTAL_ENTITIES];	// Collider component
+
 
     
     AF_CAnimation animations[AF_ECS_TOTAL_ENTITIES];	// animation Component
@@ -81,7 +83,16 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		// Transform Component
 		_ecs->transforms[i] = AF_CTransform3D_ZERO();
 		entity->transform = &_ecs->transforms[i];
+		
 
+		// Rigidbody3D
+		_ecs->rigidbodies[i] = AF_C3DRigidbody_ZERO();
+		entity->rigidbody = &_ecs->rigidbodies[i];
+
+		// Colliders
+		_ecs->colliders[i] = AF_CCollider_ZERO();
+		entity->collider = &_ecs->colliders[i];
+		
 		// Animation component
 		_ecs->animations[i] = AF_CAnimation_ZERO();
 		entity->animation = &_ecs->animations[i];
@@ -92,11 +103,7 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		
 		// Camera Component
 		entity->camera = NULL;//AF_CCamera_ZERO();
-		
 				
-		// Collider Component
-		_ecs->colliders[i] = AF_CCollider_ZERO();
-		entity->collider = &_ecs->colliders[i];
 		#endif
 	}
 	_ecs->entitiesCount = AF_ECS_TOTAL_ENTITIES;
@@ -133,6 +140,10 @@ static inline AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
     #else
     *entity->transform = AF_CTransform3D_ADD();
     #endif
+
+    if(entity == NULL){
+		printf("AF_ECS: AF_ECS_CreateEntity failed, and is returining a null entity\n");
+	}
     return entity;
 }
 

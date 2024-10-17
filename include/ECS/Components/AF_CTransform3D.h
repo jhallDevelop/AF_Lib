@@ -30,9 +30,9 @@ typedef struct {
     PACKED_CHAR enabled;
     //BOOL has;// = FALSE;
     //BOOL enabled;// = FALSE;
-    AF_Vec3 pos;// = {0.0f, 0.0f, 0.0f};
-    AF_Vec3 rot;// = {0.0f, 0.0f, 0.0f};
-    AF_Vec3 scale;// = {1.0f, 1.0f, 1.0f};
+    Vec3 pos;// = {0.0f, 0.0f, 0.0f};
+    Vec3 rot;// = {0.0f, 0.0f, 0.0f};
+    Vec3 scale;// = {1.0f, 1.0f, 1.0f};
     char padding[24]; // padding out the compent for a remaining 24 bytes
 } AF_CTransform3D;
 

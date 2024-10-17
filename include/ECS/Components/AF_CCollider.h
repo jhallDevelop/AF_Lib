@@ -8,6 +8,7 @@ and helper functions
 */
 #ifndef AF_CCOLLIDER_H
 #define AF_CCOLLIDER_H
+#include <stddef.h>
 #include "AF_Lib_Define.h"
 #include "AF_Rect.h"
 #include "AF_Collision.h"

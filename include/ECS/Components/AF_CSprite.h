@@ -28,9 +28,9 @@ typedef struct {
 	char animationFrames;	    // 1 byte
 	AF_FLOAT nextFrameTime;     // 4 bytes
 	AF_FLOAT animationSpeed;    // 4 bytes
-	AF_Vec2 pos;		    // 8 bytes
-	AF_Vec2 size;		    // 8 bytes
-	AF_Vec2 spriteSheetSize;    // 8 bytes
+	Vec2 pos;		    // 8 bytes
+	Vec2 size;		    // 8 bytes
+	Vec2 spriteSheetSize;    // 8 bytes
 	
 } AF_CSprite;
 

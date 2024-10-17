@@ -25,9 +25,9 @@ basic struct for the transform component
 // Size is 64 bytes
 typedef struct {
     PACKED_CHAR enabled;
-    AF_Vec2 pos;
-    AF_Vec2 rot;
-    AF_Vec2 scale;
+    Vec2 pos;
+    Vec2 rot;
+    Vec2 scale;
 } AF_CTransform2D;
 
 /*

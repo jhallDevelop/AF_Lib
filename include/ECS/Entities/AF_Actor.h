@@ -30,11 +30,11 @@ If 3D game then loaded verts are known at compile time as its just a quad hard c
 typedef struct {
 	flag_t tag;
 	BOOL startEnabled;
-	AF_Vec3 pos;
-	AF_Vec3 scale;
-	AF_Vec2 spritePos;
-	AF_Vec2 spriteSize;
-	AF_Vec2 spriteSheetSize;
+	Vec3 pos;
+	Vec3 scale;
+	Vec2 spritePos;
+	Vec2 spriteSize;
+	Vec2 spriteSheetSize;
 	AF_FLOAT animationSpeed;
 	uint32_t animationFrames;
 	BOOL animationLoop;
@@ -57,11 +57,11 @@ except for AF_Mesh which loads verts and indices from a file
 typedef struct {
 	flag_t tag;
 	BOOL startEnabled;
-	AF_Vec2 pos;
-	AF_Vec2 scale;
-	AF_Vec2 spritePos;
-	AF_Vec2 spriteSize;
-	AF_Vec2 spriteSheetSize;
+	Vec2 pos;
+	Vec2 scale;
+	Vec2 spritePos;
+	Vec2 spriteSize;
+	Vec2 spriteSheetSize;
 	AF_FLOAT animationSpeed;
 	uint8_t animationFrames;
 	BOOL animationLoop;

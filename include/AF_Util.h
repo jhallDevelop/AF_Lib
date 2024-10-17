@@ -34,7 +34,8 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
         printf("TODO: Failed to read file from %s \n Need implement file read for platform GB\n", thisFilePath);
 	return NULL;
     #else
-    FILE* _fileOpen =NULL fopen(thisFilePath, "r");
+    FILE* _fileOpen =NULL;
+    fopen(thisFilePath, "r");
     if (_fileOpen == NULL) {
         fprintf(stderr, "AF_Util: Read File: Failed to read file \n%s \nCheck file exists\n\n", thisFilePath);
         return NULL;
