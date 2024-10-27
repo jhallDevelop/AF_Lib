@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 #define GRAVITY_SCALE -9.8
+const float DAMPING_FACTOR = 0.05f;
 
 static const Vec3 AF_PHYSICS_CUBE_COLLISION_FACES [6] =
 {
@@ -59,6 +60,26 @@ Definition for Physics shutdown
 void AF_Physics_Shutdown();
 
 //=====HELPER FUNCTIONS=====
+
+/*
+====================
+AF_PHYSICS_INTEGRATEVELOCITY
+Integrate the position and some dampening into the velocity
+====================
+*/
+static void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt){
+	float frameDamping = powf ( DAMPING_FACTOR, _dt);
+
+	Vec3 position = _transform->pos;
+	Vec3 linearVelocity = _rigidbody->velocity;
+	Vec3 linearDT = Vec3_MULT_SCALAR(linearVelocity, _dt);
+	position = Vec3_ADD(position, linearDT);
+	_transform->pos = position;
+
+	// LinearDamping
+	linearVelocity = Vec3_MULT_SCALAR(linearVelocity, frameDamping);
+	_rigidbody->velocity = linearVelocity;
+}
 
 /*
 ====================
