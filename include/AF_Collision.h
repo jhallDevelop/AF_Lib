@@ -28,6 +28,8 @@ typedef struct AF_Collision {
 	void (*callback)(struct AF_Collision*);
 	Vec3 collisionPoint;
 	float rayDistance;
+	Vec3 normal;
+	float penetration;
 } AF_Collision;
 
 
