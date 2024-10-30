@@ -26,9 +26,14 @@ typedef struct {
     //BOOL has;
     BOOL enabled;
     BOOL isKinematic;
-    uint32_t  gravity;
-    AF_Vec3 velocity;
-    char padding [44]; 
+    BOOL  gravity;
+    Vec3 velocity;
+	Vec3 anglularVelocity;
+	float inverseMass;
+	Vec3 force;
+	Vec3 torque;
+	Vec3 inertiaTensor;
+
 } AF_C3DRigidbody;
 
 /*
@@ -43,7 +48,12 @@ static inline AF_C3DRigidbody AF_C3DRigidbody_ZERO(void){
 		.enabled = FALSE,
 		.isKinematic = FALSE,
 		.velocity = {0, 0, 0},
-		.gravity = 0
+		.anglularVelocity = {0,0,0},
+		.gravity = TRUE,
+		.inverseMass = 1,
+		.force = {0,0,0},
+		.torque = {0,0,0},
+		.inertiaTensor = {0,0,0}
 	};
 	return rigidbody;
 }
@@ -59,12 +69,17 @@ static inline AF_C3DRigidbody AF_C3DRigidbody_ADD(void){
 	component = AF_Component_SetHas(component, TRUE);
 	component = AF_Component_SetEnabled(component, TRUE);
 
-	AF_CRigidbody rigidbody = {
+	AF_C3DRigidbody rigidbody = {
 		//.has = true,
 		.enabled = component,
 		.isKinematic = FALSE,			// isKinematic means to be controlled by script rather than the velocity
 		.velocity = {0, 0, 0},		// zero velocity 
-		.gravity = 0				// gravity off by default
+		.anglularVelocity = {0,0,0},
+		.gravity = TRUE,				// gravity off by default
+		.inverseMass = 1,
+		.force = {0,0,0},
+		.torque = {0,0,0},
+		.inertiaTensor = {0,0,0}
 	};
 	return rigidbody;
 }

@@ -27,7 +27,7 @@ typedef struct {
     BOOL enabled;
     BOOL isKinematic;
     uint32_t  gravity;
-    AF_Vec2 velocity;
+    Vec2 velocity;
 } AF_C2DRigidbody;
 
 /*

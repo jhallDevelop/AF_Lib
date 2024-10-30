@@ -1,36 +1,30 @@
 /*
 ===============================================================================
-AF_UTIL_H
-
-Definition of vertex struct
-
+AF_RAY_H definitions
+Definition of the ray structure
 ===============================================================================
 */
-#ifndef AF_VERTEX_H
-#define AF_VERTEX_H
+#ifndef AF_RAY_H
+#define AF_RAY_H
 #include "AF_Vec3.h"
-#include "AF_Vec2.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C" {    
 #endif
 
 /*
 ====================
-AF_Vertex
-vertex struct
+Ray Struct used to describe a ray used in raycasting 
 ====================
 */
 typedef struct {
-    Vec3 position;
-    Vec3 normal;
-    //Vec3 tangent;
-    //Vec3 bitangent;
-    Vec2 texCoord;
-} AF_Vertex;
+	Vec3 position;
+	Vec3 direction;
+}Ray;
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif //AF_RAY_H

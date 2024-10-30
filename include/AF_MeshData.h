@@ -15,7 +15,7 @@ extern "C" {
 
 typedef struct {
     // array of meshes
-    AF_Mesh* meshes;
+    AF_CMesh* meshes;
     AF_Material* materials;
     uint32_t numMeshes;
     uint32_t materialsSize;

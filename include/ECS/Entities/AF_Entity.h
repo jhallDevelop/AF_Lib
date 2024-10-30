@@ -9,13 +9,13 @@ The entity struct and helper functions
 #define AF_Entity_H
 //#include "AF_ECS.h"
 #include "AF_Lib_Define.h"
-
+#include "ECS/Components/AF_CSprite.h"
+#include "ECS/Components/AF_CCollider.h"
 // Components
 #ifdef PLATFORM_GB
 #include "ECS/Components/AF_CTransform2D.h"
-#include "ECS/Components/AF_CSprite.h"
 #include "ECS/Components/AF_C2DRigidbody.h"
-#include "ECS/Components/AF_CCollider.h"
+
 
 
 #else
@@ -41,11 +41,12 @@ If 2D game then loaded verts are known at compile time as its just a quad hard c
 // Size of struct is exactly 64 bytes
 typedef struct {
     flag_t flags;	// Entity has ben enabled
+    PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants
+
     #ifdef PLATFORM_GB
 
     char packed1;		// pack out an extra byte
     uint16_t packed2;		// pack out and extra 2 bytes
-    PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants
     AF_CTransform2D* transform;
     AF_CSprite* sprite;		// sprite cmponent
     AF_C2DRigidbody* rigidbody;	// rigidbody component
@@ -53,7 +54,9 @@ typedef struct {
 
     #else
     AF_CTransform3D* transform;	// 3d transform component
+    AF_CSprite* sprite;		// sprite cmponent
     AF_C3DRigidbody* rigidbody; // 3d rigidbody
+    AF_CCollider* collider;	// Collider component
     AF_CAnimation* animation;	// animation Component
     AF_CCamera* camera;		// camera component
     AF_CMesh* mesh;		// mesh component 	// TODO: turn this into a component type

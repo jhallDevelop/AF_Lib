@@ -31,14 +31,14 @@ Extract and return the first two float values found
 Used for extracting things like tex coords out of a .obj
 ====================
 */
-static inline AF_Vec2 AF_Mesh_GetVec2FromString(char* _buffer){ //, uint16_t _size){
+static inline Vec2 AF_Mesh_GetVec2FromString(char* _buffer){ //, uint16_t _size){
     #ifdef PLATFORM_GB
 	if(_buffer){}
 	printf("TODO: implement custom strtok, as sdcc doesn't support it \n");
-	AF_Vec2 returnEmpty = {0,0};
+	Vec2 returnEmpty = {0,0};
         return returnEmpty;
     #else
-    AF_Vec2 returnVec2 = {0.0f, 0.0f};
+    Vec2 returnVec2 = {0.0f, 0.0f};
     char* token = strtok(_buffer, " ");
     token = strtok(NULL, " ");
     if(token != NULL){
@@ -64,9 +64,9 @@ Extract and return the first 3 float values
 Used for things like position values out of a .obj
 ====================
 */
-static inline AF_Vec3 AF_Mesh_GetVec3FromString(char* _buffer){ //, uint16_t _size){
+static inline Vec3 AF_Mesh_GetVec3FromString(char* _buffer){ //, uint16_t _size){
     	
-    AF_Vec3 returnVec3 = {0.0f, 0.0f, 0.0f};
+    Vec3 returnVec3 = {0.0f, 0.0f, 0.0f};
 #ifdef PLATFORM_GB
 	if(_buffer){}
 	printf("TODO: implment a AF_Mesh_GetVec3FromString: that doesn't use strok for use on Platform GB\n");
@@ -225,7 +225,7 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
     component = AF_Component_SetEnabled(component, TRUE);
 
     // Create a new AF_Struct, that holds the pointers to the heap allocated verticies and indices data
-    returnMesh = {
+    AF_CMesh loadedMesh = {
 	    		//0,
 			component,
                         (AF_Vertex*)malloc(sizeof(AF_Vertex) * _mesh.vertexCount), 
@@ -238,7 +238,7 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
 			{0,0},
 			FALSE
                         };
-    
+   returnMesh = loadedMesh; 
 
     while(!feof(_file)){
          if(fgets(fileBuffer, 1024, _file) != NULL) {
@@ -246,7 +246,7 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
             AF_Vertex vertex = {{0,0,0},{0,0,0},{0,0}};
             if(fileBuffer[0] == 'v' && fileBuffer[1] == ' '){
                 // vertex
-                AF_Vec3 vertPos = AF_Mesh_GetVec3FromString(fileBuffer);
+                Vec3 vertPos = AF_Mesh_GetVec3FromString(fileBuffer);
                 vertex.position = vertPos;
                 //AF_Log("v %f %f %f\n", vertex.position.x, vertex.position.y, vertex.position.z);
 
@@ -277,13 +277,16 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
             }
             if(fileBuffer[0] == 'v' && fileBuffer[1] == 't'){
                 // texture coordinate
-		AF_Vec2 texPos = AF_Mesh_GetVec2FromString(fileBuffer);
+		Vec2 texPos = AF_Mesh_GetVec2FromString(fileBuffer);
 		//vertex.texCoord = texPos;
 		// don't overwrite the verts when add the tex coords
 		// TODO: fix this
 		AF_Vertex tempVertex = returnMesh.vertices[texCoordsCount];
 		
-		AF_Vertex newVertex = {{tempVertex.position.x,tempVertex.position.y,tempVertex.position.z},{tempVertex.normal.x,tempVertex.normal.y,tempVertex.normal.z},texPos};
+		AF_Vertex newVertex = {
+			{tempVertex.position.x,tempVertex.position.y,tempVertex.position.z},
+			{tempVertex.normal.x,tempVertex.normal.y,tempVertex.normal.z},
+			{texPos.x, texPos.y}};
                 returnMesh.vertices[texCoordsCount] = newVertex;
 		texCoordsCount ++;
 
