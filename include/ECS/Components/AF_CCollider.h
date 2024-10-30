@@ -31,6 +31,7 @@ typedef struct {
     //AF_Rect bounds;
     AF_Collision collision; //TODO: why do we need this?
     BOOL showDebug;
+	Vec3 broadphaseAABB;
 } AF_CCollider;
 
 // dummy callback so our initialisation compiles when we call AF_CCollider_Add
@@ -62,7 +63,8 @@ static inline AF_CCollider AF_CCollider_ZERO(void){
 			0	// height
 		},*/
 		//.collision = {FALSE, NULL, NULL},
-		.showDebug = FALSE
+		.showDebug = FALSE,
+		.broadphaseAABB = {0,0,0}
 	};
     collider.collision.collided  = FALSE;
 	collider.collision.entity1 = NULL;
@@ -100,7 +102,8 @@ static inline AF_CCollider AF_CCollider_ADD(void){
 			0	// height
 		},*/
 		//.collision = {FALSE, NULL, NULL},
-		.showDebug = FALSE
+		.showDebug = FALSE,
+		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = FALSE;
 	collider.collision.entity1 = NULL;
@@ -137,7 +140,8 @@ static inline AF_CCollider AF_CCollider_Sphere_ADD(void){
 			0	// height
 		},*/
 		//.collision = {FALSE, NULL, NULL},
-		.showDebug = FALSE
+		.showDebug = FALSE,
+		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = FALSE;
 	collider.collision.entity1 = NULL;
@@ -174,7 +178,8 @@ static inline AF_CCollider AF_CCollider_Box_ADD(void){
 			0	// height
 		},*/
 		//.collision = {FALSE, NULL, NULL},
-		.showDebug = FALSE
+		.showDebug = FALSE,
+		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = FALSE;
 	collider.collision.entity1 = NULL;
@@ -211,7 +216,8 @@ static inline AF_CCollider AF_CCollider_Plane_ADD(void){
 			0	// height
 		},*/
 		//.collision = {FALSE, NULL, NULL},
-		.showDebug = FALSE
+		.showDebug = FALSE,
+		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = FALSE;
 	collider.collision.entity1 = NULL;

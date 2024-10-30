@@ -9,6 +9,7 @@ and helper functions
 #ifndef AF_CTRANSFORM3D_H
 #define AF_CTRANSFORM3D_H
 #include "AF_Vec3.h"
+#include "AF_Vec4.h"
 #include "AF_Lib_Define.h"
 #include "AF_Component.h"
 
@@ -33,7 +34,7 @@ typedef struct {
     Vec3 pos;// = {0.0f, 0.0f, 0.0f};
     Vec3 rot;// = {0.0f, 0.0f, 0.0f};
     Vec3 scale;// = {1.0f, 1.0f, 1.0f};
-    char padding[24]; // padding out the compent for a remaining 24 bytes
+    Vec4 orientation;   // rotation represented as a quaternion
 } AF_CTransform3D;
 
 /*
@@ -48,7 +49,8 @@ static inline AF_CTransform3D AF_CTransform3D_ZERO(void){
         .enabled = FALSE,
         .pos = {0, 0, 0},
         .rot = {0, 0, 0},
-        .scale = {1, 1, 1}
+        .scale = {1, 1, 1},
+        .orientation = {0,0,0,0}
 	// Default position matrix
     };
 	return returnTransform;
@@ -66,7 +68,8 @@ static inline AF_CTransform3D AF_CTransform3D_ADD(void){
         .enabled = TRUE,
         .pos = {0, 0, 0},
         .rot = {0, 0, 0},
-        .scale = {1, 1, 1}
+        .scale = {1, 1, 1},
+        .orientation = {0,0,0,0}
 	// Default position matrix
     };
 	return returnTransform;

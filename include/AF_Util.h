@@ -129,6 +129,7 @@ static inline int AF_GetMaxElement(AF_FLOAT _elements[], int _size){
 	return maxElement;
 }
 
+/*
 static void multiplyMatrixVec(const AF_FLOAT matrix[16], const AF_FLOAT in[4], AF_FLOAT out[4]) {
     for (int i = 0; i < 4; i++) {
         out[i] = matrix[0 * 4 + i] * in[0] +
@@ -136,7 +137,7 @@ static void multiplyMatrixVec(const AF_FLOAT matrix[16], const AF_FLOAT in[4], A
                  matrix[2 * 4 + i] * in[2] +
                  matrix[3 * 4 + i] * in[3];
     }
-}
+}*/
 
 /*
 ====================
