@@ -12,7 +12,7 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 #include "AF_Entity.h"
 #include "ECS/Components/AF_Component.h"
 #include <stdio.h>
-#define AF_ECS_TOTAL_ENTITIES 10
+#define AF_ECS_TOTAL_ENTITIES 20
 
 /*
 ====================
@@ -42,6 +42,8 @@ typedef struct {
     
     AF_CAnimation animations[AF_ECS_TOTAL_ENTITIES];	// animation Component
     AF_CMesh meshes[AF_ECS_TOTAL_ENTITIES];		// mesh component 	// TODO: turn this into a component type
+	AF_CText texts[AF_ECS_TOTAL_ENTITIES];
+	AF_CAudioSource audioSources[AF_ECS_TOTAL_ENTITIES];
         #endif
 } AF_ECS;
 
@@ -100,6 +102,14 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		// Add Meshes
 		_ecs->meshes[i] = AF_CMesh_ZERO();
 		entity->mesh = &_ecs->meshes[i];
+
+		// Add text
+		_ecs->texts[i] = AF_CText_ZERO();
+		entity->text = & _ecs->texts[i];
+
+		// Add audio
+		_ecs->audioSources[i] = AF_CAudioSource_ZERO();
+		entity->audioSource = &_ecs->audioSources[i];
 		
 		// Camera Component
 		entity->camera = NULL;//AF_CCamera_ZERO();

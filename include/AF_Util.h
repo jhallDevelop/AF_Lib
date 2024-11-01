@@ -102,12 +102,12 @@ Return 1 if string is empty
 REturn 0 if string is not empty
 ====================
 */
-static inline uint32_t AF_STRING_IS_EMPTY(const char* _string){
+static inline BOOL AF_STRING_IS_EMPTY(const char* _string){
     // null check the const char*, then see if the first element is a end of line
     if ((_string != NULL) && (_string[0] == '\0')) {
-        return 1;
+        return TRUE;
     }else {
-        return 0;
+        return FALSE;
     }
 }
 

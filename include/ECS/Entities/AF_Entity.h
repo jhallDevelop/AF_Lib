@@ -11,6 +11,8 @@ The entity struct and helper functions
 #include "AF_Lib_Define.h"
 #include "ECS/Components/AF_CSprite.h"
 #include "ECS/Components/AF_CCollider.h"
+#include "ECS/Components/AF_CText.h"
+#include "ECS/Components/AF_CAudioSource.h"
 // Components
 #ifdef PLATFORM_GB
 #include "ECS/Components/AF_CTransform2D.h"
@@ -60,6 +62,8 @@ typedef struct {
     AF_CAnimation* animation;	// animation Component
     AF_CCamera* camera;		// camera component
     AF_CMesh* mesh;		// mesh component 	// TODO: turn this into a component type
+    AF_CText* text;
+    AF_CAudioSource* audioSource;
         #endif
 } AF_Entity;
 

@@ -18,6 +18,12 @@ functions to load meshes, creating memory on the heap based on the size of the m
 extern "C" {
 #endif  
 
+enum AF_MESH_TYPE{
+	AF_MESH_TYPE_PLANE, 
+	AF_MESH_TYPE_CUBE,
+	AF_MESH_TYPE_SPHERE,
+	AF_MESH_TYPE_MESH
+};
 
 // Mesh Struct
 typedef struct {
@@ -33,6 +39,7 @@ typedef struct {
     uint32_t ibo;
     AF_Material material;
     BOOL showDebug;
+	enum AF_MESH_TYPE meshType;
 } AF_CMesh;
 
 /*
@@ -53,7 +60,8 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.vbo = 0,
 	.ibo = 0,
 	.material = {0,0},
-	.showDebug = FALSE
+	.showDebug = FALSE,
+	.meshType = AF_MESH_TYPE_PLANE
     };
     return returnMesh;
 }
@@ -80,7 +88,8 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.vbo = 0,
 	.ibo = 0,
 	.material = {0,0},
-	.showDebug = FALSE
+	.showDebug = FALSE,
+	.meshType = AF_MESH_TYPE_PLANE
     };
     return returnMesh;
 }

@@ -20,7 +20,7 @@ AF_Component_SetHas
 Function to set the has value
 ====================
 */
-static inline char AF_Component_SetHas(flag_t _component, BOOL _hasFlag){
+static inline PACKED_CHAR AF_Component_SetHas(flag_t _component, BOOL _hasFlag){
 	if(_hasFlag == TRUE){ 
 		// Set the bit if the key is pressed
 		return _component |= FLAG_HAS;
@@ -37,7 +37,7 @@ AF_Component_SetEnabled
 Function to set the enabled value
 ====================
 */
-static inline char AF_Component_SetEnabled(PACKED_CHAR _component, BOOL _enabledFlag){
+static inline PACKED_CHAR AF_Component_SetEnabled(PACKED_CHAR _component, BOOL _enabledFlag){
 	if(_enabledFlag== TRUE){ 
 		// Set the bit if the key is pressed
 		return _component |= FLAG_ENABLED;
