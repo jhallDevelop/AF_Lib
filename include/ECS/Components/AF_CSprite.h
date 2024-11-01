@@ -26,11 +26,16 @@ typedef struct {
 	BOOL loop;		    // 1 byte
 	char currentFrame;	    // 1 byte
 	char animationFrames;	    // 1 byte
+	AF_FLOAT currentFrameTime;
 	AF_FLOAT nextFrameTime;     // 4 bytes
 	AF_FLOAT animationSpeed;    // 4 bytes
 	Vec2 pos;		    // 8 bytes
 	Vec2 size;		    // 8 bytes
 	Vec2 spriteSheetSize;    // 8 bytes
+	uint8_t spriteColor[4];
+	const char* spritePath;
+	void* spriteData; // special ptr for sprite data to be cast when known
+	BOOL isPlaying;
 	
 } AF_CSprite;
 
@@ -47,11 +52,16 @@ static inline AF_CSprite AF_CSprite_ZERO(void){
 		.loop = TRUE,
 		.currentFrame = 0,
 		.animationFrames = 0,
+		.currentFrameTime = 0,
 		.nextFrameTime = 0,
 		.animationSpeed = 0,
 		.pos = {0, 0},
 		.size = {0, 0},
 		.spriteSheetSize = {0, 0},
+		.spriteColor = {255, 255, 255, 255},
+		.spritePath = NULL,
+		.spriteData = NULL,
+		.isPlaying = FALSE
 		};
 	return returnSprite;
 }
@@ -72,11 +82,16 @@ static inline AF_CSprite AF_CSprite_ADD(void){
 		.loop = TRUE,
 		.currentFrame = 0,
 		.animationFrames = 0,
+		.currentFrameTime = 0,
 		.nextFrameTime = 0,
 		.animationSpeed = 0,
 		.pos = {0, 0},
 		.size = {0, 0},
 		.spriteSheetSize = {0, 0},
+		.spriteColor = {255, 255, 255, 255},
+		.spritePath = NULL,
+		.spriteData = NULL,
+		.isPlaying = FALSE
 	};
 	return returnSprite;
 }

@@ -14,6 +14,7 @@ Definition for functions for rendering
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CSprite.h"
 #include "AF_Debug.h"
+#include "AF_Time.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,7 +24,7 @@ void CheckGLError(const char * _message);
 
 // Init
 void AF_Renderer_Init(AF_ECS* _ecs);
-void AF_Renderer_Update(AF_ECS* _ecs);
+void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
 void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(void);
 //void AF_Renderer_Debug(void);
