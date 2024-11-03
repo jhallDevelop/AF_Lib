@@ -22,6 +22,7 @@ struct to hold the data needed for monitoring time in the game
 */
 typedef struct {
 	uint32_t currentFrame;		// The current frame.
+	uint32_t currentTick;
 	double timeSinceLastFrame;	// Time in ms since the last frame
 	double currentTime;		// Time captured by the system clock. 
     	double lastTime;		// record of the previous time captured
@@ -39,6 +40,7 @@ static inline AF_Time AF_Time_Init(const float _currentTime){
 
 	AF_Time returnTime = {
 	.currentFrame = 0,
+	.currentTick = 0,
 	.timeSinceLastFrame = 0.0f,
 	.currentTime = _currentTime,
 	.lastTime = 0.0f,
@@ -58,6 +60,7 @@ Update the time variables
 static inline AF_Time AF_Time_Update(const AF_Time _time){
 	AF_Time returnTime = {
 	.currentFrame = _time.currentFrame + 1,
+	.currentTick = _time.currentTick +1,
 	.timeSinceLastFrame = _time.timeSinceLastFrame,
 	.currentTime = _time.currentTime,
 	.lastTime = _time.lastTime,

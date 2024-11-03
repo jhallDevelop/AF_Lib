@@ -115,6 +115,8 @@ static inline AF_CCollider AF_CCollider_ADD(void){
 	return collider;
 }
 
+
+
 /*
 ====================
 AF_CCollider_SPHERE_ADD
@@ -227,6 +229,55 @@ static inline AF_CCollider AF_CCollider_Plane_ADD(void){
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;
 	return collider;
+}
+
+
+/*
+====================
+AF_CCollider_ADD_TYPE
+Add the CCollider of the MESH Type
+enable the component and set some values to default values.
+====================
+*/
+
+static inline AF_CCollider AF_CCollider_ADD_TYPE(enum CollisionVolumeType _volumeType){
+	switch(_volumeType){
+		case  AABB:
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case OBB:
+			// TODO add OBB collider type
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case Plane:
+			return AF_CCollider_Plane_ADD();
+		break;
+
+		case Sphere:
+			// todo, add sphere collider type
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case Mesh:
+			// todo, add mesh collider type
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case Compound:
+			// TODO: add compound collider type
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case Invalid:
+			return AF_CCollider_Box_ADD();
+		break;
+
+		default:
+			return AF_CCollider_Box_ADD();
+		break;
+	}
 }
 
 #ifdef __cplusplus
