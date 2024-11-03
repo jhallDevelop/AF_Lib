@@ -9,9 +9,10 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 
 #ifndef AF_ECS_H
 #define AF_ECS_H
+#include <stdio.h>
 #include "AF_Entity.h"
 #include "ECS/Components/AF_Component.h"
-#include <stdio.h>
+
 #define AF_ECS_TOTAL_ENTITIES 20
 
 /*

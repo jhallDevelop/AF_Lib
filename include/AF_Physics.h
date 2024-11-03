@@ -205,17 +205,14 @@ static void AF_Physics_IntegrateAccell(AF_C3DRigidbody* _rigidbody, const float 
 	Vec3 accell = Vec3_MULT_SCALAR(force, inverseMass);
 	
 	
-	if(_rigidbody->gravity == TRUE && inverseMass > 0){
-		Vec3 accelGravity = {accell.x, accell.y + GRAVITY_SCALE, accell.z};
-		accell = accelGravity;
+	if (inverseMass > 0.0f) {
+		Vec3 accell = Vec3_MULT_SCALAR(force, inverseMass);
+		if (_rigidbody->gravity == TRUE) {
+			accell.y += GRAVITY_SCALE;
+		}
+		Vec3 accelDT = Vec3_MULT_SCALAR(accell, _dt);
+		_rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, accelDT);
 	}
-
-	Vec3 accelDT = Vec3_MULT_SCALAR(accell, 1);//_dt);
-	//debugf("Accel: 	 x: %f, y:%f z:%f\n", accell.x, accell.y, accell.z);
-	//debugf("AccelDT: x: %f, y:%f z:%f\n", accelDT.x, accelDT.y, accelDT.z);
-	linearVel = Vec3_ADD(linearVel, accelDT);
-	_rigidbody->velocity = linearVel;
-	
 }
 
 
@@ -318,7 +315,9 @@ Calculate ray intersection hit test against an Axis Aligned Bounding Box
 static inline BOOL AF_Physics_AABB_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision){
 	Vec3 boxPos = _collider->pos;
 	Vec3* _size = &_collider->boundingVolume;
-	Vec3 boxHalfSize = Vec3_DIV_SCALAR(*_size, 2);
+	//Vec3 boxHalfSize = Vec3_MULT_SCALAR(*_size, 0.5f);
+	//Vec3 boxHalfSize = Vec3_DIV_SCALAR(*_size, 2);
+	Vec3 boxHalfSize = Vec3_MULT_SCALAR(*_size, .5f);
 	return AF_Physics_Box_RayIntersection(_ray, boxPos, boxHalfSize, _collision);
 } 
 
@@ -514,19 +513,37 @@ static void AF_Physics_ResolveCollision(AF_Entity* _entityA, AF_Entity* _entityB
 	AF_CCollider* colliderA = _entityA->collider;
 	AF_CCollider* colliderB = _entityB->collider;
 
-	float totalMass = rigidbodyA->inverseMass + rigidbodyB->inverseMass;
+	float totalMass;
+	if (rigidbodyA->inverseMass == 0.0f && rigidbodyB->inverseMass == 0.0f) {
+		totalMass = 0.0f;
+		return;
+	} else if (rigidbodyA->inverseMass == 0.0f) {
+		totalMass = rigidbodyB->inverseMass;
+	} else if (rigidbodyB->inverseMass == 0.0f) {
+		totalMass = rigidbodyA->inverseMass;
+	} else {
+		totalMass = rigidbodyA->inverseMass + rigidbodyB->inverseMass;
+	}
 
 	// Seperate using projection
-	float entity1AdjMass = rigidbodyA->inverseMass / totalMass;
-	float entity2AdjMass = rigidbodyB->inverseMass / totalMass;
+	//float entity1AdjMass = rigidbodyA->inverseMass / totalMass;
+	//float entity2AdjMass = rigidbodyB->inverseMass / totalMass;
 
 	float penetrationScale = 0.075f; // Adjust as needed
 
-	Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * entity1AdjMass * penetrationScale)));
-	Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * entity2AdjMass * penetrationScale)));
+	//Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * entity1AdjMass * penetrationScale)));
+	//Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * entity2AdjMass * penetrationScale)));
+	Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * penetrationScale)));
+	Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * penetrationScale)));
 
-	transformA->pos = adjustedPosition1;
-	transformB->pos = adjustedPosition2;
+	//transformA->pos = adjustedPosition1;
+	//transformB->pos = adjustedPosition2;
+	if (rigidbodyA->inverseMass > 0.0f) {
+    	transformA->pos = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * penetrationScale)));
+	}
+	if (rigidbodyB->inverseMass > 0.0f) {
+		transformB->pos = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * penetrationScale)));
+	}
 
 	Vec3 relativeA = Vec3_MINUS(_collision->collisionPoint, transformA->pos);
 	Vec3 relativeB = Vec3_MINUS(_collision->collisionPoint, transformB->pos);
@@ -555,18 +572,32 @@ static void AF_Physics_ResolveCollision(AF_Entity* _entityA, AF_Entity* _entityB
 	float angularEffect = Vec3_DOT(Vec3_ADD(inertiaA, inertiaB), _collision->normal);
 
 	float cRestitution = 0.66f; // disperse some kinectic energy
+	
+	float j = 0;
 
-	float j = (-(1.0f + cRestitution) * impulseForce) / (totalMass + angularEffect);
+	float totalMassAngularEffect = totalMass + angularEffect;
+	if(totalMassAngularEffect != 0.0f){
+		j = (-(1.0f + cRestitution) * impulseForce) / (totalMass + angularEffect);
+	}else{
+		j = 0;
+	}
+	
+
 
 	Vec3 fullImpulse = Vec3_MULT_SCALAR(_collision->normal, j);
 
 	// apply linear and angualr impulses in opposite directions 
 	Vec3 negativeFullImpulse = Vec3_MULT_SCALAR(fullImpulse, -1);
-	AF_Physics_ApplyLinearImpulse(rigidbodyA, negativeFullImpulse);
-	AF_Physics_ApplyLinearImpulse(rigidbodyB, fullImpulse);
 
-	AF_Physics_ApplyAngularImpulse(rigidbodyA,Vec3_CROSS(relativeA, negativeFullImpulse));
-	AF_Physics_ApplyAngularImpulse(rigidbodyB,Vec3_CROSS(relativeB, fullImpulse));
+	if (rigidbodyA->inverseMass > 0.0f) {
+		AF_Physics_ApplyLinearImpulse(rigidbodyA, negativeFullImpulse);
+		AF_Physics_ApplyAngularImpulse(rigidbodyA,Vec3_CROSS(relativeA, negativeFullImpulse));
+	}
+
+	if (rigidbodyB->inverseMass > 0.0f) {
+		AF_Physics_ApplyLinearImpulse(rigidbodyB, fullImpulse);
+		AF_Physics_ApplyAngularImpulse(rigidbodyB,Vec3_CROSS(relativeB, fullImpulse));
+	}
 }
 
 
@@ -613,15 +644,23 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 
 			AF_Entity* entity2 = &_ecs->entities[x];
 			AF_CCollider* collider2 = entity2->collider;
-
+			AF_CTransform3D* transform1 = entity1->transform;
+			AF_CTransform3D* transform2 = entity2->transform;
 
 			Vec3* posA = &_ecs->transforms[i].pos;
 			Vec3* posB = &_ecs->transforms[x].pos;
-			Vec3 halfSizeA = Vec3_DIV_SCALAR(collider1->boundingVolume, 2);
-			Vec3 halfSizeB = Vec3_DIV_SCALAR(collider2->boundingVolume, 2);
+			Vec3 halfSizeA = Vec3_MULT_SCALAR(collider1->boundingVolume, .5f);
+			Vec3 halfSizeB = Vec3_MULT_SCALAR(collider2->boundingVolume, .5f);
+			//Vec3 halfSizeA = Vec3_DIV_SCALAR(collider1->boundingVolume, 2);
+			//Vec3 halfSizeB = Vec3_DIV_SCALAR(collider2->boundingVolume, 2);
+
+			Vec3 scaledHalfSizeA = Vec3_MULT(halfSizeA, transform1->scale);
+			Vec3 scaledHalfSizeB = Vec3_MULT(halfSizeB, transform2->scale);
+
 
 			Vec3 delta = Vec3_MINUS(*posA, *posB);
 			Vec3 totalSize = Vec3_ADD(halfSizeA, halfSizeB);
+			//Vec3 totalSize = Vec3_ADD(scaledHalfSizeA, scaledHalfSizeB);
 
 			if(
 				abs(delta.x) < totalSize.x  &&
