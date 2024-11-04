@@ -15,6 +15,7 @@ and helper functions
 
 typedef struct AF_CText {
     PACKED_CHAR enabled;	    // 1 byte
+    BOOL isShowing;
     uint8_t fontID;
     const char* fontPath;
     const char* text;
@@ -32,6 +33,7 @@ Function used to create an empty text component
 static inline AF_CText AF_CText_ZERO(void){
     AF_CText returnMesh = {
 	.enabled = FALSE,
+    .isShowing = FALSE,
     .fontID = 0,
     .fontPath = NULL,
     .screenPos = {0,0},
@@ -54,6 +56,7 @@ static inline AF_CText AF_CText_ADD(void){
 
     AF_CText returnMesh = {
 	.enabled = component,
+    .isShowing = TRUE,
     .fontID = 0,
     .fontPath = NULL,
     .screenPos = {0,0},
