@@ -23,9 +23,11 @@ typedef struct  {
 	//BOOL enabled;
 	PACKED_CHAR enabled;	    // 1 byte
 	BOOL isCarrying;
+	BOOL isCarried;
     int carryingEntity;
     float health;
     BOOL isAlive;
+	int score;
 	
 } AF_CPlayerData;
 
@@ -41,9 +43,11 @@ static inline AF_CPlayerData AF_CPlayerData_ZERO(void){
 		//.has = false,
 		.enabled = FALSE,
 		.isCarrying = FALSE,
+		.isCarried = FALSE,
         .carryingEntity = 0,
         .health = 0,
-        .isAlive = FALSE
+        .isAlive = FALSE,
+		.score = 0
 		};
 	return returnComponent;
 }
@@ -62,9 +66,11 @@ static inline AF_CPlayerData AF_CPlayerData_ADD(void){
 		//.has = true,
 		.enabled = component,
 		.isCarrying = FALSE,
+		.isCarried = FALSE,
         .carryingEntity = 0,
         .health = 100,
-        .isAlive = TRUE
+        .isAlive = TRUE,
+		.score = 0
 	};
 	return returnComponent;
 }
