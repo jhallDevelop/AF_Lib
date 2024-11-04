@@ -248,7 +248,7 @@ static inline BOOL AF_Physics_Sphere_RayIntersection(const Ray* _ray, const AF_C
 	if (sphereDist > sphereRadius) { 
 		return false;
 	}
-	AF_FLOAT offset = AF_Math_Sqrt((sphereRadius * sphereRadius) - (sphereDist * sphereDist));
+	AF_FLOAT offset = sqrt((sphereRadius * sphereRadius) - (sphereDist * sphereDist));//AF_Math_Sqrt((sphereRadius * sphereRadius) - (sphereDist * sphereDist));
 
  
 	_collision->rayDistance = sphereProj - (offset);
