@@ -45,6 +45,7 @@ typedef struct {
     AF_CMesh meshes[AF_ECS_TOTAL_ENTITIES];		// mesh component 	// TODO: turn this into a component type
 	AF_CText texts[AF_ECS_TOTAL_ENTITIES];
 	AF_CAudioSource audioSources[AF_ECS_TOTAL_ENTITIES];
+	AF_CPlayerData playerDatas[AF_ECS_TOTAL_ENTITIES];
         #endif
 } AF_ECS;
 
@@ -111,6 +112,10 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		// Add audio
 		_ecs->audioSources[i] = AF_CAudioSource_ZERO();
 		entity->audioSource = &_ecs->audioSources[i];
+
+		// player data
+		_ecs->playerDatas[i] = AF_CPlayerData_ZERO();
+		entity->playerData = &_ecs->playerDatas[i];
 		
 		// Camera Component
 		entity->camera = NULL;//AF_CCamera_ZERO();
