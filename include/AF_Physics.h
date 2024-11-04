@@ -22,7 +22,7 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 #include "AF_Vec3.h"
 #include "AF_Vec4.h"
 #include "AF_Util.h"
-#include "AF_QuadTree.h"
+//#include "AF_QuadTree.h"
 
 #include <libdragon.h>
 #ifdef __cplusplus
@@ -57,7 +57,7 @@ Definition for Physics update
 void AF_Physics_Update(AF_ECS* _ecs, const float _dt);
 
 
-
+/*
 static void AF_Physics_EarlyUpdate(AF_ECS* _ecs){
 	// clear the velocities
 	for(int i =0 ; _ecs->entitiesCount; ++i){
@@ -66,7 +66,7 @@ static void AF_Physics_EarlyUpdate(AF_ECS* _ecs){
 		Vec3 zeroVelocity = {0,0,0};
 		rigidbody->velocity = zeroVelocity;
 	}
-}
+}*/
 
 /*
 ====================
@@ -123,15 +123,17 @@ AF_PHYSICS_ADDFORCEATPOSITION
 Add force at a position
 ====================
 */
+/*
 static void AF_Physics_AddForceAtPosition(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const Vec3* _addedForce, const Vec3* _position){
 	Vec3 localPos = Vec3_MINUS(*_position, _transform->pos);
 
 	_rigidbody->force = Vec3_ADD(_rigidbody->force, *_addedForce);
 	_rigidbody->torque = Vec3_CROSS(localPos, *_addedForce);
-}
+}*/
 
 // TODO move this to vec4
 // Function to create a quaternion from angular velocity and time step
+
 static Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
     // Calculate the scalar component (w) of the quaternion
     float halfDt = dt * 0.5f; // Half of the time step
@@ -151,12 +153,14 @@ static Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
     return q;
 }
 
+
 /*
 ====================
 AF_PHYSICS_INTEGRATEVELOCITY
 Integrate the position and some dampening into the velocity
 ====================
 */
+
 static void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt){
 	float frameDamping = powf ( DAMPING_FACTOR, _dt);
 
@@ -713,11 +717,11 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 					collider2->collision.callback(&collider2->collision);
 
 					// Apply collision resolution
-					AF_CTransform3D* transform1 = &_ecs->transforms[i];
-					AF_CTransform3D* transform2 = &_ecs->transforms[x];
+					//AF_CTransform3D* transform1 = &_ecs->transforms[i];
+					//AF_CTransform3D* transform2 = &_ecs->transforms[x];
 
-					AF_C3DRigidbody* rigidbody1 = &_ecs->rigidbodies[i];
-					AF_C3DRigidbody* rigidbody2 = &_ecs->rigidbodies[x];
+					//AF_C3DRigidbody* rigidbody1 = &_ecs->rigidbodies[i];
+					//AF_C3DRigidbody* rigidbody2 = &_ecs->rigidbodies[x];
 
 					AF_Physics_ResolveCollision(entity1, entity2, &collision1);
 			}
@@ -738,7 +742,7 @@ AF_Physics_BroadPhase
 AF_Physics_NarrowPhase
 */
 
-
+/**/
 static void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider){
 	if(_collider->type == AABB){
 		Vec3 boundingVolumeHalfDimensions = {_collider->boundingVolume.x/2.0f, _collider->boundingVolume.y/2.0f, _collider->boundingVolume.z/2.0f};
@@ -746,10 +750,11 @@ static void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider){
 	}
 }
 
+/*
 static void AF_Physics_BroadPhase(AF_ECS* _ecs){
 	// TODO: broadphaseCollisions.clear();
 	Vec2 treeSize = {1024, 1024};
-	QuadTree tree;
+	//QuadTree tree;
 
 	for(int i = 0; i < _ecs->entitiesCount; ++i){
 		Vec3 halfSizes;
@@ -763,7 +768,7 @@ static void AF_Physics_BroadPhase(AF_ECS* _ecs){
 		//AF_QuadTree_Insert()
 
 		// determine what objects may be colliding.
-		/*
+		
 		tree.OperateOnContents([&](std::list < QuadTreeEntry < GameObject * > >& data ) {
 		 CollisionInfo info ;
 		
@@ -774,10 +779,12 @@ static void AF_Physics_BroadPhase(AF_ECS* _ecs){
 		info.a = min ((* i ).object , (* j ).object );
 		info.b = max ((* i ).object , (* j ).object );
 		broadphaseCollisions.insert ( info );
-		*/
+		
 
 	}
 }
+
+*/
 
 // Function to compare two CollisionInfo objects based on their hashes
 static bool AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_Collision* info2) {
@@ -794,7 +801,7 @@ static bool AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF
 
 // Function to handle narrow phase collision detection
 static void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t collisionCount, int numCollisionFrames) {
-    AF_Collision allCollisions[1024]; // Example array to store all collisions
+    //AF_Collision allCollisions[1024]; // Example array to store all collisions
     size_t allCollisionsCount = 0;       // Counter for all collisions
 
     // Iterate through the broad phase collisions
