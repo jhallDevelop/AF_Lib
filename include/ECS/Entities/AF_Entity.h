@@ -13,6 +13,7 @@ The entity struct and helper functions
 #include "ECS/Components/AF_CCollider.h"
 #include "ECS/Components/AF_CText.h"
 #include "ECS/Components/AF_CAudioSource.h"
+#include "ECS/Components/AF_CPlayerData.h"
 // Components
 #ifdef PLATFORM_GB
 #include "ECS/Components/AF_CTransform2D.h"
@@ -64,6 +65,7 @@ typedef struct {
     AF_CMesh* mesh;		// mesh component 	// TODO: turn this into a component type
     AF_CText* text;
     AF_CAudioSource* audioSource;
+    AF_CPlayerData* playerData;
         #endif
 } AF_Entity;
 
