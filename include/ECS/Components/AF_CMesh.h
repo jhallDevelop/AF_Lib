@@ -40,6 +40,7 @@ typedef struct {
     AF_Material material;
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
+	BOOL isAnimating;
 } AF_CMesh;
 
 /*
@@ -61,7 +62,8 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.ibo = 0,
 	.material = {0,0},
 	.showDebug = FALSE,
-	.meshType = AF_MESH_TYPE_PLANE
+	.meshType = AF_MESH_TYPE_PLANE,
+	.isAnimating = FALSE
     };
     return returnMesh;
 }
@@ -89,7 +91,8 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.ibo = 0,
 	.material = {0,0},
 	.showDebug = FALSE,
-	.meshType = AF_MESH_TYPE_PLANE
+	.meshType = AF_MESH_TYPE_PLANE,
+	.isAnimating = FALSE
     };
     return returnMesh;
 }
