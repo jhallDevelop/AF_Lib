@@ -101,7 +101,7 @@ AF_Physics_ApplyAngularImpulse
 Apply force to rigidbody object
 ====================
 */
-static void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
+static inline void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
 	Vec3 angularForce = Vec3_MULT(_rigidbody->inertiaTensor, _force);
 	_rigidbody->anglularVelocity = Vec3_ADD(_rigidbody->anglularVelocity, angularForce);
 }
@@ -112,7 +112,7 @@ AF_Physics_ApplyLinearImpulse
 Apply force to rigidbody object
 ====================
 */
-static void AF_Physics_ApplyLinearImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
+static inline void AF_Physics_ApplyLinearImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
 	Vec3 linearForce = Vec3_MULT_SCALAR(_force, _rigidbody->inverseMass);
 	_rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, linearForce);
 }
@@ -134,7 +134,7 @@ static void AF_Physics_AddForceAtPosition(AF_CTransform3D* _transform, AF_C3DRig
 // TODO move this to vec4
 // Function to create a quaternion from angular velocity and time step
 
-static Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
+static inline Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
     // Calculate the scalar component (w) of the quaternion
     float halfDt = dt * 0.5f; // Half of the time step
     float angleMagnitude = Vec3_MAGNITUDE(angVel); // Calculate the magnitude of angular velocity
@@ -161,7 +161,7 @@ Integrate the position and some dampening into the velocity
 ====================
 */
 
-static void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt){
+static inline void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt){
 	float frameDamping = powf ( DAMPING_FACTOR, _dt);
 
 	Vec3 position = _transform->pos;
@@ -197,19 +197,15 @@ AF_PHYSICS_INTEGRATEACCELL
 Integrate gravity and acceleration into the velocity
 ====================
 */
-static void AF_Physics_IntegrateAccell(AF_C3DRigidbody* _rigidbody, const float _dt){
+static inline void AF_Physics_IntegrateAccell(AF_C3DRigidbody* _rigidbody, const float _dt){
 	// iterate over all the game objects
 	if(AF_Component_GetEnabled(_rigidbody->enabled != TRUE)){
 		return;
 	}
 	float inverseMass = _rigidbody->inverseMass;
 
-	Vec3 linearVel = _rigidbody->velocity;
-	Vec3 force = _rigidbody->force;
-	Vec3 accell = Vec3_MULT_SCALAR(force, inverseMass);
-	
-	
 	if (inverseMass > 0.0f) {
+		Vec3 force = _rigidbody->force;
 		Vec3 accell = Vec3_MULT_SCALAR(force, inverseMass);
 		if (_rigidbody->gravity == TRUE) {
 			accell.y += GRAVITY_SCALE;
@@ -237,7 +233,7 @@ static inline BOOL AF_Physics_Sphere_RayIntersection(const Ray* _ray, const AF_C
 	
 	// Is point behind the ray?
 	if(sphereProj < 0.0f) {
-		return false; //point is behind the ray!
+		return FALSE; //point is behind the ray!
 	}	
 	
 	//Get closest point on ray line to sphere
@@ -246,13 +242,14 @@ static inline BOOL AF_Physics_Sphere_RayIntersection(const Ray* _ray, const AF_C
 	AF_FLOAT sphereDist = Vec3_MAGNITUDE(Vec3_MINUS(point, spherePos));
 
 	if (sphereDist > sphereRadius) { 
-		return false;
+		return FALSE;
 	}
 	AF_FLOAT offset = sqrt((sphereRadius * sphereRadius) - (sphereDist * sphereDist));//AF_Math_Sqrt((sphereRadius * sphereRadius) - (sphereDist * sphereDist));
 
  
 	_collision->rayDistance = sphereProj - (offset);
 	_collision->collisionPoint = Vec3_ADD(_ray->position, Vec3_MULT_SCALAR(_ray->direction, _collision->rayDistance));
+	return TRUE;
 		
 } 
 
@@ -333,8 +330,8 @@ Calculate ray intersection hit test against a Object Orientated Box
 */
 static inline BOOL AF_Physics_OBB_RayIntersection(const Ray* _ray, const AF_CTransform3D* _worldTransform, const Vec3* _size, AF_Collision* _collision){
 
-	Vec4 orientation = {_worldTransform->rot.x, _worldTransform->rot.y, _worldTransform->rot.z, 1};
-	Vec3 postion = _worldTransform->pos;
+	//Vec4 orientation = {_worldTransform->rot.x, _worldTransform->rot.y, _worldTransform->rot.z, 1};
+	//Vec3 postion = _worldTransform->pos;
 	//TODO: implement correctly. p16 https://research.ncl.ac.uk/game/mastersdegree/gametechnologies/physicstutorials/1raycasting/Physics%20-%20Raycasting.pdf#page=5.08
 	/*
 	Matrix3 transform = Matrix3 ( orientation );
@@ -460,7 +457,7 @@ Calculate ray intersection hit test
 ====================
 */
 static inline BOOL AF_Physics_RayIntersection(const Ray* _ray, AF_Entity* _entity, AF_Collision* _collision){
-	const AF_CTransform3D* transform = _entity->transform;
+	//const AF_CTransform3D* transform = _entity->transform;
 	const AF_CCollider* collider = _entity->collider;
 	enum CollisionVolumeType type = collider->type;
 
@@ -507,7 +504,7 @@ AF_Physics_ImpulseResolveCollision
 Resolve collision between two rigidbodies
 ====================
 */
-static void AF_Physics_ResolveCollision(AF_Entity* _entityA, AF_Entity* _entityB, AF_Collision* _collision){
+static inline void AF_Physics_ResolveCollision(AF_Entity* _entityA, AF_Entity* _entityB, AF_Collision* _collision){
 	AF_C3DRigidbody* rigidbodyA = _entityA->rigidbody;
 	AF_C3DRigidbody* rigidbodyB = _entityB->rigidbody;
 
@@ -537,8 +534,8 @@ static void AF_Physics_ResolveCollision(AF_Entity* _entityA, AF_Entity* _entityB
 
 	//Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * entity1AdjMass * penetrationScale)));
 	//Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * entity2AdjMass * penetrationScale)));
-	Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * penetrationScale)));
-	Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * penetrationScale)));
+	//Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * penetrationScale)));
+	//Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * penetrationScale)));
 
 	//transformA->pos = adjustedPosition1;
 	//transformB->pos = adjustedPosition2;
@@ -648,8 +645,7 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 
 			AF_Entity* entity2 = &_ecs->entities[x];
 			AF_CCollider* collider2 = entity2->collider;
-			AF_CTransform3D* transform1 = entity1->transform;
-			AF_CTransform3D* transform2 = entity2->transform;
+		
 
 			Vec3* posA = &_ecs->transforms[i].pos;
 			Vec3* posB = &_ecs->transforms[x].pos;
@@ -658,8 +654,8 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 			//Vec3 halfSizeA = Vec3_DIV_SCALAR(collider1->boundingVolume, 2);
 			//Vec3 halfSizeB = Vec3_DIV_SCALAR(collider2->boundingVolume, 2);
 
-			Vec3 scaledHalfSizeA = Vec3_MULT(halfSizeA, transform1->scale);
-			Vec3 scaledHalfSizeB = Vec3_MULT(halfSizeB, transform2->scale);
+			//Vec3 scaledHalfSizeA = Vec3_MULT(halfSizeA, transform1->scale);
+			//Vec3 scaledHalfSizeB = Vec3_MULT(halfSizeB, transform2->scale);
 
 
 			Vec3 delta = Vec3_MINUS(*posA, *posB);
@@ -743,7 +739,7 @@ AF_Physics_NarrowPhase
 */
 
 /**/
-static void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider){
+static inline void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider){
 	if(_collider->type == AABB){
 		Vec3 boundingVolumeHalfDimensions = {_collider->boundingVolume.x/2.0f, _collider->boundingVolume.y/2.0f, _collider->boundingVolume.z/2.0f};
 		_collider->broadphaseAABB = boundingVolumeHalfDimensions;
@@ -787,7 +783,7 @@ static void AF_Physics_BroadPhase(AF_ECS* _ecs){
 */
 
 // Function to compare two CollisionInfo objects based on their hashes
-static bool AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_Collision* info2) {
+static inline BOOL AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_Collision* info2) {
     // Calculate hash for the first CollisionInfo
     size_t hash1 = (size_t)info1->entity1 + ((size_t)info1->entity2 << 8);
     // Calculate hash for the second CollisionInfo
@@ -800,13 +796,13 @@ static bool AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF
 
 
 // Function to handle narrow phase collision detection
-static void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t collisionCount, int numCollisionFrames) {
+static inline void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t collisionCount, int numCollisionFrames) {
     //AF_Collision allCollisions[1024]; // Example array to store all collisions
-    size_t allCollisionsCount = 0;       // Counter for all collisions
+    //size_t allCollisionsCount = 0;       // Counter for all collisions
 
     // Iterate through the broad phase collisions
-    for (size_t i = 0; i < collisionCount; ++i) {
-        AF_Collision info = broadPhaseCollisions[i];
+    //for (size_t i = 0; i < collisionCount; ++i) {
+        //AF_Collision info = broadPhaseCollisions[i];
 
         // Check if the objects intersect
 		// TODO: implement this
@@ -817,10 +813,10 @@ static void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t co
             ImpulseResolveCollision(info.entity1, info.entity2, info.collisionPoint); // Resolve collision
             allCollisions[allCollisionsCount++] = info; // Store collision info
         }*/
-    }
+    //}
 
     // Optionally, you can print or process allCollisions here
-    printf("Total collisions: %zu\n", allCollisionsCount);
+    //printf("Total collisions: %zu\n", allCollisionsCount);
 }
 
 
@@ -830,7 +826,7 @@ static void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t co
 //=================
 
 
-static void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
+static inline void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
 	// render debug collider
                 //draw all edges
                 //if(collider->type == Plane){
