@@ -15,12 +15,15 @@ and helper functions
 
 typedef struct AF_CText {
     PACKED_CHAR enabled;	    // 1 byte
+    BOOL isDirty;
+    BOOL isShowing;
     uint8_t fontID;
     const char* fontPath;
     const char* text;
     Vec2 screenPos;
     Vec2 textBounds;
     uint8_t textColor[4];
+    void* textData;
 } AF_CText;
 
 /*
@@ -32,11 +35,14 @@ Function used to create an empty text component
 static inline AF_CText AF_CText_ZERO(void){
     AF_CText returnMesh = {
 	.enabled = FALSE,
+    .isDirty = FALSE,
+    .isShowing = FALSE,
     .fontID = 0,
     .fontPath = NULL,
     .screenPos = {0,0},
     .text = NULL,
-    .textColor = {0,0,0,1}
+    .textColor = {0,0,0,1},
+    .textData = NULL
     };
     return returnMesh;
 }
@@ -54,11 +60,14 @@ static inline AF_CText AF_CText_ADD(void){
 
     AF_CText returnMesh = {
 	.enabled = component,
+    .isDirty = TRUE,
+    .isShowing = TRUE,
     .fontID = 0,
     .fontPath = NULL,
     .screenPos = {0,0},
     .text = NULL,
-    .textColor = {0,0,0,1}
+    .textColor = {0,0,0,1},
+    .textData = NULL
     };
     return returnMesh;
 }

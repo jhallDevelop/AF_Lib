@@ -18,11 +18,12 @@ typedef char PACKED_CHAR;	// 1 byte
 typedef uint16_t PACKED_UINT16;	// 2 bytes
 typedef uint32_t PACKED_UINT32;	// 4 bytes
 
+#define AF_FLOAT float
 #if USE_FIXED
-    #define AF_FLOAT int8_t //uint16_t
-    #define AF_EPSILON 1 << 10
+    //#define AF_FLOAT int8_t //uint16_t
+    //#define AF_EPSILON 1 << 10
 #else
-    #define AF_FLOAT float
+    //#define AF_FLOAT float
     #define AF_EPSILON 1e-6
 #endif				
 

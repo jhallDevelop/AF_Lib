@@ -6,8 +6,8 @@ Implimentation of helper functions for time
 Definition of the AF_Time struct
 ===============================================================================
 */
-#ifndef AF_TINE_H
-#define AF_TINE_H
+#ifndef AF_TIME_H
+#define AF_TIME_H
 #include <time.h>
 
 #ifdef __cplusplus

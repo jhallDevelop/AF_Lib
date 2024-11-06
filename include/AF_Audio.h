@@ -26,11 +26,13 @@ Definition for Audio update
 void AF_Audio_Update(AF_ECS* _ecs, const float _dt);
 
 
-
-static void AF_Audio_EarlyUpdate(AF_ECS* _ecs){
-	// clear the velocities
-	
-}
+/*
+====================
+AF_Audio_EarlyUpdate
+Definition for Audio early update
+====================
+*/
+void AF_Audio_EarlyUpdate(AF_ECS* _ecs);
 
 /*
 ====================

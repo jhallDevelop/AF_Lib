@@ -29,7 +29,7 @@ void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(void);
 //void AF_Renderer_Debug(void);
 uint32_t AF_LIB_InitRenderer(AF_Window* _window);
-
+uint32_t AF_LoadTexture(const char* _texturePath);
 
 
 void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);

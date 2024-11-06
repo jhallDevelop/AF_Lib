@@ -13,7 +13,7 @@ and helper functions
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define AF_INPUT_KEYS_MAPPED 5
+#define AF_INPUT_KEYS_MAPPED 10
 
 
 #define PRESSED_MASK 0x80  // Pressed bit mask (8th bit)
@@ -41,6 +41,12 @@ typedef struct {
     AF_Key keys[AF_INPUT_KEYS_MAPPED];
     AF_FLOAT stick_x;
     AF_FLOAT stick_y;
+    AF_FLOAT stick_x2;
+    AF_FLOAT stick_y2;
+    AF_FLOAT stick_x3;
+    AF_FLOAT stick_y3;
+    AF_FLOAT stick_x4;
+    AF_FLOAT stick_y4;
     // Mouse
     //int mouseDown;
     //float mouseX;
