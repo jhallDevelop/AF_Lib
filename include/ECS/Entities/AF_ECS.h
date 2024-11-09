@@ -10,6 +10,7 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 #ifndef AF_ECS_H
 #define AF_ECS_H
 #include <stdio.h>
+#include <assert.h>
 #include "AF_Entity.h"
 #include "ECS/Components/AF_Component.h"
 
@@ -57,6 +58,7 @@ Entities are all loaded into memory at the start using the compile time define A
 ====================
 */
 static inline void AF_ECS_Init(AF_ECS* _ecs){
+	assert(_ecs != NULL && "AF_ECS_Init: argument is null");
 	// Initialise all entities in the entity pool with default values
 	for(uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; i++){
 		AF_Entity* entity = &_ecs->entities[i];
@@ -133,10 +135,8 @@ All entities already exist in memory so this just enables it.
 ====================
 */
 static inline AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
-    if(_ecs->currentEntity >= _ecs->entitiesCount){
-	   printf("ECS: Ran out of entities !!!\n");
-	    return NULL;
-    }
+	assert(_ecs != NULL && "AF_ECS_CreateEntity: argument is null");
+	assert(_ecs->currentEntity <= _ecs->entitiesCount && "AF_ECS_CreateEntity: ECS: Ran out of entities !!!\n");
 
     // increment the entity count and return the reference to the next available entity
     _ecs->currentEntity++;

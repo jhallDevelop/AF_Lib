@@ -25,8 +25,8 @@ typedef struct {
 	uint32_t currentTick;
 	double timeSinceLastFrame;	// Time in ms since the last frame
 	double currentTime;		// Time captured by the system clock. 
-    	double lastTime;		// record of the previous time captured
-    	double cpuTimeElapsed;		// Time measured in cpu ticks since last frame
+    double lastTime;		// record of the previous time captured
+    double cpuTimeElapsed;		// Time measured in cpu ticks since last frame
 } AF_Time;
 
 /*

@@ -9,6 +9,7 @@ and helper functions
 #ifndef AF_INPUT_H
 #define AF_INPUT_H
 #include "AF_Lib_Define.h"
+#include "AF_Vec2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +19,7 @@ extern "C" {
 
 #define PRESSED_MASK 0x80  // Pressed bit mask (8th bit)
 #define KEYCODE_MASK 0x7F  // Keycode bit mask (lower 7 bits)
+#define CONTROLLER_COUNT 4
 
 /*
 ====================
@@ -30,6 +32,8 @@ typedef struct {
 	int pressed;
 } AF_Key;
 
+
+
 /*
 ====================
 AF_Input
@@ -38,21 +42,37 @@ Input struct to store the registered keys
 */
 typedef struct {
     // input buffer que
+    // TODO: make array for size CONTROLLER_COUNT
     AF_Key keys[AF_INPUT_KEYS_MAPPED];
-    AF_FLOAT stick_x;
-    AF_FLOAT stick_y;
-    AF_FLOAT stick_x2;
-    AF_FLOAT stick_y2;
-    AF_FLOAT stick_x3;
-    AF_FLOAT stick_y3;
-    AF_FLOAT stick_x4;
-    AF_FLOAT stick_y4;
+
+    Vec2 controlSticks[CONTROLLER_COUNT];
+
     // Mouse
     //int mouseDown;
     //float mouseX;
     //float mouseY;
 
 } AF_Input;
+
+/*
+====================
+AF_Input_ZERO
+Input struct Initialise to zero
+====================
+*/
+static inline AF_Input AF_Input_ZERO(void){
+    AF_Input input;
+    for(int i = 0; i < AF_INPUT_KEYS_MAPPED; ++i){
+        AF_Key key = {0,0};
+        input.keys[i] = key;
+    }
+    for(int i = 0; i < CONTROLLER_COUNT; ++i){
+        Vec2 controlStick = {0,0};
+        input.controlSticks[i] = controlStick;
+    }
+    return input;
+}
+
 
 /*
 ====================
