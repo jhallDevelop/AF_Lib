@@ -18,6 +18,18 @@ functions to load meshes, creating memory on the heap based on the size of the m
 extern "C" {
 #endif  
 
+// Inspired by Tiny3D fixed point matrix
+// 3D s16.16 fixed-point vector, used as-is by the RSP (n64)
+typedef struct {
+  int16_t i[4];
+  uint16_t f[4];
+} Vec4FP;
+
+// 4x4 Matrix of 16.16 fixed-point numbers, used as-is by the RSP (n64)
+typedef struct {
+  Vec4FP m[4];
+} __attribute__((aligned(16))) Mat4FP;
+
 enum AF_MESH_TYPE{
 	AF_MESH_TYPE_PLANE, 
 	AF_MESH_TYPE_CUBE,
@@ -40,7 +52,9 @@ typedef struct {
     AF_Material material;
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
+	uint8_t meshID;	// only fit 255 mesh types
 	BOOL isAnimating;
+	void* modelMatrix;
 } AF_CMesh;
 
 /*
@@ -50,6 +64,7 @@ Function used to create an empty mesh component
 ====================
 */
 static inline AF_CMesh AF_CMesh_ZERO(void){
+	
     AF_CMesh returnMesh = {
 	//.has = FALSE,
 	.enabled = FALSE,
@@ -63,8 +78,15 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.material = {0,0},
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
-	.isAnimating = FALSE
-    };
+	.meshID = 0,
+	.isAnimating = FALSE,
+	.modelMatrix = NULL/* (Mat4FP) {{
+		{{1, 0, 0, 0}, {0, 0, 0, 0}},  // Row 0: [1.0, 0, 0, 0]
+        {{0, 1, 0, 0}, {0, 0, 0, 0}},  // Row 1: [0, 1.0, 0, 0]
+        {{0, 0, 1, 0}, {0, 0, 0, 0}},  // Row 2: [0, 0, 1.0, 0]
+        {{0, 0, 0, 1}, {0, 0, 0, 0}}   // Row 3: [0, 0, 0, 1.0]
+	}}
+	*/};
     return returnMesh;
 }
 
@@ -92,8 +114,15 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.material = {0,0},
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
-	.isAnimating = FALSE
-    };
+	.meshID = 0,
+	.isAnimating = FALSE,
+	.modelMatrix = NULL/*(Mat4FP) {{
+		{{1, 0, 0, 0}, {0, 0, 0, 0}},  // Row 0: [1.0, 0, 0, 0]
+        {{0, 1, 0, 0}, {0, 0, 0, 0}},  // Row 1: [0, 1.0, 0, 0]
+        {{0, 0, 1, 0}, {0, 0, 0, 0}},  // Row 2: [0, 0, 1.0, 0]
+        {{0, 0, 0, 1}, {0, 0, 0, 0}}   // Row 3: [0, 0, 0, 1.0]
+	}}
+	*/};
     return returnMesh;
 }
 
