@@ -27,6 +27,7 @@ typedef struct  {
     int carryingEntity;
     float health;
     BOOL isAlive;
+	BOOL isAttacking;
 	int score;
 	
 } AF_CPlayerData;
@@ -47,6 +48,7 @@ static inline AF_CPlayerData AF_CPlayerData_ZERO(void){
         .carryingEntity = 0,
         .health = 0,
         .isAlive = FALSE,
+		.isAttacking = FALSE,
 		.score = 0
 		};
 	return returnComponent;
@@ -70,6 +72,7 @@ static inline AF_CPlayerData AF_CPlayerData_ADD(void){
         .carryingEntity = 0,
         .health = 100,
         .isAlive = TRUE,
+		.isAttacking = FALSE,
 		.score = 0
 	};
 	return returnComponent;

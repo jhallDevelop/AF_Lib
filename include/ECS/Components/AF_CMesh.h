@@ -37,6 +37,21 @@ enum AF_MESH_TYPE{
 	AF_MESH_TYPE_MESH
 };
 
+// Generic animation struct to hold platform specific animation data
+// Use with caution
+typedef struct AF_Animation{
+  BOOL has;
+  void* skeleton;
+  void* skeletonBlend;
+  // TODO: make this an array with defined indexs
+  void* idleAnimationData;
+  void* walkAnimationData;
+  void* attackAnimationData;
+  void* dieAnimationData;
+  float animationSpeed;
+  float animationBlend;
+} AF_Animation;
+
 // Mesh Struct
 typedef struct {
     //BOOL has;
@@ -55,6 +70,8 @@ typedef struct {
 	uint8_t meshID;	// only fit 255 mesh types
 	BOOL isAnimating;
 	void* modelMatrix;
+	void* displayListBuffer;
+	AF_Animation animation;
 } AF_CMesh;
 
 /*
@@ -64,7 +81,7 @@ Function used to create an empty mesh component
 ====================
 */
 static inline AF_CMesh AF_CMesh_ZERO(void){
-	
+	AF_Animation emptyAnimation = {FALSE, NULL, NULL, NULL, NULL, NULL, NULL, 0.0f, 0.0f};
     AF_CMesh returnMesh = {
 	//.has = FALSE,
 	.enabled = FALSE,
@@ -80,13 +97,10 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshID = 0,
 	.isAnimating = FALSE,
-	.modelMatrix = NULL/* (Mat4FP) {{
-		{{1, 0, 0, 0}, {0, 0, 0, 0}},  // Row 0: [1.0, 0, 0, 0]
-        {{0, 1, 0, 0}, {0, 0, 0, 0}},  // Row 1: [0, 1.0, 0, 0]
-        {{0, 0, 1, 0}, {0, 0, 0, 0}},  // Row 2: [0, 0, 1.0, 0]
-        {{0, 0, 0, 1}, {0, 0, 0, 0}}   // Row 3: [0, 0, 0, 1.0]
-	}}
-	*/};
+	.modelMatrix = NULL,
+	.displayListBuffer = NULL,
+	.animation = emptyAnimation
+	};
     return returnMesh;
 }
 
@@ -100,6 +114,7 @@ static inline AF_CMesh AF_CMesh_ADD(void){
     PACKED_CHAR component = TRUE;
     component = AF_Component_SetHas(component, TRUE);
     component = AF_Component_SetEnabled(component, TRUE);
+	AF_Animation emptyAnimation = {FALSE,NULL, NULL, NULL, NULL, NULL, NULL, 0.0f, 0.0f};
 
     AF_CMesh returnMesh = {
 	//.has = TRUE,
@@ -116,13 +131,10 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshID = 0,
 	.isAnimating = FALSE,
-	.modelMatrix = NULL/*(Mat4FP) {{
-		{{1, 0, 0, 0}, {0, 0, 0, 0}},  // Row 0: [1.0, 0, 0, 0]
-        {{0, 1, 0, 0}, {0, 0, 0, 0}},  // Row 1: [0, 1.0, 0, 0]
-        {{0, 0, 1, 0}, {0, 0, 0, 0}},  // Row 2: [0, 0, 1.0, 0]
-        {{0, 0, 0, 1}, {0, 0, 0, 0}}   // Row 3: [0, 0, 0, 1.0]
-	}}
-	*/};
+	.modelMatrix = NULL,
+	.displayListBuffer = NULL,
+	.animation = emptyAnimation
+	};
     return returnMesh;
 }
 
