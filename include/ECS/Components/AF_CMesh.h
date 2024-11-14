@@ -37,20 +37,31 @@ enum AF_MESH_TYPE{
 	AF_MESH_TYPE_MESH
 };
 
+enum AnimationType {
+  ANIMATION_TYPE_IDLE = 0,
+  ANIMATION_TYPE_WALK = 1, 
+  ANIMATION_TYPE_ATTACK = 2
+};
+
 // Generic animation struct to hold platform specific animation data
 // Use with caution
 typedef struct AF_Animation{
   BOOL has;
+  void* model; 
   void* skeleton;
   void* skeletonBlend;
+  const char* animIdlePath;
   // TODO: make this an array with defined indexs
   void* idleAnimationData;
+  const char* animWalkPath;
   void* walkAnimationData;
+  const char* animAttackPath;
   void* attackAnimationData;
-  void* dieAnimationData;
   float animationSpeed;
   float animationBlend;
+  enum AnimationType animationType;
 } AF_Animation;
+
 
 // Mesh Struct
 typedef struct {
@@ -81,7 +92,7 @@ Function used to create an empty mesh component
 ====================
 */
 static inline AF_CMesh AF_CMesh_ZERO(void){
-	AF_Animation emptyAnimation = {FALSE, NULL, NULL, NULL, NULL, NULL, NULL, 0.0f, 0.0f};
+	AF_Animation emptyAnimation = {FALSE, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL, 0.0f, 0.0f, ANIMATION_TYPE_IDLE};
     AF_CMesh returnMesh = {
 	//.has = FALSE,
 	.enabled = FALSE,
@@ -114,7 +125,7 @@ static inline AF_CMesh AF_CMesh_ADD(void){
     PACKED_CHAR component = TRUE;
     component = AF_Component_SetHas(component, TRUE);
     component = AF_Component_SetEnabled(component, TRUE);
-	AF_Animation emptyAnimation = {FALSE,NULL, NULL, NULL, NULL, NULL, NULL, 0.0f, 0.0f};
+	AF_Animation emptyAnimation = {FALSE, NULL, NULL, NULL, NULL, NULL, NULL, NULL,NULL, NULL, 0.0f, 0.0f, ANIMATION_TYPE_IDLE};
 
     AF_CMesh returnMesh = {
 	//.has = TRUE,
