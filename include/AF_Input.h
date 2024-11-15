@@ -29,7 +29,8 @@ Key struct to be used with input system
 */
 typedef struct {
 	char code;
-	int pressed;
+	unsigned pressed;
+    unsigned held;
 } AF_Key;
 
 
@@ -43,7 +44,7 @@ Input struct to store the registered keys
 typedef struct {
     // input buffer que
     // TODO: make array for size CONTROLLER_COUNT
-    AF_Key keys[AF_INPUT_KEYS_MAPPED];
+    AF_Key keys[CONTROLLER_COUNT][AF_INPUT_KEYS_MAPPED];
 
     Vec2 controlSticks[CONTROLLER_COUNT];
 
@@ -63,11 +64,14 @@ Input struct Initialise to zero
 static inline AF_Input AF_Input_ZERO(void){
     AF_Input input;
     for(int i = 0; i < AF_INPUT_KEYS_MAPPED; ++i){
-        AF_Key key = {0,0};
-        input.keys[i] = key;
+        AF_Key key = {0, 0, 0};
+        input.keys[0][i] = key; // Player 1
+        input.keys[1][i] = key; // Player 2
+        input.keys[2][i] = key; // Player 3
+        input.keys[3][i] = key; // Player 4
     }
     for(int i = 0; i < CONTROLLER_COUNT; ++i){
-        Vec2 controlStick = {0,0};
+        Vec2 controlStick = {0, 0};
         input.controlSticks[i] = controlStick;
     }
     return input;

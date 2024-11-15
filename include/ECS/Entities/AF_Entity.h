@@ -14,6 +14,7 @@ The entity struct and helper functions
 #include "ECS/Components/AF_CText.h"
 #include "ECS/Components/AF_CAudioSource.h"
 #include "ECS/Components/AF_CPlayerData.h"
+#include "ECS/Components/AF_CSkeletalAnimation.h"
 // Components
 #ifdef PLATFORM_GB
 #include "ECS/Components/AF_CTransform2D.h"
@@ -66,6 +67,7 @@ typedef struct {
     AF_CText* text;
     AF_CAudioSource* audioSource;
     AF_CPlayerData* playerData;
+    AF_CSkeletalAnimation* skeletalAnimation;
         #endif
 } AF_Entity;
 
