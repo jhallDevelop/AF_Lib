@@ -29,8 +29,8 @@ Key struct to be used with input system
 */
 typedef struct {
 	char code;
-	int pressed;
-    int held;
+	unsigned pressed;
+    unsigned held;
 } AF_Key;
 
 

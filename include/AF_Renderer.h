@@ -28,7 +28,7 @@ void AF_Renderer_LateStart(AF_ECS* _ecs);
 void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
 void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(AF_ECS* _ecs);
-void AF_Renderer_PlayAnimation(AF_Animation* _animation);
+void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 //void AF_Renderer_Debug(void);
 uint32_t AF_LIB_InitRenderer(AF_Window* _window);
 uint32_t AF_LoadTexture(const char* _texturePath);
