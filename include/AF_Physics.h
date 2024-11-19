@@ -113,7 +113,13 @@ Apply force to rigidbody object
 ====================
 */
 static inline void AF_Physics_ApplyLinearImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
-	Vec3 linearForce = Vec3_MULT_SCALAR(_force, _rigidbody->inverseMass);
+	Vec3 linearForce;
+	if(_rigidbody->inverseMass > 0){
+		linearForce = Vec3_MULT_SCALAR(_force, _rigidbody->inverseMass);
+	}else{
+		linearForce = _force;
+	}
+	 
 	_rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, linearForce);
 }
 
