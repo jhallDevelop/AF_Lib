@@ -15,12 +15,12 @@ The entity struct and helper functions
 #include "ECS/Components/AF_CAudioSource.h"
 #include "ECS/Components/AF_CPlayerData.h"
 #include "ECS/Components/AF_CSkeletalAnimation.h"
+#include "ECS/Components/AF_CAI_Behaviour.h"
+
 // Components
 #ifdef PLATFORM_GB
 #include "ECS/Components/AF_CTransform2D.h"
 #include "ECS/Components/AF_C2DRigidbody.h"
-
-
 
 #else
 #include "ECS/Components/AF_C3DRigidbody.h"
@@ -68,8 +68,15 @@ typedef struct {
     AF_CAudioSource* audioSource;
     AF_CPlayerData* playerData;
     AF_CSkeletalAnimation* skeletalAnimation;
+    AF_CAI_Behaviour* aiBehaviour;
         #endif
 } AF_Entity;
+
+// Little helper struct that can be use
+typedef struct AF_EntityPair {
+    AF_Entity* entity1;
+    AF_Entity* entity2;
+} EntityPair;
 
 static inline PACKED_UINT32 AF_ECS_GetTag(PACKED_UINT32 _id_tag){
 	// Unpacking the packed uint32_t

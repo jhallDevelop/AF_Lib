@@ -724,7 +724,10 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 
 					//AF_C3DRigidbody* rigidbody1 = &_ecs->rigidbodies[i];
 					//AF_C3DRigidbody* rigidbody2 = &_ecs->rigidbodies[x];
-
+					// don't apply force for kinematic objects
+					if(_ecs->entities[i].rigidbody->isKinematic){
+						continue;
+					}
 					AF_Physics_ResolveCollision(entity1, entity2, &collision1);
 			}
 		}

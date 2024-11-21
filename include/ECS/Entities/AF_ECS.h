@@ -48,6 +48,7 @@ typedef struct {
 	AF_CAudioSource audioSources[AF_ECS_TOTAL_ENTITIES];
 	AF_CPlayerData playerDatas[AF_ECS_TOTAL_ENTITIES];
 	AF_CSkeletalAnimation skeletalAnimations[AF_ECS_TOTAL_ENTITIES];
+	AF_CAI_Behaviour aiBehaviours[AF_ECS_TOTAL_ENTITIES];
         #endif
 } AF_ECS;
 
@@ -123,6 +124,10 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		// skeletal animations
 		_ecs->skeletalAnimations[i] = AF_CSkeletalAnimation_ZERO();
 		entity->skeletalAnimation = &_ecs->skeletalAnimations[i];
+
+		// ai Behaviours
+		_ecs->aiBehaviours[i] = AF_CAI_Behaviour_ZERO();
+		entity->aiBehaviour = &_ecs->aiBehaviours[i];
 		
 		// Camera Component
 		entity->camera = NULL;//AF_CCamera_ZERO();
