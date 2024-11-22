@@ -89,6 +89,9 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 
 		#else
 		// Transform Component
+		entity->parentTransform = NULL;
+		
+		// Transform Component
 		_ecs->transforms[i] = AF_CTransform3D_ZERO();
 		entity->transform = &_ecs->transforms[i];
 		

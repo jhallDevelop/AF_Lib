@@ -32,8 +32,11 @@ typedef struct {
     //BOOL has;// = FALSE;
     //BOOL enabled;// = FALSE;
     Vec3 pos;// = {0.0f, 0.0f, 0.0f};
+    Vec3 localPos;
     Vec3 rot;// = {0.0f, 0.0f, 0.0f};
+    Vec3 localRot;
     Vec3 scale;// = {1.0f, 1.0f, 1.0f};
+    Vec3 localScale;
     Vec4 orientation;   // rotation represented as a quaternion
 } AF_CTransform3D;
 
@@ -48,8 +51,11 @@ static inline AF_CTransform3D AF_CTransform3D_ZERO(void){
         //.has = FALSE,
         .enabled = FALSE,
         .pos = {0, 0, 0},
+        .localPos = {0, 0, 0},
         .rot = {0, 0, 0},
+        .localRot = {0, 0, 0},
         .scale = {1, 1, 1},
+        .localScale = {1, 1, 1},
         .orientation = {0,0,0,0}
 	// Default position matrix
     };
@@ -67,8 +73,11 @@ static inline AF_CTransform3D AF_CTransform3D_ADD(void){
         //.has = TRUE,
         .enabled = TRUE,
         .pos = {0, 0, 0},
+        .localPos = {0, 0, 0},
         .rot = {0, 0, 0},
+        .localRot = {0, 0, 0},
         .scale = {1, 1, 1},
+        .localScale = {1, 1, 1},
         .orientation = {0,0,0,0}
 	// Default position matrix
     };

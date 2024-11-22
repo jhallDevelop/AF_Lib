@@ -57,6 +57,7 @@ typedef struct {
     AF_CCollider* collider;	// Collider component
 
     #else
+    AF_CTransform3D* parentTransform;
     AF_CTransform3D* transform;	// 3d transform component
     AF_CSprite* sprite;		// sprite cmponent
     AF_C3DRigidbody* rigidbody; // 3d rigidbody
