@@ -29,13 +29,18 @@ typedef struct {
 	AF_FLOAT currentFrameTime;
 	AF_FLOAT nextFrameTime;     // 4 bytes
 	AF_FLOAT animationSpeed;    // 4 bytes
-	Vec2 pos;		    // 8 bytes
-	Vec2 size;		    // 8 bytes
+	Vec2 spritePos;		    // 8 bytes
+	Vec2 spriteSize;    	// size of sprite in pixels
+	Vec2 spriteScale;		// transform scale
+	float spriteRotation;	// rotation
+	BOOL flipX;
+	BOOL flipY;
 	Vec2 spriteSheetSize;    // 8 bytes
 	uint8_t spriteColor[4];
 	const char* spritePath;
 	void* spriteData; // special ptr for sprite data to be cast when known
 	BOOL isPlaying;
+	BOOL filtering;
 	
 } AF_CSprite;
 
@@ -55,13 +60,18 @@ static inline AF_CSprite AF_CSprite_ZERO(void){
 		.currentFrameTime = 0,
 		.nextFrameTime = 0,
 		.animationSpeed = 0,
-		.pos = {0, 0},
-		.size = {0, 0},
+		.spritePos = {0, 0},
+		.spriteSize = {0, 0},
+		.spriteScale = {0,0},
+		.spriteRotation = 0.0f,
+		.flipX = FALSE,
+		.flipY = FALSE,
 		.spriteSheetSize = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
 		.spritePath = NULL,
 		.spriteData = NULL,
-		.isPlaying = FALSE
+		.isPlaying = FALSE,
+		.filtering = FALSE
 		};
 	return returnSprite;
 }
@@ -85,13 +95,18 @@ static inline AF_CSprite AF_CSprite_ADD(void){
 		.currentFrameTime = 0,
 		.nextFrameTime = 0,
 		.animationSpeed = 0,
-		.pos = {0, 0},
-		.size = {0, 0},
+		.spritePos = {0, 0},
+		.spriteSize = {0, 0},
+		.spriteScale = {0,0},
+		.spriteRotation = 0.0f,
+		.flipX = FALSE,
+		.flipY = FALSE,
 		.spriteSheetSize = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
 		.spritePath = NULL,
 		.spriteData = NULL,
-		.isPlaying = FALSE
+		.isPlaying = FALSE, 
+		.filtering = FALSE
 	};
 	return returnSprite;
 }
