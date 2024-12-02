@@ -12,6 +12,15 @@ and helper functions
 #ifdef __cplusplus
 extern "C" {    
 #endif
+
+enum PLAYER_FACTION {
+	DEFAULT = 0,
+	PLAYER = 1,
+	ENEMY1 = 2,
+	ENEMY2 = 3,
+	ENEMY3 = 4,
+	ENEMY4 = 5
+};
 /*
 ====================
 AF_CSprite
@@ -33,6 +42,9 @@ typedef struct  {
 	float movementSpeed;
 	int score;
 	Vec3 startPosition;
+	Vec3 targetDestination;
+	float spawnTime;
+	enum PLAYER_FACTION faction;
 	
 } AF_CPlayerData;
 
@@ -58,7 +70,10 @@ static inline AF_CPlayerData AF_CPlayerData_ZERO(void){
 		.isJumping = FALSE,
 		.score = 0,
 		.movementSpeed = 0,
-		.startPosition = startPosition
+		.startPosition = startPosition,
+		.targetDestination = startPosition,
+		.spawnTime = 0.0f,
+		.faction = 0
 		};
 	return returnComponent;
 }
@@ -87,7 +102,10 @@ static inline AF_CPlayerData AF_CPlayerData_ADD(void){
 		.isJumping = FALSE,
 		.score = 0,
 		.movementSpeed = 1.0f,
-		.startPosition = startPosition
+		.startPosition = startPosition,
+		.targetDestination = startPosition,
+		.spawnTime = 0.0f,
+		.faction = 0
 	};
 	return returnComponent;
 }

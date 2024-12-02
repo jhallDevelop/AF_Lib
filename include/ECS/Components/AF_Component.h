@@ -39,7 +39,7 @@ Function to set the enabled value
 */
 static inline PACKED_CHAR AF_Component_SetEnabled(PACKED_CHAR _component, BOOL _enabledFlag){
 	if(_enabledFlag== TRUE){ 
-		// Set the bit if the key is pressed
+		// Set the bit if the enabled frag is TRUE
 		return _component |= FLAG_ENABLED;
 	}
 	else{
