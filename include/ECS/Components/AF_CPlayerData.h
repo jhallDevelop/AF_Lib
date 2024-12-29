@@ -73,7 +73,7 @@ static inline AF_CPlayerData AF_CPlayerData_ZERO(void){
 		.startPosition = startPosition,
 		.targetDestination = startPosition,
 		.spawnTime = 0.0f,
-		.faction = 0
+		.faction = DEFAULT
 		};
 	return returnComponent;
 }
@@ -105,7 +105,7 @@ static inline AF_CPlayerData AF_CPlayerData_ADD(void){
 		.startPosition = startPosition,
 		.targetDestination = startPosition,
 		.spawnTime = 0.0f,
-		.faction = 0
+		.faction = DEFAULT
 	};
 	return returnComponent;
 }
