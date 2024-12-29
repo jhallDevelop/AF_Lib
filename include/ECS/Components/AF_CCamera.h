@@ -26,8 +26,7 @@ Camera struct
 */
 typedef struct  {
     // TODO pack this
-    BOOL has;
-    BOOL enabled;
+	PACKED_CHAR enabled;
     Vec3 cameraFront;
     Vec3 cameraUp;
     Vec3 cameraRight;
@@ -55,8 +54,11 @@ Initialisation constructor function
 ====================
 */
 inline static AF_CCamera AF_CCamera_ZERO(void){
-	
+	PACKED_CHAR component = FALSE;
+	component = AF_Component_SetHas(component, FALSE);
+	component = AF_Component_SetEnabled(component, FALSE);
 	AF_CCamera returnCamera = {
+		.enabled = component,
 		.cameraFront = {0,0,0},
 		.cameraUp = {0,0,0},
 		.cameraRight = {0,0,0},
@@ -97,7 +99,11 @@ Initialise with enable and has set to true
 */
 inline static AF_CCamera AF_CCamera_ADD(BOOL _isOrthographic){
 		
+	PACKED_CHAR component = FALSE;
+	component = AF_Component_SetHas(component, TRUE);
+	component = AF_Component_SetEnabled(component, TRUE);
 	AF_CCamera returnCamera = {
+		.enabled = component,
 		.cameraFront = {0, 0, -1},
 		.cameraUp = {0, 1, 0},
 		.cameraRight =  {0,0,0},
