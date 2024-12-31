@@ -4,10 +4,11 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#define MAX_FILELIST_BUFFER_SIZE 1024
+#define MAX_FILELIST_BUFFER_SIZE 2048
 typedef struct AF_FileList {
     char stringBuffer[MAX_FILELIST_BUFFER_SIZE];
     uint32_t numberOfFiles;
+    BOOL isSorted;
 } AF_FileList;
 /*
 ================================
@@ -28,8 +29,11 @@ inline static FILE* AF_File_OpenFile(const char* _path, const char* _writeComman
         printf("AF_File_OpenFile: FAILED: to open file %s\n", _path);
         return 0;
     } 
+    if (ferror(f)) {
+        printf("AF_File_OpenFile: Error while opening \n");
+		return 0;
+    }
 
-    printf("AF_File_OpenFile: %s \n", _path );
     return f;
 }
 
@@ -42,7 +46,7 @@ Print to console the buffer contents
 ================================
 */
 inline static void AF_File_PrintTextBuffer(FILE* _filePtr){
-    printf("==== PrintTextBuffer ====\n");
+    //printf("==== PrintTextBuffer ====\n");
     if(_filePtr == NULL){
         printf("AF_File_PrintTextBuffer: FAILED to print buffer. _charBuffer is NULL\n");
         return;
@@ -70,9 +74,9 @@ inline static void AF_File_PrintTextBuffer(FILE* _filePtr){
         }
     }
     if (ferror(_filePtr)) {
-        printf("Error while reading \n");
+        printf("AF_File_PrintTextBuffer: Error while reading \n");
     }
-    printf("==== ==== ==== ====\n");
+    
 }
 
 
@@ -86,7 +90,7 @@ Return the pointer to the char buffer
 ================================
 */
 inline static void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize){
-    printf("==== Write data to binary ====\n");
+    //printf("==== Write data to binary ====\n");
     if(_filePtr == NULL){
         printf("AF_File_WriteFile: FAILED to open file. _filePtr is NULL\n");
         return;
@@ -97,9 +101,13 @@ inline static void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSiz
     if (num_written != 1) {
         printf("AF_File_WriteFile: Error writing to file");
     }
+    if (ferror(_filePtr)) {
+        printf("AF_File_WriteFile: Error while writing \n");
+		return;
+    }
     fclose(_filePtr);
     if (ferror(_filePtr)) {
-        printf("Error while closing \n");
+        printf("AF_File_WriteFile: Error while closing \n");
     }
 }
 
@@ -117,14 +125,70 @@ inline static void AF_File_CloseFile(FILE* _filePtr){
         printf("AF_File_CloseFile: FAILED to close buffer. _charBuffer is NULL\n");
         return;
     }
-    printf("AF_File_CloseFile: %p \n", _filePtr );
+    
     fclose(_filePtr);
     if (ferror(_filePtr)) {
-        printf("Error while closing \n");
+        printf("AF_File_CloseFile: Error while closing \n");
     }
     _filePtr = NULL;
     
 }
+
+/*
+================================
+AF_File_CompareItemsByValue
+
+================================
+*/
+static int AF_File_CompareItemsByValue(const void* lhs, const void* rhs) {
+    const char* a = *(const char**)lhs; // Cast to char**
+    const char* b = *(const char**)rhs; // Cast to char**
+    return strcmp(a, b);                // Use strcmp for alphabetical comparison
+}
+
+/*
+================================
+AF_File_OrderAlphabetically
+Take in list of files, and return the list ordered alphabetically 
+================================
+*/
+inline static void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
+
+    if (_fileList->numberOfFiles < 2) {
+        _fileList->isSorted = TRUE;
+        return;
+    }
+
+    char tempBuffer[MAX_FILELIST_BUFFER_SIZE];
+    strncpy(tempBuffer, _fileList->stringBuffer, MAX_FILELIST_BUFFER_SIZE);
+    tempBuffer[MAX_FILELIST_BUFFER_SIZE - 1] = '\0';
+
+    char* filePointers[MAX_FILELIST_BUFFER_SIZE] = {0};
+    uint32_t fileCount = 0;
+
+    char* token = strtok(tempBuffer, ",");
+    while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
+        filePointers[fileCount++] = token;
+        token = strtok(NULL, ",");
+    }
+    qsort(filePointers, fileCount, sizeof(char*), AF_File_CompareItemsByValue);
+
+
+    size_t bufferPosition = 0;
+    for (uint32_t i = 0; i < fileCount; i++) {
+        size_t nameLength = strlen(filePointers[i]);
+        snprintf(_fileList->stringBuffer + bufferPosition, MAX_FILELIST_BUFFER_SIZE - bufferPosition, "%s,", filePointers[i]);
+        bufferPosition += nameLength + 1;
+    }
+
+    if (bufferPosition > 0) {
+        _fileList->stringBuffer[bufferPosition - 1] = '\0';
+    }
+
+}
+
+
+
 
 /*
 ================================
@@ -135,7 +199,7 @@ Return a char list of files in the path
 ================================
 */
 
-inline static void AF_File_ListFiles(const char *path, AF_FileList* _fileList)
+inline static void AF_File_ListFiles(const char *path, AF_FileList* _fileList, BOOL _isAlphabetical)
 {
     struct dirent *dp;
     DIR *dir = opendir(path);
@@ -147,7 +211,8 @@ inline static void AF_File_ListFiles(const char *path, AF_FileList* _fileList)
     // Initialize buffer and file count
 
     size_t bufferPosition = 0;
-
+    // reset the number of files
+    _fileList->numberOfFiles = 0;
     while ((dp = readdir(dir)) != NULL)
     {
          // Skip . and ..
@@ -158,7 +223,7 @@ inline static void AF_File_ListFiles(const char *path, AF_FileList* _fileList)
 
         // Ensure there is space for the file name and a separating character
         if (bufferPosition + nameLength + 2 > MAX_FILELIST_BUFFER_SIZE) {
-            printf("Buffer overflow. Stopping file accumulation.\n");
+            printf("Buffer overflow. Stopping file accumulation.\n"); 
             break;
         }
 
@@ -171,6 +236,10 @@ inline static void AF_File_ListFiles(const char *path, AF_FileList* _fileList)
 
     // Close directory stream
     closedir(dir);
+    if(_isAlphabetical == TRUE){
+        AF_File_OrderAlphabetically(_fileList);
+    }
+    
 }
 
 

@@ -222,17 +222,19 @@ static inline void AF_ECS_LoadECSFromBinary(FILE* _filePtr, AF_ECS* _ecs){
 	// Start creating the entity
 	// Start enabling/setting the components
 
-	printf("==== Load ECS from binary file ====\n");
+	//printf("==== Load ECS from binary file ====\n");
     if(_filePtr == NULL){
         printf("AF_File_PrintTextBuffer: FAILED to print buffer. _charBuffer is NULL\n");
         return;
     }
 	fread(_ecs, sizeof(AF_ECS), 1, _filePtr); // Read the struct
+	if (ferror(_filePtr)) {
+        printf("AF_ECS_LoadECSFromBinary: Error while reading \n");
+		return;
+    }
 	// resync the pointers so we don't get null reference
 	AF_ECS_ReSyncComponents(_ecs);
-    if (ferror(_filePtr)) {
-        printf("Error while reading \n");
-    }
+    
 }
 
 
