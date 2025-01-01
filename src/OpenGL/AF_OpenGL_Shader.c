@@ -51,8 +51,8 @@ Load a glsl shader from the fragement and vertex shader path
 REturn the shader ID or return -1 if failed
 ====================
 */
-int AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShaderPath){
-    int returnShaderID = -1;
+uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShaderPath){
+    uint32_t returnShaderID = 9999;
     // Check if shader paths are empty
     if(AF_STRING_IS_EMPTY(_vertexShaderPath) || AF_STRING_IS_EMPTY(_fragmentShaderPath)){
         AF_Log_Error("AF_Shader: vertex or fragment shader path is empty\n");
@@ -120,7 +120,7 @@ int AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShaderPat
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 
-    if(returnShaderID == -1){
+    if(returnShaderID == 9999){
         AF_Log_Error("AF_Shader: Loading shader failed, returned shader ID is -1\n");
     }
 

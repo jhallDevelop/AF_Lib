@@ -7,6 +7,7 @@ This implementation is for OpenGL
 ===============================================================================
 */
 #include <stdio.h>
+#include "AF_Lib_Define.h"
 #include "AF_Renderer.h"
 #include "AF_Debug.h"
 #include "ECS/Components/AF_Component.h"
@@ -88,7 +89,7 @@ AF_Log_Mat4
 Take a AF_Mat 4 and log it to the console.
 ====================
 */
-void AF_Log_Mat4(AF_Mat4 _mat4){
+void AF_Log_Mat4(Mat4 _mat4){
 	AF_Log("		Row 1: %f %f %f %f\n\
 		Row 2: %f %f %f %f\n\
 		Row 3: %f %f %f %f\n\
@@ -122,7 +123,7 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    stbi_set_flip_vertically_on_load(true);  
+    stbi_set_flip_vertically_on_load(TRUE);  
 
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
@@ -165,7 +166,7 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
     return textureID;
 }
 
-void AF_Renderer_SetTexture(const unsigned int _shaderID, const char* _shaderVarName, int _textureID){
+void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
     glUseProgram(_shaderID); // Bind the shader program
     glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
     glUseProgram(0);
@@ -177,8 +178,8 @@ AF_LIB_InitRenderer
 Init OpenGL
 ====================
 */
-int AF_LIB_InitRenderer(AF_Window* _window){
-    int success = 1;
+uint32_t AF_LIB_InitRenderer(AF_Window* _window){
+    uint32_t success = 1;
     AF_Log("%s Initialized %s\n", openglRendererFileTitle, _window->title);
     //Initialize GLEW
     glewExperimental = GL_TRUE; 
@@ -231,7 +232,7 @@ void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
     }
 
     for(uint32_t i = 0; i < _entityCount; i++){
-	    AF_Mesh* mesh = _entities[i].mesh;
+	    AF_CMesh* mesh = _entities[i].mesh;
 
 	    
 	    BOOL hasMesh = AF_Component_GetHas(mesh->enabled);
@@ -308,7 +309,7 @@ AF_LIB_DisplayRenderer
 Display the renderer
 ====================
 */
-void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, int shaderID){
+void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID){
 
     AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
     AF_CTransform3D* cameraTransform = _cameraEntity->transform;
@@ -332,20 +333,22 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
    
     // update camera vectors
     //TODO: put in switch if using mouse look to calculate front based on yaw and pitch
-    AF_Vec3 front = _camera->cameraFront;//AF_Camera_CalculateFront(yaw, pitch);
+    Vec3 front = _camera->cameraFront;//AF_Camera_CalculateFront(yaw, pitch);
 
     // calculate Right
-    AF_Vec3 right = AFV3_NORMALIZE(AFV3_CROSS(front, _camera->cameraWorldUp));
+    Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(front, _camera->cameraWorldUp));
 	
     // calculate up
-    AF_Vec3 up = AFV3_NORMALIZE(AFV3_CROSS(right, front));
+    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(right, front));
 	
     // Calculate view matrix:vs
-    AF_Mat4 viewMatrix = AF_Math_Lookat(cameraTransform->pos, AFV3_ADD(cameraTransform->pos,front), up);
+    Mat4 viewMatrix = Mat4_Lookat(cameraTransform->pos, Vec3_ADD(cameraTransform->pos,front), up);
     _camera->viewMatrix = viewMatrix;
 
     // Calculate projection matrix
-    _camera->projectionMatrix = AF_Camera_GetOrthographicProjectionMatrix(_window, _camera);
+	// TODO: disbaled setting projection matrix
+	printf("DAF_LibDisplayRenderer: disabled setting project matrix\n");
+    //_camera->projectionMatrix = AF_Camera_GetOrthographicProjectionMatrix(_window, _camera);
     
 
     // Set the winding order to clockwise
@@ -387,7 +390,7 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
 		continue;
 	}
 
-	AF_Mesh* mesh = entity->mesh;
+	AF_CMesh* mesh = entity->mesh;
 
 	BOOL meshHas = AF_Component_GetHas(mesh->enabled);
 	BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
@@ -408,25 +411,26 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
 	int modelLocation = glGetUniformLocation(shaderID, "model");
     
 		
-	AF_Vec3* pos = &trans->pos;
-	AF_Vec3* rot = &trans->rot;
-	AF_Vec3* scale = &trans->scale;
+	Vec3* pos = &trans->pos;
+	Vec3* rot = &trans->rot;
+	Vec3* scale = &trans->scale;
 
 	// convert to vec4 for model matrix
-	AF_Vec4 modelPos = {pos->x, pos->y, pos->z, 1.0f};
-	AF_Vec4 modelRot = {rot->x, rot->y, rot->z, 1.0f};
-	AF_Vec4 modelScale = {scale->x, scale->y, scale->z, 1.0f};
+	Vec4 modelPos = {pos->x, pos->y, pos->z, 1.0f};
+	Vec4 modelRot = {rot->x, rot->y, rot->z, 1.0f};
+	Vec4 modelScale = {scale->x, scale->y, scale->z, 1.0f};
 
 	// apply rotation to postion and scaled matrix
-	AF_Mat4 rotatedMatrix = AFM4_ROTATE_V4(AFM4_IDENTITY(), modelRot);//AFM4_DOT_M4( rotatedMatrix, scaleMatrix);
+	//TODO: set the angle correctly
+	Mat4 rotatedMatrix = Mat4_ROTATE_V4(Mat4_IDENTITY(), modelRot, 1.0f);//AFM4_DOT_M4( rotatedMatrix, scaleMatrix);
 	// Apply scale
-	AF_Mat4 scaleMatrix = AFM4_SCALE_V4(AFM4_IDENTITY(), modelScale); 
+	Mat4 scaleMatrix = Mat4_SCALE_V4(Mat4_IDENTITY(), modelScale); 
 
 	// apply rotation to postion and scaled matrix
-	AF_Mat4 rsMat = AFM4_DOT_M4(rotatedMatrix, scaleMatrix);
+	Mat4 rsMat = Mat4_DOT_M4(rotatedMatrix, scaleMatrix);
 	
 	// Construct the final model matrix with translation using row-major order
-	AF_Mat4 modelMatrix = {{
+	Mat4 modelMatrix = {{
 	    {rsMat.rows[0].x, rsMat.rows[0].y, rsMat.rows[0].z, modelPos.x},
 	    {rsMat.rows[1].x, rsMat.rows[1].y, rsMat.rows[1].z, modelPos.y},
 	    {rsMat.rows[2].x, rsMat.rows[2].y, rsMat.rows[2].z, modelPos.z},
@@ -444,8 +448,8 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
 	BOOL enabledSprite = AF_Component_GetEnabled(sprite->enabled);
 
 	 GLfloat spriteSize[2] = {
-			sprite->size.x, /// sprite->spriteSheetSize.x, 
-			sprite->size.y// / sprite->spriteSheetSize.y
+			sprite->spriteSize.x, /// sprite->spriteSheetSize.x, 
+			sprite->spriteSize.y// / sprite->spriteSheetSize.y
 			};
 
 	if(hasSprite == TRUE && enabledSprite == TRUE){
@@ -475,8 +479,8 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
 		BOOL enabledAnimation = AF_Component_GetEnabled(animation->enabled);
 		// setup a vec2 to update the sprite position		
 		GLfloat spritePos[2] = {
-			sprite->pos.x,
-			sprite->pos.y
+			sprite->spritePos.x,
+			sprite->spritePos.y
 			};
 		
 		// if we have animation component, then update the spritePosition 
