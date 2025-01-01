@@ -1,62 +1,94 @@
 {
-    "configurations": [
+  "version": "2.0.0",
+  "configurations": [
+    {
+      "name": "BUILD_RUN_OSX",
+      "type": "cppdbg",
+      "request": "launch",
+
+      // The compiled binary to launch. The variable below assumes your build
+      // output is in "bin" directory, named after the current workspace folder.
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+
+      // Any command-line arguments to pass to the program:
+      "args": [],
+
+      // Working directory for the debugged program
+      "cwd": "${workspaceFolder}/bin",
+
+      // Whether to stop immediately on entry:
+      "stopAtEntry": false,
+
+      // Debug console usage:
+      "externalConsole": false,
+      "console": "integratedTerminal",
+
+      // Tells the extension which debugger to use. "lldb" is common on macOS,
+      // but "gdb" can be used if installed. If you switch to "gdb", ensure
+      // it's installed and in PATH, or specify "miDebuggerPath" if needed.
+      "MIMode": "lldb",
+
+      // If you want to specify a particular debugger path, uncomment & set:
+      /*
+      "miDebuggerPath": "/usr/bin/lldb",
+      "logging": {
+          "engineLogging": true,
+          "trace": true
+      },
+      */
+
+      // Additional commands to run in the debugger upon startup:
+      "setupCommands": [
         {
-        "name": "BUILD_RUN_OSX",                                           
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",                             
-        "args": [],
-        "stopAtEntry": false,
-        "cwd": "${workspaceFolder}/bin",
-        "environment": [],
-        "externalConsole": false,
-        "console": "integratedTerminal",  // Use integrated terminal for console
-        "MIMode": "lldb",//"gdb"
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            },
-            {
-                "description": "Set Disassembly Flavor to Intel",
-                "text": "-gdb-set disassembly-flavor intel",
-                "ignoreFailures": true
-            }
-        ],
-        // Task to run before launching the program
-        "preLaunchTask": "Build_OSX"    
-        
+          "description": "Enable pretty-printing for gdb/lldb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set disassembly flavor to Intel syntax (if using gdb)",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ],
+
+      // A build task that runs before launching the debugger:
+      "preLaunchTask": "Build_OSX",
+
+      // Optional environment variable array:
+      "environment": []
     },
     {
-        "name": "RUN_OSX",                                           
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",                             
-        "args": [],
-        "stopAtEntry": false,
-        "cwd": "${workspaceFolder}/bin",
-        "environment": [],
-        "externalConsole": false,
-        "console": "integratedTerminal",  // Use integrated terminal for console
-        //"MIMode": "lldb",//"gdb"
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            },
-            {
-                "description": "Set Disassembly Flavor to Intel",
-                "text": "-gdb-set disassembly-flavor intel",
-                "ignoreFailures": true
-            }
-        ],
-        // Task to run before launching the program
-        "preLaunchTask": ""    
-        
+      "name": "RUN_OSX",
+      "type": "cppdbg",
+      "request": "launch",
+
+      // If you only want to run an already-built binary, skip the build task
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+      "args": [],
+      "cwd": "${workspaceFolder}/bin",
+      "stopAtEntry": false,
+
+      "externalConsole": false,
+      "console": "integratedTerminal",
+      // "MIMode": "lldb", // if you want to unify debugger usage, uncomment
+
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb/lldb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set disassembly flavor to Intel syntax (if using gdb)",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ],
+
+      // No build task for this variant, so we leave it empty:
+      "preLaunchTask": "",
+
+      "environment": []
     }
-],
-// Variable to hold the project name
-"version": "2.0.0"
+  ]
 }
