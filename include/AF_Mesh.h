@@ -102,6 +102,7 @@ DOES NOT load the actual verticies or indices or create new memory on the heap.
 ====================
 */
 static inline AF_CMesh AF_Mesh_GetOBJAttribSize(void* _filePtr){
+    
 	AF_CMesh mesh = {
 		//.has = FALSE,
 		.enabled = FALSE,
@@ -112,7 +113,7 @@ static inline AF_CMesh AF_Mesh_GetOBJAttribSize(void* _filePtr){
 		.vao = 0,
 		.vbo = 0,
 		.ibo = 0,
-		.material = {0,0},
+		.material = {0,0,{0,0,0,0}},
 		.showDebug = FALSE
 	    };
 
@@ -204,7 +205,7 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
 	.vao = 0,
 	.vbo = 0,
 	.ibo = 0,
-	.material = {0,0},
+	.material = {0,0,{0,0,0,0}},
 	.showDebug = FALSE
     };
 
@@ -226,17 +227,21 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
 
     // Create a new AF_Struct, that holds the pointers to the heap allocated verticies and indices data
     AF_CMesh loadedMesh = {
-	    		//0,
-			component,
-                        (AF_Vertex*)malloc(sizeof(AF_Vertex) * _mesh.vertexCount), 
-                        _mesh.vertexCount,
-                        (uint32_t*)malloc(sizeof(uint32_t) * _mesh.indexCount),
-                        _mesh.indexCount,
-			0,
-			0,
-			0,
-			{0,0},
-			FALSE
+            component,
+            (AF_Vertex*)malloc(sizeof(AF_Vertex) * _mesh.vertexCount),
+            _mesh.vertexCount,
+            (uint32_t*)malloc(sizeof(uint32_t) * _mesh.indexCount),
+            _mesh.indexCount,
+            0,
+            0,
+            0,
+            {0,0,{0,0,0,0}},
+            FALSE,
+            AF_MESH_TYPE_PLANE,
+            0,
+            FALSE,
+            NULL,
+            NULL
                         };
    returnMesh = loadedMesh; 
 
@@ -315,7 +320,7 @@ static inline AF_CMesh AF_Mesh_Load_OBJ(const char* _filePath){
 	.vao = 0,
 	.vbo = 0,
 	.ibo = 0,
-	.material = {0,0},
+	.material = {0,0,{0,0,0,0}},
 	.showDebug = FALSE
     };
 
