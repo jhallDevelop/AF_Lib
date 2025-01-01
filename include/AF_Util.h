@@ -37,8 +37,7 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
         printf("TODO: Failed to read file from %s \n Need implement file read for platform GB\n", thisFilePath);
 	return NULL;
     #else
-    FILE* _fileOpen =NULL;
-    fopen(thisFilePath, "r");
+    FILE* _fileOpen = fopen(thisFilePath, "r");
     if (_fileOpen == NULL) {
         fprintf(stderr, "AF_Util: Read File: Failed to read file \n%s \nCheck file exists\n\n", thisFilePath);
         return NULL;
@@ -147,6 +146,7 @@ Little helper function to take a vec 3 position and convert it to a screen posit
 */
 static inline Vec2 AF_WorldToScreen(const Vec3* _worldPos, const AF_FLOAT _modelViewMatrix[16], const AF_FLOAT _projectionMatrix[16], const int _viewport[4], Vec2 _screenSize) {
     Vec2 screenPosition = {0, 0};
+    if(_screenSize.x){}
     
     // Model-view transformation
     AF_FLOAT viewPos[4] = {
