@@ -42,7 +42,7 @@ enum AF_MESH_TYPE{
 
 
 // Mesh Struct
-typedef struct {
+typedef struct AF_CMesh {
     //BOOL has;
     PACKED_CHAR enabled;
     AF_Vertex* vertices;
