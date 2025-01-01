@@ -24,7 +24,6 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 #include "AF_Util.h"
 //#include "AF_QuadTree.h"
 
-#include <libdragon.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -290,7 +289,7 @@ static inline BOOL AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _b
 	// Figure out if the x, y, or z is the largest value
 	AF_FLOAT bestT = AF_GetMaxElement(tVals, 3);
 	if(bestT < 0.0f){
-		debugf("AF_Physics_Box_RayIntersection: no backwards ray\n");
+		printf("AF_Physics_Box_RayIntersection: no backwards ray\n");
 		returnResult = FALSE; // no backwards rays 
 		return returnResult;
 	}
@@ -301,7 +300,7 @@ static inline BOOL AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _b
 	for(int i = 0; i < 3; ++i){
 		if(	intersectionFloatArray[i] + epsilon < boxMinArray[i] ||
 			intersectionFloatArray[i] - epsilon > boxMaxArray[i]) {
-				debugf("AF_Physics_Box_RayIntersection: best intersection doesn't touch box \n");
+				printf("AF_Physics_Box_RayIntersection: best intersection doesn't touch box \n");
 				returnResult = FALSE; // best intersection doesn't touch the box
 				return returnResult;
 			}
@@ -309,7 +308,7 @@ static inline BOOL AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _b
 	_collision->collisionPoint = intersection;
 	_collision->rayDistance = bestT;
 	returnResult = TRUE; 
-	debugf("AF_Physics_Box_RayIntersection: result %i \n", returnResult);
+	printf("AF_Physics_Box_RayIntersection: result %i \n", returnResult);
 	return returnResult;
 } 
 
@@ -335,7 +334,10 @@ Calculate ray intersection hit test against a Object Orientated Box
 ====================
 */
 static inline BOOL AF_Physics_OBB_RayIntersection(const Ray* _ray, const AF_CTransform3D* _worldTransform, const Vec3* _size, AF_Collision* _collision){
-
+	if(_ray){}
+	if(_worldTransform){}
+	if(_size){}
+	if(_collision){}
 	//Vec4 orientation = {_worldTransform->rot.x, _worldTransform->rot.y, _worldTransform->rot.z, 1};
 	//Vec3 postion = _worldTransform->pos;
 	//TODO: implement correctly. p16 https://research.ncl.ac.uk/game/mastersdegree/gametechnologies/physicstutorials/1raycasting/Physics%20-%20Raycasting.pdf#page=5.08
@@ -355,7 +357,7 @@ static inline BOOL AF_Physics_OBB_RayIntersection(const Ray* _ray, const AF_CTra
 	}
 		return collided ;
 	*/
-	return false;
+	return FALSE;
 }
 
 
@@ -416,7 +418,7 @@ static inline BOOL AF_Physics_Plane_RayIntersection(const Ray* _ray, AF_CCollide
 
 	if(t < 0){
 		returnValue = FALSE;  // No intersection (plane is behind the ray or parallel)
-		//debugf("AF_Physics_Box_RayIntersection: no intersection, plane is behind the ray \n");
+		//printf("AF_Physics_Box_RayIntersection: no intersection, plane is behind the ray \n");
 		return returnValue;
 	}
 
@@ -426,7 +428,7 @@ static inline BOOL AF_Physics_Plane_RayIntersection(const Ray* _ray, AF_CCollide
 	// Check if the intersection is within the desired plane bounds (if the plane is finite)
 	if(_size->y == 0 && _size->x == 0 && _size->z == 0){
 		// bounds are all 0 so plane is counted as infinite.
-		//debugf("AF_Physics_Plane_RayIntersection: intersection on infintie plane at x: %f y: %f z: %f \n", intersection.x, intersection.y, intersection.z);
+		//printf("AF_Physics_Plane_RayIntersection: intersection on infintie plane at x: %f y: %f z: %f \n", intersection.x, intersection.y, intersection.z);
 		returnValue = TRUE;
 		_collision->collisionPoint = intersection;
 		_collision->rayDistance = t;
@@ -437,12 +439,12 @@ static inline BOOL AF_Physics_Plane_RayIntersection(const Ray* _ray, AF_CCollide
 	Vec2 intersectionPoint = {intersection.x, intersection.z};
 	AF_Rect planeRect = {-_size->x/2, -_size->z/2, _size->x, _size->z};
 	if(AF_Physics_Point_Inside_Rect(intersectionPoint, planeRect) == FALSE){
-		//debugf("AF_Physics_Box_RayIntersection: no intersection, ray is out of bounds \nintX: %f intY: %f rectX:%f rectY:%f rectz:%f  \n", intersectionPoint.x, intersectionPoint.y, _size->x, _size->y, _size->z);
+		//printf("AF_Physics_Box_RayIntersection: no intersection, ray is out of bounds \nintX: %f intY: %f rectX:%f rectY:%f rectz:%f  \n", intersectionPoint.x, intersectionPoint.y, _size->x, _size->y, _size->z);
 		returnValue = FALSE;
 		return returnValue;
 	}
 	
-	//debugf("AF_Physics_Plane_RayIntersection: intersection within bounds x: %f y: %f z: %f \n", intersection.x, intersection.y, intersection.z);
+	//printf("AF_Physics_Plane_RayIntersection: intersection within bounds x: %f y: %f z: %f \n", intersection.x, intersection.y, intersection.z);
 	returnValue = TRUE;
 	
 	// For example, if the plane is bounded within an XZ range, you can check here
@@ -476,31 +478,31 @@ static inline BOOL AF_Physics_RayIntersection(const Ray* _ray, AF_Entity* _entit
 		break;
 		
 		case OBB:
-			debugf("AF_Physics_RayIntersection: OBB ray interaction not implemented\n");
-			return false;
+			printf("AF_Physics_RayIntersection: OBB ray interaction not implemented\n");
+			return FALSE;
 		break;
 
 		case Sphere:
-			return false;//AF_Physics_Sphere_RayIntersection(_ray, _entity->transform, _entity->collider, _collision);
+			return FALSE;//AF_Physics_Sphere_RayIntersection(_ray, _entity->transform, _entity->collider, _collision);
 		break;
 
 		case Mesh:
-			debugf("AF_Physics_RayIntersection: Mesh ray interaction not implemented\n");
-			return false;
+			printf("AF_Physics_RayIntersection: Mesh ray interaction not implemented\n");
+			return FALSE;
 		break;
 
 		case Compound:
-			debugf("AF_Physics_RayIntersection: Compound ray interaction not implemented\n");
-			return false;
+			printf("AF_Physics_RayIntersection: Compound ray interaction not implemented\n");
+			return FALSE;
 		break;
 
 		case Invalid:
-			debugf("AF_Physics_RayIntersection: Invalid collider type\n");
-			return false;
+			printf("AF_Physics_RayIntersection: Invalid collider type\n");
+			return FALSE;
 		break;
 	}
 	
-	return false;
+	return FALSE;
 }
 
 
@@ -629,7 +631,7 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 	}
 	*/
 	BOOL returnValue = FALSE;
-	for(int i = 0; i < _ecs->entitiesCount; ++i){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 
 		if(AF_Component_GetEnabled(_ecs->colliders[i].enabled == FALSE)){
 			continue;
@@ -639,7 +641,7 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 		
 		
 		// rayIntersectionTest everything
-		for(int x = 0; x < _ecs->entitiesCount; ++x){
+		for(uint32_t x = 0; x < _ecs->entitiesCount; ++x){
 			if(AF_Component_GetEnabled(_ecs->colliders[x].enabled == FALSE)){
 				continue;
 			}
@@ -806,7 +808,10 @@ static inline BOOL AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, c
 
 // Function to handle narrow phase collision detection
 static inline void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t collisionCount, int numCollisionFrames) {
-    //AF_Collision allCollisions[1024]; // Example array to store all collisions
+    if(broadPhaseCollisions){}
+	if(collisionCount){}
+	if(numCollisionFrames){}
+	//AF_Collision allCollisions[1024]; // Example array to store all collisions
     //size_t allCollisionsCount = 0;       // Counter for all collisions
 
     // Iterate through the broad phase collisions
