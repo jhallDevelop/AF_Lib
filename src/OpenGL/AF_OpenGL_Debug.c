@@ -5,10 +5,13 @@ Implementation file for the AF_Debug, to be used with OpenGL
 ===============================================================================
  */
 #include "AF_Debug.h"
-#include "AF_Vertex.h"
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
 #include "AF_Log.h"
+#include "AF_Material.h"
+#include "AF_Vertex.h"
+#include "AF_Mat4.h"
+#include "ECS/Components/AF_CMesh.h"
 
 /*
 ====================
@@ -61,7 +64,7 @@ AF_Vertex debugLineVerts[] = {
 Setup opengl buffers for rendering debug stuff
 ====================
 */
-AF_Mesh AF_Debug_Init_DrawLine(void){
+AF_CMesh AF_Debug_Init_DrawLine(void){
 		
 	// Setup the buffers
 	GLuint VAO, VBO;
@@ -99,7 +102,7 @@ AF_Mesh AF_Debug_Init_DrawLine(void){
 	glLinkProgram(shaderProgram);
 
 	// Setup the returned mesh data
-	AF_Mesh returnMesh = AF_Mesh_ZERO();
+	AF_CMesh returnMesh = AF_CMesh_ZERO();
 	//returnMesh.has = TRUE;
 	returnMesh.enabled = AF_Component_SetEnabled(returnMesh.enabled, TRUE);
 	returnMesh.vertices = &debugLineVerts[0];
@@ -139,7 +142,7 @@ Drwa a line between two points,
 Also provide a line thickness size
 ====================
 */
-void AF_Debug_DrawLine(float _xPos1, float _yPos1, float _xPos2, float _yPos2, float _size, AF_Mesh* _debugMesh, AF_Mat4 _viewMatrix, AF_Mat4 _projectionMatrix, AF_Mat4 _modelMatrix){
+void AF_Debug_DrawLine(float _xPos1, float _yPos1, float _xPos2, float _yPos2, float _size, AF_CMesh* _debugMesh, Mat4 _viewMatrix, Mat4 _projectionMatrix, Mat4 _modelMatrix){
 	
 	// Draw Line to screen
 	if(_xPos1 == 0 || _yPos1 == 0 || _size == 0 || _xPos2 == 0 || _yPos2 == 0 || _modelMatrix.rows[0].x == 0){}
