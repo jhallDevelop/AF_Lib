@@ -34,6 +34,22 @@ typedef struct {
     uint16_t frameBufferHeight; // Height of the framebuffer
 } AF_Window;
 
+inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth, uint16_t _windowHeight){
+    AF_Window window ={
+        .window = 0,
+        .input = 0,
+        .title = _title,
+        .windowXPos = 0,
+        .windowYPos = 0,
+        .windowWidth =  _windowWidth,
+        .windowHeight = _windowHeight,
+        .frameBufferWidth = _windowWidth,
+        .frameBufferHeight = _windowHeight
+    };
+
+    return window;
+}
+
 /*
 ====================
 AF_Lib_CreateWindow
