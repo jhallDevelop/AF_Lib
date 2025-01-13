@@ -47,9 +47,9 @@ static inline AF_C3DRigidbody AF_C3DRigidbody_ZERO(void){
 		//.has = false,
 		.enabled = FALSE,
 		.isKinematic = FALSE,
+		.gravity = TRUE,
 		.velocity = {0, 0, 0},
 		.anglularVelocity = {0,0,0},
-		.gravity = TRUE,
 		.inverseMass = 1,
 		.force = {0,0,0},
 		.torque = {0,0,0},
@@ -73,9 +73,9 @@ static inline AF_C3DRigidbody AF_C3DRigidbody_ADD(void){
 		//.has = true,
 		.enabled = component,
 		.isKinematic = FALSE,			// isKinematic means to be controlled by script rather than the velocity
+		.gravity = TRUE,				// gravity off by default
 		.velocity = {0, 0, 0},		// zero velocity 
 		.anglularVelocity = {0,0,0},
-		.gravity = TRUE,				// gravity off by default
 		.inverseMass = 1,
 		.force = {0,0,0},
 		.torque = {0,0,0},

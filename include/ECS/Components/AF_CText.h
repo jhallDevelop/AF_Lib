@@ -39,8 +39,8 @@ static inline AF_CText AF_CText_ZERO(void){
     .isShowing = FALSE,
     .fontID = 0,
     .fontPath = NULL,
-    .screenPos = {0,0},
     .text = NULL,
+    .screenPos = {0,0},
     .textColor = {0,0,0,1},
     .textData = NULL
     };
@@ -64,8 +64,8 @@ static inline AF_CText AF_CText_ADD(void){
     .isShowing = TRUE,
     .fontID = 0,
     .fontPath = NULL,
-    .screenPos = {0,0},
     .text = NULL,
+    .screenPos = {0,0},
     .textColor = {0,0,0,1},
     .textData = NULL
     };

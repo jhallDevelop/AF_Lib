@@ -1,6 +1,6 @@
 #ifndef AF_GL_UTIL_H
 #define AF_GL_UTIL_H
-#include <OpenGL/gl3.h>
+#include <GL/gl.h>
 #include <stdio.h>
 #define GL_SILENCE_DEPRECATION
 
