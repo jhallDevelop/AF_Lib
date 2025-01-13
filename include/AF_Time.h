@@ -36,7 +36,7 @@ Initialise the struct variables. Don't need to take in any variables except the 
 pass back a new copy of initialised data in the struct.
 ====================
 */
-static inline AF_Time AF_Time_Init(const float _currentTime){
+static inline AF_Time AF_Time_ZERO(const float _currentTime){
 
 	AF_Time returnTime = {
 	.currentFrame = 0,
@@ -71,7 +71,7 @@ static inline AF_Time AF_Time_Update(const AF_Time _time){
 
 }
 
-static inline double AF_Time_GetTime(){
+static inline double AF_Time_GetTime(void){
 	return ((double)(clock()) / CLOCKS_PER_SEC);
 }
 

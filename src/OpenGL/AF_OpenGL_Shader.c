@@ -52,37 +52,21 @@ REturn the shader ID or return -1 if failed
 ====================
 */
 uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShaderPath){
+
     uint32_t returnShaderID = 9999;
+    
     // Check if shader paths are empty
     if(AF_STRING_IS_EMPTY(_vertexShaderPath) || AF_STRING_IS_EMPTY(_fragmentShaderPath)){
         AF_Log_Error("AF_Shader: vertex or fragment shader path is empty\n");
         return -1;
     }
     
+    
     char* _vertexShaderSource = AF_Util_ReadFile(_vertexShaderPath);
     char* _fragmentShaderSource = AF_Util_ReadFile(_fragmentShaderPath);
 
-    
-
-    /*
-    const char* _vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
-
-    const char* _fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
-    */
     // Null check the loaded shader code
-
-    
-    if(_vertexShaderPath == NULL || _fragmentShaderPath == NULL){
+    if(_vertexShaderSource == NULL || _fragmentShaderSource == NULL){
         AF_Log_Error("AF_Shader: vertex or fragment shader source is null \n");
         return -1;
     }
@@ -91,18 +75,21 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: vertex or fragment shader source is empty \n");
         return -1;
     }
-    /**/
+    
     // 2. compile shaders
     uint32_t vertex, fragment;
+    
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
+    
     const GLchar* _vertexShaderSourceGL[] = {_vertexShaderSource};
     const GLchar* _fragmentShaderSourceGL[] = {_fragmentShaderSource};
     
     glShaderSource(vertex, 1, _vertexShaderSourceGL, NULL);
+    
     glCompileShader(vertex);
     AF_Shader_CheckCompileErrors((uint32_t)vertex, "VERTEX");
-
+    
     // fragment Shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, _fragmentShaderSourceGL, NULL);
@@ -123,10 +110,12 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     if(returnShaderID == 9999){
         AF_Log_Error("AF_Shader: Loading shader failed, returned shader ID is -1\n");
     }
-
+    
     // Free the allocated shader source code from the file as it lives on the graphics card now
     free(_vertexShaderSource);
+    _vertexShaderSource = NULL;
     free(_fragmentShaderSource);
+    _fragmentShaderSource = NULL;
 
     return returnShaderID;
 }

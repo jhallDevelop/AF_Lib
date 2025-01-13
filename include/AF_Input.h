@@ -49,9 +49,13 @@ typedef struct {
     Vec2 controlSticks[CONTROLLER_COUNT];
 
     // Mouse
-    //int mouseDown;
-    //float mouseX;
-    //float mouseY;
+    BOOL mouse1Down;
+    BOOL mouse2Down;
+    BOOL firstMouse;
+    float lastMouseX;
+    float lastMouseY;
+    float mouseX;
+    float mouseY;
 
 } AF_Input;
 
@@ -70,10 +74,16 @@ static inline AF_Input AF_Input_ZERO(void){
         input.keys[2][i] = key; // Player 3
         input.keys[3][i] = key; // Player 4
     }
+    
     for(int i = 0; i < CONTROLLER_COUNT; ++i){
         Vec2 controlStick = {0, 0};
         input.controlSticks[i] = controlStick;
     }
+    input.firstMouse = TRUE;
+    input.mouse1Down = FALSE;
+    input.mouse2Down = FALSE;
+    input.mouseX = 0;
+    input.mouseY = 0;
     return input;
 }
 

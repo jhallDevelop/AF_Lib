@@ -13,10 +13,38 @@ typedef struct AF_ViewportData {
     uint32_t textureID;
     uint32_t rbo;
     float backgroundColor[4];
-    AF_CCamera camera;
+    float mouseLookSensitivity;
+    AF_Entity* cameraEntityPtr;
     AF_Material gridlineMaterial;
     uint32_t gridlineVAO;
     uint32_t gridlineVBO;
+    BOOL isResized;
 } AF_ViewportData;
+
+inline static AF_ViewportData AF_ViewportData_ZERO(void){
+    AF_Color color = {0,0,0,255};
+	AF_Material returnMaterial = {
+		.shaderID = 0,
+		.textureID = 0, 
+		.color = color
+	};
+    
+    AF_ViewportData viewportData = {
+    .viewPortFramebufferWidth = 0,
+    .viewPortFramebufferHeight = 0,
+    .framebufferID = 0,
+    .textureID = 0,
+    .rbo = 0,
+    .backgroundColor = {0.0f, 0.0f, 0.0f, 0.0f},
+    .mouseLookSensitivity = 0.25f,
+    .cameraEntityPtr = NULL,
+    .gridlineMaterial = returnMaterial,
+    .gridlineVAO = 0,
+    .gridlineVBO = 0,
+    .isResized = TRUE
+    };
+
+    return viewportData;
+}
 
 #endif

@@ -142,61 +142,77 @@ AF_Ccamera_GetOrthographicProjectMatrix
 Setup a camera component struct with settings for orthographic camera
 ====================
 */
-/*
-inline static Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _window, AF_CCamera* _camera){
+
+inline static Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _window, AF_CCamera* _camera) {
     // Get the framebuffer width and height as we work in pixels
-    _camera->windowWidth = _window->frameBufferWidth;//_window->windowWidth;
-    _camera->windowHeight = _window->frameBufferHeight;//_window->windowHeight;
+    _camera->windowWidth = _window->frameBufferWidth;
+    _camera->windowHeight = _window->frameBufferHeight;
     _camera->fov = 45;
-    _camera->nearPlane = 0;
-    _camera->farPlane = 100;
-    _camera->aspectRatio =  _camera->windowWidth / _camera->windowHeight;
+    _camera->nearPlane = 0.1f;  // Set to a small positive value
+    _camera->farPlane = 100.0f;
+    _camera->aspectRatio = _camera->windowWidth / _camera->windowHeight;
     _camera->tanHalfFov = AF_Math_Tan(_camera->fov / 2);
     _camera->rangeInv = 1 / (_camera->farPlane - _camera->nearPlane);
 
-    AF_FLOAT orthoWidth = 10;
+    AF_FLOAT orthoWidth = 10.0f;
     AF_FLOAT orthoHeight = orthoWidth / _camera->aspectRatio;
-    AF_FLOAT right = orthoWidth / 2;   
+    AF_FLOAT right = orthoWidth / 2;
     AF_FLOAT left = -orthoWidth / 2;
-    AF_FLOAT top = orthoHeight / 2;      
-    AF_FLOAT bottom = -orthoHeight / 2; 
+    AF_FLOAT top = orthoHeight / 2;
+    AF_FLOAT bottom = -orthoHeight / 2;
 
-    // Set the elements of the projection matrix
+    // Set the elements of the orthographic projection matrix
     Mat4 orthMatrix = {{
-			{2/(right -left),0,0,0},
-			{0,2/(top-bottom),0,0},
-			{0,0,-2 / (_camera->farPlane - _camera->nearPlane),0},
-			{0,0,0,1}
-	}};
-*/
-/*
-    Mat4 orth_projectionMatrix = identityM4;
-    orth_projectionMatrix.rows[0].x = 2 / (right - left);
-    orth_projectionMatrix.rows[0].y = 0;
-    orth_projectionMatrix.rows[0].z = 0;
-    orth_projectionMatrix.rows[0].w = 0;
-    
-    orth_projectionMatrix.rows[1].x = 0;
-    orth_projectionMatrix.rows[1].y = 2 / (top - bottom);
-    orth_projectionMatrix.rows[1].z = 0;
-    orth_projectionMatrix.rows[1].w = 0; 
+        {2.0f / (right - left), 0.0f, 0.0f, 0.0f},
+        {0.0f, 2.0f / (top - bottom), 0.0f, 0.0f},
+        {0.0f, 0.0f, -2.0f / (_camera->farPlane - _camera->nearPlane), 0.0f},
+        {0.0f, 0.0f, 0.0f, 1.0f}
+    }};
 
-    orth_projectionMatrix.rows[2].x = 0;
-    orth_projectionMatrix.rows[2].y = 0;
-    orth_projectionMatrix.rows[2].z = -2 / (_camera->farPlane - _camera->nearPlane);
-    orth_projectionMatrix.rows[2].w = 0;
-
-    orth_projectionMatrix.rows[3].x = 0;
-    orth_projectionMatrix.rows[3].y = 0;
-    orth_projectionMatrix.rows[3].z = 0;
-    orth_projectionMatrix.rows[3].w = 1;
-
-    return orth_projectionMatrix;
-*/
-/*
-	return returnCam;	
+    return orthMatrix;
 }
+
+/*
+====================
+AF_Ccamera_GetPerspectiveProjectionMatrix
+Setup a camera component struct with settings for a perspective camera
+====================
 */
+
+inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_Window* _window, AF_CCamera* _camera) {
+    // Get the framebuffer width and height as we work in pixels
+    _camera->windowWidth = _window->frameBufferWidth;
+    _camera->windowHeight = _window->frameBufferHeight;
+    
+    // Set perspective camera settings
+    _camera->fov = 45;  // FOV in degrees
+    _camera->nearPlane = 0.1f;
+    _camera->farPlane = 100.0f;
+    _camera->aspectRatio = _camera->windowWidth / _camera->windowHeight;
+    
+    // Convert FOV to radians and calculate tanHalfFov
+    _camera->tanHalfFov = AF_Math_Tan(AF_Math_DegreesToRadians(_camera->fov) / 2);
+    
+    // Calculate other elements for the projection matrix
+    AF_FLOAT right = _camera->nearPlane * _camera->tanHalfFov;
+    AF_FLOAT left = -right;
+    AF_FLOAT top = right / _camera->aspectRatio;
+    AF_FLOAT bottom = -top;
+    
+    // Set elements of the perspective projection matrix
+    Mat4 perspectiveMatrix = {{
+        {2.0f * _camera->nearPlane / (right - left), 0.0f, 0.0f, 0.0f},
+        {0.0f, 2.0f * _camera->nearPlane / (top - bottom), 0.0f, 0.0f},
+        {(right + left) / (right - left), (top + bottom) / (top - bottom), -( _camera->farPlane + _camera->nearPlane ) / (_camera->farPlane - _camera->nearPlane), -1.0f},
+        {0.0f, 0.0f, -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane), 0.0f}
+    }};
+    
+    return perspectiveMatrix;
+}
+
+
+
+
 
 /*
 ====================

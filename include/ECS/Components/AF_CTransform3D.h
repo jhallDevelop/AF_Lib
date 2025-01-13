@@ -12,6 +12,7 @@ and helper functions
 #include "AF_Vec4.h"
 #include "AF_Lib_Define.h"
 #include "AF_Component.h"
+#include "AF_Mat4.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +39,7 @@ typedef struct {
     Vec3 scale;// = {1.0f, 1.0f, 1.0f};
     Vec3 localScale;
     Vec4 orientation;   // rotation represented as a quaternion
+    Mat4 modelMat;
 } AF_CTransform3D;
 
 /*
@@ -56,8 +58,8 @@ static inline AF_CTransform3D AF_CTransform3D_ZERO(void){
         .localRot = {0, 0, 0},
         .scale = {1, 1, 1},
         .localScale = {1, 1, 1},
-        .orientation = {0,0,0,0}
-	// Default position matrix
+        .orientation = {0,0,0,0},
+        .modelMat = Mat4_ZERO()
     };
 	return returnTransform;
 }
@@ -78,7 +80,8 @@ static inline AF_CTransform3D AF_CTransform3D_ADD(void){
         .localRot = {0, 0, 0},
         .scale = {1, 1, 1},
         .localScale = {1, 1, 1},
-        .orientation = {0,0,0,0}
+        .orientation = {0,0,0,0},
+        .modelMat = Mat4_ZERO()
 	// Default position matrix
     };
 	return returnTransform;

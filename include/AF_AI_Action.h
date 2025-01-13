@@ -20,18 +20,15 @@ typedef enum AI_ACTION_Type {
 
 
 // Typedef for readability (optional but common in C)
-typedef struct AF_AI_Action AF_AI_Action;
-
-// Struct to define a function ptr to a behaviour
 typedef struct AF_AI_Action {
-	BOOL enabled;
-	AI_ACTION_Type actionType;
-	void* sourceEntity;	// doing this dirty to avoid circular dependency with AF_Entity
-	void* targetEntity;
-    void (*callback)(AF_AI_Action*);
+    BOOL enabled;
+    AI_ACTION_Type actionType;
+    void* sourceEntity;    // Avoids circular dependency with AF_Entity
+    void* targetEntity;
+    void (*callback)(struct AF_AI_Action*); // Correct forward reference
 } AF_AI_Action;
 
-static inline AF_AI_Action AF_AI_Action_Zero(){
+static inline AF_AI_Action AF_AI_Action_Zero(void){
 	AF_AI_Action zeroAction = {
 		.enabled = FALSE,
 		.actionType = AI_ACTION_DEFAULT,

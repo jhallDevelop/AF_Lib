@@ -347,9 +347,11 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
 
     // Calculate projection matrix
 	// TODO: disbaled setting projection matrix
-	printf("DAF_LibDisplayRenderer: disabled setting project matrix\n");
+	//printf("DAF_LibDisplayRenderer: disabled setting project matrix\n");
     //_camera->projectionMatrix = AF_Camera_GetOrthographicProjectionMatrix(_window, _camera);
+    _camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(_window, _camera);//AF_Camera_GetOrthographicProjectionMatrix(_window, _camera);
     
+
 
     // Set the winding order to clockwise
     //glFrontFace(GL_CW); // Clockwise winding order
@@ -369,12 +371,16 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
 	int projLocation = glGetUniformLocation(shaderID, "projection");
 	int viewLocation = glGetUniformLocation(shaderID, "view");
 
+	// send the camera data to the shader
+	int cameraLocation = glGetUniformLocation(shaderID, "cameraWorldPos");
+
 	// Send camrea data to shader
 	// Projection Matrix
 	glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_camera->projectionMatrix.rows[0]);
 
 	// View Matrix
 	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_camera->viewMatrix.rows[0]);
+	glUniform3fv(cameraLocation, 1, (float*)&_cameraEntity->transform->pos);
 
  
 
