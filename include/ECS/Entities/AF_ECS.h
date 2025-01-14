@@ -44,6 +44,7 @@ typedef struct {
 	AF_CPlayerData playerDatas[AF_ECS_TOTAL_ENTITIES];
 	AF_CSkeletalAnimation skeletalAnimations[AF_ECS_TOTAL_ENTITIES];
 	AF_CAI_Behaviour aiBehaviours[AF_ECS_TOTAL_ENTITIES];
+	AF_CEditorData editorData[AF_ECS_TOTAL_ENTITIES];
 } AF_ECS;
 
 /*
@@ -91,6 +92,9 @@ static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
 		
 		// Camera Component
 		entity->camera = &_ecs->cameras[i];
+
+		// Editor Component
+		entity->editorData = &_ecs->editorData[i];
 
 	}
 }
