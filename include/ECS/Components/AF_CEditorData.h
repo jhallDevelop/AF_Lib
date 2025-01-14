@@ -10,6 +10,7 @@ and helper functions
 #define AF_CEDITORDATA_H
 #include "AF_Component.h"
 #include "AF_Lib_Define.h"
+#include <stdbool.h>
 #ifdef __cplusplus
 extern "C" {    
 #endif
@@ -20,8 +21,8 @@ AF_CEDITOR_DATA
 */
 // size is 64 bytes
 typedef struct AF_CEditorData{
-	PACKED_CHAR enabled;	    // 1 byte
-	bool isSelected;		    // 1 byte
+	PACKED_CHAR enabled;	    
+	bool isSelected;		    
 } AF_CEditorData;
 
 /*

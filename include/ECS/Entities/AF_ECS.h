@@ -159,7 +159,9 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		
 		// Camera Component
 		_ecs->cameras[i] = AF_CCamera_ZERO();
-		//entity->camera = NULL;//AF_CCamera_ZERO();
+
+		// Editor Data
+		_ecs->editorData[i] = AF_CEditorData_ZERO();
 	}
 	
 	AF_ECS_ReSyncComponents(_ecs);
