@@ -178,7 +178,7 @@ AF_LIB_InitRenderer
 Init OpenGL
 ====================
 */
-uint32_t AF_LIB_InitRenderer(AF_Window* _window){
+uint32_t AF_Renderer_InitRenderer(AF_Window* _window){
     uint32_t success = 1;
     AF_Log("%s Initialized %s\n", openglRendererFileTitle, _window->title);
     //Initialize GLEW
@@ -224,7 +224,7 @@ Init the mesh buffers for OpenGL
 ====================
 */
 // TODO: change name to AF_Renderer_InitMeshBuffers
-void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){ 
+void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){ 
 
     if (_entityCount == 0) {
     AF_Log_Error("No meshes to draw!\n");
@@ -251,6 +251,8 @@ void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 		return;
 	    }
 
+		// TODO: Why are we multiplying by _entityCount
+		AF_Log("Check that we are not allocating too much buffer size, as we are multiplying by entity count. \n");
 	    int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
 	    //AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
 	    
@@ -309,7 +311,7 @@ AF_LIB_DisplayRenderer
 Display the renderer
 ====================
 */
-void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID){
+void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID){
 
     AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
     AF_CTransform3D* cameraTransform = _cameraEntity->transform;
@@ -521,7 +523,11 @@ void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS
         //---------------Send command to Graphics API to Draw Triangles------------
 	
 	unsigned int indexCount = mesh->indexCount;
-        if(indexCount == 0){}
+    if(indexCount == 0){
+		AF_Log_Warning("AF_Renderer_DisplayRenderer: indexCount is 0. Can't draw elements\n");
+		return;
+	}
+	AF_Log_Error("AF_Renderer_DisplayRenderer: segfault here %s: %s\n", __FILE__, __LINE__);
 	glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
         
         AF_CheckGLError( "Error drawElements Rendering OpenGL! \n");
@@ -632,7 +638,7 @@ AF_LIB_DestroyRenderer
 Destroy the renderer
 ====================
 */
-void AF_LIB_DestroyRenderer(AF_ECS* _ecs){
+void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
     AF_Log("%s Destroyed\n", openglRendererFileTitle);
     for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
 	    // optional: de-allocate all resources once they've outlived their purpose:

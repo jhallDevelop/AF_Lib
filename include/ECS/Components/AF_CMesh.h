@@ -43,7 +43,6 @@ enum AF_MESH_TYPE{
 
 // Mesh Struct
 typedef struct AF_CMesh {
-    //BOOL has;
     PACKED_CHAR enabled;
     AF_Vertex* vertices;
     uint16_t vertexCount;
@@ -56,10 +55,12 @@ typedef struct AF_CMesh {
     AF_Material material;
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
-	uint8_t meshID;	// only fit 255 mesh types
-	BOOL isAnimating;
-	void* modelMatrix;
-	void* displayListBuffer;
+	const char* meshPath;
+	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
+	uint8_t meshID;		// only fit 255 mesh types
+	BOOL isAnimating;	// belongs in animation component
+	void* modelMatrix;	// belongs in transform, unless nessisary
+	void* displayListBuffer;	
 } AF_CMesh;
 
 /*
@@ -82,6 +83,7 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.material = {0,0,{0,0,0,0}},
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
+	.meshPath = NULL,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,
@@ -114,6 +116,7 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.material = {0,0,{0,0,0,0}},
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
+	.meshPath = NULL,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,

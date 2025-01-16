@@ -50,19 +50,10 @@ static inline AF_CCollider AF_CCollider_ZERO(void){
 	component = AF_Component_SetHas(component, FALSE);
 	component = AF_Component_SetEnabled(component, FALSE);
 	AF_CCollider collider = {
-		.enabled = FALSE,//component,
-		//.has = TRUE,
+		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {0,0,0},
 		.pos = {0,0,0},
-		/*
-		.bounds = {
-			0,	// x
-			0,	// y
-			0,	// width
-			0	// height
-		},*/
-		//.collision = {FALSE, NULL, NULL},
 		.showDebug = FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -89,19 +80,10 @@ static inline AF_CCollider AF_CCollider_ADD(void){
 	component = AF_Component_SetHas(component, TRUE);
 	component = AF_Component_SetEnabled(component, TRUE);
 	AF_CCollider collider = {
-		//.has = TRUE,
-		.enabled = TRUE,//component,
+		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {1,1,1},
 		.pos = {0,0,0},
-		/*
-		.bounds = {
-			0,	// x
-			0,	// y
-			0,	// width
-			0	// height
-		},*/
-		//.collision = {FALSE, NULL, NULL},
 		.showDebug = FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -129,19 +111,10 @@ static inline AF_CCollider AF_CCollider_Sphere_ADD(void){
 	component = AF_Component_SetHas(component, TRUE);
 	component = AF_Component_SetEnabled(component, TRUE);
 	AF_CCollider collider = {
-		//.has = TRUE,
-		.enabled = TRUE,//component,
+		.enabled = component,
 		.type = Sphere,
-		.boundingVolume = {1,0,0},
+		.boundingVolume = {1,1,1},
 		.pos = {0,0,0},
-		/*
-		.bounds = {
-			0,	// x
-			0,	// y
-			0,	// width
-			0	// height
-		},*/
-		//.collision = {FALSE, NULL, NULL},
 		.showDebug = FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -167,19 +140,10 @@ static inline AF_CCollider AF_CCollider_Box_ADD(void){
 	component = AF_Component_SetHas(component, TRUE);
 	component = AF_Component_SetEnabled(component, TRUE);
 	AF_CCollider collider = {
-		//.has = TRUE,
-		.enabled = TRUE,//component,
+		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {1,1,1},
 		.pos = {0,0,0},
-		/*
-		.bounds = {
-			0,	// x
-			0,	// y
-			0,	// width
-			0	// height
-		},*/
-		//.collision = {FALSE, NULL, NULL},
 		.showDebug = FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -205,26 +169,17 @@ static inline AF_CCollider AF_CCollider_Plane_ADD(void){
 	component = AF_Component_SetHas(component, TRUE);
 	component = AF_Component_SetEnabled(component, TRUE);
 	AF_CCollider collider = {
-		//.has = TRUE,
-		.enabled = TRUE,//component,
+		.enabled = component,
 		.type = Plane,
 		.boundingVolume = {0,.001f,0},
 		.pos = {0,0,0},
-		/*
-		.bounds = {
-			0,	// x
-			0,	// y
-			0,	// width
-			0	// height
-		},*/
-		//.collision = {FALSE, NULL, NULL},
 		.showDebug = FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = FALSE;
 	collider.collision.entity1 = NULL;
 	collider.collision.entity2 = NULL;
-	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
+	collider.collision.callback = AF_Collision_DummyCallback;
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;

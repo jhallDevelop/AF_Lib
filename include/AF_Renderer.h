@@ -30,7 +30,7 @@ void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(AF_ECS* _ecs);
 void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 //void AF_Renderer_Debug(void);
-uint32_t AF_LIB_InitRenderer(AF_Window* _window);
+uint32_t AF_Renderer_InitRenderer(AF_Window* _window);
 uint32_t AF_LoadTexture(const char* _texturePath);
 
 
@@ -97,14 +97,14 @@ void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
 
 // Draw
 // TODO: don't like passing in the camera or debug mesh
-void AF_LIB_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
+void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
  
 //void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
 //static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
 
 
 // Destroy
-void AF_LIB_DestroyRenderer(AF_ECS* _ecs);
+void AF_Renderer_DestroyRenderer(AF_ECS* _ecs);
 // Cleanup
 //static void CleanUpMesh(const unsigned int _shaderID);
 //void CloseWindow();

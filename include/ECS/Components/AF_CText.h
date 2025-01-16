@@ -34,15 +34,16 @@ Function used to create an empty text component
 */
 static inline AF_CText AF_CText_ZERO(void){
     AF_CText returnMesh = {
-	.enabled = FALSE,
-    .isDirty = FALSE,
-    .isShowing = FALSE,
-    .fontID = 0,
-    .fontPath = NULL,
-    .text = NULL,
-    .screenPos = {0,0},
-    .textColor = {0,0,0,1},
-    .textData = NULL
+	FALSE,
+    FALSE,
+    FALSE,
+    0,
+    NULL,
+    NULL,
+    {0,0},
+    {0,0},
+    {0,0,0,1},
+    NULL
     };
     return returnMesh;
 }
@@ -59,15 +60,16 @@ static inline AF_CText AF_CText_ADD(void){
     component = AF_Component_SetEnabled(component, TRUE);
 
     AF_CText returnMesh = {
-	.enabled = component,
-    .isDirty = TRUE,
-    .isShowing = TRUE,
-    .fontID = 0,
-    .fontPath = NULL,
-    .text = NULL,
-    .screenPos = {0,0},
-    .textColor = {0,0,0,1},
-    .textData = NULL
+	component,
+    TRUE,
+    TRUE,
+    0,
+    NULL,
+    NULL,
+    {0,0},
+    {0,0},
+    {0,0,0,1},
+    NULL
     };
     return returnMesh;
 }
