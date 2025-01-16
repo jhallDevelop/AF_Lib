@@ -47,7 +47,7 @@ typedef struct AF_CMesh {
     AF_Vertex* vertices;
     uint16_t vertexCount;
     uint32_t* indices;
-    int indexCount;
+    uint32_t indexCount;
     // TODO: pack this
     uint32_t vao;
     uint32_t vbo;

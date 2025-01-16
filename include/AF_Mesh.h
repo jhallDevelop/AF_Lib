@@ -202,7 +202,7 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
 
     uint32_t verticesCount = 0;// = _mesh.vertexCount;
     uint32_t indicesCount = 0; //_mesh.indexCount;
-    uint32_t texCoordsCount = 0; 
+    //uint32_t texCoordsCount = 0; 
 
     // Validate mesh counts
     if (_mesh.vertexCount <= 0 || _mesh.indexCount <= 0) {
