@@ -687,7 +687,7 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 					Vec3 maxB = Vec3_ADD(collider2->pos, collider2->boundingVolume);
 					Vec3 minB = Vec3_MINUS(collider2->pos, collider2->boundingVolume);
 
-					int facesCount = 6;
+					const int facesCount = 6;
 					float distances [facesCount];
 					
 						 distances[0] = maxB.x - minA.x; // distance of box ’b ’ to ’ left ’ of ’a ’.
@@ -857,6 +857,9 @@ static inline void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
 	const int verticesCount = 24;  // Total lines: 12 edges * 2 vertices per edge
 	Vec3 vertices[verticesCount];
 
+	// TODO: recieved many warnings, disabled for now
+	AF_Log_Warning("AF_Physics_DrawBox: disabled filling in the vertices\n");
+	/*
 	// Top face vertices
 	vertices[0] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomLeft
 	vertices[1] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topLeft
@@ -895,7 +898,7 @@ static inline void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
 
 	vertices[22] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomRight
 	vertices[23] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomRight
-
+	*/
 	AF_Debug_DrawLineArrayWorld(vertices, verticesCount, color, FALSE);
 }
 
