@@ -23,18 +23,19 @@ extern "C" {
 void CheckGLError(const char * _message);
 
 // Init
-void AF_Renderer_Init(AF_ECS* _ecs, Vec2 _screenSize);
-void AF_Renderer_LateStart(AF_ECS* _ecs);
+//void AF_Renderer_Init(AF_ECS* _ecs, Vec2 _screenSize);
+uint32_t AF_Renderer_Awake();
+void AF_Renderer_Start(AF_ECS* _ecs);
 void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
 void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(AF_ECS* _ecs);
 void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 //void AF_Renderer_Debug(void);
-uint32_t AF_Renderer_InitRenderer(AF_Window* _window);
+
 uint32_t AF_LoadTexture(const char* _texturePath);
 
 
-void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
+void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
 
 //void Init(GLFWwindow* _window, std::vector<Entity*>& _entities);
 //void InitRenderingData(std::vector<Entity*>& _entities);
@@ -98,6 +99,9 @@ void AF_LIB_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
 // Draw
 // TODO: don't like passing in the camera or debug mesh
 void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
+void AF_Renderer_StartRendering(float _backgroundColor[3]);
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs);
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh);
  
 //void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
 //static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);

@@ -174,20 +174,17 @@ void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName
 
 /*
 ====================
-AF_LIB_InitRenderer
+AF_LIB_Awake
 Init OpenGL
 ====================
 */
-uint32_t AF_Renderer_InitRenderer(AF_Window* _window){
+uint32_t AF_Renderer_Awake(){
     uint32_t success = 1;
-    AF_Log("%s Initialized %s\n", openglRendererFileTitle, _window->title);
+    AF_Log("AF_Renderer_Awake\n");
     //Initialize GLEW
     glewExperimental = GL_TRUE; 
     GLenum glewError = glewInit();
-    if( glewError != GLEW_OK )
-    {
-        AF_Log_Error( "Error initializing GLEW! %s\n", glewGetErrorString( glewError ) );
-    }
+    AF_CheckGLError( "Error initializing GLEW! \n");
 
     //Use Vsync
     /*
@@ -200,7 +197,7 @@ uint32_t AF_Renderer_InitRenderer(AF_Window* _window){
     //Initialize OpenGL
     
     //Initialize clear color
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f );
+    //glClearColor(1.0f, 1.0f, 1.0f, 1.0f );
     
     /**/
 
@@ -209,7 +206,8 @@ uint32_t AF_Renderer_InitRenderer(AF_Window* _window){
 
         // configure global opengl state
     // -----------------------------
-    glEnable(GL_DEPTH_TEST);
+    
+	glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     AF_CheckGLError( "Error initializing OpenGL! \n");
@@ -219,11 +217,21 @@ uint32_t AF_Renderer_InitRenderer(AF_Window* _window){
 
 /*
 ====================
-AF_LIB_InitMeshBuffers
+AF_Renderer_Start
+Start function which occurs after everything is loaded in.
+====================
+*/
+void AF_Renderer_Start(AF_ECS* _ecs){
+	AF_Log("AF_Renderer_Start\n");
+	AF_Renderer_InitMeshBuffers(&_ecs->entities[0], _ecs->entitiesCount);
+}
+
+/*
+====================
+AF_Renderer_InitMeshBuffers
 Init the mesh buffers for OpenGL
 ====================
 */
-// TODO: change name to AF_Renderer_InitMeshBuffers
 void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){ 
 
     if (_entityCount == 0) {
@@ -241,37 +249,38 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 		continue;
 	    }
 
-	    if (mesh->indexCount == 0) {
-		AF_Log_Error("Mesh has no indices!\n");
-		return;
-	    }
+		AF_CheckGLError( "Mesh has no indices!\n");
 
 	    if (!mesh->vertices || !mesh->indices) {
 		AF_Log_Error("Invalid vertex or index data!\n");
 		return;
 	    }
-
-		// TODO: Why are we multiplying by _entityCount
-		AF_Log("Check that we are not allocating too much buffer size, as we are multiplying by entity count. \n");
-	    int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
+		
+	    //int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
+		int vertexBufferSize = mesh->vertexCount * sizeof(AF_Vertex);
 	    //AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	    
+	    AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+			
 	    GLuint gVAO, gVBO, gEBO;
 	    glGenVertexArrays(1, &gVAO);
 	    glGenBuffers(1, &gVBO);
 	    glGenBuffers(1, &gEBO);
+		AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
 
 	    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
 	    glBindVertexArray(gVAO);
 	    glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+		AF_CheckGLError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
 
 	    // our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
 	    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, mesh->vertices, GL_STATIC_DRAW);
+		AF_CheckGLError( "OpenGL error occurred during glBufferData for the verts.\n");
 	    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	    // Bind the IBO and set the buffer data
 	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
 	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(unsigned int), &mesh->indices[0], GL_STATIC_DRAW);
+		AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
 	    // Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
 	    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
@@ -281,6 +290,8 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 	    glEnableVertexAttribArray(1);
 	    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
 	    glEnableVertexAttribArray(2);
+
+		AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
 
 	    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	    glBindBuffer(GL_ARRAY_BUFFER, 0); 
@@ -302,7 +313,85 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
     }
 }
 
+void AF_Renderer_StartRendering(float _backgroundColor[3] ){
+	AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
+    glClearColor(_backgroundColor[0], _backgroundColor[1],_backgroundColor[2], 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Enable transparent blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // if in 2d mode, disable depth testing
+    glDisable(GL_DEPTH_TEST);
+}
+
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_CMesh* mesh = &_ecs->meshes[i];
+		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
+		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
+		// Skip if there is no rendering component
+		if(meshHas == FALSE){// || hasEnabled == FALSE){
+			continue;
+		}
+		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
+		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh);
+	}
+}
+
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh){
+	
+
+	// draw mesh
+		glBindVertexArray(_mesh->vao);//_meshList->vao);
+		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
+
+		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+		glBindBuffer(GL_ARRAY_BUFFER, _mesh->vbo);
+		AF_CheckGLError("Error binding VBO for drawing!");
+
+
+		//---------------Send command to Graphics API to Draw Triangles------------
+		// Setup shader
+		uint32_t shader = _mesh->material.shaderID;
+		glUseProgram(shader); 
+
+		// Projection
+		int projLocation = glGetUniformLocation(shader, "projection");
+		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_projMat->rows);
+
+		// View
+		int viewLocation = glGetUniformLocation(shader, "view");
+		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_viewMat->rows);
+
+		// Model
+		int modelLocation = glGetUniformLocation(shader, "model");
+		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
+
+		// Texture 
+		//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
+
+		// send the camera data to the shader
+		// Prep drawing
+		unsigned int indexCount = _mesh->indexCount;
+		if(indexCount == 0){
+			AF_Log_Warning("AF_Renderer_DrawMesh: indexCount is 0. Can't draw elements\n");
+			return;
+		}
+
+		//AF_Log_Error("AF_Renderer_DisplayRenderer: segfault here %s: %s\n", __FILE__, __LINE__);
+		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+			
+		AF_CheckGLError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
+
+		glBindVertexArray(0);
+		AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
+	
+	// Unbind textures
+		//unbind diffuse
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 
 /*
@@ -311,6 +400,7 @@ AF_LIB_DisplayRenderer
 Display the renderer
 ====================
 */
+// TODO: This function is a mess. Clean it up
 void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID){
 
     AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
@@ -368,265 +458,278 @@ void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, A
 	// Start sending data to the shader/ GPU
 	// First entity is normally the camera, so
 	//int shaderID = _ecs->entities[1].mesh.material.shaderID;
-	glUseProgram(shaderID); 
-
-	int projLocation = glGetUniformLocation(shaderID, "projection");
-	int viewLocation = glGetUniformLocation(shaderID, "view");
-
-	// send the camera data to the shader
-	int cameraLocation = glGetUniformLocation(shaderID, "cameraWorldPos");
-
-	// Send camrea data to shader
-	// Projection Matrix
-	glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_camera->projectionMatrix.rows[0]);
-
-	// View Matrix
-	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_camera->viewMatrix.rows[0]);
-	glUniform3fv(cameraLocation, 1, (float*)&_cameraEntity->transform->pos);
+	
 
  
 
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){//_meshList->numMeshes; i++){
 	
-	AF_Entity* entity = &_ecs->entities[i];
-	if(entity == NULL){
-		continue;
-	}
+		AF_Entity* entity = &_ecs->entities[i];
+		if(entity == NULL){
+			continue;
+		}
 
-	// Skip entities that havn't been enabled
-	if(entity->flags == FALSE){
-		continue;
-	}
+		// Skip entities that havn't been enabled
+		if(entity->flags == FALSE){
+			continue;
+		}
 
-	AF_CMesh* mesh = entity->mesh;
+		AF_CMesh* mesh = entity->mesh;
 
-	BOOL meshHas = AF_Component_GetHas(mesh->enabled);
-	BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
-	// Skip if there is no rendering component
-	if(meshHas == FALSE || hasEnabled == FALSE){
-		continue;
-	}
-	
-	// Stor the component values
-	AF_CTransform3D* trans = entity->transform;
-	if(trans == NULL){
-		AF_Log_Error("AF_OpenGL_Renderer::Render: Null transforms\n");
-		continue;
-	}
-
-	AF_CheckGLError( "Error at useProgram Rendering OpenGL! \n");
-	int textureUniformLocation = glGetUniformLocation(shaderID, "image");
-	int modelLocation = glGetUniformLocation(shaderID, "model");
-    
+		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
+		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
+		// Skip if there is no rendering component
+		if(meshHas == FALSE || hasEnabled == FALSE){
+			continue;
+		}
 		
-	Vec3* pos = &trans->pos;
-	Vec3* rot = &trans->rot;
-	Vec3* scale = &trans->scale;
+		// Stor the component values
+		AF_CTransform3D* trans = entity->transform;
+		if(trans == NULL){
+			AF_Log_Error("AF_OpenGL_Renderer::Render: Null transforms\n");
+			continue;
+		}
 
-	// convert to vec4 for model matrix
-	Vec4 modelPos = {pos->x, pos->y, pos->z, 1.0f};
-	Vec4 modelRot = {rot->x, rot->y, rot->z, 1.0f};
-	Vec4 modelScale = {scale->x, scale->y, scale->z, 1.0f};
+		AF_CheckGLError( "Error at useProgram Rendering OpenGL! \n");
+		int textureUniformLocation = glGetUniformLocation(shaderID, "image");
+		
+			
+		Vec3* pos = &trans->pos;
+		Vec3* rot = &trans->rot;
+		Vec3* scale = &trans->scale;
 
-	// apply rotation to postion and scaled matrix
-	//TODO: set the angle correctly
-	Mat4 rotatedMatrix = Mat4_ROTATE_V4(Mat4_IDENTITY(), modelRot, 1.0f);//AFM4_DOT_M4( rotatedMatrix, scaleMatrix);
-	// Apply scale
-	Mat4 scaleMatrix = Mat4_SCALE_V4(Mat4_IDENTITY(), modelScale); 
+		// convert to vec4 for model matrix
+		Vec4 modelPos = {pos->x, pos->y, pos->z, 1.0f};
+		Vec4 modelRot = {rot->x, rot->y, rot->z, 1.0f};
+		Vec4 modelScale = {scale->x, scale->y, scale->z, 1.0f};
 
-	// apply rotation to postion and scaled matrix
-	Mat4 rsMat = Mat4_DOT_M4(rotatedMatrix, scaleMatrix);
+		// apply rotation to postion and scaled matrix
+		//TODO: set the angle correctly
+		Mat4 rotatedMatrix = Mat4_ROTATE_V4(Mat4_IDENTITY(), modelRot, 1.0f);//AFM4_DOT_M4( rotatedMatrix, scaleMatrix);
+		// Apply scale
+		Mat4 scaleMatrix = Mat4_SCALE_V4(Mat4_IDENTITY(), modelScale); 
+
+		// apply rotation to postion and scaled matrix
+		Mat4 rsMat = Mat4_DOT_M4(rotatedMatrix, scaleMatrix);
+		
+		// Construct the final model matrix with translation using row-major order
+		Mat4 modelMatrix = {{
+			{rsMat.rows[0].x, rsMat.rows[0].y, rsMat.rows[0].z, modelPos.x},
+			{rsMat.rows[1].x, rsMat.rows[1].y, rsMat.rows[1].z, modelPos.y},
+			{rsMat.rows[2].x, rsMat.rows[2].y, rsMat.rows[2].z, modelPos.z},
+			{rsMat.rows[3].x, rsMat.rows[3].y, rsMat.rows[3].z, 1.0f}
+		}};
+
+		//AF_Log_Mat4(modelMatrix);	
+		// Set model matrix Mat4 for shader
+		
+		
+		
+		// if we have a sprite, then render it.
+		AF_CSprite* sprite = entity->sprite;
+		BOOL hasSprite = AF_Component_GetHas(sprite->enabled);
+		BOOL enabledSprite = AF_Component_GetEnabled(sprite->enabled);
+
+		GLfloat spriteSize[2] = {
+				sprite->spriteSize.x, /// sprite->spriteSheetSize.x, 
+				sprite->spriteSize.y// / sprite->spriteSheetSize.y
+				};
+
+		if(hasSprite == TRUE && enabledSprite == TRUE){
+			// TODO: pack all this info about the sprite into a single data struct 
+			// so talking to the shader is cheaper
+			// Tell the shader about the sprite size
+			int spriteSizeLocation = glGetUniformLocation(shaderID, "spriteSize");
+			// Tell the shader about the sprite position
+			if (spriteSizeLocation != -1) {
+				glUniform2fv(spriteSizeLocation, 1, spriteSize);
+			}
+
+			// Tell the shader about the sprite sheet size
+				int spriteSheetSizeLocation = glGetUniformLocation(shaderID, "spriteSheetSize");
+			if(spriteSheetSizeLocation != -1){
+				GLfloat spriteSheetSize[2] = {
+					sprite->spriteSheetSize.x,
+					sprite->spriteSheetSize.y
+				};
+				glUniform2fv(spriteSheetSizeLocation, 1, spriteSheetSize);
+			}
+			
+
+			// if we have a Animation, then render it.
+			AF_CAnimation* animation = entity->animation;
+			BOOL hasAnimation = AF_Component_GetHas(animation->enabled);
+			BOOL enabledAnimation = AF_Component_GetEnabled(animation->enabled);
+			// setup a vec2 to update the sprite position		
+			GLfloat spritePos[2] = {
+				sprite->spritePos.x,
+				sprite->spritePos.y
+				};
+			
+			// if we have animation component, then update the spritePosition 
+			// based on the current frame.
+			if(hasAnimation == TRUE && enabledAnimation == TRUE){
+			// Update the sprite position
+				spritePos[0] = spritePos[0] + (spriteSize[0] * animation->currentFrame);
+			}
+			// Tell the shader about the updated sprite position
+				int spritePosLocation = glGetUniformLocation(shaderID, "spritePos");
+				if(spritePosLocation != -1){
+					glUniform2fv(spritePosLocation, 1, spritePos);
+			}
+		
+			// Set the texture for the shader
+			glUniform1i(textureUniformLocation,0);// _meshList->materials[0].textureID); 
+			glActiveTexture(GL_TEXTURE0);
+			// TODO implement binding the actual texture
+			// unsigned int diffuseTexture = _mesh.material.diffuseTexture;
+			glBindTexture(GL_TEXTURE_2D, mesh->material.textureID);
+			AF_CheckGLError("Error blBindTexture diffuse ");
+		}
+
+		// if we have a sprite, but it isn't enabled then don't contine
+		if(hasSprite == TRUE && enabledSprite == FALSE){
+			continue;
+		}
 	
-	// Construct the final model matrix with translation using row-major order
-	Mat4 modelMatrix = {{
-	    {rsMat.rows[0].x, rsMat.rows[0].y, rsMat.rows[0].z, modelPos.x},
-	    {rsMat.rows[1].x, rsMat.rows[1].y, rsMat.rows[1].z, modelPos.y},
-	    {rsMat.rows[2].x, rsMat.rows[2].y, rsMat.rows[2].z, modelPos.z},
-	    {rsMat.rows[3].x, rsMat.rows[3].y, rsMat.rows[3].z, 1.0f}
-	}};
+		// draw mesh
+		glBindVertexArray(mesh->vao);//_meshList->vao);
+		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
 
-	//AF_Log_Mat4(modelMatrix);	
-	// Set model matrix Mat4 for shader
-	glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&modelMatrix.rows[0]);
-	
-	
-	// if we have a sprite, then render it.
-	AF_CSprite* sprite = entity->sprite;
-	BOOL hasSprite = AF_Component_GetHas(sprite->enabled);
-	BOOL enabledSprite = AF_Component_GetEnabled(sprite->enabled);
+		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+		glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
+		AF_CheckGLError("Error binding VBO for drawing!");
 
-	 GLfloat spriteSize[2] = {
-			sprite->spriteSize.x, /// sprite->spriteSheetSize.x, 
-			sprite->spriteSize.y// / sprite->spriteSheetSize.y
+
+		//---------------Send command to Graphics API to Draw Triangles------------
+		// Setup shader
+		uint32_t shader = mesh->material.shaderID;
+		glUseProgram(shader); 
+
+		// Projection
+		int projLocation = glGetUniformLocation(shaderID, "projection");
+		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_camera->projectionMatrix.rows[0]);
+
+		// View
+		int viewLocation = glGetUniformLocation(shaderID, "view");
+		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_camera->viewMatrix.rows[0]);
+
+		// Model
+		int modelLocation = glGetUniformLocation(shaderID, "model");
+		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&modelMatrix.rows[0]);
+
+		// send the camera data to the shader
+		// TODO: delete this
+		int cameraLocation = glGetUniformLocation(shaderID, "cameraWorldPos");
+		glUniform3fv(cameraLocation, 1, (float*)&_cameraEntity->transform->pos);
+		
+
+		// Prep drawing
+		unsigned int indexCount = mesh->indexCount;
+		if(indexCount == 0){
+			AF_Log_Warning("AF_Renderer_DisplayRenderer: indexCount is 0. Can't draw elements\n");
+			return;
+		}
+
+		//AF_Log_Error("AF_Renderer_DisplayRenderer: segfault here %s: %s\n", __FILE__, __LINE__);
+		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+			
+		AF_CheckGLError( "Error drawElements Rendering OpenGL! \n");
+
+		// Draw debug collision boundaries
+		AF_CCollider* collider = entity->collider;
+
+
+		// Renderer Debug
+		if(mesh->showDebug == TRUE){
+			// If we set the line colour we are telling the shader that we want to draw a debug line.
+			// If the line colour is black, then shader will just render the texture normally
+			// Set the debug line color to GREEN
+			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 1.0f, 0.0f, 1.0f); 
+			glDrawArrays(GL_LINE_LOOP, 0, mesh->vertexCount);
+			// Set the debug color back to 0 so we don't affect other rendering
+			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 0.0f, 0.0f); 
+
+		
+
+
+		// Collider Debug
+		BOOL hasCollider = AF_Component_GetHas(collider->enabled);
+		BOOL enabledCollider = AF_Component_GetEnabled(collider->enabled);
+
+		if(hasCollider == TRUE && enabledCollider == TRUE){
+			// draw debug lines
+			// The verts needs to reflect the collider bound
+			// Get the min and max points of the bounding box from the collider
+			// Get the bounds values
+			//float x = collider->bounds.x;
+			//float y = collider->bounds.y;
+			//float width = collider->bounds.w;
+			//float height = collider->bounds.h;
+
+			// Define the 4 vertices of the bounding box
+			
+			float quadVerts[8] = {
+			0.5f, 0.5f,//x, y,                   // Bottom-left
+			0.5f, -0.5f,//x + width, y,           // Bottom-right
+			-0.5f, -0.5f,//x + width, y + height,  // Top-right
+			-0.5f, 0.5f//x, y + height           // Top-left
 			};
 
-	if(hasSprite == TRUE && enabledSprite == TRUE){
-		// TODO: pack all this info about the sprite into a single data struct 
-		// so talking to the shader is cheaper
-		// Tell the shader about the sprite size
-		int spriteSizeLocation = glGetUniformLocation(shaderID, "spriteSize");
-		// Tell the shader about the sprite position
-		if (spriteSizeLocation != -1) {
-		    glUniform2fv(spriteSizeLocation, 1, spriteSize);
+		
+			//if(boundsVerts[0] == 0){}
+			// Define the 4 edges of the bounding box using indices of the vertices
+			
+			// Bind your VAO or VBO as necessary
+			// Setup the buffers
+			GLuint vao, vbo;
+			glGenVertexArrays(1, &vao);
+			glGenBuffers(1, &vbo);
+
+			glBindVertexArray(vao);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+
+			// Update the VBO with the bounding box vertices
+			//glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(boundsVerts), boundsVerts);
+
+			// Set up vertex attribute pointers
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+			glEnableVertexAttribArray(0);
+
+
+			
+			// If we set the line colour we are telling the shader that we want to draw a debug line.
+			// If the line colour is black, then shader will just render the texture normally
+			// Set the debug line color to GREEN
+			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 1.0f, 0.0f); 
+			//glDrawArrays(GL_LINE_LOOP, 0, mesh->vertexCount);
+
+			// Draw the lines based on the indices
+			//glDrawElements(GL_LINES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, boundsIndices);
+			glDrawArrays(GL_LINE_LOOP, 0, 4);
+
+			// Set the debug color back to 0 so we don't affect other rendering
+			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 0.0f, 0.0f);
+
+			// Cleanup
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindVertexArray(0);
+			glDeleteBuffers(1, &vbo);
+			glDeleteVertexArrays(1, &vao);
+			
+			//AF_Debug_DrawLine(0.0f,0.0f,0.0f,0.0f,0.0f, mesh, _camera->projectionMatrix, _camera->viewMatrix, modelMatrix);
 		}
 
-		// Tell the shader about the sprite sheet size
-       		int spriteSheetSizeLocation = glGetUniformLocation(shaderID, "spriteSheetSize");
-		if(spriteSheetSizeLocation != -1){
-			GLfloat spriteSheetSize[2] = {
-				sprite->spriteSheetSize.x,
-				sprite->spriteSheetSize.y
-			};
-			glUniform2fv(spriteSheetSizeLocation, 1, spriteSheetSize);
 		}
+				
+			glBindVertexArray(0);
+			AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
 		
-
-		// if we have a Animation, then render it.
-		AF_CAnimation* animation = entity->animation;
-		BOOL hasAnimation = AF_Component_GetHas(animation->enabled);
-		BOOL enabledAnimation = AF_Component_GetEnabled(animation->enabled);
-		// setup a vec2 to update the sprite position		
-		GLfloat spritePos[2] = {
-			sprite->spritePos.x,
-			sprite->spritePos.y
-			};
-		
-		// if we have animation component, then update the spritePosition 
-		// based on the current frame.
-		if(hasAnimation == TRUE && enabledAnimation == TRUE){
-		// Update the sprite position
-			spritePos[0] = spritePos[0] + (spriteSize[0] * animation->currentFrame);
-		}
-		// Tell the shader about the updated sprite position
-			int spritePosLocation = glGetUniformLocation(shaderID, "spritePos");
-			if(spritePosLocation != -1){
-			    glUniform2fv(spritePosLocation, 1, spritePos);
-		}
-	
-		// Set the texture for the shader
-		glUniform1i(textureUniformLocation,0);// _meshList->materials[0].textureID); 
-		glActiveTexture(GL_TEXTURE0);
-		// TODO implement binding the actual texture
-		// unsigned int diffuseTexture = _mesh.material.diffuseTexture;
-		glBindTexture(GL_TEXTURE_2D, mesh->material.textureID);
-		AF_CheckGLError("Error blBindTexture diffuse ");
-	}
-
-	// if we have a sprite, but it isn't enabled then don't contine
-	if(hasSprite == TRUE && enabledSprite == FALSE){
-		continue;
-	}
- 
-        // draw mesh
-        glBindVertexArray(mesh->vao);//_meshList->vao);
-        AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
-        //---------------Send command to Graphics API to Draw Triangles------------
-	
-	unsigned int indexCount = mesh->indexCount;
-    if(indexCount == 0){
-		AF_Log_Warning("AF_Renderer_DisplayRenderer: indexCount is 0. Can't draw elements\n");
-		return;
-	}
-	AF_Log_Error("AF_Renderer_DisplayRenderer: segfault here %s: %s\n", __FILE__, __LINE__);
-	glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-        
-        AF_CheckGLError( "Error drawElements Rendering OpenGL! \n");
-
-	// Draw debug collision boundaries
-	AF_CCollider* collider = entity->collider;
-
-
-	// Renderer Debug
-	if(mesh->showDebug == TRUE){
-		// If we set the line colour we are telling the shader that we want to draw a debug line.
-		// If the line colour is black, then shader will just render the texture normally
-		// Set the debug line color to GREEN
-		glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 1.0f, 0.0f, 1.0f); 
-		glDrawArrays(GL_LINE_LOOP, 0, mesh->vertexCount);
-		// Set the debug color back to 0 so we don't affect other rendering
-		glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 0.0f, 0.0f); 
-
-	
-
-
-	// Collider Debug
-	// TODO: use packed approach
-	BOOL hasCollider = AF_Component_GetHas(collider->enabled);
-	BOOL enabledCollider = AF_Component_GetEnabled(collider->enabled);
-
-	if(hasCollider == TRUE && enabledCollider == TRUE){
-		// draw debug lines
-		// The verts needs to reflect the collider bound
-		// Get the min and max points of the bounding box from the collider
-		   // Get the bounds values
-	    //float x = collider->bounds.x;
-	    //float y = collider->bounds.y;
-	    //float width = collider->bounds.w;
-	    //float height = collider->bounds.h;
-
-	    // Define the 4 vertices of the bounding box
-	    
-	    float quadVerts[8] = {
-		0.5f, 0.5f,//x, y,                   // Bottom-left
-		0.5f, -0.5f,//x + width, y,           // Bottom-right
-		-0.5f, -0.5f,//x + width, y + height,  // Top-right
-		-0.5f, 0.5f//x, y + height           // Top-left
-	    };
-
-	
-	    //if(boundsVerts[0] == 0){}
-	    // Define the 4 edges of the bounding box using indices of the vertices
-	    
-	    // Bind your VAO or VBO as necessary
-	    // Setup the buffers
-	    GLuint vao, vbo;
-	    glGenVertexArrays(1, &vao);
-	    glGenBuffers(1, &vbo);
-
-	    glBindVertexArray(vao);
-	    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
-
-	    // Update the VBO with the bounding box vertices
-	    //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(boundsVerts), boundsVerts);
-
-	    // Set up vertex attribute pointers
-	    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	    glEnableVertexAttribArray(0);
-
-
-		
-	    // If we set the line colour we are telling the shader that we want to draw a debug line.
-	    // If the line colour is black, then shader will just render the texture normally
-	    // Set the debug line color to GREEN
-	    glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 1.0f, 0.0f); 
-	    //glDrawArrays(GL_LINE_LOOP, 0, mesh->vertexCount);
-
-	    // Draw the lines based on the indices
-	    //glDrawElements(GL_LINES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, boundsIndices);
-	    glDrawArrays(GL_LINE_LOOP, 0, 4);
-
-	    // Set the debug color back to 0 so we don't affect other rendering
-	    glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 0.0f, 0.0f);
-
-	    // Cleanup
-	    glBindBuffer(GL_ARRAY_BUFFER, 0);
-	    glBindVertexArray(0);
-	    glDeleteBuffers(1, &vbo);
-	    glDeleteVertexArrays(1, &vao);
-		
-		//AF_Debug_DrawLine(0.0f,0.0f,0.0f,0.0f,0.0f, mesh, _camera->projectionMatrix, _camera->viewMatrix, modelMatrix);
-	}
-
-	}
-	        
-        glBindVertexArray(0);
-        AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
-	
-	// Unbind textures
-    	//unbind diffuse
-    	glActiveTexture(GL_TEXTURE0);
-    	glBindTexture(GL_TEXTURE_2D, 0);
+		// Unbind textures
+			//unbind diffuse
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, 0);
 
     }
     AF_CheckGLError( "Error at end Rendering OpenGL! \n");

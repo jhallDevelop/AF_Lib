@@ -28,7 +28,6 @@ Used to hold all the entities
 typedef struct {
     uint32_t entitiesCount;
     uint32_t currentEntity;
-    // TODO: don't ifdef, be smarter
     AF_Entity entities[AF_ECS_TOTAL_ENTITIES];
     AF_CSprite sprites[AF_ECS_TOTAL_ENTITIES];		// sprite cmponent
     
