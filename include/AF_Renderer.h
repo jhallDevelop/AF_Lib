@@ -24,7 +24,7 @@ void CheckGLError(const char * _message);
 
 // Init
 //void AF_Renderer_Init(AF_ECS* _ecs, Vec2 _screenSize);
-uint32_t AF_Renderer_Awake();
+uint32_t AF_Renderer_Awake(void);
 void AF_Renderer_Start(AF_ECS* _ecs);
 void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
 void AF_Renderer_Finish(void);

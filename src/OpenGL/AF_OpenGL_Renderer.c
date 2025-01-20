@@ -178,7 +178,7 @@ AF_LIB_Awake
 Init OpenGL
 ====================
 */
-uint32_t AF_Renderer_Awake(){
+uint32_t AF_Renderer_Awake(void){
     uint32_t success = 1;
     AF_Log("AF_Renderer_Awake\n");
     //Initialize GLEW
