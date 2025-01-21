@@ -9,26 +9,15 @@ functions to load meshes, creating memory on the heap based on the size of the m
 */
 #ifndef AF_CMESH_H
 #define AF_CMESH_H
-#include "AF_Vertex.h"
 #include "AF_Lib_Define.h"
 #include "AF_Material.h"
 #include "ECS/Components/AF_Component.h"
+#include "AF_MeshData.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  
 
-// Inspired by Tiny3D fixed point matrix
-// 3D s16.16 fixed-point vector, used as-is by the RSP (n64)
-typedef struct {
-  int16_t i[4];
-  uint16_t f[4];
-} Vec4FP;
-
-// 4x4 Matrix of 16.16 fixed-point numbers, used as-is by the RSP (n64)
-typedef struct {
-  Vec4FP m[4];
-} __attribute__((aligned(16))) Mat4FP;
 
 enum AF_MESH_TYPE{
 	AF_MESH_TYPE_PLANE, 
@@ -44,15 +33,8 @@ enum AF_MESH_TYPE{
 // Mesh Struct
 typedef struct AF_CMesh {
     PACKED_CHAR enabled;
-    AF_Vertex* vertices;
-    uint16_t vertexCount;
-    uint32_t* indices;
-    uint32_t indexCount;
-    // TODO: pack this
-    uint32_t vao;
-    uint32_t vbo;
-    uint32_t ibo;
-    AF_Material material;
+    AF_MeshData* meshes;
+	uint32_t meshCount;
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
 	const char* meshPath;
@@ -73,14 +55,8 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
     AF_CMesh returnMesh = {
 	//.has = FALSE,
 	.enabled = FALSE,
-	.vertices = NULL,
-	.vertexCount = 0,
-	.indices = NULL,
-	.indexCount = 0,
-	.vao = 0,
-	.vbo = 0,
-	.ibo = 0,
-	.material = {0,0,{0,0,0,0}},
+	.meshes = NULL,
+	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshPath = NULL,
@@ -106,14 +82,8 @@ static inline AF_CMesh AF_CMesh_ADD(void){
     AF_CMesh returnMesh = {
 	//.has = TRUE,
 	.enabled = component,
-	.vertices = NULL,
-	.vertexCount = 0,
-	.indices = NULL,
-	.indexCount = 0,
-	.vao = 0,
-	.vbo = 0,
-	.ibo = 0,
-	.material = {0,0,{0,0,0,0}},
+	.meshes = NULL,
+	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshPath = NULL,

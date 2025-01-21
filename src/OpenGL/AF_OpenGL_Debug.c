@@ -105,6 +105,7 @@ AF_CMesh AF_Debug_Init_DrawLine(void){
 	AF_CMesh returnMesh = AF_CMesh_ZERO();
 	//returnMesh.has = TRUE;
 	returnMesh.enabled = AF_Component_SetEnabled(returnMesh.enabled, TRUE);
+	/*
 	returnMesh.vertices = &debugLineVerts[0];
 	returnMesh.vertexCount = 6;
 	returnMesh.indices = NULL;
@@ -112,10 +113,11 @@ AF_CMesh AF_Debug_Init_DrawLine(void){
 	returnMesh.vao = VAO;
 	returnMesh.vbo = VBO;
 	returnMesh.ibo = 0;
+	*/
 	AF_Material debugMaterial = AF_Material_ZERO();
 	debugMaterial.shaderID = (uint32_t)shaderProgram;
 	// debugMaterial.textureID = 0;
-	returnMesh.material = debugMaterial;
+	//returnMesh.material = debugMaterial;
 
 	//AF_Log("AF_OpenGL_Debug:: Init buffers\n");
 	return returnMesh;
@@ -145,15 +147,16 @@ Also provide a line thickness size
 void AF_Debug_DrawLine(float _xPos1, float _yPos1, float _xPos2, float _yPos2, float _size, AF_CMesh* _debugMesh, Mat4 _viewMatrix, Mat4 _projectionMatrix, Mat4 _modelMatrix){
 	
 	// Draw Line to screen
-	if(_xPos1 == 0 || _yPos1 == 0 || _size == 0 || _xPos2 == 0 || _yPos2 == 0 || _modelMatrix.rows[0].x == 0){}
+	if(_xPos1 == 0 || _yPos1 == 0 || _size == 0 || _xPos2 == 0 || _yPos2 == 0 || _modelMatrix.rows[0].x == 0 || _viewMatrix.rows[0].x == 0 || _projectionMatrix.rows[0].x == 0){}
 
 	if(_debugMesh == NULL){
 		AF_Log_Error("AF_Debug_DrawLine: passed a null _debug mesh\n");
 	}
-
-
+	AF_Log_Warning("AF_Debug_DrawLine: DEPRICATED\n");
+	/*
 	//AF_Log("AF_Debug_DrawLine:: draw debug line\n");
-
+	// TODO: Re-implement this
+	
 	// Bind the shader program
 	int shaderProgram = _debugMesh->material.shaderID;
 	glUseProgram(shaderProgram);
@@ -174,5 +177,6 @@ void AF_Debug_DrawLine(float _xPos1, float _yPos1, float _xPos2, float _yPos2, f
 
 	// Unbind the VAO
 	glBindVertexArray(0);
+	*/
 
 }

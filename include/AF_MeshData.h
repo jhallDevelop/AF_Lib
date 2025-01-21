@@ -6,8 +6,8 @@ AF_MeshData_H
 */
 #ifndef AF_MESH_DATA_H
 #define AF_MESH_DATA_H
-#include "AF_Mesh.h"
 #include "AF_Material.h"
+#include "AF_Vertex.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,24 +15,30 @@ extern "C" {
 
 typedef struct {
     // array of meshes
-    AF_CMesh* meshes;
-    AF_Material* materials;
-    uint32_t numMeshes;
-    uint32_t materialsSize;
+    AF_Vertex* vertices;
+    uint16_t vertexCount;
+    uint32_t* indices;
+    uint32_t indexCount;
     uint32_t vao;
     uint32_t vbo;
     uint32_t ibo;
-    uint32_t shaderID;
+    AF_Material material;
 } AF_MeshData;
 
-inline int AF_MeshData_Destroy(AF_MeshData* _meshData){
-    if(_meshData == NULL){
-        return 0;
-    }
-    free(_meshData->meshes);
-    free(_meshData->materials);
-    return 1;
+static inline AF_MeshData AF_MeshData_ZERO(void){
+    AF_MeshData returnMesh = {
+        .vertices = NULL,
+        .vertexCount = 0,
+        .indices = NULL,
+        .indexCount = 0,
+        .vao = 0,
+        .vbo = 0,
+        .ibo = 0,
+        .material = {0,0,{0,0,0,0}}
+    };
+    return returnMesh;
 }
+
 
 #ifdef __cplusplus
 }

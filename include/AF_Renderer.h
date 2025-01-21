@@ -98,7 +98,7 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
 
 // Draw
 // TODO: don't like passing in the camera or debug mesh
-void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
+//void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
 void AF_Renderer_StartRendering(float _backgroundColor[3]);
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs);
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh);

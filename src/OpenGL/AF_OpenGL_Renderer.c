@@ -254,65 +254,68 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 
 		AF_CheckGLError( "Mesh has no indices!\n");
 
-	    if (!mesh->vertices || !mesh->indices) {
-		AF_Log_Error("Invalid vertex or index data!\n");
-		return;
-	    }
-		
-	    //int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
-		int vertexBufferSize = mesh->vertexCount * sizeof(AF_Vertex);
-	    //AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	    AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+		// for each mesh
+		for(uint32_t j = 0; j < mesh->meshCount; j++){
+			if (!mesh->meshes[i].vertices || !mesh->meshes[i].indices) {
+			AF_Log_Error("Invalid vertex or index data!\n");
+			return;
+			}
 			
-	    GLuint gVAO, gVBO, gEBO;
-	    glGenVertexArrays(1, &gVAO);
-	    glGenBuffers(1, &gVBO);
-	    glGenBuffers(1, &gEBO);
-		AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+			//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
+			int vertexBufferSize = mesh->meshes[i].vertexCount * sizeof(AF_Vertex);
+			//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
+			AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+				
+			GLuint gVAO, gVBO, gEBO;
+			glGenVertexArrays(1, &gVAO);
+			glGenBuffers(1, &gVBO);
+			glGenBuffers(1, &gEBO);
+			AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
 
-	    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
-	    glBindVertexArray(gVAO);
-	    glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-		AF_CheckGLError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
+			// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
+			glBindVertexArray(gVAO);
+			glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+			AF_CheckGLError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
 
-	    // our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
-	    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, mesh->vertices, GL_STATIC_DRAW);
-		AF_CheckGLError( "OpenGL error occurred during glBufferData for the verts.\n");
-	    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+			// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
+			glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, mesh->meshes[i].vertices, GL_STATIC_DRAW);
+			AF_CheckGLError( "OpenGL error occurred during glBufferData for the verts.\n");
+			//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	    // Bind the IBO and set the buffer data
-	    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
-	    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->indexCount * sizeof(unsigned int), &mesh->indices[0], GL_STATIC_DRAW);
-		AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
+			// Bind the IBO and set the buffer data
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->meshes[i].indexCount * sizeof(unsigned int), &mesh->meshes[i].indices[0], GL_STATIC_DRAW);
+			AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
-	    // Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
-	    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
-	    glEnableVertexAttribArray(0);
-	    
-	    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
-	    glEnableVertexAttribArray(1);
-	    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
-	    glEnableVertexAttribArray(2);
+			// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
+			glEnableVertexAttribArray(0);
+			
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
+			glEnableVertexAttribArray(2);
 
-		AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
+			AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
 
-	    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-	    glBindBuffer(GL_ARRAY_BUFFER, 0); 
+			// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+			glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
-	    // remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-	    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
+			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-	    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-	    glBindVertexArray(0); 
+			// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+			// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+			glBindVertexArray(0); 
 
-	    mesh->vao = gVAO;
-	    mesh->vbo = gVBO;
-	    mesh->ibo = gEBO;
-	    // Bind the IBO and set the buffer data
-	    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
-	    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
-	    AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
+			mesh->meshes[i].vao = gVAO;
+			mesh->meshes[i].vbo = gVBO;
+			mesh->meshes[i].ibo = gEBO;
+			// Bind the IBO and set the buffer data
+			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+			//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
+			AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
+		}
     }
 }
 
@@ -343,29 +346,33 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
 }
 
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh){
-	
-
-	// draw mesh
-		glBindVertexArray(_mesh->vao);//_meshList->vao);
+	// draw meshes
+	// TODO: this is very expensive. batch these up
+	for(uint32_t i = 0; i < _mesh->meshCount; i++){
+		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
 		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
 
 		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
-		glBindBuffer(GL_ARRAY_BUFFER, _mesh->vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
 		AF_CheckGLError("Error binding VBO for drawing!");
 
 
 		//---------------Send command to Graphics API to Draw Triangles------------
 		// Setup shader
-		uint32_t shader = _mesh->material.shaderID;
+		uint32_t shader = _mesh->meshes[i].material.shaderID;
 		glUseProgram(shader); 
 
+		AF_Log_Mat4(*_modelMat);
+		// TODO: work in row major order so we don't have the gpy have to do the extra transpose
+		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
+		// and should be transposed to column-major order (the default for OpenGL).
 		// Projection
 		int projLocation = glGetUniformLocation(shader, "projection");
-		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_projMat->rows);
+		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
 
 		// View
 		int viewLocation = glGetUniformLocation(shader, "view");
-		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_viewMat->rows);
+		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
 
 		// Model
 		int modelLocation = glGetUniformLocation(shader, "model");
@@ -376,7 +383,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		// send the camera data to the shader
 		// Prep drawing
-		unsigned int indexCount = _mesh->indexCount;
+		unsigned int indexCount = _mesh->meshes[i].indexCount;
 		if(indexCount == 0){
 			AF_Log_Warning("AF_Renderer_DrawMesh: indexCount is 0. Can't draw elements\n");
 			return;
@@ -389,7 +396,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		glBindVertexArray(0);
 		AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
-	
+	}
 	// Unbind textures
 		//unbind diffuse
 		//glActiveTexture(GL_TEXTURE0);
@@ -397,137 +404,40 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 }
 
 
+
 /*
 ====================
-AF_LIB_DisplayRenderer
-Display the renderer
+AF_LIB_DestroyRenderer
+Destroy the renderer
 ====================
 */
-// TODO: This function is a mess. Clean it up
-void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID){
+void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
+    AF_Log("%s Destroyed\n", openglRendererFileTitle);
+    for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
+		// for each mesh
+		for(uint32_t j = 0; j < _ecs->entities[i].mesh->meshCount; j++){
+			// optional: de-allocate all resources once they've outlived their purpose:
+			// ------------------------------------------------------------------------
+			AF_MeshData* mesh = &_ecs->entities[i].mesh->meshes[j];
+			glDeleteVertexArrays(1, &mesh->ibo);
+			glDeleteBuffers(1, &mesh->vbo);
+			glDeleteBuffers(1, &mesh->ibo);
+			glDeleteProgram(mesh->material.shaderID);
 
-    AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
-    AF_CTransform3D* cameraTransform = _cameraEntity->transform;
-    AF_CCamera* _camera = _cameraEntity->camera;
-    glClearColor(_camera->backgroundColor.x, _camera->backgroundColor.y, _camera->backgroundColor.z, _camera->backgroundColor.w);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Enable transparent blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // if in 2d mode, disable depth testing
-    glDisable(GL_DEPTH_TEST);
-
-    _window->title = _window->title;
-    // Get the width and height from the frambuffer instead of the original set window size as open gl works in pixels
-    _camera->windowWidth = _window->frameBufferWidth;//_window->windowWidth;
-    _camera->windowHeight = _window->frameBufferHeight;//_window->windowHeight;
-
-
-    // update the game camera with the window width
-   
-    // update camera vectors
-    //TODO: put in switch if using mouse look to calculate front based on yaw and pitch
-    Vec3 front = _camera->cameraFront;//AF_Camera_CalculateFront(yaw, pitch);
-
-    // calculate Right
-    Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(front, _camera->cameraWorldUp));
-	
-    // calculate up
-    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(right, front));
-	
-    // Calculate view matrix:vs
-    Mat4 viewMatrix = Mat4_Lookat(cameraTransform->pos, Vec3_ADD(cameraTransform->pos,front), up);
-    _camera->viewMatrix = viewMatrix;
-
-    // Calculate projection matrix
-	// TODO: disbaled setting projection matrix
-	//printf("DAF_LibDisplayRenderer: disabled setting project matrix\n");
-    //_camera->projectionMatrix = AF_Camera_GetOrthographicProjectionMatrix(_window, _camera);
-    _camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(_window, _camera);//AF_Camera_GetOrthographicProjectionMatrix(_window, _camera);
-    
-
-
-    // Set the winding order to clockwise
-    //glFrontFace(GL_CW); // Clockwise winding order
-    //glFrontFace(GL_CCW); // Counterclockwise winding order (default)
-
-
-    // Enable face culling
-    //glEnable(GL_CULL_FACE);
-    //glCullFace(GL_BACK);  // Cull back faces
-    //glDisable(GL_CULL_FACE);
-	// reuse the main shader to set the projection and view as it will be the same for all entities
-	// Start sending data to the shader/ GPU
-	// First entity is normally the camera, so
-	//int shaderID = _ecs->entities[1].mesh.material.shaderID;
-	
-
- 
-
-    for(uint32_t i = 0; i < _ecs->entitiesCount; i++){//_meshList->numMeshes; i++){
-	
-		AF_Entity* entity = &_ecs->entities[i];
-		if(entity == NULL){
-			continue;
+			// delete the vertices and indices data
+			free(mesh->vertices);
+            free(mesh->indices);
 		}
 
-		// Skip entities that havn't been enabled
-		if(entity->flags == FALSE){
-			continue;
-		}
+    }
+       
+        //glDeleteTexture(_meshList->materials[0].textureID);
+    AF_CheckGLError( "Error Destroying Renderer OpenGL! \n");
+}
 
-		AF_CMesh* mesh = entity->mesh;
 
-		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
-		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
-		// Skip if there is no rendering component
-		if(meshHas == FALSE || hasEnabled == FALSE){
-			continue;
-		}
-		
-		// Stor the component values
-		AF_CTransform3D* trans = entity->transform;
-		if(trans == NULL){
-			AF_Log_Error("AF_OpenGL_Renderer::Render: Null transforms\n");
-			continue;
-		}
-
-		AF_CheckGLError( "Error at useProgram Rendering OpenGL! \n");
-		int textureUniformLocation = glGetUniformLocation(shaderID, "image");
-		
-			
-		Vec3* pos = &trans->pos;
-		Vec3* rot = &trans->rot;
-		Vec3* scale = &trans->scale;
-
-		// convert to vec4 for model matrix
-		Vec4 modelPos = {pos->x, pos->y, pos->z, 1.0f};
-		Vec4 modelRot = {rot->x, rot->y, rot->z, 1.0f};
-		Vec4 modelScale = {scale->x, scale->y, scale->z, 1.0f};
-
-		// apply rotation to postion and scaled matrix
-		//TODO: set the angle correctly
-		Mat4 rotatedMatrix = Mat4_ROTATE_V4(Mat4_IDENTITY(), modelRot, 1.0f);//AFM4_DOT_M4( rotatedMatrix, scaleMatrix);
-		// Apply scale
-		Mat4 scaleMatrix = Mat4_SCALE_V4(Mat4_IDENTITY(), modelScale); 
-
-		// apply rotation to postion and scaled matrix
-		Mat4 rsMat = Mat4_DOT_M4(rotatedMatrix, scaleMatrix);
-		
-		// Construct the final model matrix with translation using row-major order
-		Mat4 modelMatrix = {{
-			{rsMat.rows[0].x, rsMat.rows[0].y, rsMat.rows[0].z, modelPos.x},
-			{rsMat.rows[1].x, rsMat.rows[1].y, rsMat.rows[1].z, modelPos.y},
-			{rsMat.rows[2].x, rsMat.rows[2].y, rsMat.rows[2].z, modelPos.z},
-			{rsMat.rows[3].x, rsMat.rows[3].y, rsMat.rows[3].z, 1.0f}
-		}};
-
-		//AF_Log_Mat4(modelMatrix);	
-		// Set model matrix Mat4 for shader
-		
-		
-		
+///////////////////////////// 2D RENDERING //////////////////////////////
+/*
 		// if we have a sprite, then render it.
 		AF_CSprite* sprite = entity->sprite;
 		BOOL hasSprite = AF_Component_GetHas(sprite->enabled);
@@ -594,169 +504,4 @@ void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, A
 		if(hasSprite == TRUE && enabledSprite == FALSE){
 			continue;
 		}
-	
-		// draw mesh
-		glBindVertexArray(mesh->vao);//_meshList->vao);
-		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
-
-		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
-		glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-		AF_CheckGLError("Error binding VBO for drawing!");
-
-
-		//---------------Send command to Graphics API to Draw Triangles------------
-		// Setup shader
-		uint32_t shader = mesh->material.shaderID;
-		glUseProgram(shader); 
-
-		// Projection
-		int projLocation = glGetUniformLocation(shaderID, "projection");
-		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_camera->projectionMatrix.rows[0]);
-
-		// View
-		int viewLocation = glGetUniformLocation(shaderID, "view");
-		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_camera->viewMatrix.rows[0]);
-
-		// Model
-		int modelLocation = glGetUniformLocation(shaderID, "model");
-		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&modelMatrix.rows[0]);
-
-		// send the camera data to the shader
-		// TODO: delete this
-		int cameraLocation = glGetUniformLocation(shaderID, "cameraWorldPos");
-		glUniform3fv(cameraLocation, 1, (float*)&_cameraEntity->transform->pos);
-		
-
-		// Prep drawing
-		unsigned int indexCount = mesh->indexCount;
-		if(indexCount == 0){
-			AF_Log_Warning("AF_Renderer_DisplayRenderer: indexCount is 0. Can't draw elements\n");
-			return;
-		}
-
-		//AF_Log_Error("AF_Renderer_DisplayRenderer: segfault here %s: %s\n", __FILE__, __LINE__);
-		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-			
-		AF_CheckGLError( "Error drawElements Rendering OpenGL! \n");
-
-		// Draw debug collision boundaries
-		AF_CCollider* collider = entity->collider;
-
-
-		// Renderer Debug
-		if(mesh->showDebug == TRUE){
-			// If we set the line colour we are telling the shader that we want to draw a debug line.
-			// If the line colour is black, then shader will just render the texture normally
-			// Set the debug line color to GREEN
-			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 1.0f, 0.0f, 1.0f); 
-			glDrawArrays(GL_LINE_LOOP, 0, mesh->vertexCount);
-			// Set the debug color back to 0 so we don't affect other rendering
-			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 0.0f, 0.0f); 
-
-		
-
-
-		// Collider Debug
-		BOOL hasCollider = AF_Component_GetHas(collider->enabled);
-		BOOL enabledCollider = AF_Component_GetEnabled(collider->enabled);
-
-		if(hasCollider == TRUE && enabledCollider == TRUE){
-			// draw debug lines
-			// The verts needs to reflect the collider bound
-			// Get the min and max points of the bounding box from the collider
-			// Get the bounds values
-			//float x = collider->bounds.x;
-			//float y = collider->bounds.y;
-			//float width = collider->bounds.w;
-			//float height = collider->bounds.h;
-
-			// Define the 4 vertices of the bounding box
-			
-			float quadVerts[8] = {
-			0.5f, 0.5f,//x, y,                   // Bottom-left
-			0.5f, -0.5f,//x + width, y,           // Bottom-right
-			-0.5f, -0.5f,//x + width, y + height,  // Top-right
-			-0.5f, 0.5f//x, y + height           // Top-left
-			};
-
-		
-			//if(boundsVerts[0] == 0){}
-			// Define the 4 edges of the bounding box using indices of the vertices
-			
-			// Bind your VAO or VBO as necessary
-			// Setup the buffers
-			GLuint vao, vbo;
-			glGenVertexArrays(1, &vao);
-			glGenBuffers(1, &vbo);
-
-			glBindVertexArray(vao);
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
-
-			// Update the VBO with the bounding box vertices
-			//glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(boundsVerts), boundsVerts);
-
-			// Set up vertex attribute pointers
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-			glEnableVertexAttribArray(0);
-
-
-			
-			// If we set the line colour we are telling the shader that we want to draw a debug line.
-			// If the line colour is black, then shader will just render the texture normally
-			// Set the debug line color to GREEN
-			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 1.0f, 0.0f); 
-			//glDrawArrays(GL_LINE_LOOP, 0, mesh->vertexCount);
-
-			// Draw the lines based on the indices
-			//glDrawElements(GL_LINES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, boundsIndices);
-			glDrawArrays(GL_LINE_LOOP, 0, 4);
-
-			// Set the debug color back to 0 so we don't affect other rendering
-			glUniform3f(glGetUniformLocation(shaderID, "debugLineColor"), 0.0f, 0.0f, 0.0f);
-
-			// Cleanup
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glBindVertexArray(0);
-			glDeleteBuffers(1, &vbo);
-			glDeleteVertexArrays(1, &vao);
-			
-			//AF_Debug_DrawLine(0.0f,0.0f,0.0f,0.0f,0.0f, mesh, _camera->projectionMatrix, _camera->viewMatrix, modelMatrix);
-		}
-
-		}
-				
-			glBindVertexArray(0);
-			AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
-		
-		// Unbind textures
-			//unbind diffuse
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, 0);
-
-    }
-    AF_CheckGLError( "Error at end Rendering OpenGL! \n");
-}
-
-/*
-====================
-AF_LIB_DestroyRenderer
-Destroy the renderer
-====================
-*/
-void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
-    AF_Log("%s Destroyed\n", openglRendererFileTitle);
-    for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
-	    // optional: de-allocate all resources once they've outlived their purpose:
-	    // ------------------------------------------------------------------------
-	    glDeleteVertexArrays(1, &_ecs->entities[i].mesh->vao);
-	    glDeleteBuffers(1, &_ecs->entities[i].mesh->vbo);
-	    glDeleteBuffers(1, &_ecs->entities[i].mesh->ibo);
-	    glDeleteProgram(_ecs->entities[i].mesh->material.shaderID);
-
-    }
-       
-        //glDeleteTexture(_meshList->materials[0].textureID);
-    AF_CheckGLError( "Error Destroying Renderer OpenGL! \n");
-}
-
+		*/
