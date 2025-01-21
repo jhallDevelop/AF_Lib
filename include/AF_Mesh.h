@@ -254,8 +254,9 @@ static inline AF_CMesh AF_Mesh_Load_Data(void* _filePtr, AF_CMesh _mesh){
     while(!feof(_file)){
          if(fgets(fileBuffer, 1024, _file) != NULL) {
         // print the return value (aka string read in) to terminal
-            AF_Vertex vertex = {{0,0,0},{0,0,0},{0,0}};
+            
             if(fileBuffer[0] == 'v' && fileBuffer[1] == ' '){
+                AF_Vertex vertex = {{0,0,0},{0,0,0},{0,0,0},{0,0,0},{0,0}};
                 // vertex
                 Vec3 vertPos = AF_Mesh_GetVec3FromString(fileBuffer);
                 vertex.position = vertPos;

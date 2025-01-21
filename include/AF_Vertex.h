@@ -24,8 +24,8 @@ vertex struct
 typedef struct {
     Vec3 position;
     Vec3 normal;
-    //Vec3 tangent;
-    //Vec3 bitangent;
+    Vec3 tangent;
+    Vec3 bitangent;
     Vec2 texCoord;
 } AF_Vertex;
 
