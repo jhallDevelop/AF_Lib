@@ -211,6 +211,7 @@ uint32_t AF_Renderer_Awake(void){
     // -----------------------------
     
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     AF_CheckGLError( "Error initializing OpenGL! \n");
@@ -320,6 +321,12 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
     }
 }
 
+/*
+====================
+AF_Renderer_StartRendering
+Do the initial setup for rendering opengl
+====================
+*/
 void AF_Renderer_StartRendering(float _backgroundColor[3] ){
 	AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
     glClearColor(_backgroundColor[0], _backgroundColor[1],_backgroundColor[2], 1.0f);
@@ -332,6 +339,12 @@ void AF_Renderer_StartRendering(float _backgroundColor[3] ){
     glDisable(GL_DEPTH_TEST);
 }
 
+/*
+====================
+AF_Renderer_DrawMeshes
+Loop through the entities and draw the meshes that have components attached
+====================
+*/
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_CMesh* mesh = &_ecs->meshes[i];
@@ -346,6 +359,12 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
 	}
 }
 
+/*
+====================
+AF_Renderer_DrawMesh
+Loop through the meshes in a component and draw using opengl
+====================
+*/
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh){
 	// draw meshes
 	// TODO: this is very expensive. batch these up
@@ -363,7 +382,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		uint32_t shader = _mesh->meshes[i].material.shaderID;
 		glUseProgram(shader); 
 
-		AF_Log_Mat4(*_modelMat);
+		//AF_Log_Mat4(*_modelMat);
 		// TODO: work in row major order so we don't have the gpy have to do the extra transpose
 		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
 		// and should be transposed to column-major order (the default for OpenGL).
