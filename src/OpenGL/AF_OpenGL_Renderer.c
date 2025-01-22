@@ -258,7 +258,7 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 
 			// Bind the IBO and set the buffer data
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData->indexCount * sizeof(unsigned int), &meshData->indices[0], GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData->indexCount * sizeof(uint32_t), &meshData->indices[0], GL_STATIC_DRAW);
 			AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
 			// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
@@ -364,24 +364,24 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		//glCullFace(GL_BACK); // Default
 		//glFrontFace(GL_CCW); // Or GL_CW
 		
-		AF_Log("==== Projection Matrix ====\n");
-		AF_Util_Mat4_Log(*_projMat);
+		//AF_Log("==== Projection Matrix ====\n");
+		//AF_Util_Mat4_Log(*_projMat);
 		int projLocation = glGetUniformLocation(shader, "projection");
 		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_projMat->rows);
 
 		// View
-		AF_Log("==== View Matrix ====\n");
-		AF_Util_Mat4_Log(*_viewMat);
+		//AF_Log("==== View Matrix ====\n");
+		//AF_Util_Mat4_Log(*_viewMat);
 		int viewLocation = glGetUniformLocation(shader, "view");
 		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_viewMat->rows);
 
 		// Model
-		AF_Log("==== Model Matrix ====\n");
-		AF_Util_Mat4_Log(*_modelMat);
+		//AF_Log("==== Model Matrix ====\n");
+		//AF_Util_Mat4_Log(*_modelMat);
 		int modelLocation = glGetUniformLocation(shader, "model");
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, (float*)&_modelMat->rows);
 
-		AF_Log("==== ------------------ ====\n");
+		//AF_Log("==== ------------------ ====\n");
 
 		// Texture 
 		//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
