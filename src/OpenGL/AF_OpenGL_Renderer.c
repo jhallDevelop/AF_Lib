@@ -19,6 +19,8 @@ This implementation is for OpenGL
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "AF_Util.h"
+
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
 
@@ -86,37 +88,7 @@ void AF_CheckGLError(const char* _message){
            //printf("\nGL Error: %i\n", error);
 }
 
-/*
-====================
-AF_Log_Mat4
-Take a AF_Mat 4 and log it to the console.
-====================
-*/
-void AF_Log_Mat4(Mat4 _mat4){
-	AF_Log("		Row 1: %f %f %f %f\n\
-		Row 2: %f %f %f %f\n\
-		Row 3: %f %f %f %f\n\
-		Row 4: %f %f %f %f\n\n",
-		_mat4.rows[0].x, 
-		_mat4.rows[0].y,
-		_mat4.rows[0].z,
-		_mat4.rows[0].w,
 
-		_mat4.rows[1].x,
-_mat4.rows[1].y,
-		_mat4.rows[1].z,
-		_mat4.rows[1].w,
-
-		_mat4.rows[2].x,
-		_mat4.rows[2].y,
-		_mat4.rows[2].z,
-		_mat4.rows[2].w,
-
-		_mat4.rows[3].x,
-		_mat4.rows[3].y,
-		_mat4.rows[3].z,
-		_mat4.rows[3].w);
-}
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
@@ -387,16 +359,29 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
 		// and should be transposed to column-major order (the default for OpenGL).
 		// Projection
+
+		//glEnable(GL_CULL_FACE);
+		//glCullFace(GL_BACK); // Default
+		//glFrontFace(GL_CCW); // Or GL_CW
+		
+		AF_Log("==== Projection Matrix ====\n");
+		AF_Util_Mat4_Log(*_projMat);
 		int projLocation = glGetUniformLocation(shader, "projection");
-		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
+		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_projMat->rows);
 
 		// View
+		AF_Log("==== View Matrix ====\n");
+		AF_Util_Mat4_Log(*_viewMat);
 		int viewLocation = glGetUniformLocation(shader, "view");
-		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
+		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_viewMat->rows);
 
 		// Model
+		AF_Log("==== Model Matrix ====\n");
+		AF_Util_Mat4_Log(*_modelMat);
 		int modelLocation = glGetUniformLocation(shader, "model");
-		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, (float*)&_modelMat->rows);
+
+		AF_Log("==== ------------------ ====\n");
 
 		// Texture 
 		//int textureUniformLocation = glGetUniformLocation(shaderID, "image");

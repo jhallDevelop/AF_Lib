@@ -200,12 +200,21 @@ inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_Window* _window, 
     AF_FLOAT bottom = -top;
     
     // Set elements of the perspective projection matrix
+    /*
     Mat4 perspectiveMatrix = {{
         {2.0f * _camera->nearPlane / (right - left), 0.0f, 0.0f, 0.0f},
         {0.0f, 2.0f * _camera->nearPlane / (top - bottom), 0.0f, 0.0f},
         {(right + left) / (right - left), (top + bottom) / (top - bottom), -( _camera->farPlane + _camera->nearPlane ) / (_camera->farPlane - _camera->nearPlane), -1.0f},
         {0.0f, 0.0f, -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane), 0.0f}
     }};
+    */
+   Mat4 perspectiveMatrix = {{
+        {2.0f * _camera->nearPlane / (right - left), 0.0f, 0.0f, 0.0f},
+        {0.0f, 2.0f * _camera->nearPlane / (top - bottom), 0.0f, 0.0f},
+        {0.0f, 0.0f, -( _camera->farPlane + _camera->nearPlane ) / (_camera->farPlane - _camera->nearPlane), -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane)},
+        {0.0f, 0.0f, -1.0f, 0.0f}
+    }};
+
     
     return perspectiveMatrix;
 }
