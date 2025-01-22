@@ -18,11 +18,44 @@ Implimentation of helper functions for utility functions like,
 #include "AF_Log.h"
 #include "AF_Vec2.h"
 #include "AF_Vec3.h"
+#include "AF_Mat4.h"
 #include "AF_Lib_Define.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+ /*
+====================
+AF_Util_Mat4_Log
+Take a AF_Mat 4 and log it to the console.
+====================
+*/
+static inline void AF_Util_Mat4_Log(Mat4 _mat4){
+    AF_Log("            Row 1: %f %f %f %f\n\
+            Row 2: %f %f %f %f\n\
+            Row 3: %f %f %f %f\n\
+            Row 4: %f %f %f %f\n\n",
+            _mat4.rows[0].x, 
+            _mat4.rows[0].y,
+            _mat4.rows[0].z,
+            _mat4.rows[0].w,
+
+            _mat4.rows[1].x,
+            _mat4.rows[1].y,
+            _mat4.rows[1].z,
+            _mat4.rows[1].w,
+
+            _mat4.rows[2].x,
+            _mat4.rows[2].y,
+            _mat4.rows[2].z,
+            _mat4.rows[2].w,
+
+            _mat4.rows[3].x,
+            _mat4.rows[3].y,
+            _mat4.rows[3].z,
+            _mat4.rows[3].w);
+}
 
 
 /*
