@@ -39,7 +39,7 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
     #else
     FILE* _fileOpen = fopen(thisFilePath, "r");
     if (_fileOpen == NULL) {
-        fprintf(stderr, "AF_Util: Read File: Failed to read file \n%s \nCheck file exists\n\n", thisFilePath);
+        AF_Log_Error("AF_Util: Read File: Failed to read file \n%s \nCheck file exists\n\n", thisFilePath);
         return NULL;
     }
 
@@ -47,7 +47,7 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
     size_t totalLength = 0;
     char* textBuffer = (char*)malloc(textBufferSize);
     if (!textBuffer) {
-        fprintf(stderr, "AF_Util: Read File: Memory allocation failed\n");
+        AF_Log_Error("AF_Util: Read File: Memory allocation failed\n");
         fclose(_fileOpen);
         return NULL;
     }
@@ -59,7 +59,7 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
             textBufferSize *= 2;
             char* tempBuffer = (char*)realloc(textBuffer, textBufferSize);
             if (!tempBuffer) {
-                fprintf(stderr, "AF_Util: Read File: Memory reallocation failed\n");
+                AF_Log_Error("AF_Util: Read File: Memory reallocation failed\n");
                 free(textBuffer);
                 fclose(_fileOpen);
                 return NULL;
@@ -71,7 +71,7 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
     }
 
     if (ferror(_fileOpen)) {
-        fprintf(stderr, "AF_Util: Read File: Error reading file \n%s\n", thisFilePath);
+        AF_Log_Error("AF_Util: Read File: Error reading file \n%s\n", thisFilePath);
         free(textBuffer);
         fclose(_fileOpen);
         return NULL;
