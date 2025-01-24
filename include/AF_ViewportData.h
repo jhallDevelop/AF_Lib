@@ -7,6 +7,8 @@
 
 
 typedef struct AF_ViewportData {
+    uint16_t viewPortPosX;
+    uint16_t viewPortPosY;
     uint16_t viewPortFramebufferWidth;
     uint16_t viewPortFramebufferHeight;
     uint32_t fbo;
@@ -19,6 +21,7 @@ typedef struct AF_ViewportData {
     uint32_t gridlineVAO;
     uint32_t gridlineVBO;
     BOOL isResized;
+    BOOL isRefreshed;
 } AF_ViewportData;
 
 inline static AF_ViewportData AF_ViewportData_ZERO(void){
@@ -30,6 +33,8 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void){
 	};
     
     AF_ViewportData viewportData = {
+    .viewPortPosX = 0,
+    .viewPortPosY = 0,
     .viewPortFramebufferWidth = 0,
     .viewPortFramebufferHeight = 0,
     .fbo = 0,
@@ -41,7 +46,8 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void){
     .gridlineMaterial = returnMaterial,
     .gridlineVAO = 0,
     .gridlineVBO = 0,
-    .isResized = TRUE
+    .isResized = TRUE,
+    .isRefreshed = FALSE
     };
 
     return viewportData;

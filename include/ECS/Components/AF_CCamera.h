@@ -144,9 +144,10 @@ Setup a camera component struct with settings for orthographic camera
 */
 
 inline static Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _window, AF_CCamera* _camera) {
+    if(_window){}
     // Get the framebuffer width and height as we work in pixels
-    _camera->windowWidth = _window->frameBufferWidth;
-    _camera->windowHeight = _window->frameBufferHeight;
+    //_camera->windowWidth = _window->frameBufferWidth;
+    //_camera->windowHeight = _window->frameBufferHeight;
     _camera->fov = 45;
     _camera->nearPlane = 0.1f;  // Set to a small positive value
     _camera->farPlane = 100.0f;
