@@ -111,8 +111,8 @@ inline static AF_CCamera AF_CCamera_ADD(BOOL _isOrthographic){
 		.yaw = 0,
 		.pitch = 0,
 		.fov = 45,
-		.nearPlane = 0,
-		.farPlane = 100,
+		.nearPlane = 0.1f,
+		.farPlane = 100.0f,
 		.aspectRatio = 0,
 		.windowWidth = 0,
 		.windowHeight = 0,
@@ -181,15 +181,10 @@ Setup a camera component struct with settings for a perspective camera
 */
 
 inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_Window* _window, AF_CCamera* _camera) {
+    //https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix.html
     // Get the framebuffer width and height as we work in pixels
-    _camera->windowWidth = _window->frameBufferWidth;
-    _camera->windowHeight = _window->frameBufferHeight;
-    
     // Set perspective camera settings
-    _camera->fov = 45;  // FOV in degrees
-    _camera->nearPlane = 0.1f;
-    _camera->farPlane = 100.0f;
-    _camera->aspectRatio = _camera->windowWidth / _camera->windowHeight;
+    _camera->aspectRatio = (float)_camera->windowWidth / (float)_camera->windowHeight;
     
     // Convert FOV to radians and calculate tanHalfFov
     _camera->tanHalfFov = AF_Math_Tan(AF_Math_DegreesToRadians(_camera->fov) / 2);
@@ -209,11 +204,30 @@ inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_Window* _window, 
         {0.0f, 0.0f, -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane), 0.0f}
     }};
     */
+
+   // TODO: Make this switch depending if its orthographic or perspective
+   /*
    Mat4 perspectiveMatrix = {{
         {2.0f * _camera->nearPlane / (right - left), 0.0f, 0.0f, 0.0f},
         {0.0f, 2.0f * _camera->nearPlane / (top - bottom), 0.0f, 0.0f},
         {0.0f, 0.0f, -( _camera->farPlane + _camera->nearPlane ) / (_camera->farPlane - _camera->nearPlane), -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane)},
         {0.0f, 0.0f, -1.0f, 0.0f}
+    }};*/
+
+
+    // Frustum boundaries (in view space)
+    float l = left;      // Left clipping plane (e.g., -screen aspect ratio)
+    float r = right;     // Right clipping plane (e.g., screen aspect ratio)
+    float b = bottom;    // Bottom clipping plane (e.g., -1.0f)
+    float t = top;       // Top clipping plane (e.g., 1.0f)
+    float n = _camera->nearPlane;      // Near clipping plane (positive value, e.g., 0.1f)
+    float f =  _camera->farPlane;       // Far clipping plane (positive value, e.g., 100.0f)
+    Mat4 perspectiveMatrix = {{
+        // Column 0                   Column 1                   Column 2          Column 3
+        {2*n/(r-l),    0.0f,          0.0f,                      0.0f},           // Row 0
+        {0.0f,         2*n/(t-b),     0.0f,                      0.0f},           // Row 1
+        {0.0f,         0.0f,          -(f+n)/(f-n),              -2*f*n/(f-n)},           // Row 2
+        {0.0f,         0.0f,          -1.0f,                     0.0f}             // Row 3
     }};
 
     

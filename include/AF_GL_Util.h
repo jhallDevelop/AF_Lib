@@ -5,9 +5,12 @@
 #include <stdio.h>
 #define GL_SILENCE_DEPRECATION
 
-#define AF_GL_DEBUG_LOG(msg) do { GL_CheckError(__FILE__, __LINE__, msg); } while(0)
 
-void GL_CheckError(const char *file, int line, const char *message) {
+
+
+#define AF_GL_DEBUG_LOG(msg) do { AF_GL_CheckError(__FILE__, __LINE__, msg); } while(0)
+
+void AF_GL_CheckError(const char *file, int line, const char *message) {
     GLenum error = glGetError();
     while (error != GL_NO_ERROR) {
         const char *errorString;

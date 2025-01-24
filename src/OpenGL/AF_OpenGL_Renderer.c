@@ -327,7 +327,11 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
 			continue;
 		}
 		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
-		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh);
+
+		// Update the model matrix
+		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, _ecs->transforms[i].rot, _ecs->transforms[i].scale);
+		
+		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh);
 	}
 }
 
@@ -367,19 +371,19 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		//AF_Log("==== Projection Matrix ====\n");
 		//AF_Util_Mat4_Log(*_projMat);
 		int projLocation = glGetUniformLocation(shader, "projection");
-		glUniformMatrix4fv(projLocation, 1, GL_FALSE, (float*)&_projMat->rows);
+		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
 
 		// View
 		//AF_Log("==== View Matrix ====\n");
 		//AF_Util_Mat4_Log(*_viewMat);
 		int viewLocation = glGetUniformLocation(shader, "view");
-		glUniformMatrix4fv(viewLocation, 1, GL_FALSE, (float*)&_viewMat->rows);
+		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
 
 		// Model
 		//AF_Log("==== Model Matrix ====\n");
 		//AF_Util_Mat4_Log(*_modelMat);
 		int modelLocation = glGetUniformLocation(shader, "model");
-		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, (float*)&_modelMat->rows);
+		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
 
 		//AF_Log("==== ------------------ ====\n");
 
