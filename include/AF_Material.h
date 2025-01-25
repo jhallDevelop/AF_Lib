@@ -9,6 +9,11 @@ Calls vfprintf but adds some colour to text output
 
 #ifndef AF_MATERIAL_H
 #define AF_MATERIAL_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct __attribute__((packed)) {
 	uint8_t r;
 	uint8_t g;
@@ -19,7 +24,9 @@ typedef struct __attribute__((packed)) {
 typedef struct{
 	// TODO pack this
 	uint32_t shaderID;
-	uint32_t textureID;
+	uint32_t diffuseTextureID;
+	uint32_t normalTextureID;
+	uint32_t specularTextureID;
 	AF_Color color;
 } AF_Material;
 
@@ -27,12 +34,18 @@ static inline AF_Material AF_Material_ZERO(void){
 	AF_Color color = {0,0,0,255};
 	AF_Material returnMaterial = {
 		.shaderID = 0,
-		.textureID = 0, 
+		.diffuseTextureID = 0, 
+		.normalTextureID = 0,
+		.specularTextureID = 0,
 		.color = color
 	};
 
 	return returnMaterial;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
