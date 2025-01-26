@@ -28,7 +28,9 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void){
     AF_Color color = {0,0,0,0};
 	AF_Material returnMaterial = {
 		.shaderID = 0,
-		.textureID = 0, 
+		.diffuseTexture = NULL, 
+        .normalTexture = NULL,
+        .specularTexture = NULL,
 		.color = color
 	};
     

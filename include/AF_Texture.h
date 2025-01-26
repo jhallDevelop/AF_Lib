@@ -6,7 +6,7 @@ Implementation of texture struct and initialization function
 ===============================================================================
 */
 
-#ifndef AF_TEXTUREL_H
+#ifndef AF_TEXTURE_H
 #define AF_TEXTURE_H
 
 #ifdef __cplusplus
@@ -15,24 +15,29 @@ extern "C" {
 
 #include <stdint.h>
 
+// Texture types, matched with the first 6 types of assimp textures types
 enum AF_TextureType {
-    AF_TEXTURE_DIFFUSE = 0,
-    AF_TEXTURE_SPECULAR = 1,
-    AF_TEXTURE_NORMAL = 2
+	AF_TEXTURE_TYPE_NONE = 0,
+    AF_TEXTURE_TYPE_DIFFUSE = 1,
+    AF_TEXTURE_TYPE_SPECULAR = 2,
+	AF_TEXTURE_TYPE_AMBIET = 3,
+    AF_TEXTURE_EMISSIVE = 4,
+	AF_TEXTURE_TYPE_HEIGHT = 5,
+	AF_TEXTURE_TYPE_NORMALS = 6
 };
 
 typedef struct AF_Texture {
 	// TODO pack this
 	uint32_t id;
-	AF_TextureType type;
-	uint32_t path;
+	enum AF_TextureType type;
+	char path[256];
 } AF_Texture;
 
 static inline AF_Texture AF_Texture_ZERO(void){
 	AF_Texture returnTexture = {
 		.id = 0,
-		.type = AF_TEXTURE_DIFFUSE, 
-		.path = 0
+		.type = AF_TEXTURE_TYPE_NONE, 
+		.path = ""
 	};
 
 	return returnTexture;

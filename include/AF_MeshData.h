@@ -13,6 +13,8 @@ AF_MeshData_H
 extern "C" {
 #endif
 
+// TODO: don't need to keep a copy of the vertices and indices in the mesh data
+// The data lives in the gpu accessed by the vaos and vbos
 typedef struct {
     // array of meshes
     AF_Vertex* vertices;
@@ -34,7 +36,7 @@ static inline AF_MeshData AF_MeshData_ZERO(void){
         .vao = 0,
         .vbo = 0,
         .ibo = 0,
-        .material = {0,0,{0,0,0,0}}
+        .material = {0,NULL, NULL, NULL,{0,0,0,0}}  // {shaderid, diffuse, normal, specular, color}
     };
     return returnMesh;
 }

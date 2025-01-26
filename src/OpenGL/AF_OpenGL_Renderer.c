@@ -134,7 +134,7 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
     }
     else
     {
-	AF_Log_Error("Texture failed to load at path %s\n",path);
+	AF_Log_Error("AF_Renderer_LoadTexture: Texture failed to load at path %s\n",path);
         stbi_image_free(data);
     }
 
@@ -308,7 +308,13 @@ void AF_Renderer_StartRendering(float _backgroundColor[3] ){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // if in 2d mode, disable depth testing
-    glDisable(GL_DEPTH_TEST);
+    //glDisable(GL_DEPTH_TEST);
+
+	// TODO: Adjust per model
+	glCullFace(GL_BACK);  // Cull the back faces (this is the default)
+	glFrontFace(GL_CCW);  // Counter-clockwise winding order (default)
+	glEnable(GL_CULL_FACE); // Enable culling
+
 }
 
 /*
@@ -345,6 +351,34 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	// draw meshes
 	// TODO: this is very expensive. batch these up
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
+		// ---- Setup shader ----
+		uint32_t shader = _mesh->meshes[i].material.shaderID;
+		glUseProgram(shader); 
+
+		// Bind the textures
+        // ---- Diffuse Texture ----
+		uint32_t diffuseTextureBinding = 1;
+		glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
+		glUniform1i(glGetUniformLocation(_mesh->meshes[i].material.shaderID, "diffuse"), diffuseTextureBinding);
+		// and finally bind the texture
+		glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
+
+		// ---- Normal Texture ----
+		uint32_t normalTextureBinding = 2;
+		glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
+		glUniform1i(glGetUniformLocation(_mesh->meshes[i].material.shaderID, "normal"), normalTextureBinding);
+		// and finally bind the texture
+		glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture->id);
+
+		// ---- Specular Texture ----
+		uint32_t specularTextureBinding = 3;
+		glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
+		glUniform1i(glGetUniformLocation(_mesh->meshes[i].material.shaderID, "specular"), specularTextureBinding);
+		// and finally bind the texture
+		glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture->id);
+        
+
+
 		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
 		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
 
@@ -354,16 +388,10 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 
 		//---------------Send command to Graphics API to Draw Triangles------------
-		// Setup shader
-		uint32_t shader = _mesh->meshes[i].material.shaderID;
-		glUseProgram(shader); 
-
-		//AF_Log_Mat4(*_modelMat);
-		// TODO: work in row major order so we don't have the gpy have to do the extra transpose
+		
 		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
-		// and should be transposed to column-major order (the default for OpenGL).
-		// Projection
 
+		// TODO: make this configurable from the editor component
 		//glEnable(GL_CULL_FACE);
 		//glCullFace(GL_BACK); // Default
 		//glFrontFace(GL_CCW); // Or GL_CW
@@ -398,7 +426,6 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 			return;
 		}
 
-		//AF_Log_Error("AF_Renderer_DisplayRenderer: segfault here %s: %s\n", __FILE__, __LINE__);
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 			
 		AF_CheckGLError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
@@ -406,10 +433,11 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		glBindVertexArray(0);
 		AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
 	}
+	
 	// Unbind textures
-		//unbind diffuse
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, 0);
+	//unbind diffuse
+	glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 
@@ -433,7 +461,21 @@ void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
 			glDeleteBuffers(1, &mesh->vbo);
 			glDeleteBuffers(1, &mesh->ibo);
 			glDeleteProgram(mesh->material.shaderID);
-			glDeleteTextures(1, &mesh->material.textureID);
+
+			// TODO: eventually move this out to a seprate look that acts on the texture/assets list of data rather than doing a per component basis
+			// diffuse
+			if(mesh->material.diffuseTexture != NULL){
+				glDeleteTextures(1, &mesh->material.diffuseTexture->id);
+			}
+			if(mesh->material.specularTexture != NULL){
+				glDeleteTextures(1, &mesh->material.specularTexture->id);
+			}
+
+			if(mesh->material.normalTexture != NULL){
+				glDeleteTextures(1, &mesh->material.normalTexture->id);
+			}
+			
+			// TODO: free the other textures
 
 			// Free the vertices and indices
 			free(mesh->vertices);

@@ -180,7 +180,7 @@ Setup a camera component struct with settings for a perspective camera
 ====================
 */
 
-inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_Window* _window, AF_CCamera* _camera) {
+inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera) {
     //https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix.html
     // Get the framebuffer width and height as we work in pixels
     // Set perspective camera settings

@@ -26,9 +26,9 @@ typedef struct __attribute__((packed)) {
 typedef struct{
 	// TODO pack this
 	uint32_t shaderID;
-	AF_Texture diffuseTexture;
-	AF_Texture normalTexture;
-	AF_Texture specularTexture;
+	AF_Texture* diffuseTexture;
+	AF_Texture* normalTexture;
+	AF_Texture* specularTexture;
 	AF_Color color;
 } AF_Material;
 
@@ -36,9 +36,9 @@ static inline AF_Material AF_Material_ZERO(void){
 	AF_Color color = {0,0,0,255};
 	AF_Material returnMaterial = {
 		.shaderID = 0,
-		.diffuseTexture = AF_Texture_ZERO(), 
-		.normalTexture = AF_Texture_ZERO(),
-		.specularTexture = AF_Texture_ZERO(),
+		.diffuseTexture = 0,	// NULL 
+		.normalTexture = 0,		// NULL
+		.specularTexture = 0,	// NULL
 		.color = color
 	};
 
