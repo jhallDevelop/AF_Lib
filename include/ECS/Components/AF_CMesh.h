@@ -18,6 +18,7 @@ functions to load meshes, creating memory on the heap based on the size of the m
 extern "C" {
 #endif  
 
+#define MAX_PATH_CHAR_SIZE 128
 
 enum AF_MESH_TYPE{
 	AF_MESH_TYPE_PLANE, 
@@ -27,9 +28,6 @@ enum AF_MESH_TYPE{
 };
 
 
-
-
-
 // Mesh Struct
 typedef struct AF_CMesh {
     PACKED_CHAR enabled;
@@ -37,7 +35,10 @@ typedef struct AF_CMesh {
 	uint32_t meshCount;
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
-	const char* meshPath;
+	char meshPath[MAX_PATH_CHAR_SIZE];
+	char fragShaderPath[MAX_PATH_CHAR_SIZE];
+	char vertShaderPath[MAX_PATH_CHAR_SIZE];
+	uint32_t shaderID;
 	BOOL isImageFlipped;		// flip the textures on load
 	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
 	uint8_t meshID;		// only fit 255 mesh types
@@ -60,13 +61,17 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
-	.meshPath = NULL,
+	.shaderID = 0,
 	.isImageFlipped = FALSE,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
+	// ensure its init and safe with null terminator
+	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
+	returnMesh.fragShaderPath[0] = '\0';  // Ensure the path is empty
+	returnMesh.vertShaderPath[0] = '\0';  // Ensure the path is empty
     return returnMesh;
 }
 
@@ -88,13 +93,17 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
-	.meshPath = NULL,
+	.shaderID = 0,
 	.isImageFlipped = TRUE,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
+	// ensure its init and safe with null terminator
+	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
+	returnMesh.fragShaderPath[0] = '\0';  // Ensure the path is empty
+	returnMesh.vertShaderPath[0] = '\0';  // Ensure the path is empty
     return returnMesh;
 }
 

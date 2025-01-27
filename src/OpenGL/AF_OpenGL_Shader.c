@@ -44,6 +44,7 @@ uint32_t AF_Shader_CheckCompileErrors(uint32_t shader, const char* type)
     return (uint32_t)success;
 }
 
+
 /*
 ====================
 AF_Shader_GL_Load
@@ -60,6 +61,8 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: vertex or fragment shader path is empty\n");
         return -1;
     }
+
+    // Check if shader is already loaded from the assets
     
     
     char* _vertexShaderSource = AF_Util_ReadFile(_vertexShaderPath);
@@ -118,4 +121,14 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     _fragmentShaderSource = NULL;
 
     return returnShaderID;
+}
+
+void AF_Shader_Delete(uint32_t programID) {
+    if (programID != 0) { // 0 is not a valid shader program
+        glUseProgram(0);  // Unbind the program if it is currently in use
+        glDeleteProgram(programID);
+        AF_Log("AF_Shader: Shader program with ID %u deleted\n", programID);
+    } else {
+        AF_Log_Error("AF_Shader_Delete: Invalid shader program ID (0)\n");
+    }
 }

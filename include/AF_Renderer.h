@@ -35,7 +35,11 @@ void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 
 
 
+// Looped creation function that calls AF_Renderer_CreateMeshBuffer
 void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
+
+// Singular creation function
+void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);  
 
 //void Init(GLFWwindow* _window, std::vector<Entity*>& _entities);
 //void InitRenderingData(std::vector<Entity*>& _entities);
@@ -108,6 +112,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 
 // Destroy
+void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh);
 void AF_Renderer_DestroyRenderer(AF_ECS* _ecs);
 // Cleanup
 //static void CleanUpMesh(const unsigned int _shaderID);

@@ -11,9 +11,33 @@ Definitions for helper functions to load and use shaders
 #include <stdint.h>
 #include "AF_Rect.h"
 
+#define MAX_SHADER_CHAR_PATH 128
+
 #ifdef __cplusplus
 extern "C" {    
 #endif
+
+typedef struct AF_Shader {
+    uint32_t shaderID;
+    char fragPath[MAX_SHADER_CHAR_PATH];
+    char vertPath[MAX_SHADER_CHAR_PATH];
+} AF_Shader;
+
+/*
+====================
+AF_Shader_ZERO
+Init shader struct
+====================
+*/
+inline static AF_Shader AF_Shader_ZERO(void){
+    AF_Shader zeroShader = {
+        .shaderID = 0,
+        .fragPath = "\0",
+        .vertPath = "\0"
+    };
+
+    return zeroShader;
+}
 
 /*
 ====================
@@ -31,7 +55,7 @@ REturn the shader ID or return -1 if failed
 ====================
 */
 uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShaderPath);
-
+void AF_Shader_Delete(uint32_t programID);
 
 #ifdef __cplusplus
 }

@@ -218,107 +218,110 @@ Init the mesh buffers for OpenGL
 ====================
 */
 void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){ 
-
     if (_entityCount == 0) {
     AF_Log_Error("No meshes to draw!\n");
-    return;
+    	return;
     }
 
     for(uint32_t i = 0; i < _entityCount; i++){
 	    AF_CMesh* mesh = _entities[i].mesh;
 
-	    
 	    BOOL hasMesh = AF_Component_GetHas(mesh->enabled);
 	    // Skip setting up if we don't have a mesh component
 	    if(hasMesh == FALSE){
-		continue;
+			continue;
 	    }
 
 		AF_CheckGLError( "Mesh has no indices!\n");
 
-		// for each mesh
+		// for each sub mesh. setup the mesh buffers
 		for(uint32_t j = 0; j < mesh->meshCount; j++){
-			AF_MeshData* meshData = &mesh->meshes[j];
-			if (!meshData->vertices || !meshData->indices) {
-			AF_Log_Error("Invalid vertex or index data!\n");
-			return;
-			}
-			
-			//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
-			int vertexBufferSize = meshData->vertexCount * sizeof(AF_Vertex);
-			//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-			AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
-				
-			GLuint gVAO, gVBO, gEBO;
-			glGenVertexArrays(1, &gVAO);
-			glGenBuffers(1, &gVBO);
-			glGenBuffers(1, &gEBO);
-			AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
-
-			// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
-			glBindVertexArray(gVAO);
-			glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-			AF_CheckGLError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
-
-			// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
-			glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, meshData->vertices, GL_STATIC_DRAW);
-			AF_CheckGLError( "OpenGL error occurred during glBufferData for the verts.\n");
-			//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-			// Bind the IBO and set the buffer data
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshData->indexCount * sizeof(uint32_t), &meshData->indices[0], GL_STATIC_DRAW);
-			AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
-
-			// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
-			// Vertex positions
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
-			glEnableVertexAttribArray(0);
-
-
-			
-			// Vertex normals
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
-			glEnableVertexAttribArray(1);
-
-
-			// Vertex tangent attributes
-			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
-			glEnableVertexAttribArray(2);
-
-			// Vertex bi tangent attributes
-			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
-			glEnableVertexAttribArray(3);
-
-			// Vertex texture coords
-			glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
-			glEnableVertexAttribArray(4);
-
-
-
-
-			AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
-
-			// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-			glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-			// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-			// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-			// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-			glBindVertexArray(0); 
-
-			meshData->vao = gVAO;
-			meshData->vbo = gVBO;
-			meshData->ibo = gEBO;
-			// Bind the IBO and set the buffer data
-			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
-			//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
-			AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
+			AF_Renderer_CreateMeshBuffer(&mesh->meshes[j]);
 		}
     }
 }
+
+/*
+====================
+AF_Renderer_CreateMeshBuffer
+Do the initial setup for a models mesh buffer
+====================
+*/
+void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
+	if (!_meshData->vertices || !_meshData->indices) {
+		AF_Log_Error("Invalid vertex or index data!\n");
+		return;
+	}
+		
+	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
+	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
+	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
+	AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+		
+	GLuint gVAO, gVBO, gEBO;
+	glGenVertexArrays(1, &gVAO);
+	glGenBuffers(1, &gVBO);
+	glGenBuffers(1, &gEBO);
+	AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
+	glBindVertexArray(gVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+	AF_CheckGLError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
+
+	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
+	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, _meshData->vertices, GL_STATIC_DRAW);
+	AF_CheckGLError( "OpenGL error occurred during glBufferData for the verts.\n");
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Bind the IBO and set the buffer data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
+	AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
+
+	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
+	// Vertex positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Vertex normals
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+
+	// Vertex tangent attributes
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// Vertex bi tangent attributes
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
+
+	// Vertex texture coords
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
+	glEnableVertexAttribArray(4);
+
+	AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
+
+	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+	// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+	glBindVertexArray(0); 
+
+	_meshData->vao = gVAO;
+	_meshData->vbo = gVBO;
+	_meshData->ibo = gEBO;
+	// Bind the IBO and set the buffer data
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
+	AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
+}
+
 
 /*
 ====================
@@ -487,12 +490,19 @@ Destroy the renderer
 void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
     AF_Log("%s Destroyed\n", openglRendererFileTitle);
     for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
-		AF_CMesh* meshComponent = _ecs->entities[i].mesh;
+		AF_Renderer_DestroyMeshComponent(&_ecs->meshes[i]);
+    }
+       
+        //glDeleteTexture(_meshList->materials[0].textureID);
+    AF_CheckGLError( "Error Destroying Renderer OpenGL! \n");
+}
+
+void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh){
 		// for each mesh
-		for(uint32_t j = 0; j < meshComponent->meshCount; j++){
+		for(uint32_t j = 0; j < _mesh->meshCount; j++){
 			// optional: de-allocate all resources once they've outlived their purpose:
 			// ------------------------------------------------------------------------
-			AF_MeshData* mesh = &_ecs->entities[i].mesh->meshes[j];
+			AF_MeshData* mesh = &_mesh->meshes[j];
 			glDeleteVertexArrays(1, &mesh->ibo);
 			glDeleteBuffers(1, &mesh->vbo);
 			glDeleteBuffers(1, &mesh->ibo);
@@ -520,12 +530,11 @@ void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
 			mesh->indices = NULL;
 		}
 		// Free the meshes in the component correctly
-		free(meshComponent->meshes);
-		meshComponent->meshes = NULL;
-    }
-       
-        //glDeleteTexture(_meshList->materials[0].textureID);
-    AF_CheckGLError( "Error Destroying Renderer OpenGL! \n");
+		free(_mesh->meshes);
+		_mesh->meshes = NULL;
+
+		// zero all the mesh data except for the path
+		*_mesh = AF_CMesh_ZERO();
 }
 
 

@@ -11,6 +11,7 @@ Implementation of the assets struct and initialization function
 #include "AF_Texture.h"
 #include "AF_MeshData.h"
 #include "AF_Log.h"
+#include "AF_Shader.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,14 +22,16 @@ extern "C" {
 #define AF_ASSETS_MAX_TEXTURES 16
 #define AF_ASSETS_MAX_MESHES 16
 #define AF_ASSETS_MAX_SOUNDS 16
+#define AF_ASSETS_MAX_SHADERS 16
 
 typedef struct AF_Assets{
     // array of meshes
     uint32_t nextAvailableTexture;
     uint32_t nextAvailableMesh;
+    uint32_t nextAvailableShader;
     AF_Texture textures[AF_ASSETS_MAX_TEXTURES];
     AF_MeshData meshes[AF_ASSETS_MAX_MESHES];
-    
+    AF_Shader shaders[AF_ASSETS_MAX_SHADERS];
     // TODO: add sounds
 } AF_Assets;
 
@@ -46,6 +49,10 @@ static inline AF_Assets AF_Assets_ZERO(void){
 
     for (uint32_t i = 0; i < AF_ASSETS_MAX_MESHES; i++){
         returnAssets.meshes[i] = AF_MeshData_ZERO();
+    }
+
+    for(uint32_t i = 0; i < AF_ASSETS_MAX_SHADERS; i++){
+        returnAssets.shaders[i] = AF_Shader_ZERO();
     }
 
     returnAssets.nextAvailableMesh = 0;

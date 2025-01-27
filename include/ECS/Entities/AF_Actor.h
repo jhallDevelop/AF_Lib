@@ -14,9 +14,6 @@ A pre-defined sruct that is game specific
 #include "ECS/Entities/AF_ECS.h"
 #include "ECS/Components/AF_CSprite.h"
 
-#ifndef PLATFORM_GB
-#include "AF_Mesh.h"
-#include "AF_Material.h"
 
 /*
 ====================
