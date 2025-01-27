@@ -16,10 +16,10 @@ This implementation is for OpenGL
 #include "AF_Mat4.h"
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
+#include "AF_Util.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
-#include "AF_Util.h"
 
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
@@ -88,17 +88,30 @@ void AF_CheckGLError(const char* _message){
            //printf("\nGL Error: %i\n", error);
 }
 
+/*
+====================
+AF_Renderer_SetFlipImage
+Set the flip image for stb_image.h
+====================
+*/
+// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+void AF_Renderer_SetFlipImage(BOOL _flipImage)	{
+	bool isFlipped = _flipImage != 0; // Convert char to bool
+    stbi_set_flip_vertically_on_load(isFlipped);
+}
 
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
 unsigned int AF_Renderer_LoadTexture(char const * path)
 {
+	
     unsigned int textureID;
+
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    stbi_set_flip_vertically_on_load(TRUE);  
+    //stbi_set_flip_vertically_on_load(TRUE);  
 
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
@@ -119,18 +132,14 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// Use these filters for normal textures
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);//GL_LINEAR_MIPMAP_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	// Use these filters for pixel art sprites.
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	stbi_image_free(data);
+		stbi_image_free(data);
+
     }
     else
     {
@@ -262,13 +271,31 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 			AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
 			// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
+			// Vertex positions
 			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
 			glEnableVertexAttribArray(0);
+
+
 			
+			// Vertex normals
 			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
 			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
+
+
+			// Vertex tangent attributes
+			glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
 			glEnableVertexAttribArray(2);
+
+			// Vertex bi tangent attributes
+			glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
+			glEnableVertexAttribArray(3);
+
+			// Vertex texture coords
+			glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
+			glEnableVertexAttribArray(4);
+
+
+
 
 			AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
 
@@ -312,7 +339,7 @@ void AF_Renderer_StartRendering(float _backgroundColor[3] ){
 
 	// TODO: Adjust per model
 	glCullFace(GL_BACK);  // Cull the back faces (this is the default)
-	glFrontFace(GL_CCW);  // Counter-clockwise winding order (default)
+	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
 	glEnable(GL_CULL_FACE); // Enable culling
 
 }
@@ -357,25 +384,34 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		// Bind the textures
         // ---- Diffuse Texture ----
-		uint32_t diffuseTextureBinding = 1;
-		glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
-		glUniform1i(glGetUniformLocation(_mesh->meshes[i].material.shaderID, "diffuse"), diffuseTextureBinding);
-		// and finally bind the texture
-		glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
+		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
+			uint32_t diffuseTextureBinding = 0;
+			glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
+			glUniform1i(glGetUniformLocation(shader, "diffuse"), diffuseTextureBinding);
+			// and finally bind the texture
+			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
+		}
 
+		/**/
 		// ---- Normal Texture ----
-		uint32_t normalTextureBinding = 2;
-		glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
-		glUniform1i(glGetUniformLocation(_mesh->meshes[i].material.shaderID, "normal"), normalTextureBinding);
-		// and finally bind the texture
-		glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture->id);
+		if((_mesh->meshes[i].material.normalTexture != NULL) && (_mesh->meshes[i].material.normalTexture->type != AF_TEXTURE_TYPE_NONE)){
+			uint32_t normalTextureBinding = 1;
+			glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
+			glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
+			// and finally bind the texture
+			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture->id);
+		}
+		
 
 		// ---- Specular Texture ----
-		uint32_t specularTextureBinding = 3;
-		glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
-		glUniform1i(glGetUniformLocation(_mesh->meshes[i].material.shaderID, "specular"), specularTextureBinding);
-		// and finally bind the texture
-		glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture->id);
+		if((_mesh->meshes[i].material.specularTexture != NULL) && (_mesh->meshes[i].material.specularTexture->type != AF_TEXTURE_TYPE_NONE)){
+			uint32_t specularTextureBinding = 2;
+			glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
+			glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
+			// and finally bind the texture
+			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture->id);
+		}
+		
         
 
 

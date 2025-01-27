@@ -38,6 +38,7 @@ typedef struct AF_CMesh {
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
 	const char* meshPath;
+	BOOL isImageFlipped;		// flip the textures on load
 	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
 	uint8_t meshID;		// only fit 255 mesh types
 	BOOL isAnimating;	// belongs in animation component
@@ -60,6 +61,7 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshPath = NULL,
+	.isImageFlipped = FALSE,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,
@@ -87,6 +89,7 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshPath = NULL,
+	.isImageFlipped = TRUE,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,

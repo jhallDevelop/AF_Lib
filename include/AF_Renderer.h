@@ -32,7 +32,7 @@ void AF_Renderer_Shutdown(AF_ECS* _ecs);
 void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 //void AF_Renderer_Debug(void);
 
-uint32_t AF_LoadTexture(const char* _texturePath);
+
 
 
 void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
@@ -144,7 +144,8 @@ void AF_Renderer_DestroyRenderer(AF_ECS* _ecs);
 
 
 // Textures
-
+//uint32_t AF_LoadTexture(const char* _texturePath, BOOL _flipTexture);
+void AF_Renderer_SetFlipImage(BOOL _flipImage);
 uint32_t AF_Renderer_LoadTexture(char const * path);
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
 //static unsigned int LoadTexture(char const * path);
