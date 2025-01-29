@@ -473,7 +473,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
 		
 	}
-	glUseProgram(0);
+	//glUseProgram(0);
 	// Unbind textures
 	//unbind diffuse
 	glActiveTexture(GL_TEXTURE0);
@@ -507,10 +507,11 @@ void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh){
 			glDeleteVertexArrays(1, &mesh->ibo);
 			glDeleteBuffers(1, &mesh->vbo);
 			glDeleteBuffers(1, &mesh->ibo);
-			glDeleteProgram(mesh->material.shaderID);
+			//glDeleteProgram(mesh->material.shaderID);
 
 			// TODO: eventually move this out to a seprate look that acts on the texture/assets list of data rather than doing a per component basis
 			// diffuse
+			/*
 			if(mesh->material.diffuseTexture != NULL){
 				glDeleteTextures(1, &mesh->material.diffuseTexture->id);
 			}
@@ -521,7 +522,7 @@ void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh){
 			if(mesh->material.normalTexture != NULL){
 				glDeleteTextures(1, &mesh->material.normalTexture->id);
 			}
-			
+			*/
 			// TODO: free the other textures
 
 			// Free the vertices and indices
