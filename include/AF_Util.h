@@ -14,6 +14,8 @@ Implimentation of helper functions for utility functions like,
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/stat.h>   // stat
+#include <stdbool.h>    // bool type
 
 #include "AF_Log.h"
 #include "AF_Vec2.h"
@@ -55,6 +57,17 @@ static inline void AF_Util_Mat4_Log(Mat4 _mat4){
             _mat4.rows[3].y,
             _mat4.rows[3].z,
             _mat4.rows[3].w);
+}
+
+/*
+====================
+AF_Util_FileExists
+Check a file exists
+====================
+*/
+static inline BOOL AF_Util_FileExists(const char* _filePath){
+    struct stat buffer;   
+    return (stat(_filePath, &buffer) == 0);
 }
 
 

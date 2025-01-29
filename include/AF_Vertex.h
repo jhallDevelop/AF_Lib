@@ -36,7 +36,7 @@ AF_Vertex_ZERO
 Init the vertex
 ====================
 */
-inline static AF_Vertex AF_Vertex_ZERO(){
+inline static AF_Vertex AF_Vertex_ZERO(void){
     AF_Vertex zeroVertex = {
         {0.0f, 0.0f, 0.0f}, // Position
         {0.0f, 0.0f, 0.0f}, // Normal

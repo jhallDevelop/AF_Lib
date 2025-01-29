@@ -57,10 +57,32 @@ static inline AF_Assets AF_Assets_ZERO(void){
 
     returnAssets.nextAvailableMesh = 0;
     returnAssets.nextAvailableTexture = 0;
+    returnAssets.nextAvailableShader = 0;
 
     return returnAssets;
 }
 
+/*
+====================
+AF_Assets_AddShader
+Implementation for adding a shader to the assets
+returns a pointer to the shader added in the assets/shader array
+====================
+*/
+static inline AF_Shader* AF_Assets_AddShader(AF_Assets* _assets){
+    if(_assets == NULL){
+        AF_Log_Warning("AF_Assets_AddShader: passed null assets\n");
+        return NULL;
+    }
+    AF_Log("next available shader: %i MAX: %i \n",_assets->nextAvailableShader, AF_ASSETS_MAX_SHADERS);
+    if(_assets->nextAvailableShader < AF_ASSETS_MAX_SHADERS){
+        _assets->nextAvailableShader++;
+        return &_assets->shaders[_assets->nextAvailableShader - 1];
+    }else{
+        AF_Log_Warning("AF_Assets_AddShader: Max shaders reached\n");
+        return NULL;
+    }
+}
 
 /*
 ====================
@@ -70,6 +92,10 @@ returns a pointer to the texture added in the assets/texture array
 ====================
 */
 static inline AF_Texture* AF_Assets_AddTexture(AF_Assets* _assets){
+    if(_assets == NULL){
+        AF_Log_Warning("AF_Assets_AddTexture: passed null assets\n");
+        return NULL;
+    }
     if(_assets->nextAvailableTexture < AF_ASSETS_MAX_TEXTURES){
         _assets->nextAvailableTexture++;
         return &_assets->textures[_assets->nextAvailableTexture - 1];
@@ -87,6 +113,10 @@ returns a pointer to the mesh data added in the assets/meshdata array
 ====================
 */
 static inline AF_MeshData* AF_Assets_AddMesh(AF_Assets* _assets, AF_MeshData _mesh){
+    if(_assets == NULL){
+        AF_Log_Warning("AF_Assets_AddMesh: passed null assets\n");
+        return NULL;
+    }
     if(_assets->nextAvailableMesh < AF_ASSETS_MAX_MESHES){
         _assets->meshes[_assets->nextAvailableMesh] = _mesh;
         _assets->nextAvailableMesh++;

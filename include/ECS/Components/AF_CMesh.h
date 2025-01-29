@@ -13,6 +13,10 @@ functions to load meshes, creating memory on the heap based on the size of the m
 #include "AF_Material.h"
 #include "ECS/Components/AF_Component.h"
 #include "AF_MeshData.h"
+#include "AF_Shader.h"
+
+#define DEFAULT_ASSET_PATH "./assets/"
+#define DEFAULT_MODEL_PATH "./assets/models/UV_Cube/UV_Cube.obj"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,9 +40,7 @@ typedef struct AF_CMesh {
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
 	char meshPath[MAX_PATH_CHAR_SIZE];
-	char fragShaderPath[MAX_PATH_CHAR_SIZE];
-	char vertShaderPath[MAX_PATH_CHAR_SIZE];
-	uint32_t shaderID;
+	AF_Shader shader;
 	BOOL isImageFlipped;		// flip the textures on load
 	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
 	uint8_t meshID;		// only fit 255 mesh types
@@ -61,7 +63,7 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
-	.shaderID = 0,
+	.shader = AF_Shader_ZERO(),
 	.isImageFlipped = FALSE,
 	.meshID = 0,
 	.isAnimating = FALSE,
@@ -70,8 +72,6 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	};
 	// ensure its init and safe with null terminator
 	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
-	returnMesh.fragShaderPath[0] = '\0';  // Ensure the path is empty
-	returnMesh.vertShaderPath[0] = '\0';  // Ensure the path is empty
     return returnMesh;
 }
 
@@ -93,17 +93,14 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
-	.shaderID = 0,
+	.meshPath = DEFAULT_MODEL_PATH,
+	.shader = AF_Shader_ZERO(),
 	.isImageFlipped = TRUE,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
-	// ensure its init and safe with null terminator
-	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
-	returnMesh.fragShaderPath[0] = '\0';  // Ensure the path is empty
-	returnMesh.vertShaderPath[0] = '\0';  // Ensure the path is empty
     return returnMesh;
 }
 
