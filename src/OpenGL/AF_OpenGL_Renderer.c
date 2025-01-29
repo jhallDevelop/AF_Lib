@@ -380,11 +380,11 @@ Loop through the meshes in a component and draw using opengl
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh){
 	// draw meshes
 	// TODO: this is very expensive. batch these up
+	// ---- Setup shader ----
+	uint32_t shader = _mesh->shader.shaderID;
+	glUseProgram(shader); 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
-		// ---- Setup shader ----
-		uint32_t shader = _mesh->meshes[i].material.shaderID;
-		glUseProgram(shader); 
-
+		
 		// Bind the textures
         // ---- Diffuse Texture ----
 		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
@@ -471,8 +471,9 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		glBindVertexArray(0);
 		AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
+		
 	}
-	
+	glUseProgram(0);
 	// Unbind textures
 	//unbind diffuse
 	glActiveTexture(GL_TEXTURE0);
