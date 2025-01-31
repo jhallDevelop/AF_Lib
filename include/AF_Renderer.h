@@ -112,7 +112,9 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 
 // Destroy
-void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh);
+void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
+void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
+void AF_Renderer_Destroy_Shader(uint32_t _shaderID);
 void AF_Renderer_DestroyRenderer(AF_ECS* _ecs);
 // Cleanup
 //static void CleanUpMesh(const unsigned int _shaderID);

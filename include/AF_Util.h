@@ -27,7 +27,7 @@ Implimentation of helper functions for utility functions like,
 extern "C" {
 #endif
 
- /*
+/*
 ====================
 AF_Util_Mat4_Log
 Take a AF_Mat 4 and log it to the console.
@@ -68,6 +68,23 @@ Check a file exists
 static inline BOOL AF_Util_FileExists(const char* _filePath){
     struct stat buffer;   
     return (stat(_filePath, &buffer) == 0);
+}
+
+/*
+====================
+AF_Util_MakeDirectory
+Make a directory, and return if it was successful
+====================
+*/
+static inline BOOL AF_Util_MakeDirectory(const char* _filePath){
+    if(mkdir(_filePath, 0777) == -1){
+        AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n",_filePath);
+        return FALSE;
+    }
+    
+    // if we succeed then we return true
+    AF_Log("AF_Util_MakeFolder: SUCCESS: Directory created: %s\n", _filePath);
+    return TRUE;
 }
 
 

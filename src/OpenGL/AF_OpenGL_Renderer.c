@@ -491,14 +491,66 @@ Destroy the renderer
 void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
     AF_Log("%s Destroyed\n", openglRendererFileTitle);
     for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
-		AF_Renderer_DestroyMeshComponent(&_ecs->meshes[i]);
+		AF_CMesh* meshComponent = &_ecs->meshes[i];
+		
+		// Destory the material textures
+		for(uint32_t j = 0; j < meshComponent->meshCount; j++){
+			AF_Renderer_Destroy_Material_Textures(&meshComponent->meshes[j].material);
+		}
+		
+		// Destroy mesh shader
+		AF_Renderer_Destroy_Shader(meshComponent->shader.shaderID);
+
+		// Destroy the mesh buffers
+		AF_Renderer_DestroyMeshBuffers(meshComponent);
+
+		// zero the component
+		*meshComponent = AF_CMesh_ZERO();
     }
+
+	// Delete textures
+
+	// Delete Shaders
        
         //glDeleteTexture(_meshList->materials[0].textureID);
     AF_CheckGLError( "Error Destroying Renderer OpenGL! \n");
 }
 
-void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh){
+void AF_Renderer_Destroy_Shader(uint32_t _shaderID){
+	glDeleteProgram(_shaderID);
+}
+
+
+/*
+====================
+AF_Renderer_Destroy_Material_Textures
+Destroy the material textures
+====================
+*/
+void AF_Renderer_Destroy_Material_Textures(AF_Material* _material){
+	// Diffuse
+	if(_material->diffuseTexture != NULL){
+		glDeleteTextures(1, &_material->diffuseTexture->id);
+	}
+
+	// Specular
+	if(_material->specularTexture != NULL){
+		glDeleteTextures(1, &_material->specularTexture->id);
+	}
+
+	// Normal
+	if(_material->normalTexture != NULL){
+		glDeleteTextures(1, &_material->normalTexture->id);
+	}
+}
+
+/*
+====================
+AF_Renderer_DestroyMeshComponent
+Destroy the mesh renderer component renderer data
+====================
+*/
+void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 		// for each mesh
 		for(uint32_t j = 0; j < _mesh->meshCount; j++){
 			// optional: de-allocate all resources once they've outlived their purpose:
@@ -509,22 +561,7 @@ void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh){
 			glDeleteBuffers(1, &mesh->ibo);
 			//glDeleteProgram(mesh->material.shaderID);
 
-			// TODO: eventually move this out to a seprate look that acts on the texture/assets list of data rather than doing a per component basis
-			// diffuse
-			/*
-			if(mesh->material.diffuseTexture != NULL){
-				glDeleteTextures(1, &mesh->material.diffuseTexture->id);
-			}
-			if(mesh->material.specularTexture != NULL){
-				glDeleteTextures(1, &mesh->material.specularTexture->id);
-			}
-
-			if(mesh->material.normalTexture != NULL){
-				glDeleteTextures(1, &mesh->material.normalTexture->id);
-			}
-			*/
-			// TODO: free the other textures
-
+			
 			// Free the vertices and indices
 			free(mesh->vertices);
 			mesh->vertices = NULL;
@@ -534,9 +571,6 @@ void AF_Renderer_DestroyMeshComponent(AF_CMesh* _mesh){
 		// Free the meshes in the component correctly
 		free(_mesh->meshes);
 		_mesh->meshes = NULL;
-
-		// zero all the mesh data except for the path
-		*_mesh = AF_CMesh_ZERO();
 }
 
 
