@@ -379,6 +379,12 @@ Loop through the meshes in a component and draw using opengl
 */
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh){
 	// draw meshes
+	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
+	{
+		AF_Log_Error("AF_Renderer_DrawMesh: Passed Null reference \n");
+		return;
+	}
+	
 	// TODO: this is very expensive. batch these up
 	// ---- Setup shader ----
 	uint32_t shader = _mesh->shader.shaderID;
@@ -386,6 +392,10 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		
 		// Bind the textures
+		if(_mesh->meshes == NULL){
+			AF_Log_Error("AF_Renderer_DrawMesh: meshes are Null reference \n");
+			return;
+		}
         // ---- Diffuse Texture ----
 		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
 			uint32_t diffuseTextureBinding = 0;

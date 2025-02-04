@@ -194,7 +194,6 @@ Take in a buffer to store the data
 Return a char list of files in the path
 ================================
 */
-
 void AF_File_ListFiles(const char *path, AF_FileList* _fileList, BOOL _isAlphabetical)
 {
     struct dirent *dp;
