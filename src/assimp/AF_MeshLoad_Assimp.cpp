@@ -28,7 +28,6 @@ void AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* 
     // Call specific assimp varient of mesh loading
     AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath);
 
-    
 
     AF_Log("Show Model File Browser \n");
     // delete the existing mesh data
@@ -383,7 +382,8 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
         // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
         bool skip = false;
         // look at all the available textures loaded
-        for(unsigned int j = 0; j < _assets.nextAvailableTexture; j++)
+        //for(unsigned int j = 0; j < _assets.nextAvailableTexture; j++)
+        for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
         {
             if(std::strcmp(_assets.textures[j].path, assimpTexturePath) == 0)
             {
@@ -454,8 +454,8 @@ uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char*
     // look at all the available textures loaded, increment the condition so we at least check the first entry
     // Ensure _assetsLoaded.shaders is valid BEFORE using it
     
-    
-    for (unsigned int j = 0; j < _assetsLoaded.nextAvailableShader; j++) {
+    //for (unsigned int j = 0; j < _assetsLoaded.nextAvailableShader; j++) {
+    for (unsigned int j = 0; j < AF_ASSETS_MAX_SHADERS; j++) {
         AF_Log("Checking: \n%s\n%s\n", _assetsLoaded.shaders[j].vertPath, _vertPath);
 
         // Compare the vertex shader path
