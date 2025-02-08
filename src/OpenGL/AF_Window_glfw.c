@@ -43,7 +43,16 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
 	// TODO: https://www.reddit.com/r/opengl/comments/i8lv8u/how_can_i_optimize_my_key_handling_and_make_it/
     if(scancode){}
     if(mods){}
-    AF_Input* input = (AF_Input*)glfwGetWindowUserPointer(_window);
+    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
+    if(afWindow == NULL){
+        AF_Log_Error("%s key_callback: afWindow is NULL\n", glfwWindowFileTitle);
+        return;
+    }
+    AF_Input* input = (AF_Input*)afWindow->input;
+    if(input == NULL){
+        AF_Log_Error("%s key_callback: input is NULL\n", glfwWindowFileTitle);
+        return;
+    }
 
     if(action == GLFW_PRESS){
 	// find the key and set it to pressed
@@ -81,6 +90,14 @@ void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
     int width, height;
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
+
+    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
+    if(afWindow == NULL){
+        AF_Log_Error("%s window_pos_callback: afWindow is NULL\n", glfwWindowFileTitle);
+        return;
+    }
+        afWindow->windowXPos = _xpos;
+        afWindow->windowYPos= _ypos;
 }
 
 /*
@@ -93,8 +110,14 @@ void framebuffer_size_callback(GLFWwindow* _window, int _width, int _height)
 {
     if(_width || _height){}
     int width, height;
-    glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
+
+    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
+    if(afWindow == NULL){
+        AF_Log_Error("%s window_pos_callback: afWindow is NULL\n", glfwWindowFileTitle);
+        return;
+    }
+    glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
 }
 
 /*
@@ -107,8 +130,18 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
 {
     if(_width || _height){}
     int width, height;
+
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
+
+    // Update the window size
+    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
+    if(afWindow == NULL){
+        AF_Log_Error("%s window_size_callback: afWindow is NULL\n", glfwWindowFileTitle);
+        return;
+    }
+    afWindow->windowWidth = _width;
+    afWindow->windowHeight = _height;
 }
 
 
@@ -160,8 +193,8 @@ void AF_Lib_CreateWindow(AF_Window* _window) {
     // make current context
     glfwMakeContextCurrent(glfwWindow);
 
-    // Set the struct pointer as the user pointer of the window for input callback
-    glfwSetWindowUserPointer(glfwWindow, _window->input);
+    // Set the user ptr to that of type AF_Window struct.
+    glfwSetWindowUserPointer(glfwWindow, _window);
 
     // Set window size callback 
     glfwSetWindowSizeCallback(glfwWindow, window_size_callback);
@@ -174,6 +207,8 @@ void AF_Lib_CreateWindow(AF_Window* _window) {
 
     // Set the window size correctly, needed for OSX retina displays
     glfwSetFramebufferSizeCallback(glfwWindow, framebuffer_size_callback);
+
+    // Set the user ptr of the window to 
 
 }
 
