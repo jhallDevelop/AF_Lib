@@ -355,6 +355,12 @@ Loop through the entities and draw the meshes that have components attached
 */
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_Entity* entity = &_ecs->entities[i];
+		BOOL hasEntity = AF_Component_GetHas(entity->flags);
+		if(hasEntity == FALSE){
+			continue;
+		}
+
 		AF_CMesh* mesh = &_ecs->meshes[i];
 		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
 		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
