@@ -21,7 +21,7 @@ Generic implementation that will call assimp specific function
 */
 void AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
     if(AF_Util_FileExists(_modelPath) == FALSE){
-        AF_Log_Warning("AF_MeshLoad_Load: ERROR: File doesn't exist $s\n", _modelPath);
+        AF_Log_Warning("AF_MeshLoad_Load: ERROR: File doesn't exist %s\n", _modelPath);
         return;
     }
     
