@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "AF_Log.h"
 
 /*
 ================================
@@ -16,17 +17,17 @@ Return the pointer to the char buffer
 */
 FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     if(_path == NULL){
-        printf("AF_File_OpenFile: FAILED to open file. _path is NULL\n");
+        AF_Log_Error("AF_File_OpenFile: FAILED to open file. _path is NULL\n");
         return 0;
     }
     FILE* f;
     f = fopen(_path, _writeCommands);//"r+");
     if (f == NULL) {
-        printf("AF_File_OpenFile: FAILED: to open file %s\n", _path);
+        AF_Log_Error("AF_File_OpenFile: FAILED: to open file %s\n", _path);
         return 0;
     } 
     if (ferror(f)) {
-        printf("AF_File_OpenFile: Error while opening \n");
+        AF_Log_Error("AF_File_OpenFile: Error while opening \n");
 		return 0;
     }
 
@@ -44,7 +45,7 @@ Print to console the buffer contents
 void AF_File_PrintTextBuffer(FILE* _filePtr){
     //printf("==== PrintTextBuffer ====\n");
     if(_filePtr == NULL){
-        printf("AF_File_PrintTextBuffer: FAILED to print buffer. _charBuffer is NULL\n");
+        AF_Log_Error("AF_File_PrintTextBuffer: FAILED to print buffer. _charBuffer is NULL\n");
         return;
     }
     char buf[1024];
@@ -60,17 +61,17 @@ void AF_File_PrintTextBuffer(FILE* _filePtr){
             if (s_next_line != NULL) {
                 // Null-terminate the current line
                 *s_next_line = '\0';
-                printf("%s\n", s);  // Print the current line
+                AF_Log_Error("%s\n", s);  // Print the current line
                 s = s_next_line + 1; // Move s to the next line
             } else {
                 // No more newlines in the buffer, print the rest
-                printf("%s", s);
+                AF_Log_Error("%s", s);
                 s = NULL; // Exit the loop
             }
         }
     }
     if (ferror(_filePtr)) {
-        printf("AF_File_PrintTextBuffer: Error while reading \n");
+        AF_Log_Error("AF_File_PrintTextBuffer: Error while reading \n");
     }
     
 }
