@@ -6,6 +6,9 @@
 #include "AF_Lib_Define.h"
 #include "AF_FileList.h"
 
+#define DEFAULT_CHAR_BUFF_SIZE 1024
+#define LARGE_CHAR_BUFF_SIZE 2048
+
 #ifdef __cplusplus
 extern "C" {    
 #endif

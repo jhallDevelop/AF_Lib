@@ -19,17 +19,13 @@ The entity struct and helper functions
 #include "ECS/Components/AF_CEditorData.h"
 
 // Components
-#ifdef PLATFORM_GB
-#include "ECS/Components/AF_CTransform2D.h"
-#include "ECS/Components/AF_C2DRigidbody.h"
-
-#else
 #include "ECS/Components/AF_C3DRigidbody.h"
 #include "ECS/Components/AF_CMesh.h"
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CAnimation.h"
 #include "ECS/Components/AF_CCamera.h"
-#endif
+
+
 
 
 
@@ -47,16 +43,7 @@ If 2D game then loaded verts are known at compile time as its just a quad hard c
 typedef struct {
     flag_t flags;	// Entity has ben enabled
     PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants
-    #ifdef PLATFORM_GB
-
-    char packed1;		// pack out an extra byte
-    uint16_t packed2;		// pack out and extra 2 bytes
-    AF_CTransform2D* transform;
-    AF_CSprite* sprite;		// sprite cmponent
-    AF_C2DRigidbody* rigidbody;	// rigidbody component
-    AF_CCollider* collider;	// Collider component
-
-    #else
+    // TODOD
     AF_CTransform3D* parentTransform;
     AF_CTransform3D* transform;	// 3d transform component
     AF_CSprite* sprite;		// sprite cmponent
@@ -71,7 +58,7 @@ typedef struct {
     AF_CSkeletalAnimation* skeletalAnimation;
     AF_CAI_Behaviour* aiBehaviour;
     AF_CEditorData* editorData;
-        #endif
+     
 } AF_Entity;
 
 // Little helper struct that can be use

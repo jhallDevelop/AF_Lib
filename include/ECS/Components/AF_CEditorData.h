@@ -11,6 +11,9 @@ and helper functions
 #include "AF_Component.h"
 #include "AF_Lib_Define.h"
 #include <stdbool.h>
+
+#define MAX_EDITORDATA_NAME_CHAR_LENGTH 256
+
 #ifdef __cplusplus
 extern "C" {    
 #endif
@@ -21,7 +24,8 @@ AF_CEDITOR_DATA
 */
 // size is 64 bytes
 typedef struct AF_CEditorData{
-	PACKED_CHAR enabled;	    
+	PACKED_CHAR enabled;
+    char name[MAX_EDITORDATA_NAME_CHAR_LENGTH];	    
 	bool isSelected;		    
 } AF_CEditorData;
 
@@ -35,6 +39,7 @@ static inline AF_CEditorData AF_CEditorData_ZERO(void){
     AF_CEditorData returnComponent = {
 	//.has = FALSE,
 	.enabled = FALSE,
+    .name = "\0",
     .isSelected = false
     };
     return returnComponent;
@@ -54,6 +59,7 @@ static inline AF_CEditorData AF_CEditorData_ADD(void){
     AF_CEditorData returnComponent = {
 	//.has = TRUE,
 	.enabled = component,
+    .name = "Entity: ",
     .isSelected = false
     };
     return returnComponent;

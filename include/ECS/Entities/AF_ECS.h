@@ -55,6 +55,10 @@ Helper function to re-sync pointers loast likely when loading a save
 static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
+
+		// set the name
+		//snprintf(entity->name, sizeof(entity->name), "%s", _ecs->entities[i].name);
+
 		// original data is all living in fixed arrays per component
 		entity->transform = &_ecs->transforms[i];
 		entity->sprite = &_ecs->sprites[i];
@@ -119,7 +123,10 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		entity->flags = AF_Component_SetEnabled(*componentState, TRUE);
 		entity->id_tag = AF_ECS_AssignID(entity->id_tag, i);
 		entity->id_tag = AF_ECS_AssignTag(entity->id_tag, 0);
-			
+		
+		// set the name
+		//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
+		
 		// Sprite Components
 		_ecs->sprites[i] = AF_CSprite_ZERO();
 	
