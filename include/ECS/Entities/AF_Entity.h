@@ -24,6 +24,7 @@ The entity struct and helper functions
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CAnimation.h"
 #include "ECS/Components/AF_CCamera.h"
+#include "ECS/Components/AF_CInputController.h"
 
 
 
@@ -40,7 +41,7 @@ If 2D game then loaded verts are known at compile time as its just a quad hard c
 ====================
 */
 // Size of struct is exactly 64 bytes
-typedef struct {
+typedef struct AF_Entity {
     flag_t flags;	// Entity has ben enabled
     PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants
     // TODOD
@@ -58,7 +59,7 @@ typedef struct {
     AF_CSkeletalAnimation* skeletalAnimation;
     AF_CAI_Behaviour* aiBehaviour;
     AF_CEditorData* editorData;
-     
+    AF_CInputController* inputController;
 } AF_Entity;
 
 // Little helper struct that can be use

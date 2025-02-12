@@ -44,6 +44,7 @@ typedef struct {
 	AF_CSkeletalAnimation skeletalAnimations[AF_ECS_TOTAL_ENTITIES];
 	AF_CAI_Behaviour aiBehaviours[AF_ECS_TOTAL_ENTITIES];
 	AF_CEditorData editorData[AF_ECS_TOTAL_ENTITIES];
+	AF_CInputController inputControllers[AF_ECS_TOTAL_ENTITIES];
 } AF_ECS;
 
 /*
@@ -99,6 +100,9 @@ static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
 		// Editor Component
 		entity->editorData = &_ecs->editorData[i];
 
+		// Input Controller
+		entity->inputController = &_ecs->inputControllers[i];
+
 	}
 }
 
@@ -126,12 +130,57 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		
 		// set the name
 		//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
-		
-		// Sprite Components
-		_ecs->sprites[i] = AF_CSprite_ZERO();
-	
+
+		// ===== Init all the component pointers =====
 		// Transform Component
 		entity->parentTransform = NULL;
+
+		// original data is all living in fixed arrays per component
+		entity->transform = NULL;
+		entity->sprite = NULL;
+	
+		// Transform Component
+		entity->transform = NULL;
+		
+		// Rigidbody3D
+		entity->rigidbody = NULL;
+
+		// Colliders
+		entity->collider = NULL;
+		
+		// Animation component
+		entity->animation = NULL;
+
+		// Add Meshes
+		entity->mesh = NULL;
+
+		// Add text
+		entity->text = NULL;
+
+		// Add audio
+		entity->audioSource = NULL;
+
+		// player data
+		entity->playerData = NULL;
+
+		// skeletal animations
+		entity->skeletalAnimation = NULL;
+
+		// ai Behaviours
+		entity->aiBehaviour = NULL;
+		
+		// Camera Component
+		entity->camera = NULL;
+
+		// Editor Component
+		entity->editorData = NULL;
+		
+		// Input controller
+		entity->inputController = NULL;
+
+		// ===== Init all the component arrays =====
+		// Sprite Components
+		_ecs->sprites[i] = AF_CSprite_ZERO();
 		
 		// Transform Component
 		_ecs->transforms[i] = AF_CTransform3D_ZERO();
@@ -168,6 +217,9 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 
 		// Editor Data
 		_ecs->editorData[i] = AF_CEditorData_ZERO();
+
+		// Input Controller
+		_ecs->inputControllers[i] = AF_CInputController_ZERO();
 	}
 	
 	AF_ECS_ReSyncComponents(_ecs);
@@ -194,9 +246,6 @@ static inline AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 	entity->flags = AF_Component_SetEnabled(*componentState, TRUE);
 
     // Give this entity a default transform component that is enabled
-    
-	
-    
     if(entity == NULL){
 		printf("AF_ECS: AF_ECS_CreateEntity entity failed, and is returining a null entity\n");
 		return NULL;

@@ -39,6 +39,7 @@ inline static AF_InputAction AF_InputAction_ZERO(){
         .key = {0, 0, 0},
         .actionFuncPtr = NULL
     };
+    return returnIA;
 }
 
 

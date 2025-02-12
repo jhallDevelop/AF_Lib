@@ -109,7 +109,8 @@ when the framebuffer size changes, update the glViewport
 void framebuffer_size_callback(GLFWwindow* _window, int _width, int _height)
 {
     if(_width || _height){}
-    int width, height;
+    int32_t width = 0;
+    int32_t height = 0;
     glViewport(0, 0, width, height);
 
     AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);

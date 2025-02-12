@@ -10,7 +10,7 @@ and helper functions
 #define AF_CINPUT_CONTROLLER_H
 #include "AF_Lib_Define.h"
 #include "AF_InputAction.h"
-
+#include "AF_Component.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif
@@ -26,6 +26,7 @@ AF_CInputController Struct used for physics
 */
 typedef struct AF_CInputController{
     PACKED_CHAR enabled;
+	uint8_t inputActionCount;
     AF_InputAction inputActions[MAX_CINPUTCONTROLLER_ACTIONS];
     
 } AF_CInputController;
@@ -38,11 +39,15 @@ Empty constructor for the CRigidbody component
 ====================
 */
 static inline AF_CInputController AF_CInputController_ZERO(void){
+	// create a version to use
 	AF_CInputController inputController = {
-		//.has = false,
 		.enabled = FALSE,
-		.inputActions = 
+		.inputActionCount = 0
 	};
+	// init the input actions array
+	for(uint32_t i = 0; i < MAX_CINPUTCONTROLLER_ACTIONS; i++){
+		inputController.inputActions[i] = AF_InputAction_ZERO();
+	}
 	return inputController;
 }
 
@@ -59,12 +64,14 @@ static inline AF_CInputController AF_CInputController_ADD(void){
 	component = AF_Component_SetEnabled(component, TRUE);
 
 	AF_CInputController inputController = {
-		//.has = true,
 		.enabled = component,
-		.isKinematic = FALSE,			// isKinematic means to be controlled by script rather than the velocity
-		.velocity = {0, 0},		// zero velocity 
-		.gravity = 0				// gravity off by default
+		.inputActionCount = 0
 	};
+
+	// init the input actions array
+	for(uint32_t i = 0; i < MAX_CINPUTCONTROLLER_ACTIONS; i++){
+		inputController.inputActions[i] = AF_InputAction_ZERO();
+	}
 	return inputController;
 }
 
