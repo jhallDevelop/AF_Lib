@@ -11,13 +11,14 @@ and helper functions
 #include "AF_Lib_Define.h"
 #include "AF_Vec2.h"
 #include <string.h>
+#include "AF_Log.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-#define AF_INPUT_KEYS_MAPPED 10
+//#define AF_INPUT_KEYS_MAPPED 10
 #define AF_INPUT_KEYBOARD_KEYS_COUNT 47
 
 typedef enum {
@@ -122,20 +123,7 @@ typedef struct {
 } AF_KeyMap;
 
 
-
 static const AF_KeyMap AF_Input_KeyMappings[] = {
-    {AF_KEY_TAB, "Tab"},
-    {AF_KEY_ENTER, "Enter"},
-    {AF_KEY_SHIFT, "Shift"},
-    {AF_KEY_CTRL, "Ctrl"},
-    {AF_KEY_ALT, "Alt"},
-    {AF_KEY_ESCAPE, "Escape"},
-    {AF_KEY_SPACE, "Space"},
-    {AF_KEY_LEFT_ARROW, "Left Arrow"},
-    {AF_KEY_UP_ARROW, "Up Arrow"},
-    {AF_KEY_RIGHT_ARROW, "Right Arrow"},
-    {AF_KEY_DOWN_ARROW, "Down Arrow"},
-
     {AF_KEY_0, "0"},
     {AF_KEY_1, "1"},
     {AF_KEY_2, "2"},
@@ -172,7 +160,18 @@ static const AF_KeyMap AF_Input_KeyMappings[] = {
     {AF_KEY_W, "W"},
     {AF_KEY_X, "X"},
     {AF_KEY_Y, "Y"},
-    {AF_KEY_Z, "Z"}
+    {AF_KEY_Z, "Z"},
+    {AF_KEY_TAB, "Tab"},
+    {AF_KEY_ENTER, "Enter"},
+    {AF_KEY_SHIFT, "Shift"},
+    {AF_KEY_CTRL, "Ctrl"},
+    {AF_KEY_ALT, "Alt"},
+    {AF_KEY_ESCAPE, "Escape"},
+    {AF_KEY_SPACE, "Space"},
+    {AF_KEY_LEFT_ARROW, "Left Arrow"},
+    {AF_KEY_UP_ARROW, "Up Arrow"},
+    {AF_KEY_RIGHT_ARROW, "Right Arrow"},
+    {AF_KEY_DOWN_ARROW, "Down Arrow"}
 };
 
 
@@ -207,7 +206,7 @@ Input struct to store the registered keys
 typedef struct {
     // input buffer que
     // TODO: make array for size CONTROLLER_COUNT
-    AF_Key keys[CONTROLLER_COUNT][AF_INPUT_KEYS_MAPPED];
+    AF_Key keys[CONTROLLER_COUNT][AF_INPUT_KEYBOARD_KEYS_COUNT];
 
     Vec2 controlSticks[CONTROLLER_COUNT];
 
@@ -222,6 +221,34 @@ typedef struct {
 
 } AF_Input;
 
+/*
+====================
+AF_Input_MapKeys
+map keys
+====================
+*/
+static inline void AF_Input_MapKeyMappings(AF_Input* _input, const AF_KeyMap* _keymappings){
+    
+    for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
+        _input->keys[0][i].code = _keymappings[i].key;
+    }
+}
+
+/*
+====================
+AF_Input_GetKey
+Get key by code
+====================
+*/
+static inline AF_Key* AF_Input_GetKey(char _code, AF_Input* _input){
+    AF_Key* returnKey = NULL;
+    for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
+        if(_input->keys[0][i].code == _code){
+            returnKey = &_input->keys[0][i];
+        }
+    }
+    return returnKey;
+}
 
 /*
 ====================
@@ -231,13 +258,20 @@ Input struct Initialise to zero
 */
 static inline AF_Input AF_Input_ZERO(void){
     AF_Input input;
-    for(int i = 0; i < AF_INPUT_KEYS_MAPPED; ++i){
+    /*
+    for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; ++i){
+        
         AF_Key key = {0, 0, 0};
         input.keys[0][i] = key; // Player 1
         input.keys[1][i] = key; // Player 2
         input.keys[2][i] = key; // Player 3
         input.keys[3][i] = key; // Player 4
+        
+       // map the keymappings to input keys
+       
     }
+    */
+    AF_Input_MapKeyMappings(&input, AF_Input_KeyMappings);
     
     for(int i = 0; i < CONTROLLER_COUNT; ++i){
         Vec2 controlStick = {0, 0};
@@ -250,6 +284,8 @@ static inline AF_Input AF_Input_ZERO(void){
     input.mouseY = 0;
     return input;
 }
+
+
 
 
 /*

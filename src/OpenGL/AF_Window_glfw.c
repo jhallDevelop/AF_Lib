@@ -56,14 +56,15 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
 
     if(action == GLFW_PRESS){
 	// find the key and set it to pressed
-	for(int i = 0; i < AF_INPUT_KEYS_MAPPED; i++){
+	//for(int i = 0; i < AF_INPUT_KEYS_MAPPED; i++){
+    for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
 		if(AF_Input_GetKeyCode(input->keys[i]->code) == key){
 			input->keys[i]->code = AF_Input_EncodeKey(input->keys[i]->code, TRUE); 
 		}
 	}
     }else if(action == GLFW_RELEASE){
 	// find the key and set it to release
-	for(int i = 0; i < AF_INPUT_KEYS_MAPPED; i++){
+	for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
 		if(AF_Input_GetKeyCode(input->keys[i]->code) == key){
 			input->keys[i]->code = AF_Input_EncodeKey(input->keys[i]->code, FALSE); 
 		}
