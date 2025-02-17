@@ -10,6 +10,8 @@ Definition for the input action struct
 #include <stdarg.h>
 #include "AF_Lib_Define.h"
 #include "AF_Input.h"
+#include "AF_Vec2.h"
+#include "AF_Vec3.h"
 
 #ifdef __cplusplus
 extern "C" {    
@@ -46,6 +48,11 @@ typedef struct AF_InputAction {
     BOOL enabled;
     AF_Key* keyPtr;
     AF_ActionType actionType;
+    BOOL boolBuffer;
+    uint32_t uintBuffer;
+    float floatBuffer;
+    Vec2 vec2Buffer;
+    Vec3 vec3Buffer;
     void (*actionFuncPtr)(uint32_t,...); // Variadic function pointer
 } AF_InputAction;
 
@@ -76,6 +83,11 @@ inline static AF_InputAction AF_InputAction_ZERO(void){
         .enabled = FALSE,
         .keyPtr = NULL,//{0, 0, 0},
         .actionType = ACTION_TYPE_NONE,
+        .boolBuffer = FALSE,
+        .uintBuffer = 0,
+        .floatBuffer = 0.0f,
+        .vec2Buffer = {0.0f, 0.0f},
+        .vec3Buffer = {0.0f, 0.0f, 0.0f},
         .actionFuncPtr = AF_InputAction_DefaultFunction
     };
     return returnIA;

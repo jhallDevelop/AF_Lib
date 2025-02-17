@@ -56,8 +56,31 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         //AF_Log("AF_SActions: Action func ptr: %p\n", inputAction->actionFuncPtr);
         // Call the action function pointer passing the input controller and rigidbody
         // Double check the rigidbody has
-        Vec3 velocity = {1,2,3};
-        _inputController->inputActions[i].actionFuncPtr(1, _entity, &velocity);
+
+        switch (inputAction->actionType)
+        {
+        case AF_ActionType::ACTION_TYPE_NONE:
+            /* code */
+            AF_Log_Warning("AF_SActions_Update: Action type is NONE, not implemented \n");
+            break;
+        case AF_ActionType::ACTION_TYPE_ADD_VELOCITY:
+            /* code */
+            inputAction->actionFuncPtr(1, _entity, &inputAction->vec3Buffer);
+            break;
+        case AF_ActionType::ACTION_TYPE_SHOOT:
+            /* code */
+            AF_Log_Warning("AF_SActions_Update: Action type is Shoot, not implemented \n");
+            break;
+
+        case AF_ActionType::ACTION_TYPE_CUSTOM:
+            /* code */
+            AF_Log_Warning("AF_SActions_Update: Action type is Custom, not implemented \n");
+            break;
+        
+        default:
+            break;
+        }
+        
     }
 }
 
@@ -98,6 +121,7 @@ inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
     }
     AF_Log("AF_SActions_Add_Velocity: Action x: (%f y: %f z: %f) \n", _velocity->x, _velocity->y, _velocity->z);
     _rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, *_velocity);
+    _entity->transform->pos = Vec3_ADD(_entity->transform->pos, *_velocity);
    
 }
 
