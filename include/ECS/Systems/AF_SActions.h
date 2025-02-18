@@ -38,6 +38,14 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         return;
     }
 
+    // TODO: don't do this, let velocity dissapate over time
+	_entity->rigidbody->velocity = Vec3_ZERO();
+	//rigidbody->anglularVelocity = Vec3_ZERO;
+	//rigidbody->force = Vec3_ZERO;
+	//rigidbody->torque = Vec3_ZERO;
+	//rigidbody->inertiaTensor = Vec3_ZERO;
+	// Clear Velocities
+
     // search to see if the input action is from our pre-scribed list, or is it custom
     // for each key pressed in the input controller
     for (uint32_t i = 0; i < MAX_CINPUTCONTROLLER_ACTIONS; i++){
@@ -67,7 +75,7 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
             if (inputAction->keyPtr->pressed == FALSE){
                 
                 inputAction->actionFuncPtr(1, _entity, &ZERO_Vec3);
-                _entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
+                //_entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
             } else{
                 // send velocity from input aciton buffer
                 // if no keypress, don't send velocity
@@ -126,10 +134,9 @@ inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
         AF_Log_Warning("AF_SActions_Add_Velocity: _rigidbody ptr is null \n");
         return;
     }
-    AF_Log("AF_SActions_Add_Velocity: Action x: (%f y: %f z: %f) \n", _velocity->x, _velocity->y, _velocity->z);
+    //AF_Log("AF_SActions_Add_Velocity: Action x: (%f y: %f z: %f) \n", _velocity->x, _velocity->y, _velocity->z);
     _rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, *_velocity);
     //_entity->transform->pos = Vec3_ADD(_entity->transform->pos, *_velocity);
-   
 }
 
 

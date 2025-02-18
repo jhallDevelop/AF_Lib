@@ -54,6 +54,8 @@ typedef struct AF_InputAction {
     Vec2 vec2Buffer;
     Vec3 vec3Buffer;
     void (*actionFuncPtr)(uint32_t,...); // Variadic function pointer
+    int32_t currentKeyIndex;
+	int32_t currentActionIndex;
 } AF_InputAction;
 
 /*
@@ -88,7 +90,9 @@ inline static AF_InputAction AF_InputAction_ZERO(void){
         .floatBuffer = 0.0f,
         .vec2Buffer = {0.0f, 0.0f},
         .vec3Buffer = {0.0f, 0.0f, 0.0f},
-        .actionFuncPtr = AF_InputAction_DefaultFunction
+        .actionFuncPtr = AF_InputAction_DefaultFunction,
+        .currentKeyIndex = 0,
+		.currentActionIndex = 0
     };
     return returnIA;
 }

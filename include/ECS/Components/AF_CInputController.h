@@ -42,7 +42,7 @@ static inline AF_CInputController AF_CInputController_ZERO(void){
 	// create a version to use
 	AF_CInputController inputController = {
 		.enabled = FALSE,
-		.inputActionCount = 0
+		.inputActionCount = 0,
 	};
 	// init the input actions array
 	for(uint32_t i = 0; i < MAX_CINPUTCONTROLLER_ACTIONS; i++){

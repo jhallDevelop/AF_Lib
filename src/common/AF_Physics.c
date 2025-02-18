@@ -63,6 +63,9 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 	}
     
 	AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
+
+	
+
 	if((AF_Component_GetHas(rigidbody->enabled) == TRUE) && (AF_Component_GetEnabled(rigidbody->enabled) == TRUE)){
 	
 		
