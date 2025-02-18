@@ -45,7 +45,7 @@ AF_PHYSICS_INIT
 Definition for Physics init
 ====================
 */
-void AF_Physics_Init();
+void AF_Physics_Init(AF_ECS* _ecs);
 
 /*
 ====================
@@ -89,7 +89,7 @@ AF_PHYSICS_SHUTDOWN
 Definition for Physics shutdown 
 ====================
 */
-void AF_Physics_Shutdown();
+void AF_Physics_Shutdown(void);
 
 //=====HELPER FUNCTIONS=====
 

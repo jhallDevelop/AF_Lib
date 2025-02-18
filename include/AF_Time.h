@@ -22,12 +22,14 @@ struct to hold the data needed for monitoring time in the game
 */
 typedef struct {
 	uint32_t currentFrame;		// The current frame.
-	uint32_t currentTick;
-	double timeSinceLastFrame;	// Time in ms since the last frame
+	double deltaTime;	// Time in ms since the last frame
 	double currentTime;		// Time captured by the system clock. 
     double lastTime;		// record of the previous time captured
-    double cpuTimeElapsed;		// Time measured in cpu ticks since last frame
 } AF_Time;
+
+static inline double AF_Time_GetTime(void){
+	return ((double)(clock()) / CLOCKS_PER_SEC);
+}
 
 /*
 ====================
@@ -40,11 +42,9 @@ static inline AF_Time AF_Time_ZERO(const float _currentTime){
 
 	AF_Time returnTime = {
 	.currentFrame = 0,
-	.currentTick = 0,
-	.timeSinceLastFrame = 0.0f,
+	.deltaTime = 0,
 	.currentTime = _currentTime,
 	.lastTime = 0.0f,
-	.cpuTimeElapsed = 0.0f
 	};
 
 	return returnTime;
@@ -57,23 +57,14 @@ Update the time variables
 ====================
 */
 
-static inline AF_Time AF_Time_Update(const AF_Time _time){
-	AF_Time returnTime = {
-	.currentFrame = _time.currentFrame + 1,
-	.currentTick = _time.currentTick +1,
-	.timeSinceLastFrame = _time.timeSinceLastFrame,
-	.currentTime = _time.currentTime,
-	.lastTime = _time.lastTime,
-	.cpuTimeElapsed = _time.cpuTimeElapsed
-	};
-
-	return returnTime;
-
+static inline void AF_Time_Update(AF_Time* _time){
+	_time->currentTime = AF_Time_GetTime();
+	_time->deltaTime = _time->lastTime - _time->currentTime;
+	_time->currentFrame += 1,
+	_time->lastTime = _time->currentTime;
 }
 
-static inline double AF_Time_GetTime(void){
-	return ((double)(clock()) / CLOCKS_PER_SEC);
-}
+
 
 #ifdef __cplusplus
 }

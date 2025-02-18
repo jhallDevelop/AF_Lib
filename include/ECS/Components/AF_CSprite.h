@@ -8,6 +8,7 @@ and helper functions
 */
 #ifndef AF_CSPRITE_H
 #define AF_CSPRITE_H
+#include <stdio.h>
 #include "AF_Component.h"
 #include "AF_Vec2.h"
 #ifdef __cplusplus

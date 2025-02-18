@@ -18,6 +18,7 @@ and helper functions
 extern "C" {
 #endif
 
+static const Vec3 ZERO_Vec3 = {0.0f, 0.0f, 0.0f};
 /*
 ====================
 AF_SActions_Update
@@ -45,9 +46,7 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
             continue;
         }
         
-        if (inputAction->keyPtr->pressed == FALSE){
-            continue;
-        } 
+        
         
         if(inputAction->actionFuncPtr == NULL) {
             continue;
@@ -61,11 +60,20 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         {
         case AF_ActionType::ACTION_TYPE_NONE:
             /* code */
-            AF_Log_Warning("AF_SActions_Update: Action type is NONE, not implemented \n");
+            //AF_Log_Warning("AF_SActions_Update: Action type is NONE, not implemented \n");
             break;
         case AF_ActionType::ACTION_TYPE_ADD_VELOCITY:
             /* code */
-            inputAction->actionFuncPtr(1, _entity, &inputAction->vec3Buffer);
+            if (inputAction->keyPtr->pressed == FALSE){
+                
+                inputAction->actionFuncPtr(1, _entity, &ZERO_Vec3);
+                _entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
+            } else{
+                // send velocity from input aciton buffer
+                // if no keypress, don't send velocity
+                inputAction->actionFuncPtr(1, _entity, &inputAction->vec3Buffer);
+            }
+            
             break;
         case AF_ActionType::ACTION_TYPE_SHOOT:
             /* code */
@@ -80,7 +88,6 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         default:
             break;
         }
-        
     }
 }
 
@@ -121,7 +128,7 @@ inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
     }
     AF_Log("AF_SActions_Add_Velocity: Action x: (%f y: %f z: %f) \n", _velocity->x, _velocity->y, _velocity->z);
     _rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, *_velocity);
-    _entity->transform->pos = Vec3_ADD(_entity->transform->pos, *_velocity);
+    //_entity->transform->pos = Vec3_ADD(_entity->transform->pos, *_velocity);
    
 }
 

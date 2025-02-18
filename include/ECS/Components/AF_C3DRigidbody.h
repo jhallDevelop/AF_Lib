@@ -73,7 +73,7 @@ static inline AF_C3DRigidbody AF_C3DRigidbody_ADD(void){
 		//.has = true,
 		.enabled = component,
 		.isKinematic = FALSE,			// isKinematic means to be controlled by script rather than the velocity
-		.gravity = TRUE,				// gravity off by default
+		.gravity = FALSE,				// gravity off by default
 		.velocity = {0, 0, 0},		// zero velocity 
 		.anglularVelocity = {0,0,0},
 		.inverseMass = 1,
