@@ -23,34 +23,42 @@ extern "C" {
 #include "AF_Assets.h"
 #include "AF_ProjectData.h"
 
-typedef struct AF_AppData {                            // 8 bytes (64 bit)
-    bool isRunning;
-    bool isFullscreen;
-    Vec4 backgrounColor;
-    AF_ECS ecs;    
-    AF_Time time;  
-    AF_Window window;   
-    //AF_ViewportData viewport;     
-    AF_Input input; 
-    AF_Assets assets; // AppData      
-    AF_ProjectData projectData;       
-    // AppData
+#pragma pack(push, 8)  // Set 8-byte alignment
+typedef struct AF_AppData {
+    // Start with Vec4 since it likely contains floating point values
+    // that benefit from strict alignment
+    Vec4 backgrounColor;    // Likely 16 bytes (4 floats)
+
+    // Place larger structs next
+    AF_ECS ecs;            // Struct size depends on definition
+    AF_Time time;          // Struct size depends on definition
+    AF_Window window;      // We know this is 40 bytes
+    AF_Input input;        // Struct size depends on definition
+    AF_Assets assets;      // Struct size depends on definition
+    AF_ProjectData projectData;  // Struct size depends on definition
+
+    // Group boolean values together at the end to minimize padding
+    bool isRunning;        // 1 byte
+    bool isFullscreen;     // 1 byte
+    
+    // Add padding to ensure total struct size is multiple of 8
+    uint8_t _padding[6];   // 6 bytes of padding
 } AF_AppData;
+#pragma pack(pop)
 
 static inline AF_AppData AF_AppData_ZERO(void){
     Vec4 blackColor = {0,0,0,0};
     AF_AppData returnAppData ={
         // Initialise the app data
-       .isRunning = FALSE,
-        .isFullscreen = FALSE,
         .backgrounColor = blackColor,
-        //.ecs = NULL,
         .time = AF_Time_ZERO(0),
         .window = AF_Window_ZERO("", 0, 0),
-        //_editorAppData->viewport = AF_ViewportData_ZERO();    
         .input = AF_Input_ZERO(),
         .assets = AF_Assets_ZERO(),
-        .projectData = Editor_Project_Data_ZERO()
+        .projectData = Editor_Project_Data_ZERO(),
+
+        .isRunning = FALSE,
+        .isFullscreen = FALSE
     };
     return returnAppData;
 }

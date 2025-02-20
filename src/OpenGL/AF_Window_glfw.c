@@ -225,6 +225,7 @@ Create a window using GLFW
 ====================
 */
 void AF_Lib_CreateWindow(void* _appData) {
+    
     if(!_appData){
         AF_Log("%s CreateWindow: _appData is NULL\n", glfwWindowFileTitle);
         AF_Log_Error("%s CreateWindow: failed to create window\n", glfwWindowFileTitle);
@@ -247,13 +248,15 @@ void AF_Lib_CreateWindow(void* _appData) {
 
     AF_AppData* appData = (AF_AppData*)_appData;
     AF_Window* _window = &appData->window;
+    AF_Log("AF_Lib_CreateWindow: appData %p, window %p \n",appData, &appData->window);
+   
     GLFWwindow* glfwWindow = glfwCreateWindow(_window->windowWidth, _window->windowHeight, _window->title, NULL, NULL);
    
-    
     if (!glfwWindow)
     {
         // Window or context creation failed
          AF_Log_Error("%s CreateWindow: Failed to create a window\n", glfwWindowFileTitle);
+         return;
     }
     // assign the glfw window ptr to the struct passed in
     _window->window = glfwWindow;

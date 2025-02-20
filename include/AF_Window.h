@@ -21,17 +21,26 @@ AF_Window
 Window struct
 ====================
 */
+#pragma pack(push, 8)  // Save current packing and set to 8-byte alignment
 typedef struct {
-    void* window;           // Pointer to the window object (implementation specific)
-    void* input;            // Pointer to the input handling object (implementation specific)
-    const char* title;      // Title of the window
-    uint16_t windowXPos;	// Window X position
-    uint16_t windowYPos;	// Window Y position
-    uint16_t windowWidth;   // Width of the window
-    uint16_t windowHeight;  // Height of the window
-    uint16_t frameBufferWidth; // Width of the framebuffer
-    uint16_t frameBufferHeight; // Height of the framebuffer
+    // Pointers first - they need 8-byte alignment naturally
+    void* window;           // Offset 0  (8 bytes)
+    void* input;            // Offset 8  (8 bytes)
+    const char* title;      // Offset 16 (8 bytes)
+    
+    // Group all uint16_t members together to minimize padding
+    uint16_t windowXPos;    // Offset 24 (2 bytes)
+    uint16_t windowYPos;    // Offset 26 (2 bytes)
+    uint16_t windowWidth;   // Offset 28 (2 bytes)
+    uint16_t windowHeight;  // Offset 30 (2 bytes)
+    uint16_t frameBufferWidth;  // Offset 32 (2 bytes)
+    uint16_t frameBufferHeight; // Offset 34 (2 bytes)
+    
+    // Add explicit padding to reach next 8-byte boundary
+    uint8_t _padding[6];    // Offset 36-41 (6 bytes of padding)
 } AF_Window;
+#pragma pack(pop)   // Restore previous packing
+
 
 inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth, uint16_t _windowHeight){
     AF_Window window ={
