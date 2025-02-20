@@ -11,7 +11,6 @@ Definition of Window helper functions
 #include <stdint.h>
 #include "AF_Lib_Define.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,7 +56,7 @@ Create the window and init all the window things
 Platform/library dependent. Likely using glfw
 ====================
 */
-void AF_Lib_CreateWindow(AF_Window* _window);
+void AF_Lib_CreateWindow(void* _appData);
 
 /*
 ====================

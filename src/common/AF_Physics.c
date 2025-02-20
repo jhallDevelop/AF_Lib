@@ -51,7 +51,7 @@ Implementation of update
 void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 	assert(_ecs != NULL && "Physics: AF_Physics_Update pass in a null reference\n");
 	// loop through and update all transforms based on their velocities
-	for(int i = 0; i < _ecs->entitiesCount; ++i){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 	AF_CTransform3D* transform = &_ecs->transforms[i];
 
 	AF_CTransform3D* parentTransform =_ecs->entities[i].parentTransform;
@@ -112,7 +112,7 @@ Implementation of late render update
 */
 void AF_Physics_LateRenderUpdate(AF_ECS* _ecs){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateRenderUpdate pass in a null reference\n");
-	for(int i = 0; i < _ecs->entitiesCount; ++i){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_CCollider* collider = &_ecs->colliders[i];
 		if(collider->showDebug != TRUE){
 			//AF_Log("Physics: LateRenderUpate: not showing debug %i\n", i);

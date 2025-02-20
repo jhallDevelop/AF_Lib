@@ -15,7 +15,7 @@ AF_Audio_INIT
 Definition for Audio init
 ====================
 */
-void AF_Audio_Init();
+void AF_Audio_Init(void);
 
 /*
 ====================
@@ -64,7 +64,7 @@ AF_Audio_SHUTDOWN
 Definition for Audio shutdown 
 ====================
 */
-void AF_Audio_Shutdown();
+void AF_Audio_Shutdown(void);
 
 //=====HELPER FUNCTIONS=====
 

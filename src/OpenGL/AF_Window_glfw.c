@@ -13,6 +13,7 @@ Calls GLFW library to handling window creation and input handling
 #include "AF_Input.h"
 #include "AF_Log.h"
 #include <GL/glew.h>
+#include "AF_AppData.h"
 #define GL_SILENCE_DEPRECATION
 
 // ------- Create Platform Independent Window -------
@@ -43,33 +44,46 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
 	// TODO: https://www.reddit.com/r/opengl/comments/i8lv8u/how_can_i_optimize_my_key_handling_and_make_it/
     if(scancode){}
     if(mods){}
-    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
-    if(afWindow == NULL){
-        AF_Log_Error("%s key_callback: afWindow is NULL\n", glfwWindowFileTitle);
+    AF_AppData* afAppData = (AF_AppData*)glfwGetWindowUserPointer(_window);
+    if(afAppData == NULL){
+        AF_Log_Error("%s key_callback: afAppData is NULL\n", glfwWindowFileTitle);
         return;
     }
-    AF_Input* input = (AF_Input*)afWindow->input;
+    
+    AF_Input* input = &afAppData->input;
     if(input == NULL){
         AF_Log_Error("%s key_callback: input is NULL\n", glfwWindowFileTitle);
         return;
     }
 
+    /*
     if(action == GLFW_PRESS){
 	// find the key and set it to pressed
 	//for(int i = 0; i < AF_INPUT_KEYS_MAPPED; i++){
+    // TODO: work for multiple controllers
     for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
-		if(AF_Input_GetKeyCode(input->keys[i]->code) == key){
-			input->keys[i]->code = AF_Input_EncodeKey(input->keys[i]->code, TRUE); 
+		if(AF_Input_GetKeyCode(input->keys[0][i].code) == key){
+			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, TRUE); 
 		}
 	}
     }else if(action == GLFW_RELEASE){
 	// find the key and set it to release
 	for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
-		if(AF_Input_GetKeyCode(input->keys[i]->code) == key){
-			input->keys[i]->code = AF_Input_EncodeKey(input->keys[i]->code, FALSE); 
+		if(AF_Input_GetKeyCode(input->keys[0][i].code) == key){
+			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, FALSE); 
 		}
 	}
 
+    }*/
+
+    // TODO better match this 
+    //AF_Input* input = &editorAppData->appData.input;
+    // TODO: add for other controllers
+    for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
+        if(input->keys[0][i].code == key){
+            input->keys[0][i].pressed = (action == GLFW_PRESS);
+            input->keys[0][i].held = (action == GLFW_REPEAT);
+        }
     }
     // Retrieve the pointer to the AF_Input struct from the window user pointer
     // increment the buffer to position the next key, rollover if at the end of the array
@@ -92,13 +106,13 @@ void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
 
-    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
-    if(afWindow == NULL){
-        AF_Log_Error("%s window_pos_callback: afWindow is NULL\n", glfwWindowFileTitle);
+    AF_AppData* afAppData = (AF_AppData*)glfwGetWindowUserPointer(_window);
+    if(afAppData == NULL){
+        AF_Log_Error("%s window_pos_callback: afAppData is NULL\n", glfwWindowFileTitle);
         return;
     }
-        afWindow->windowXPos = _xpos;
-        afWindow->windowYPos= _ypos;
+        afAppData->window.windowXPos = _xpos;
+        afAppData->window.windowYPos = _ypos;
 }
 
 /*
@@ -114,9 +128,9 @@ void framebuffer_size_callback(GLFWwindow* _window, int _width, int _height)
     int32_t height = 0;
     glViewport(0, 0, width, height);
 
-    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
-    if(afWindow == NULL){
-        AF_Log_Error("%s window_pos_callback: afWindow is NULL\n", glfwWindowFileTitle);
+    AF_AppData* afAppData = (AF_AppData*)glfwGetWindowUserPointer(_window);
+    if(afAppData == NULL){
+        AF_Log_Error("%s window_pos_callback: afAppData is NULL\n", glfwWindowFileTitle);
         return;
     }
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
@@ -137,13 +151,70 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
     glViewport(0, 0, width, height);
 
     // Update the window size
-    AF_Window* afWindow = (AF_Window*)glfwGetWindowUserPointer(_window);
-    if(afWindow == NULL){
-        AF_Log_Error("%s window_size_callback: afWindow is NULL\n", glfwWindowFileTitle);
+    AF_AppData* afAppData = (AF_AppData*)glfwGetWindowUserPointer(_window);
+    if(afAppData == NULL){
+        AF_Log_Error("%s window_size_callback: afAppData is NULL\n", glfwWindowFileTitle);
         return;
     }
-    afWindow->windowWidth = _width;
-    afWindow->windowHeight = _height;
+    afAppData->window.windowWidth = _width;
+    afAppData->window.windowHeight = _height;
+}
+
+/*
+====================
+cursor_position_callback
+when the cursor changes, update the input data
+====================
+*/
+static void cursor_position_callback(GLFWwindow* _window, double _xpos, double _ypos) {
+    //Editor_AppData* editorAppData = (Editor_AppData*)glfwGetWindowUserPointer(_window);
+    AF_AppData* appData = (AF_AppData*)glfwGetWindowUserPointer(_window);
+    if(appData == NULL){
+        AF_Log_Warning("cursor_position_callback: appData is null\n");
+        return;
+    }
+
+    // Reset the last mouse position if this is the first movement after pressing the right mouse button
+    if (appData->input.firstMouse == TRUE && appData->input.mouse2Down == TRUE) {
+        appData->input.lastMouseX = _xpos;
+        appData->input.lastMouseY = _ypos;
+        appData->input.firstMouse = FALSE; // Prevent resetting on subsequent movements
+    }
+
+    // Update current mouse position
+    appData->input.mouseX = _xpos;
+    appData->input.mouseY = _ypos;
+}
+
+/*
+====================
+mouse_button_callback
+when the mouse button changes, update the input data
+====================
+*/
+static void mouse_button_callback(GLFWwindow* _window, int button, int action, int mods) {
+    if(mods){}
+    AF_AppData* appData = (AF_AppData*)glfwGetWindowUserPointer(_window);
+    if(appData == NULL){
+        AF_Log_Warning("mouse_button_callback: editorAppData is null\n");
+        return;
+    }
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        // Update left mouse button state
+        appData->input.mouse1Down = (action == GLFW_PRESS);
+    }
+
+    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        // Update right mouse button state and reset firstMouse flag
+        if (action == GLFW_PRESS) {
+            appData->input.mouse2Down = TRUE;
+            appData->input.firstMouse = TRUE; // Ensure reset for next cursor movement
+        } else if (action == GLFW_RELEASE) {
+            appData->input.mouse2Down = FALSE;
+            appData->input.firstMouse = TRUE; // Prepare for future presses
+        }
+    }
 }
 
 
@@ -153,9 +224,9 @@ AF_Lib_CreateWindow
 Create a window using GLFW
 ====================
 */
-void AF_Lib_CreateWindow(AF_Window* _window) {
-    if(!_window){
-        printf("%s CreateWindow: _window is NULL\n", glfwWindowFileTitle);
+void AF_Lib_CreateWindow(void* _appData) {
+    if(!_appData){
+        AF_Log("%s CreateWindow: _appData is NULL\n", glfwWindowFileTitle);
         AF_Log_Error("%s CreateWindow: failed to create window\n", glfwWindowFileTitle);
         return;
     }
@@ -173,6 +244,9 @@ void AF_Lib_CreateWindow(AF_Window* _window) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    AF_AppData* appData = (AF_AppData*)_appData;
+    AF_Window* _window = &appData->window;
     GLFWwindow* glfwWindow = glfwCreateWindow(_window->windowWidth, _window->windowHeight, _window->title, NULL, NULL);
    
     
@@ -196,13 +270,18 @@ void AF_Lib_CreateWindow(AF_Window* _window) {
     glfwMakeContextCurrent(glfwWindow);
 
     // Set the user ptr to that of type AF_Window struct.
-    glfwSetWindowUserPointer(glfwWindow, _window);
+    //_app data is a void* so care should be used and ensure its always cast to AF_AppData checked before used a
+    glfwSetWindowUserPointer(glfwWindow, _appData);
 
     // Set window size callback 
     glfwSetWindowSizeCallback(glfwWindow, window_size_callback);
 
     // Set callback
     glfwSetKeyCallback(glfwWindow, key_callback);
+
+     // cursor callback
+    glfwSetCursorPosCallback(glfwWindow, cursor_position_callback);
+    glfwSetMouseButtonCallback(glfwWindow, mouse_button_callback);
 
     // set window move callpack
     glfwSetWindowPosCallback(glfwWindow, window_pos_callback);

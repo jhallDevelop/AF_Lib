@@ -671,9 +671,9 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 			//Vec3 totalSize = Vec3_ADD(scaledHalfSizeA, scaledHalfSizeB);
 
 			if(
-				abs(delta.x) < totalSize.x  &&
-				abs(delta.y) < totalSize.y && 
-				abs(delta.z) < totalSize.z){
+				fabsf(delta.x) < totalSize.x  &&
+				fabsf(delta.y) < totalSize.y && 
+				fabsf(delta.z) < totalSize.z){
 
 					// TODO: determine from what direction the collision occurs
 					//ResolveCollision(_ecs, i, x);
