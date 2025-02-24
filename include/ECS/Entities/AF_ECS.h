@@ -102,6 +102,11 @@ static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
 
 		// Input Controller
 		entity->inputController = &_ecs->inputControllers[i];
+		// null the func pointers for actions as they will get set correctly up by the editor
+		// TODO: ensure the func pointers get updated if in non-editor mode e.g. changing scenes in a game 
+		for(uint32_t x = 0; x < entity->inputController->inputActionCount; x++){
+			entity->inputController->inputActions[x].actionFuncPtr = NULL;
+		}
 
 	}
 }

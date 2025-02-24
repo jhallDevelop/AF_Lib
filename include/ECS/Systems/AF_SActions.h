@@ -19,85 +19,7 @@ extern "C" {
 #endif
 
 static const Vec3 ZERO_Vec3 = {0.0f, 0.0f, 0.0f};
-/*
-====================
-AF_SActions_Update
-Process key presses and call the associated action function pointer
 
-====================
-*/
-inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
-    if(_input == NULL){
-        AF_Log_Warning("AF_SAction_Update: _input ptr is null \n");
-        return;
-    }
-    AF_CInputController* _inputController = _entity->inputController;
-    // Doublecheck the input controller has
-    BOOL hasInputController = AF_Component_GetHas(_inputController->enabled);
-    if(hasInputController == FALSE){
-        return;
-    }
-
-    // TODO: don't do this, let velocity dissapate over time
-	_entity->rigidbody->velocity = Vec3_ZERO();
-	//rigidbody->anglularVelocity = Vec3_ZERO;
-	//rigidbody->force = Vec3_ZERO;
-	//rigidbody->torque = Vec3_ZERO;
-	//rigidbody->inertiaTensor = Vec3_ZERO;
-	// Clear Velocities
-
-    // search to see if the input action is from our pre-scribed list, or is it custom
-    // for each key pressed in the input controller
-    for (uint32_t i = 0; i < MAX_CINPUTCONTROLLER_ACTIONS; i++){
-        AF_InputAction* inputAction = &_inputController->inputActions[i];
-        if (inputAction->keyPtr == NULL){
-            continue;
-        }
-        
-        
-        
-        if(inputAction->actionFuncPtr == NULL) {
-            continue;
-        }
-
-        //AF_Log("AF_SActions: Action func ptr: %p\n", inputAction->actionFuncPtr);
-        // Call the action function pointer passing the input controller and rigidbody
-        // Double check the rigidbody has
-
-        switch (inputAction->actionType)
-        {
-        case AF_ActionType::ACTION_TYPE_NONE:
-            /* code */
-            //AF_Log_Warning("AF_SActions_Update: Action type is NONE, not implemented \n");
-            break;
-        case AF_ActionType::ACTION_TYPE_ADD_VELOCITY:
-            /* code */
-            if (inputAction->keyPtr->pressed == FALSE){
-                
-                inputAction->actionFuncPtr(1, _entity, &ZERO_Vec3);
-                //_entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
-            } else{
-                // send velocity from input aciton buffer
-                // if no keypress, don't send velocity
-                inputAction->actionFuncPtr(1, _entity, &inputAction->vec3Buffer);
-            }
-            
-            break;
-        case AF_ActionType::ACTION_TYPE_SHOOT:
-            /* code */
-            AF_Log_Warning("AF_SActions_Update: Action type is Shoot, not implemented \n");
-            break;
-
-        case AF_ActionType::ACTION_TYPE_CUSTOM:
-            /* code */
-            AF_Log_Warning("AF_SActions_Update: Action type is Custom, not implemented \n");
-            break;
-        
-        default:
-            break;
-        }
-    }
-}
 
 // ==============================================================
 // Action functions
@@ -158,6 +80,81 @@ Do none action
 */
 inline static void AF_SActions_Custom(AF_Key* _key) {
    AF_Log("AF_SActions_Custom: Action %i \n", _key->code);
+}
+
+/*
+====================
+AF_SActions_Update
+Process key presses and call the associated action function pointer
+
+====================
+*/
+// TODO: this function is big an ugly. split it up
+inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
+    if(_input == NULL){
+        AF_Log_Warning("AF_SAction_Update: _input ptr is null \n");
+        return;
+    }
+    AF_CInputController* _inputController = _entity->inputController;
+    // Doublecheck the input controller has
+    BOOL hasInputController = AF_Component_GetHas(_inputController->enabled);
+    if(hasInputController == FALSE){
+        return;
+    }
+
+    // TODO: don't do this, let velocity dissapate over time
+	_entity->rigidbody->velocity = Vec3_ZERO();
+	//rigidbody->anglularVelocity = Vec3_ZERO;
+	//rigidbody->force = Vec3_ZERO;
+	//rigidbody->torque = Vec3_ZERO;
+	//rigidbody->inertiaTensor = Vec3_ZERO;
+	// Clear Velocities
+    // search to see if the input action is from our pre-scribed list, or is it custom
+    // for each key pressed in the input controller
+    for (uint32_t i = 0; i < MAX_CINPUTCONTROLLER_ACTIONS; i++){
+        AF_InputAction* inputAction = &_inputController->inputActions[i];
+
+        //AF_Log("AF_SActions: Action func ptr: %p\n", inputAction->actionFuncPtr);
+        // Call the action function pointer passing the input controller and rigidbody
+        // Double check the rigidbody has
+
+        switch (inputAction->actionType)
+        {
+        case AF_ActionType::ACTION_TYPE_NONE:
+            /* code */
+            //AF_Log_Warning("AF_SActions_Update: Action type is NONE, not implemented \n");
+            break;
+        case AF_ActionType::ACTION_TYPE_ADD_VELOCITY:
+           
+            
+            inputAction->key = *AF_Input_GetKey(AF_Input_KeyMappings[inputAction->currentKeyIndex].key, _input);
+            // Update the action function pointer
+            inputAction->actionFuncPtr = AF_SActions_Add_Velocity;
+
+            //if (inputAction->keyPtr->pressed == FALSE){
+            if (inputAction->key.pressed == FALSE){
+                inputAction->actionFuncPtr(1, _entity, &ZERO_Vec3);
+                //_entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
+            } else{
+                // send velocity from input aciton buffer
+                inputAction->actionFuncPtr(1, _entity, &inputAction->vec3Buffer);
+            }
+            
+            break;
+        case AF_ActionType::ACTION_TYPE_SHOOT:
+            /* code */
+            AF_Log_Warning("AF_SActions_Update: Action type is Shoot, not implemented \n");
+            break;
+
+        case AF_ActionType::ACTION_TYPE_CUSTOM:
+            /* code */
+            AF_Log_Warning("AF_SActions_Update: Action type is Custom, not implemented \n");
+            break;
+        
+        default:
+            break;
+        }
+    }
 }
 
 #ifdef __cplusplus
