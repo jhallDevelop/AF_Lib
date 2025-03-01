@@ -95,7 +95,7 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshPath = DEFAULT_MODEL_PATH,
 	.shader = AF_Shader_ZERO(),
-	.isImageFlipped = TRUE,
+	.isImageFlipped = FALSE,
 	.meshID = 0,
 	.isAnimating = FALSE,
 	.modelMatrix = NULL,

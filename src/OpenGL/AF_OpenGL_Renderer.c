@@ -96,7 +96,15 @@ Set the flip image for stb_image.h
 */
 // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
 void AF_Renderer_SetFlipImage(BOOL _flipImage)	{
-	bool isFlipped = _flipImage != 0; // Convert char to bool
+	bool isFlipped = false;
+	if(_flipImage == FALSE){
+		isFlipped = false;
+		AF_Log("AF_Renderer_SetFlipImage: false\n");
+	}else{
+		isFlipped = true;
+		AF_Log("AF_Renderer_SetFlipImage: true\n");
+	}
+	
     stbi_set_flip_vertically_on_load(isFlipped);
 }
 
@@ -450,7 +458,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		//glEnable(GL_CULL_FACE);
 		//glCullFace(GL_BACK); // Default
 		//glFrontFace(GL_CCW); // Or GL_CW
-		
+		//glFrontFace(GL_CW);
 		//AF_Log("==== Projection Matrix ====\n");
 		//AF_Util_Mat4_Log(*_projMat);
 		int projLocation = glGetUniformLocation(shader, "projection");
