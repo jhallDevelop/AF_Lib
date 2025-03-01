@@ -16,7 +16,7 @@ Definitions for helper functions to load and use scenes
 extern "C" {    
 #endif
 
-inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, char* _filePath){
+inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _filePath){
     // Open a file for binary reading
     FILE* file = AF_File_OpenFile(_filePath, "rb");
     if (file == NULL) {
