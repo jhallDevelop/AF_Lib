@@ -99,10 +99,8 @@ void AF_Renderer_SetFlipImage(BOOL _flipImage)	{
 	bool isFlipped = false;
 	if(_flipImage == FALSE){
 		isFlipped = false;
-		AF_Log("AF_Renderer_SetFlipImage: false\n");
 	}else{
 		isFlipped = true;
-		AF_Log("AF_Renderer_SetFlipImage: true\n");
 	}
 	
     stbi_set_flip_vertically_on_load(isFlipped);
