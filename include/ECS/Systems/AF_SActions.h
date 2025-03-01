@@ -132,7 +132,7 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
             inputAction->actionFuncPtr = AF_SActions_Add_Velocity;
 
             //if (inputAction->keyPtr->pressed == FALSE){
-            if (inputAction->key.pressed == FALSE){
+            if (inputAction->key.pressed == FALSE && inputAction->key.held == FALSE){
                 inputAction->actionFuncPtr(1, _entity, &ZERO_Vec3);
                 //_entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
             } else{
