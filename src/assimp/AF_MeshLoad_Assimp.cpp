@@ -6,7 +6,7 @@
 #include "AF_Util.h"
 
 // Forward declare assimp specific definitions
-void AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* path);
+BOOL AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* path);
 //void AF_MeshLoad_Component(AF_CMesh* _meshComponent, AF_Assets* _assets);
 void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, AF_MeshData& _meshData, aiMesh& mesh, const aiScene& scene);
 void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent, uint32_t& _meshIndex, aiNode& _node, const aiScene& _scene);
@@ -19,14 +19,17 @@ AF_MeshLoad_Load
 Generic implementation that will call assimp specific function
 ================
 */
-void AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
+BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
     if(AF_Util_FileExists(_modelPath) == FALSE){
         AF_Log_Warning("AF_MeshLoad_Load: ERROR: File doesn't exist %s\n", _modelPath);
-        return;
+        return FALSE;
     }
     
     // Call specific assimp varient of mesh loading
-    AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath);
+    if(AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath) == FALSE){
+        AF_Log_Error("AF_MeshLoad_Load: ERROR: Failed to load model from path %s\n", _modelPath);
+        return FALSE;
+    }
 
     
 
@@ -65,6 +68,8 @@ void AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* 
     }
     // _meshComponent now has the relevent data
     // load the model into the gpu
+
+    return TRUE;
 }
 
 /*
@@ -74,11 +79,11 @@ Unpack the model into an assimp format then process mesh nodes
 
 ================
 */
-void AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* _modelPath){
+BOOL AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* _modelPath){
     AF_Log("Editor_Model_LoadAssimp: Loading model from path: %s\n", _modelPath);
     if(std::strcmp(_modelPath, "") == 0){
         AF_Log_Error("Editor_Model_LoadAssimp: No model path provided\n");
-        return;
+        return FALSE;
     }
     // Add the mesh component first
     AF_CMesh returnMesh = AF_CMesh_ADD();
@@ -95,21 +100,21 @@ void AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
     {
         AF_Log_Error("Editor_Model: ERROR::ASSIMP:: %s" , importer.GetErrorString());
-        return;
+        return FALSE;
     }
 
     // Figure out how many sub modules there are and allocate memory for them
     uint32_t numMeshes = scene->mNumMeshes;
     if(numMeshes == 0){
         AF_Log_Error("Editor_Model: processNode: No meshes found in model\n");
-        return;
+        return FALSE;
     }
     // allocate memory for the mesh component
     _meshComponent.meshes = (AF_MeshData*)malloc(sizeof(AF_MeshData) * numMeshes);
     
     if(_meshComponent.meshes == NULL){
         AF_Log_Error("Editor_Model: processNode: FAILED to create mesh component\n");
-        return;
+        return FALSE;
     }
     // initialise the mesh data
     for(uint32_t i = 0; i < numMeshes; i++){
@@ -121,7 +126,7 @@ void AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char
     // keep track of the mesh index
     uint32_t meshIndex = 0;
     AF_MeshLoad_Assimp_ProcessNode(_assets, _meshComponent, meshIndex, *scene->mRootNode, *scene);
-    
+    return TRUE;
 }
 
 

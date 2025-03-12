@@ -12,7 +12,7 @@ Definition of Mesh Load functions that will be implemented using different mesh 
 #include "AF_Assets.h"
 
 // Publically accessible function to trigger further mesh loading implemented
-void AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* path);
+BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* path);
 
 
 
