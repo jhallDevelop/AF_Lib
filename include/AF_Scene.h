@@ -20,7 +20,7 @@ inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _
     // Open a file for binary reading
     FILE* file = AF_File_OpenFile(_filePath, "rb");
     if (file == NULL) {
-        printf("Editor_FileBrowser_Render: FAILED to open file %s\n", _filePath);
+        AF_Log_Error("Editor_FileBrowser_Render: FAILED to open file %s\n", _filePath);
         return false;
     } else {
         // Clean up the render objects first as some data is malloc
