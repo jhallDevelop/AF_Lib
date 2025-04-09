@@ -45,6 +45,7 @@ typedef struct {
 	AF_CAI_Behaviour aiBehaviours[AF_ECS_TOTAL_ENTITIES];
 	AF_CEditorData editorData[AF_ECS_TOTAL_ENTITIES];
 	AF_CInputController inputControllers[AF_ECS_TOTAL_ENTITIES];
+	AF_CScript scripts[AF_ECS_TOTAL_ENTITIES];
 } AF_ECS;
 
 /*
@@ -107,6 +108,9 @@ static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
 		for(uint32_t x = 0; x < entity->inputController->inputActionCount; x++){
 			entity->inputController->inputActions[x].actionFuncPtr = NULL;
 		}
+
+		// Scripts
+		entity->scripts = &_ecs->scripts[i];
 
 	}
 }
@@ -225,6 +229,9 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 
 		// Input Controller
 		_ecs->inputControllers[i] = AF_CInputController_ZERO();
+
+		// Scripts
+		_ecs->scripts[i] = AF_CScript_ZERO();
 	}
 	
 	AF_ECS_ReSyncComponents(_ecs);
