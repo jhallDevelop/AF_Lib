@@ -14,7 +14,7 @@ Designed to suport custom scripts being loaded onto an object.
 #define MAX_CSCRIPT_PATH 1024
 
 // Define the correct function pointer type
-typedef void (*ScriptFuncPtr)(void*);
+typedef void (*ScriptFuncPtr)(void*, void*);
 
 #ifdef __cplusplus
 extern "C" {

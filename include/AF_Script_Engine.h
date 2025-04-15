@@ -259,7 +259,7 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
         // Cast to special func ptr
         ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
         // Call it
-        scriptFunctPtr(_appData);
+        scriptFunctPtr(entity, _appData);
     }
 }
 
@@ -286,7 +286,7 @@ inline static void AF_Script_Call_Update(AF_AppData* _appData){
         // Cast to special func ptr
         ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
         // Call it
-        scriptFunctPtr(_appData);
+        scriptFunctPtr(entity, _appData);
     }
 }
 
@@ -313,7 +313,7 @@ inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
         // Cast to special func ptr
         ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
         // Call it
-        scriptFunctPtr(_appData);
+        scriptFunctPtr(entity, _appData);
     }
 }
 
