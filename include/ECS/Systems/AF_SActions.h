@@ -13,6 +13,7 @@ and helper functions
 
 #include "AF_Lib_Define.h"
 #include "ECS/Entities/AF_ECS.h"
+#include "AF_InputAction.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -118,10 +119,12 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         // Call the action function pointer passing the input controller and rigidbody
         // Double check the rigidbody has
 
+        AF_Log_Warning("AF_SActions_Update: Update Disabled Input Controller \n");
+        /*
         switch (inputAction->actionType)
         {
         case AF_ActionType::ACTION_TYPE_NONE:
-            /* code */
+            
             //AF_Log_Warning("AF_SActions_Update: Action type is NONE, not implemented \n");
             break;
         case AF_ActionType::ACTION_TYPE_ADD_VELOCITY:
@@ -142,19 +145,61 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
             
             break;
         case AF_ActionType::ACTION_TYPE_SHOOT:
-            /* code */
+            
             AF_Log_Warning("AF_SActions_Update: Action type is Shoot, not implemented \n");
             break;
 
         case AF_ActionType::ACTION_TYPE_CUSTOM:
-            /* code */
+            
             AF_Log_Warning("AF_SActions_Update: Action type is Custom, not implemented \n");
             break;
         
         default:
             break;
         }
+        */
     }
+}
+
+inline static void AF_SActions_MouseLook(AF_AppData* _appData, AF_CCamera* _camera, AF_FLOAT _mouseLookSensitivity){
+    AF_Input* input =  &_appData->input;
+    
+    // update the camera based on the pitch and yaw of the mouse;
+    float xPos = -input->mouseX;
+    float yPos = -input->mouseY;
+    
+    // Check if this is the first frame of holding down the right mouse button
+    if (input->firstMouse == TRUE) {
+        input->lastMouseX = xPos;
+        input->lastMouseY = yPos;
+        input->firstMouse = FALSE; // Mark as initialized to avoid resetting on subsequent frames
+        return; // Skip this frame to prevent any snapping
+    }
+
+    float xoffset = xPos - input->lastMouseX;
+    float yoffset = input->lastMouseY - yPos;
+
+    input->lastMouseX = xPos;
+    input->lastMouseY = yPos;
+
+    xoffset *= _mouseLookSensitivity;
+    yoffset *= _mouseLookSensitivity;
+
+    _camera->yaw += xoffset;
+    _camera->pitch += yoffset;
+
+    // stop look flip
+    if(_camera->pitch > 89.0f){
+        _camera->pitch = 89.0f;
+    }
+    if(_camera->pitch < -89.0f){
+        _camera->pitch = -89.0f;
+    }
+
+    
+    _camera->cameraFront = AF_Camera_CalculateFront(_camera->yaw, _camera->pitch);
+
+
 }
 
 #ifdef __cplusplus
