@@ -13,6 +13,7 @@ Definitions for helper functions to load and use shaders
 
 #define MAX_SHADER_CHAR_PATH 128
 #define DEFAULT_SHADER_DIR_PATH "./assets/shaders"
+#define SHADER_FAILED_TO_LOAD 9999
 
 #ifdef __cplusplus
 extern "C" {    

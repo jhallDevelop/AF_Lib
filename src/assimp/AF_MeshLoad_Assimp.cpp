@@ -25,12 +25,15 @@ BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* 
         return FALSE;
     }
     
+    
+    
     // Call specific assimp varient of mesh loading
-    if(AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath) == FALSE){
+    BOOL isLoaded = AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath);
+    if(isLoaded == FALSE){
         AF_Log_Error("AF_MeshLoad_Load: ERROR: Failed to load model from path %s\n", _modelPath);
         return FALSE;
     }
-
+    
     
 
     AF_Log("Show Model File Browser \n");
@@ -307,7 +310,10 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     // normal: texture_normalN
 
     // 1. diffuse maps
+    
     //AF_Log("Editor_Model: loading DIFFUSE textures \n");
+    
+    
     _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
 
     // 2. specular maps
@@ -366,6 +372,8 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
     //AF_Texture* textures = (AF_Texture*)malloc(sizeof(AF_Texture) * textureCount);
     // prep the return texture pointer
     AF_Texture* returnTexturePtr = NULL;
+
+    
     for(unsigned int i = 0; i < assimpMaterialTextureCount; i++)
     {
         aiString str;
@@ -420,6 +428,7 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
             
             std::snprintf(assetTexturePtr->path, sizeof(assetTexturePtr->path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
             
+            
             assetTexturePtr->id = AF_Renderer_LoadTexture(assetTexturePtr->path);
 
             // Map the assimp texture type to our texture type
@@ -436,6 +445,7 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
                 assetTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NONE;
                 AF_Log("Editor_LoadMaterialTextures: Texture type is NONE\n");
             }
+                
             
             returnTexturePtr = assetTexturePtr;
         }
@@ -443,6 +453,7 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
     if(returnTexturePtr == NULL){
         AF_Log_Warning("Editor_LoadMaterialTextures: No textures loaded, something went wrong\n");
     }
+
     return returnTexturePtr;
 }
 
@@ -453,7 +464,7 @@ Check the editor assets to see if the shader is already loaded
 ====================*/
 uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char* _vertPath, const char* _fragPath)
 {
-    uint32_t returnShaderID = 0;
+    uint32_t returnShaderID = SHADER_FAILED_TO_LOAD;
     // get a full texture path to use to compare
     // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
     
@@ -473,28 +484,28 @@ uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char*
                 continue;
             }
 
-            AF_Log("Editor_Shader_LoadFromAssets: SUCCESS: Loaded existing shader: %i with path %s\n", _assetsLoaded.shaders[j].shaderID, _vertPath);
+            AF_Log("AF_MeshLoad_Shader_LoadFromAssets: SUCCESS: Loaded existing shader: %i with path %s\n", _assetsLoaded.shaders[j].shaderID, _vertPath);
             returnShaderID = _assetsLoaded.shaders[j].shaderID;
             break;
         }
     }
 
-    if(returnShaderID == 0){
+    if(returnShaderID == SHADER_FAILED_TO_LOAD){
          // if texture hasn't been loaded already, load it
         //Assets has a fixed array of textures that can be unlocked.
         // Add/unlock a new AF_Texture struct that can be used.
         
         //add data to the next shader inline to be filled, and get a ptr to it 
         returnShaderID = AF_Shader_Load(_vertPath, _fragPath);
-        if(returnShaderID == 0){
-                AF_Log("Editor_Shader_LoadFromAssets: Shader failed to load with path %s \n", _vertPath);
+        if(returnShaderID == SHADER_FAILED_TO_LOAD){
+                AF_Log_Error("AF_MeshLoad_Shader_LoadFromAssets: Shader failed to load with path %s \n", _vertPath);
                 return returnShaderID;
         }
 
         AF_Shader* assetShaderPtr = AF_Assets_AddShader(&_assetsLoaded);
         if(assetShaderPtr == NULL){
-            AF_Log_Warning("AF_MeshLoad_Shader_LoadFromAssets: Failed to AF_Assets_AddShader(). Returned ptr is null\n");
-            return 0;
+            AF_Log_Error("AF_MeshLoad_Shader_LoadFromAssets: Failed to AF_Assets_AddShader(). Returned ptr is null\n");
+            return SHADER_FAILED_TO_LOAD;
         }
         // save the data to the new shader added to assets
         assetShaderPtr->shaderID = returnShaderID;
@@ -502,10 +513,10 @@ uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char*
         snprintf(assetShaderPtr->fragPath, MAX_SHADER_CHAR_PATH, "%s", _fragPath);
         
         if(assetShaderPtr == nullptr){
-            AF_Log_Warning("Editor_Shader_LoadFromAssets: Failed to add shader, something went wrong\n");
-            return 0;
+            AF_Log_Error("AF_MeshLoad_Shader_LoadFromAssets: Failed to add shader, something went wrong\n");
+            return SHADER_FAILED_TO_LOAD;
         }
-        AF_Log("Editor_Shader_LoadFromAssets: SUCCESS: Loaded new shader from path %s \n",_vertPath);
+        AF_Log("AF_MeshLoad_Shader_LoadFromAssets: SUCCESS: Loaded new shader from path %s \n",_vertPath);
     }
     
     return returnShaderID;

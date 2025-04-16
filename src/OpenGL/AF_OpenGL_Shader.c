@@ -9,6 +9,7 @@ This implementation is for OpenGL
 #include <string.h>
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
+
 /*
 ====================
 AF_Shader_CheckCompileErrors
@@ -17,7 +18,9 @@ Check glsl errors against opengl
 */
 uint32_t AF_Shader_CheckCompileErrors(uint32_t shader, const char* type)
 {
-    GLint success = 0;
+
+    // Check for shader compile errors
+    GLint success = SHADER_FAILED_TO_LOAD;
     GLchar infoLog[1024];
     if(AF_STRING_IS_EMPTY(type)){
         AF_Log_Error("AF_Shader: CheckCompileErrors given an empty type\n");
@@ -54,12 +57,12 @@ REturn the shader ID or return -1 if failed
 */
 uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShaderPath){
 
-    uint32_t returnShaderID = 9999;
+    uint32_t returnShaderID = SHADER_FAILED_TO_LOAD;
     
     // Check if shader paths are empty
     if(AF_STRING_IS_EMPTY(_vertexShaderPath) || AF_STRING_IS_EMPTY(_fragmentShaderPath)){
         AF_Log_Error("AF_Shader: vertex or fragment shader path is empty\n");
-        return -1;
+        return returnShaderID;
     }
 
     // Check if shader is already loaded from the assets
@@ -71,12 +74,12 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     // Null check the loaded shader code
     if(_vertexShaderSource == NULL || _fragmentShaderSource == NULL){
         AF_Log_Error("AF_Shader: vertex or fragment shader source is null \n");
-        return -1;
+        return returnShaderID;
     }
     // Check for empty shader code
     if(AF_STRING_IS_EMPTY(_vertexShaderSource) || AF_STRING_IS_EMPTY(_fragmentShaderSource)){
         AF_Log_Error("AF_Shader: vertex or fragment shader source is empty \n");
-        return -1;
+        return returnShaderID;
     }
     
     // 2. compile shaders
@@ -110,8 +113,9 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 
-    if(returnShaderID == 9999){
-        AF_Log_Error("AF_Shader: Loading shader failed, returned shader ID is -1\n");
+    if(returnShaderID == SHADER_FAILED_TO_LOAD || returnShaderID == 0){
+        AF_Log_Error("AF_Shader: Loading shader failed\n");
+        returnShaderID = SHADER_FAILED_TO_LOAD;
     }
     
     // Free the allocated shader source code from the file as it lives on the graphics card now
