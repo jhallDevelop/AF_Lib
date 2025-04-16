@@ -9,7 +9,8 @@ Definition for the input action struct
 #define AF_INPUT_ACTION_H
 #include <stdarg.h>
 #include "AF_Lib_Define.h"
-#include "AF_Input.h"
+#include "AF_Key.h"
+//#include "AF_Input.h"
 #include "AF_Vec2.h"
 #include "AF_Vec3.h"
 

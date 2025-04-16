@@ -2,7 +2,7 @@
 ===============================================================================
 AF_INPUT_H definitions
 
-Definition for the AF_Key and AF_Input structs
+Definition for the AF_Input structs
 and helper functions
 ===============================================================================
 */
@@ -10,8 +10,8 @@ and helper functions
 #define AF_INPUT_H
 #include "AF_Lib_Define.h"
 #include "AF_Vec2.h"
-#include <string.h>
 #include "AF_Log.h"
+#include "AF_Key.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,7 +21,7 @@ extern "C" {
 //#define AF_INPUT_KEYS_MAPPED 10
 #define AF_INPUT_KEYBOARD_KEYS_COUNT 47
 
-typedef enum {
+typedef enum AF_KeyboardKeyEnum {
     //AF_KEY_BACKSPACE = 8,
     AF_KEY_TAB = 9,
     AF_KEY_ENTER = 13,
@@ -183,17 +183,6 @@ extern const AF_KeyMap AF_Input_KeyMappings[];
 #define KEYCODE_MASK 0x7F  // Keycode bit mask (lower 7 bits)
 #define CONTROLLER_COUNT 4
 
-/*
-====================
-AF_Key 
-Key struct to be used with input system
-====================
-*/
-typedef struct {
-	char code;
-	unsigned pressed;
-    unsigned held;
-} AF_Key;
 
 
 
