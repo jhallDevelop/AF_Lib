@@ -163,7 +163,7 @@ inline static void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
         // attempt the bind the scripts functions to this component
         AF_Script_Bind_Functions(script, script->loadedScriptPtr);
     }
-    AF_Log("AF_Script_UnloadScripts: Loaded and bound all scripts, Finished \n");
+    AF_Log("AF_Script_Load_And_Bind_Functions: Loaded and bound all scripts, Finished \n");
 }
 
 /*
@@ -184,7 +184,7 @@ inline static void AF_Script_UnLoad(void* _scriptSharedObjPtr){
     // Close the shared objects
     eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {
-        AF_Log_Error("Game_App_Awake: Failed to close shared object 1: %s\n", dlerror());
+        AF_Log_Error("AF_Script_UnLoad: Failed to close shared object 1: %s\n", dlerror());
     }
 }
 
