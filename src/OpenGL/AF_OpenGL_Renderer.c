@@ -114,12 +114,15 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
 	
     unsigned int textureID;
 
+	
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
     //stbi_set_flip_vertically_on_load(TRUE);  
-
+	
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+
+	
     if (data)
     {
         GLenum format = GL_RGB;
@@ -134,24 +137,29 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
             format = GL_RGBA;
         }
             
-
+		
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-
+		
     }
     else
     {
 	AF_Log_Error("AF_Renderer_LoadTexture: Texture failed to load at path %s\n",path);
-        stbi_image_free(data);
     }
+
+	
+
+	// free the loaded image
+	stbi_image_free(data);
+	data = NULL;
+
+	
 
     return textureID;
 }
@@ -512,8 +520,24 @@ Destroy the renderer
 */
 void AF_Renderer_DestroyRenderer(AF_ECS* _ecs){
     AF_Log("%s Destroyed\n", openglRendererFileTitle);
+	if(_ecs == NULL){
+		AF_Log_Error("AF_Renderer_DestroyRenderer: ECS is NULL\n");
+		return;
+	}
+	// Destroy the meshes
     for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
 		AF_CMesh* meshComponent = &_ecs->meshes[i];
+		if(meshComponent == NULL){
+			AF_Log_Error("AF_Renderer_DestroyRenderer: MeshComponent is NULL\n");
+			continue;
+		}
+		BOOL hasMesh = AF_Component_GetHas(meshComponent->enabled);
+		BOOL hasEnabled = AF_Component_GetEnabled(meshComponent->enabled);
+		// Skip if there is no rendering component
+		if(hasMesh == FALSE || hasEnabled == FALSE){
+			continue;
+		}
+		// Destroy the mesh buffers
 		
 		// Destory the material textures
 		for(uint32_t j = 0; j < meshComponent->meshCount; j++){
