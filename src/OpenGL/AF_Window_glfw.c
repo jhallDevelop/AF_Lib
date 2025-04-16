@@ -272,6 +272,7 @@ void AF_Lib_CreateWindow(void* _appData) {
     // make current context
     glfwMakeContextCurrent(glfwWindow);
 
+    /**/
     // Set the user ptr to that of type AF_Window struct.
     //_app data is a void* so care should be used and ensure its always cast to AF_AppData checked before used a
     glfwSetWindowUserPointer(glfwWindow, _appData);
@@ -346,7 +347,7 @@ void AF_Lib_TerminateWindow(AF_Window* _window){
 
     // Null check the window pointer
     if(!_window->window){
-        AF_Log_Error("%s TerminateWindow: failed to create window, argment passed in a null window ptr\n", glfwWindowFileTitle);
+        AF_Log_Error("%s TerminateWindow: failed to destroy window, argment passed in a null window ptr\n", glfwWindowFileTitle);
         return;
     }
 
