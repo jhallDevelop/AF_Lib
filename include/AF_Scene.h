@@ -41,11 +41,13 @@ inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _
             if(hasMesh == FALSE){
                 continue;
             }
-            if(AF_MeshLoad_Load(_assets, _ecs->entities[i].mesh, _ecs->entities[i].mesh->meshPath) == FALSE){
-                AF_Log_Warning("AF_Scene_Load: ERROR: Failed to load mesh from path %s\n", _ecs->entities[i].mesh->meshPath);
-                return false;
-
+            
+            BOOL meshLoadSuccess = AF_MeshLoad_Load(_assets, _ecs->entities[i].mesh, _ecs->entities[i].mesh->meshPath);
+            if(meshLoadSuccess == false){
+                AF_Log_Error("Editor_Scene_Load: Failed to load mesh %s\n", _ecs->entities[i].mesh->meshPath);
+                continue;
             }
+                
         }
         return true;
     }
