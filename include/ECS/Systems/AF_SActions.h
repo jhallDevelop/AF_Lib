@@ -31,7 +31,7 @@ AF_SActions_None()
 Do none action
 ================
 */
-inline static void AF_SActions_None() {
+inline static void AF_SActions_None(void) {
    AF_Log("AF_SActions_None: Action \n");
 }
 
