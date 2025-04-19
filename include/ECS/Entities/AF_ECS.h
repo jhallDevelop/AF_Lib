@@ -326,6 +326,67 @@ static inline void AF_ECS_SaveECS(FILE* _file, AF_ECS* _ecs){
 	// Start enabling/setting the components
 }
 
+/*
+====================
+AF_ECS_GetCamera
+Helper function that saves the ECS structure to json format
+====================
+*/
+static inline AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
+    AF_Entity* cameraEntity;
+    for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+        AF_CCamera* entityCameraComponent = _ecs->entities[i].camera;
+        BOOL hasCamera = AF_Component_GetHas(entityCameraComponent->enabled);
+        if(hasCamera == TRUE){
+            cameraEntity = &_ecs->entities[i];
+            AF_Log("AF_ECS_GetCamera: GetCamera: Success\n");
+        }
+    }
+    return cameraEntity;
+}
+
+/*
+====================
+AF_ECS_UpdateCameraVectors
+Helper function updates the camera vectors
+====================
+*/
+static inline void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight){
+
+    AF_CTransform3D* cameraTransform = _cameraEntityPtr->transform;
+    AF_CCamera* camera = _cameraEntityPtr->camera;
+    BOOL hasCameraComponent = AF_Component_GetHas(camera->enabled);
+    if(hasCameraComponent == FALSE){
+        AF_Log_Error("AF_Camera_UpdateCameraVectors: Can't update camera vectors, passed entity has no camera component\n");
+        return;
+    }
+    Vec3 front = camera->cameraFront;
+
+
+    // calculate Right
+    Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(front, camera->cameraWorldUp));
+	
+    // calculate up
+    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(right, front));
+	
+    // Calculate view matrix:vs
+    Mat4 viewMatrix = Mat4_Lookat(cameraTransform->pos, Vec3_ADD(cameraTransform->pos,front), up);
+    camera->viewMatrix = viewMatrix;
+
+    // Calculate projection matrix
+	// TODO: disbaled setting projection matrix
+    //camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(camera);
+
+    // update the cameras model matrix to be used in shaders later
+    cameraTransform->modelMat = Mat4_ToModelMat4(cameraTransform->pos, cameraTransform->rot, cameraTransform->scale);
+
+
+    
+    camera->windowWidth = _windowWidth;
+    camera->windowHeight = _windowHeight;
+    camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(_cameraEntityPtr->camera);
+    
+}
 
 
 #endif //AF_ECS_H
