@@ -18,6 +18,7 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 
 #define AF_ECS_TOTAL_ENTITIES 65
 
+
 /*
 ====================
 AF_ECS
@@ -45,7 +46,7 @@ typedef struct {
 	AF_CAI_Behaviour aiBehaviours[AF_ECS_TOTAL_ENTITIES];
 	AF_CEditorData editorData[AF_ECS_TOTAL_ENTITIES];
 	AF_CInputController inputControllers[AF_ECS_TOTAL_ENTITIES];
-	AF_CScript scripts[AF_ECS_TOTAL_ENTITIES];
+	AF_CScript scripts[AF_ECS_TOTAL_ENTITIES * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY];
 } AF_ECS;
 
 /*
@@ -110,8 +111,10 @@ static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
 		}
 
 		// Scripts
-		entity->scripts = &_ecs->scripts[i];
-
+        for(uint32_t z = 0; z < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; z++){
+            // Use 'i' (the current entity index) and 'z' (the script index for this entity)
+            entity->scripts[z] = &_ecs->scripts[(i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + z];
+        }
 	}
 }
 
@@ -231,7 +234,10 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		_ecs->inputControllers[i] = AF_CInputController_ZERO();
 
 		// Scripts
-		_ecs->scripts[i] = AF_CScript_ZERO();
+		for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+			_ecs->scripts[(i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j] = AF_CScript_ZERO();
+		}
+		//_ecs->scripts[i] = AF_CScript_ZERO();
 	}
 	
 	AF_ECS_ReSyncComponents(_ecs);

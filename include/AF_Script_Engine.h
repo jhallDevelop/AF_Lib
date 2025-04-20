@@ -27,20 +27,10 @@ Check if the entity is enabled
 Check if the entity has a script that is enabled
 ===============================================================================
 */
-inline static BOOL AF_HasScriptEnabled(AF_Entity* _entity){
-    // Check entity
-    AF_Entity* entity = _entity;
-    PACKED_CHAR* entityState = &entity->flags;
-    BOOL entityIsEnabled = AF_Component_GetEnabled(*entityState);
-
-    if(entityIsEnabled == FALSE){
-        return FALSE;
-    }
-
-    // Check CScript Component
-    AF_CScript* script = entity->scripts;
-    BOOL hasComponent = AF_Component_GetHas(script->enabled);
-    BOOL componentIsEnabled = AF_Component_GetEnabled(script->enabled);
+inline static BOOL AF_HasScriptEnabled(AF_CScript* _script){
+ 
+    BOOL hasComponent = AF_Component_GetHas(_script->enabled);
+    BOOL componentIsEnabled = AF_Component_GetEnabled(_script->enabled);
     if(hasComponent == FALSE || componentIsEnabled == FALSE){
         return FALSE;
     }
@@ -151,17 +141,18 @@ binding the start, update and destroy function ptrs
 inline static void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         AF_Entity* entity = &_ecs->entities[i];
-        if(AF_HasScriptEnabled(entity) == FALSE){
-            continue;
+        for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+            AF_CScript* script = entity->scripts[j];
+            if(AF_HasScriptEnabled(script) == FALSE){
+                continue;
+            }
+            // attempt to load the script
+            script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
+    
+            // attempt the bind the scripts functions to this component
+            AF_Script_Bind_Functions(script, script->loadedScriptPtr);
         }
-
-        AF_CScript* script = entity->scripts;
-
-        // attempt to load the script
-        script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
-
-        // attempt the bind the scripts functions to this component
-        AF_Script_Bind_Functions(script, script->loadedScriptPtr);
+        
     }
     AF_Log("AF_Script_Load_And_Bind_Functions: Loaded and bound all scripts, Finished \n");
 }
@@ -198,19 +189,20 @@ If an entity has a script component with a valid path, then unload the script,
 inline static void AF_Script_UnloadScripts(AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         AF_Entity* entity = &_ecs->entities[i];
-        if(AF_HasScriptEnabled(entity) == FALSE){
-            continue;
+        for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+            AF_CScript* script = entity->scripts[j];
+            if(AF_HasScriptEnabled(script) == FALSE){
+                continue;
+            }
+    
+            // attempt to unload the script
+            AF_Script_UnLoad(script->loadedScriptPtr);
+            
+            // set the script ptrs to null
+            script->startFuncPtr = NULL;
+            script->updateFuncPtr = NULL;
+            script->destroyFuncPtr = NULL;
         }
-
-        AF_CScript* script = entity->scripts;
-
-        // attempt to unload the script
-        AF_Script_UnLoad(script->loadedScriptPtr);
-        
-        // set the script ptrs to null
-        script->startFuncPtr = NULL;
-        script->updateFuncPtr = NULL;
-        script->destroyFuncPtr = NULL;
     }
     AF_Log("AF_Script_UnloadScripts: Unload Finished \n");
 }
@@ -245,21 +237,23 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         
         AF_Entity* entity = &_appData->ecs.entities[i];
-        if(AF_HasScriptEnabled(entity) == FALSE){
-            continue;
-        }
-        
-        AF_CScript* script = entity->scripts;
-        if(script->startFuncPtr == NULL){
-            AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
-            continue;
-        }
+        for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+            AF_CScript* script = entity->scripts[j];
+            if(AF_HasScriptEnabled(script) == FALSE){
+                continue;
+            }
+            
+            if(script->startFuncPtr == NULL){
+                //AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
+                continue;
+            }
 
-        // Call the function
-        // Cast to special func ptr
-        ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
-        // Call it
-        scriptFunctPtr(entity, _appData);
+            // Call the function
+            // Cast to special func ptr
+            ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
+            // Call it
+            scriptFunctPtr(entity, _appData);
+        }
     }
 }
 
@@ -272,21 +266,24 @@ Loop through all script components that have valid script func pointers and call
 inline static void AF_Script_Call_Update(AF_AppData* _appData){
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         AF_Entity* entity = &_appData->ecs.entities[i];
-        if(AF_HasScriptEnabled(entity) == FALSE){
-            continue;
-        }
-        
-        AF_CScript* script = entity->scripts;
-        if(script->updateFuncPtr == NULL){
-            AF_Log_Error("AF_CallScriptUpdate: script updateFuncPtr is null. Forgot to set it\n");
-            continue;
-        }
 
-        // Call the function
-        // Cast to special func ptr
-        ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
-        // Call it
-        scriptFunctPtr(entity, _appData);
+        for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+            AF_CScript* script = entity->scripts[j];
+            if(AF_HasScriptEnabled(script) == FALSE){
+                continue;
+            }
+        
+            if(script->updateFuncPtr == NULL){
+                //AF_Log_Error("AF_CallScriptUpdate: script updateFuncPtr is null. Forgot to set it\n");
+                continue;
+            }
+
+            // Call the function
+            // Cast to special func ptr
+            ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
+            // Call it
+            scriptFunctPtr(entity, _appData);
+        }
     }
 }
 
@@ -299,21 +296,23 @@ Loop through all script components that have valid script func pointers and call
 inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         AF_Entity* entity = &_appData->ecs.entities[i];
-        if(AF_HasScriptEnabled(entity) == FALSE){
-            continue;
-        }
-        
-        AF_CScript* script = entity->scripts;
-        if(script->destroyFuncPtr == NULL){
-            AF_Log_Error("AF_CallScriptDestroy: script destroyFuncPtr is null. Forgot to set it\n");
-            continue;
-        }
+        for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+            AF_CScript* script = entity->scripts[j];
+            if(AF_HasScriptEnabled(script) == FALSE){
+                continue;
+            }
+    
+            if(script->destroyFuncPtr == NULL){
+                //AF_Log_Error("AF_CallScriptDestroy: script destroyFuncPtr is null. Forgot to set it\n");
+                continue;
+            }
 
-        // Call the function
-        // Cast to special func ptr
-        ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
-        // Call it
-        scriptFunctPtr(entity, _appData);
+            // Call the function
+            // Cast to special func ptr
+            ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
+            // Call it
+            scriptFunctPtr(entity, _appData);
+        }
     }
 }
 
