@@ -244,7 +244,7 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
             }
             
             if(script->startFuncPtr == NULL){
-                //AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
+                AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
                 continue;
             }
 
