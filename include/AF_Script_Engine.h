@@ -47,7 +47,7 @@ Return the pointer to the shared object
 inline static void* AF_Script_Load(const char* _filePath){
     // Check file path 
     if(strncmp(_filePath, "", MAX_PROJECTDATA_FILE_PATH) == 0){
-        AF_Log_Error("AF_Script_Load: file path is empty");
+        AF_Log_Error("AF_Script_Load: file path is empty\n");
         return NULL;
     }
 

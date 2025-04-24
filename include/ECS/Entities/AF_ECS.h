@@ -339,7 +339,7 @@ Helper function that saves the ECS structure to json format
 ====================
 */
 static inline AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
-    AF_Entity* cameraEntity;
+    AF_Entity* cameraEntity = NULL;
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         AF_CCamera* entityCameraComponent = _ecs->entities[i].camera;
         BOOL hasCamera = AF_Component_GetHas(entityCameraComponent->enabled);
@@ -348,6 +348,10 @@ static inline AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
             AF_Log("AF_ECS_GetCamera: GetCamera: Success\n");
         }
     }
+	if(cameraEntity == NULL){
+		AF_Log_Error("AF_ECS_GetCamera: GetCamera: FAILED\n");
+		
+	}
     return cameraEntity;
 }
 
