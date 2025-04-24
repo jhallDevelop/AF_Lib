@@ -80,7 +80,7 @@ inline static bool AF_Project_Load(AF_AppData* _appData, const char* _filePath){
                     }
                     AF_Log("AF_Project_Load: save platform digit %i\n", platformDigit);
                     // save the platform type as a enum value
-                    _appData->projectData.buildPlatformType = (AF_Platform_e)platformDigit;
+                    _appData->projectData.platformData.platformType = (AF_Platform_e)platformDigit;
 
                     found = true;
                     break; // Exit the loop once found (if only first occurrence is needed)
