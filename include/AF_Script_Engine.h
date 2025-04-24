@@ -45,6 +45,12 @@ Return the pointer to the shared object
 ===============================================================================
 */
 inline static void* AF_Script_Load(const char* _filePath){
+    // Check file path 
+    if(strncmp(_filePath, "", MAX_PROJECTDATA_FILE_PATH) == 0){
+        AF_Log_Error("AF_Script_Load: file path is empty");
+        return NULL;
+    }
+
     // Open a file for binary reading
     FILE* file = AF_File_OpenFile(_filePath, "rb");
     void *scriptPtr = NULL;
