@@ -21,12 +21,13 @@ Generic implementation that will call assimp specific function
 */
 BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
     if(AF_Util_FileExists(_modelPath) == FALSE){
-        AF_Log_Warning("AF_MeshLoad_Load: ERROR: File doesn't exist %s\n", _modelPath);
+        AF_Log_Error("AF_MeshLoad_Load: ERROR: File doesn't exist %s\n", _modelPath);
         return FALSE;
     }
     
-    
-    
+    // clear the mesh data first incase there is left over junk
+    //*_meshComponent = AF_CMesh_ZERO();
+
     // Call specific assimp varient of mesh loading
     BOOL isLoaded = AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath);
     if(isLoaded == FALSE){
@@ -65,6 +66,7 @@ BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* 
     
     for(uint32_t i = 0; i < _meshComponent->meshCount; ++i){
         AF_MeshData* meshData = &_meshComponent->meshes[i];
+        
         // Add material reference back
         _meshComponent->meshes[i].material.shaderID = _meshComponent->shader.shaderID;
         AF_Renderer_CreateMeshBuffer(&_meshComponent->meshes[i]);
