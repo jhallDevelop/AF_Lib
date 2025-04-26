@@ -7,12 +7,15 @@ AF_PROJECT_H
 */
 #ifndef AF_PROJECT_H
 #define AF_PROJECT_H
-#include "AF_AppData.h"
-#include "AF_Assets.h"
-#include "AF_File.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include "AF_AppData.h"
+#include "AF_Assets.h"
+#include "AF_File.h"
+#include "AF_Renderer.h"
+#include "AF_MeshLoad.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,23 +24,75 @@ extern "C" {
 #ifdef __cplusplus
 }
 
-#define PLATFORM_STRING "PLATFORM = "
-#define MAX_PLATFORM_LEN 49 // Max length for the platform name buffer (50 - 1 for null terminator)
 
+/*
+================
+AF_Project_SyncEntities
+Sync the entities loaded
+================
+*/
+inline static void AF_Project_SyncEntities(AF_AppData* _appData){
+    
+    // TODO: maybe put this back in
+    AF_Log_Warning("AF_Project_SyncEntities: disabled destroying mesh buffers before ecs sync. may need to re-implement. Currently cause\n"); 
+    /*
+    for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
+        BOOL hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
+        if(hasMesh == FALSE){
+            continue;
+        }
+        AF_Renderer_DestroyMeshBuffers(&_appData->ecs.meshes[i]);
+    }*/
+    
+    // Load ecs data from file
+    // resync the pointers so we don't get null reference
+	AF_ECS_ReSyncComponents(&_appData->ecs);
+
+    // Reset the assets loaded,
+    _appData->assets = AF_Assets_ZERO();
+    
+    // Load Reload meshes
+    for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
+        BOOL hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
+        if(hasMesh == FALSE){
+            continue;
+        }
+        
+        // init the mesh
+        BOOL meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
+        if(meshLoadSuccess == false){
+            AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
+            continue;
+        }
+    }
+}
 
 /*
 ================
 AF_Project_Load
-// Construct and return the platforms as an array of chars
+Take a file path and open the game.proj file if it can be found.
 ================
 */
 inline static bool AF_Project_Load(AF_AppData* _appData, const char* _filePath){
     // Open a file for binary reading
-    FILE* file = AF_File_OpenFile(_filePath, "r");
+    FILE* file = AF_File_OpenFile(_filePath, "rb");
     if (file == NULL) {
         AF_Log_Error("AF_Project_Load: FAILED to open file %s\n", _filePath);
         return false;
     } 
+
+    
+    fread(_appData, sizeof(AF_AppData), 1, file); // Read the struct
+	if (ferror(file)) {
+        printf("AF_Project_Load: Error while reading appData file %s \n", _filePath);
+		return false;
+    }
+
+    // Clean up the render objects first as some data is malloc
+    
+    
+    
+    /*
     // buffer reading the line
     char line[256];
     bool found = false;
@@ -79,8 +134,12 @@ inline static bool AF_Project_Load(AF_AppData* _appData, const char* _filePath){
                         return false;
                     }
                     AF_Log("AF_Project_Load: save platform digit %i\n", platformDigit);
+                    // Do platform loading stuff
+                    AF_ProjectData* AF_ProjectData = &_appData->projectData;
+
+                    //AF_ProjectData->name = 
                     // save the platform type as a enum value
-                    _appData->projectData.platformData.platformType = (AF_Platform_e)platformDigit;
+                    //platformData->platformType = (AF_Platform_e)platformDigit;
 
                     found = true;
                     break; // Exit the loop once found (if only first occurrence is needed)
@@ -102,9 +161,9 @@ inline static bool AF_Project_Load(AF_AppData* _appData, const char* _filePath){
     if (!found) {
         AF_Log_Error("AF_Project_Load: Could not find valid '%s' line in file %s\n", PLATFORM_STRING, _filePath);
     }
-
+    */
     // Return true only if the platform string was successfully found and extracted
-    return found;
+    return true;
 }
 
 
