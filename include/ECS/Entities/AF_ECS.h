@@ -47,6 +47,7 @@ typedef struct {
 	AF_CEditorData editorData[AF_ECS_TOTAL_ENTITIES];
 	AF_CInputController inputControllers[AF_ECS_TOTAL_ENTITIES];
 	AF_CScript scripts[AF_ECS_TOTAL_ENTITIES * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY];
+	AF_CLight lights[AF_ECS_TOTAL_ENTITIES];
 } AF_ECS;
 
 /*
@@ -115,6 +116,9 @@ static inline void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
             // Use 'i' (the current entity index) and 'z' (the script index for this entity)
             entity->scripts[z] = &_ecs->scripts[(i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + z];
         }
+		
+		// Lights
+		entity->light = &_ecs->lights[i];
 	}
 }
 
@@ -237,7 +241,9 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 		for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
 			_ecs->scripts[(i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j] = AF_CScript_ZERO();
 		}
-		//_ecs->scripts[i] = AF_CScript_ZERO();
+
+		// Lights
+		_ecs->lights[i] = AF_CLight_ZERO();
 	}
 	
 	AF_ECS_ReSyncComponents(_ecs);
@@ -253,10 +259,7 @@ All entities already exist in memory so this just enables it.
 static inline AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 	assert(_ecs != NULL && "AF_ECS_CreateEntity: argument is null");
 	assert(_ecs->currentEntity <= _ecs->entitiesCount && "AF_ECS_CreateEntity: ECS: Ran out of entities !!!\n");
-	
     // increment the entity count and return the reference to the next available entity
-    _ecs->currentEntity++;
-
     AF_Entity* entity = &_ecs->entities[_ecs->currentEntity];
     entity->id_tag = AF_ECS_AssignID(entity->id_tag, _ecs->currentEntity);
     PACKED_CHAR* componentState = &entity->flags;
@@ -275,6 +278,8 @@ static inline AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 	}
 
 	*entity->transform = AF_CTransform3D_ADD();
+	// increment the entity counter
+	_ecs->currentEntity++;
     return entity;
 	
 }
@@ -341,7 +346,7 @@ Helper function that saves the ECS structure to json format
 static inline AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
     AF_Entity* cameraEntity = NULL;
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-        AF_CCamera* entityCameraComponent = _ecs->entities[i].camera;
+        AF_CCamera* entityCameraComponent = &_ecs->cameras[i];
         BOOL hasCamera = AF_Component_GetHas(entityCameraComponent->enabled);
         if(hasCamera == TRUE){
             cameraEntity = &_ecs->entities[i];

@@ -26,6 +26,7 @@ The entity struct and helper functions
 #include "ECS/Components/AF_CCamera.h"
 #include "ECS/Components/AF_CInputController.h"
 #include "ECS/Components/AF_CScript.h"
+#include "ECS/Components/AF_CLight.h"
 
 #define AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY 4
 
@@ -62,6 +63,7 @@ typedef struct AF_Entity {
     AF_CEditorData* editorData;
     AF_CInputController* inputController;
     AF_CScript* scripts[AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY];
+    AF_CLight* light;
 } AF_Entity;
 
 // Little helper struct that can be use
