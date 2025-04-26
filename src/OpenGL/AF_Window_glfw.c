@@ -220,16 +220,16 @@ static void mouse_button_callback(GLFWwindow* _window, int button, int action, i
 
 /*
 ====================
-AF_Lib_CreateWindow
+AF_Window_CreateWindow
 Create a window using GLFW
 ====================
 */
-void AF_Lib_CreateWindow(void* _appData) {
+BOOL AF_Window_Create(void* _appData) {
     
     if(!_appData){
         AF_Log("%s CreateWindow: _appData is NULL\n", glfwWindowFileTitle);
         AF_Log_Error("%s CreateWindow: failed to create window\n", glfwWindowFileTitle);
-        return;
+        return FALSE;
     }
 
     AF_Log("%s Create Window\n", glfwWindowFileTitle);
@@ -239,6 +239,7 @@ void AF_Lib_CreateWindow(void* _appData) {
     {
         // Initialization failed
         AF_Log_Error("%sCreateWindow: Failed to init glfw\n", glfwWindowFileTitle);
+        return FALSE;
     }
  
     // If using openGL 3.3
@@ -256,7 +257,7 @@ void AF_Lib_CreateWindow(void* _appData) {
     {
         // Window or context creation failed
          AF_Log_Error("%s CreateWindow: Failed to create a window\n", glfwWindowFileTitle);
-         return;
+         return FALSE;
     }
     // assign the glfw window ptr to the struct passed in
     _window->window = glfwWindow;
@@ -294,17 +295,19 @@ void AF_Lib_CreateWindow(void* _appData) {
     glfwSetFramebufferSizeCallback(glfwWindow, framebuffer_size_callback);
 
     // Set the user ptr of the window to 
+    glfwSetWindowTitle((GLFWwindow*) appData->window.window, appData->projectData.name);
 
+    return TRUE;
 }
 
 
 /*
 ====================
-AF_Lib_UpdateWindow
+AF_Window_UpdateWindow
 Update the window
 ====================
 */
-BOOL AF_Lib_UpdateWindow(AF_Window* _window){
+BOOL AF_Window_Update(AF_Window* _window){
     // while
     if (glfwWindowShouldClose(_window->window))
     {
@@ -312,33 +315,40 @@ BOOL AF_Lib_UpdateWindow(AF_Window* _window){
         return FALSE;
     }
 
+    
+    // return true (we are still running)
+    return TRUE;
+}
+
+/*
+====================
+AF_Window_RenderWindow
+Render the window by calling glfw swap buffers
+====================
+*/
+void AF_Window_Render(AF_Window* _window){
     // Set the framebuffer sies
     int width, height;
     glfwGetFramebufferSize((GLFWwindow*)_window->window, &width, &height);
     glViewport(0, 0, width, height);
 
-     _window->frameBufferWidth = width; 
-     _window->frameBufferHeight = height;
+    _window->frameBufferWidth = width; 
+    _window->frameBufferHeight = height;
 
-    
-    /* Render here */
 
     /* Swap front and back buffers */
     glfwSwapBuffers(_window->window);
 
     /* Poll for and process events */
     glfwPollEvents();
-    // return true (we are still running)
-    return TRUE;
 }
 
-
 /*====================
-AF_Lib_TerminateWindow
+AF_Window_TerminateWindow
 Destroy the window
 ====================
 */
-void AF_Lib_TerminateWindow(AF_Window* _window){
+void AF_Window_Terminate(AF_Window* _window){
     // null check the struct
     if(!_window){
         AF_Log_Error("%s TerminateWindow: failed to destroy window, argment passed in a null AF_Window struct\n", glfwWindowFileTitle);

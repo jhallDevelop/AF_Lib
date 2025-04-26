@@ -60,32 +60,42 @@ inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth
 
 /*
 ====================
-AF_Lib_CreateWindow
+AF_Window_Create
 Create the window and init all the window things
 Platform/library dependent. Likely using glfw
 ====================
 */
-void AF_Lib_CreateWindow(void* _appData);
+BOOL AF_Window_Create(void* _appData);
 
 /*
 ====================
-AF_Lib_UpdateWindow
+AF_Window_Update
 Update the window
 Platform/library dependent. Likely using glfw
 
 ====================
 */
-BOOL AF_Lib_UpdateWindow(AF_Window* _window);
+BOOL AF_Window_Update(AF_Window* _window);
+
 
 /*
 ====================
-AF_Lib_Terminate
+AF_Window_Render
+Tell windowing to swap buffers
+
+====================
+*/
+void AF_Window_Render(AF_Window* _window);
+
+/*
+====================
+AF_Window_Terminate
 Close and clean up the window
 Platform/library dependent. Likely using glfw
 
 ====================
 */
-void AF_Lib_TerminateWindow(AF_Window* _window);
+void AF_Window_Terminate(AF_Window* _window);
 
 
 #ifdef __cplusplus
