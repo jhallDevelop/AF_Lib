@@ -222,7 +222,8 @@ Start function which occurs after everything is loaded in.
 */
 void AF_Renderer_Start(AF_ECS* _ecs){
 	AF_Log("AF_Renderer_Start\n");
-	AF_Renderer_InitMeshBuffers(&_ecs->entities[0], _ecs->entitiesCount);
+	if(_ecs == NULL){}
+	//AF_Renderer_InitMeshBuffers(&_ecs->entities[0], _ecs->entitiesCount);
 }
 
 /*
@@ -231,16 +232,16 @@ AF_Renderer_InitMeshBuffers
 Init the mesh buffers for OpenGL
 ====================
 */
-void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){ 
+void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){ 
     if (_entityCount == 0) {
     AF_Log_Error("No meshes to draw!\n");
     	return;
     }
 
     for(uint32_t i = 0; i < _entityCount; i++){
-	    AF_CMesh* mesh = _entities[i].mesh;
+	   //AF_CMesh* mesh = _entities[i].mesh;
 
-	    BOOL hasMesh = AF_Component_GetHas(mesh->enabled);
+	    BOOL hasMesh = AF_Component_GetHas(_mesh->enabled);
 	    // Skip setting up if we don't have a mesh component
 	    if(hasMesh == FALSE){
 			continue;
@@ -249,8 +250,13 @@ void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount){
 		AF_CheckGLError( "Mesh has no indices!\n");
 
 		// for each sub mesh. setup the mesh buffers
-		for(uint32_t j = 0; j < mesh->meshCount; j++){
-			AF_Renderer_CreateMeshBuffer(&mesh->meshes[j]);
+		for(uint32_t j = 0; j < _mesh->meshCount; j++){
+			if(_mesh->meshes[j].vertexCount < 1){
+				// skip creating mesh buffer as we don't have any vetices
+				AF_Log_Warning("AF_Renderer_InitMeshBuffers: skip creating mesh buffer as we don't have any vetices\n");
+				continue;
+			}
+			AF_Renderer_CreateMeshBuffer(&_mesh->meshes[j]);
 		}
     }
 }
@@ -262,7 +268,12 @@ Do the initial setup for a models mesh buffer
 ====================
 */
 void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
-	if (!_meshData->vertices || !_meshData->indices) {
+	if(_meshData == NULL){
+		AF_Log_Error("Invalid _meshData, is NULL!\n");
+		return;
+	}
+	
+	if (_meshData->vertexCount == 0 || _meshData->indexCount == 0) {
 		AF_Log_Error("Invalid vertex or index data!\n");
 		return;
 	}
@@ -270,7 +281,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
 	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
 	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+	AF_CheckGLError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
 		
 	GLuint gVAO, gVBO, gEBO;
 	glGenVertexArrays(1, &gVAO);
@@ -602,6 +613,12 @@ void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 			// optional: de-allocate all resources once they've outlived their purpose:
 			// ------------------------------------------------------------------------
 			AF_MeshData* mesh = &_mesh->meshes[j];
+			if(mesh == NULL){
+				AF_Log_Warning("AF_Renderer_DestroyMeshBuffers: skipping destroy of mesh %i\n", j);
+				continue;
+			}
+
+		
 			glDeleteVertexArrays(1, &mesh->ibo);
 			glDeleteBuffers(1, &mesh->vbo);
 			glDeleteBuffers(1, &mesh->ibo);

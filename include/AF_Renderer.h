@@ -36,7 +36,7 @@ void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 
 
 // Looped creation function that calls AF_Renderer_CreateMeshBuffer
-void AF_Renderer_InitMeshBuffers(AF_Entity* _entities, uint32_t _entityCount);
+void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount);
 
 // Singular creation function
 void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);  
