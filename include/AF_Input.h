@@ -30,7 +30,7 @@ typedef enum AF_KeyboardKeyEnum {
     AF_KEY_ALT = 18,
     //AF_KEY_PAUSE = 19,
     //AF_KEY_CAPS_LOCK = 20,
-    AF_KEY_ESCAPE = 27,
+    AF_KEY_ESCAPE = 256,//27,
     AF_KEY_SPACE = 32,
     //AF_KEY_PAGE_UP = 33,
     //AF_KEY_PAGE_DOWN = 34,
