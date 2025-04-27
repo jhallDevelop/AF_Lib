@@ -59,7 +59,7 @@ Update the time variables
 
 static inline void AF_Time_Update(AF_Time* _time){
 	_time->currentTime = AF_Time_GetTime();
-	_time->deltaTime = _time->lastTime - _time->currentTime;
+	_time->deltaTime = _time->currentTime -_time->lastTime;
 	_time->currentFrame += 1,
 	_time->lastTime = _time->currentTime;
 }
