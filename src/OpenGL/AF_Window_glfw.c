@@ -87,10 +87,7 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
     }
     // Retrieve the pointer to the AF_Input struct from the window user pointer
     // increment the buffer to position the next key, rollover if at the end of the array
-     
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
-        glfwSetWindowShouldClose(_window, GLFW_TRUE);
-    }
+   
 }
 
 /*
