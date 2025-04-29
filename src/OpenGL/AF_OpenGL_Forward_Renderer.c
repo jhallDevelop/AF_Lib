@@ -24,6 +24,7 @@ This implementation is for OpenGL
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
 
+
 // set up vertex data (and buffer(s)) and configure vertex attributes
 // ------------------------------------------------------------------
 // TODO: delete this
@@ -56,7 +57,6 @@ const char* stackOverflow = "STACK_OVERFLOW";
 const char* stackUnderflow = "STACK_UNDERFLOW";
 const char* outOfMemory = "OUT_OF_MEMORY";
 const char* invalidFrameBufferOperation = "INVALID_FRAMEBUFFER_OPERATION";
-
 
 
 /*
@@ -153,14 +153,9 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
 	AF_Log_Error("AF_Renderer_LoadTexture: Texture failed to load at path %s\n",path);
     }
 
-	
-
 	// free the loaded image
 	stbi_image_free(data);
 	data = NULL;
-
-	
-
     return textureID;
 }
 
@@ -224,7 +219,9 @@ void AF_Renderer_Start(AF_ECS* _ecs){
 	AF_Log("AF_Renderer_Start\n");
 	if(_ecs == NULL){}
 	//AF_Renderer_InitMeshBuffers(&_ecs->entities[0], _ecs->entitiesCount);
+	
 }
+
 
 /*
 ====================
@@ -313,7 +310,6 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-
 	// Vertex tangent attributes
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
@@ -347,6 +343,80 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
 }
 
+/*
+====================
+AF_Renderer_UpdateLighting
+Update lighting data by searching and storing the index's of active lights
+Used in later render passes
+====================
+*/
+void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
+{
+	// clear the lighting data so we can re-count fresh
+	_lightingData->ambientLightEntityIndex = 0;
+	_lightingData->spotLightEntityIndex = 0;
+	for(uint16_t x = 0; x < _lightingData->maxLights; x++){
+		_lightingData->pointLightIndexArray[x] = 0;
+	}
+	_lightingData->pointLightsFound = 0;
+
+	// search all lights in the entities
+	// store the point lights, ambient, and spot light
+	BOOL ambientLightFound = FALSE;
+	BOOL spotLightfound = FALSE;
+	BOOL allPointLightsFound = FALSE;
+	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+		// early exit if we have found all available lights
+		if(ambientLightFound == TRUE && spotLightfound == TRUE && allPointLightsFound == TRUE){
+			break;
+		}
+
+		AF_Entity* entity = &_ecs->entities[i];
+		// Only search enabled entities
+		BOOL entityEnabled = AF_Component_GetEnabled(entity->flags);
+		if(entityEnabled == FALSE){
+			continue;
+		}
+
+		// search if this is a light component that is is enabled
+		AF_CLight* light = &_ecs->lights[i];
+		BOOL hasLightComponent = AF_Component_GetHas(light->enabled);
+		BOOL hasLightComponentEnabled = AF_Component_GetEnabled(light->enabled);
+
+		if(hasLightComponent == FALSE || hasLightComponentEnabled == FALSE){
+			continue;
+		}
+
+		// What type of light
+		if(light->lightType == AF_LIGHT_TYPE_AMBIENT){
+			if(_lightingData->ambientLightEntityIndex > 0){
+				AF_Log_Warning("AF_Renderer_UpdateLighting: Ambient Light already Set (entityIndex %i).  Can't set ambient light (entityIndex: %i) You are only allowed 1. Disable the others\n", _lightingData->ambientLightEntityIndex, i);
+				continue;
+			}
+			_lightingData->ambientLightEntityIndex = i;
+		}else if(light->lightType == AF_LIGHT_TYPE_POINT){
+			if(_lightingData->pointLightsFound >= 4){
+				AF_Log_Warning("AF_Renderer_UpdateLighting: Point Lights already Maxed out (entityIndex %i, %i, %i, %i). \
+					Can't set point light (entityIndex: %i) You are only allowed 1. \
+					Disable the others\n", \
+					_lightingData->pointLightIndexArray[0], \
+					_lightingData->pointLightIndexArray[1], \
+					_lightingData->pointLightIndexArray[2], \
+					_lightingData->pointLightIndexArray[3], i);
+					continue;
+			}
+			_lightingData->pointLightIndexArray[_lightingData->pointLightsFound] = i;
+			_lightingData->pointLightsFound++;
+		}else if (light->lightType == AF_LIGHT_TYPE_SPOT){
+			if(_lightingData->spotLightEntityIndex > 0){
+				AF_Log_Warning("AF_Renderer_UpdateLighting: Spot Light already Set (entityIndex %i). Can't set spot light (entityIndex: %i) You are only allowed 1. Disable the others\n", _lightingData->spotLightEntityIndex, i);
+				continue;
+			}
+			_lightingData->spotLightEntityIndex = i;
+		}
+	}
+}
+
 
 /*
 ====================
@@ -370,7 +440,9 @@ void AF_Renderer_StartRendering(float _backgroundColor[3] ){
 	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
 	glEnable(GL_CULL_FACE); // Enable culling
 
+	
 }
+
 
 /*
 ====================
@@ -378,7 +450,7 @@ AF_Renderer_DrawMeshes
 Loop through the entities and draw the meshes that have components attached
 ====================
 */
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
 		BOOL hasEntity = AF_Component_GetHas(entity->flags);
@@ -398,8 +470,10 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs){
 		// Update the model matrix
 		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, _ecs->transforms[i].rot, _ecs->transforms[i].scale);
 		
-		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh);
+		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData);
 	}
+
+	
 }
 
 /*
@@ -408,7 +482,7 @@ AF_Renderer_DrawMesh
 Loop through the meshes in a component and draw using opengl
 ====================
 */
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh){
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
 	// draw meshes
 	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
 	{
@@ -416,48 +490,80 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		return;
 	}
 	
+	BOOL hasMesh = AF_Component_GetHas(_mesh->enabled);
+	BOOL isEnabled = AF_Component_GetEnabled(_mesh->enabled);
+	// don't render if we are not enabled or the component isn't supposed to render
+	if(hasMesh == FALSE || isEnabled == FALSE){
+		return;;
+	}
 	// TODO: this is very expensive. batch these up
 	// ---- Setup shader ----
 	uint32_t shader = _mesh->shader.shaderID;
 	glUseProgram(shader); 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		
+		
 		// Bind the textures
 		if(_mesh->meshes == NULL){
 			AF_Log_Error("AF_Renderer_DrawMesh: meshes are Null reference \n");
 			return;
 		}
-        // ---- Diffuse Texture ----
+
+		// TODO: Render based on shader type 
+		// Does the shader use Textures?
+		if(_mesh->textured == TRUE){
+			// ---- Diffuse Texture ----
+			if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
+				uint32_t diffuseTextureBinding = 0;
+				glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
+				glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
+
+				// and finally bind the texture
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
+			}
+
+			/**/
+			// ---- Normal Texture ----
+			if((_mesh->meshes[i].material.normalTexture != NULL) && (_mesh->meshes[i].material.normalTexture->type != AF_TEXTURE_TYPE_NONE)){
+				uint32_t normalTextureBinding = 1;
+				glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
+				glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
+				// and finally bind the texture
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture->id);
+			}
+			
+
+			// ---- Specular Texture ----
+			if((_mesh->meshes[i].material.specularTexture != NULL) && (_mesh->meshes[i].material.specularTexture->type != AF_TEXTURE_TYPE_NONE)){
+				uint32_t specularTextureBinding = 2;
+				glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
+				glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
+				// and finally bind the texture
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture->id);
+			}
+		}
+
+
+		// Does the shader use lighting?
+        //if(_mesh->recieveLights == TRUE){
+		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
+		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z);//_viewMat->rows[3].x, _viewMat->rows[3].y, _viewMat->rows[3].z); 
+		// ideally shininess is set to 32.0f
+		/*
 		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
 			uint32_t diffuseTextureBinding = 0;
 			glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
-			glUniform1i(glGetUniformLocation(shader, "diffuse"), diffuseTextureBinding);
+			glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
+
 			// and finally bind the texture
 			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
-		}
+		}*/
 
-		/**/
-		// ---- Normal Texture ----
-		if((_mesh->meshes[i].material.normalTexture != NULL) && (_mesh->meshes[i].material.normalTexture->type != AF_TEXTURE_TYPE_NONE)){
-			uint32_t normalTextureBinding = 1;
-			glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
-			glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
-			// and finally bind the texture
-			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture->id);
+		// Get the next available lights and send data to shader up to MAX_LIGHT_NUM, likley 4
+		if(_mesh->recieveLights == TRUE){
+			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
 		}
 		
-
-		// ---- Specular Texture ----
-		if((_mesh->meshes[i].material.specularTexture != NULL) && (_mesh->meshes[i].material.specularTexture->type != AF_TEXTURE_TYPE_NONE)){
-			uint32_t specularTextureBinding = 2;
-			glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
-			glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
-			// and finally bind the texture
-			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture->id);
-		}
-		
-        
-
 
 		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
 		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
@@ -519,6 +625,81 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	//unbind diffuse
 	glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData){
+	
+	// if we have a found ambient light
+	if(_lightingData->ambientLightEntityIndex > 0){
+		AF_CLight* light = &_ecs->lights[_lightingData->ambientLightEntityIndex];
+		glUniform1f(glGetUniformLocation(_shader, "material.shininess"), 32.0f);
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.direction"), light->direction.x, light->direction.y, light->direction.z);
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.ambient"),  light->ambientCol.x, light->ambientCol.y, light->ambientCol.z); 
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.diffuse"),  light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.specular"),  light->specularCol.x, light->specularCol.y, light->specularCol.z);
+	}
+	// if we have a found spot light
+	
+	if(_lightingData->spotLightEntityIndex > 0){
+		AF_Entity* spotLightEntity = &_ecs->entities[_lightingData->spotLightEntityIndex];
+		AF_CLight* spotLight = &_ecs->lights[_lightingData->spotLightEntityIndex];
+		Vec3* spotLightPos = &spotLightEntity->transform->pos;
+		
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.ambient"), spotLight->ambientCol.x, spotLight->ambientCol.y, spotLight->ambientCol.z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.diffuse"), spotLight->diffuseCol.x, spotLight->diffuseCol.y, spotLight->diffuseCol.z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.specular"), spotLight->specularCol.x, spotLight->specularCol.y, spotLight->specularCol.z);
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.constant"), spotLight->constant); 
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.linear"), spotLight->linear);
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.quadratic"), spotLight->quadratic);
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.cutoff"), AF_Math_Cos(AF_Math_Radians(spotLight->cutOff)));
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.outerCutOff"), AF_Math_Cos(AF_Math_Radians(spotLight->outerCutoff)));
+	}
+	
+	// if we have a found point lights, for each found light
+	for(uint8_t i = 0; i < _lightingData->pointLightsFound; i++){
+		// Point Light
+		//AF_Log("Point Light: %i (entityIndex: %i)\n", i, _lightingData->pointLightIndexArray[i]);
+		uint16_t pointLightEntityIndex = _lightingData->pointLightIndexArray[i];
+		AF_CLight* light = &_ecs->lights[pointLightEntityIndex];
+		char posUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(posUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
+		Vec3* lightPosition = &_ecs->entities[pointLightEntityIndex].transform->pos;
+		glUniform3f(glGetUniformLocation(_shader, posUniformName), lightPosition->x, lightPosition->y, lightPosition->z);//-0.2f, 1.0f, -0.3f);//_lightPos->x, _lightPos->y, _lightPos->z);//-0.2f, 1.0f, -0.3f);
+		
+		// Ambient
+		char ambientUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(ambientUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
+		glUniform3f(glGetUniformLocation(_shader, ambientUniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);//0.05f, 0.05f, 0.05f); //_light->ambientCol.x, _light->ambientCol.y, _light->ambientCol.z);//0.05f, 0.05f, 0.05f);  
+		
+		// Diffuse
+		char pointUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(pointUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
+		glUniform3f(glGetUniformLocation(_shader, pointUniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);//0.4f, 0.4f, 0.4f); //_light->diffuseCol.x, _light->diffuseCol.y, _light->diffuseCol.z); //0.4f, 0.4f, 0.4f); 
+		
+		// Specular
+		char specUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(specUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
+		glUniform3f(glGetUniformLocation(_shader, specUniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);////0.5f, 0.5f, 0.5f); //_light->specularCol.x, _light->specularCol.y, _light->specularCol.z);//0.5f, 0.5f, 0.5f); 
+		
+		// Constant
+		char constantUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(constantUniformName, MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
+		GLint unformShaderName = glGetUniformLocation(_shader, constantUniformName);
+		AF_Shader_SetFloat(_shader, constantUniformName, light->constant);
+	
+		// Linear
+		char linearUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(linearUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
+		glUniform1f(glGetUniformLocation(_shader, linearUniformName), light->linear);//0.09f); //_light->linear);//0.09f); 
+
+		// Quadratic
+		char quadraticUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(quadraticUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
+		glUniform1f(glGetUniformLocation(_shader, quadraticUniformName), light->quadratic);//0.032f); //_light->quadratic);//0.032f); 
+	}
+	
 }
 
 
