@@ -30,6 +30,7 @@ typedef struct{
 	AF_Texture* normalTexture;
 	AF_Texture* specularTexture;
 	AF_Color color;
+	AF_FLOAT shininess;
 } AF_Material;
 
 static inline AF_Material AF_Material_ZERO(void){
@@ -39,7 +40,8 @@ static inline AF_Material AF_Material_ZERO(void){
 		.diffuseTexture = 0,	// NULL 
 		.normalTexture = 0,		// NULL
 		.specularTexture = 0,	// NULL
-		.color = color
+		.color = color,
+		.shininess = 0.0f
 	};
 
 	return returnMaterial;
