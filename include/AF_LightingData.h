@@ -15,6 +15,7 @@ Implementation of lighting data struct
 extern "C" {
 #endif
 
+#define MAX_LIGHT_NUM 4
 
 typedef struct AF_LightingData{
 	// TODO pack this
@@ -22,14 +23,23 @@ typedef struct AF_LightingData{
     BOOL shadowsEnabled;
     uint32_t maxLights; 
     uint8_t ambientColor[3];
+    // Counting up the lights
+    uint16_t ambientLightEntityIndex;
+    uint16_t spotLightEntityIndex;
+    uint16_t pointLightIndexArray[MAX_LIGHT_NUM];
+    uint8_t pointLightsFound;
 } AF_LightingData;
 
 static inline AF_LightingData AF_AF_LightingData_ZERO(void){
 	AF_LightingData returnLightingData = {
 		.enabled = TRUE,
         .shadowsEnabled = TRUE,
-        .maxLights = 4,
-		.ambientColor = { 255, 255, 255}	// NULL 
+        .maxLights = MAX_LIGHT_NUM,
+		.ambientColor = { 255, 255, 255},	
+        .ambientLightEntityIndex = 0,
+        .spotLightEntityIndex = 0,
+        .pointLightIndexArray = {0,0,0,0},
+        .pointLightsFound = 0
 	};
 
 	return returnLightingData;
