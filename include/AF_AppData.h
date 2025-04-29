@@ -22,6 +22,7 @@ extern "C" {
 #include "AF_Input.h"
 #include "AF_Assets.h"
 #include "AF_ProjectData.h"
+#include "AF_LightingData.h"
 
 #pragma pack(push, 8)  // Set 8-byte alignment
 typedef struct AF_AppData {
@@ -36,7 +37,7 @@ typedef struct AF_AppData {
     AF_Input input;        // Struct size depends on definition
     AF_Assets assets;      // Struct size depends on definition
     AF_ProjectData projectData;  // Struct size depends on definition
-
+    AF_LightingData lightingData;   // struct to hold important cached lighting data
     // Group boolean values together at the end to minimize padding
     bool isRunning;        // 1 byte
     bool isFullscreen;     // 1 byte
@@ -56,7 +57,7 @@ static inline AF_AppData AF_AppData_ZERO(void){
         .input = AF_Input_ZERO(),
         .assets = AF_Assets_ZERO(),
         .projectData = Editor_Project_Data_ZERO(),
-
+        .lightingData = AF_AF_LightingData_ZERO(),
         .isRunning = FALSE,
         .isFullscreen = FALSE
     };
