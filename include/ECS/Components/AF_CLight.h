@@ -19,9 +19,10 @@ extern "C" {
 #define AF_CLIGHT_TYPE_COUNT 3
 
 enum AF_Light_Type_e{
-	AF_LIGHT_TYPE_POINT = 0, 
+    AF_LIGHT_TYPE_AMBIENT = 0,
 	AF_LIGHT_TYPE_SPOT = 1,
-	AF_LIGHT_TYPE_AMBIENT = 2
+    AF_LIGHT_TYPE_POINT = 2,
+	
 };
 
 
@@ -68,16 +69,16 @@ static inline AF_CLight AF_CLight_ADD(void){
     AF_CLight returnObject = {
 	//.has = TRUE,
 	.enabled = component,
-    .lightType = AF_LIGHT_TYPE_POINT,
-    .direction = vec3Zero,
-    .ambientCol = vec3Zero,
-    .diffuseCol = vec3Zero,
-    .specularCol = vec3Zero,
-    .constant = 0.0f, 
-    .linear = 0.0f,
-    .quadratic = 0.0f,
-    .cutOff = 0.0f,
-    .outerCutoff = 0.0f
+    .lightType = AF_LIGHT_TYPE_AMBIENT,
+    .direction = {0.0f, -1.0f, 0.0f},
+    .ambientCol = {0.5f, 0.5f, 0.5f},
+    .diffuseCol = {0.4f, 0.4f, 0.4f},
+    .specularCol = {0.5f, 0.5f, 0.5f},
+    .constant = 1.0f, 
+    .linear = 0.09f,
+    .quadratic = 0.032f,
+    .cutOff = 0.9763f,
+    .outerCutoff = 0.9659f
 	};
     return returnObject;
 }
