@@ -45,6 +45,11 @@ typedef struct AF_CMesh {
 	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
 	uint8_t meshID;		// only fit 255 mesh types
 	BOOL isAnimating;	// belongs in animation component
+	BOOL textured;
+    BOOL transparent;
+    BOOL recieveLights;
+    BOOL recieveShadows;
+    BOOL castShadows;
 	void* modelMatrix;	// belongs in transform, unless nessisary
 	void* displayListBuffer;	
 } AF_CMesh;
@@ -67,6 +72,11 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	.isImageFlipped = FALSE,
 	.meshID = 0,
 	.isAnimating = FALSE,
+	.textured = FALSE,
+	.transparent = FALSE,
+	.recieveLights = FALSE,
+	.recieveShadows = FALSE,
+	.castShadows = FALSE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
@@ -98,6 +108,11 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.isImageFlipped = FALSE,
 	.meshID = 0,
 	.isAnimating = FALSE,
+	.textured = TRUE,
+	.transparent = TRUE,
+	.recieveLights = TRUE,
+	.recieveShadows = TRUE,
+	.castShadows = TRUE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
