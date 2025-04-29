@@ -36,7 +36,7 @@ static inline AF_MeshData AF_MeshData_ZERO(void){
         .vao = 0,
         .vbo = 0,
         .ibo = 0,
-        .material = {0,NULL, NULL, NULL,{0,0,0,0}}  // {shaderid, diffuse, normal, specular, color}
+        .material = {0,NULL, NULL, NULL,{0,0,0,0}, 0}  // {shaderid, diffuse, normal, specular, color, shininess}
     };
     return returnMesh;
 }
