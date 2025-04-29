@@ -11,6 +11,7 @@ Definition for functions for rendering
 #include "ECS/Components/AF_CCamera.h"
 #include "AF_MeshData.h"
 #include "ECS/Entities/AF_ECS.h"
+#include "AF_LightingData.h"
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CSprite.h"
 #include "AF_Debug.h"
@@ -27,6 +28,7 @@ void CheckGLError(const char * _message);
 uint32_t AF_Renderer_Awake(void);
 void AF_Renderer_Start(AF_ECS* _ecs);
 void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
+void AF_Renderer_UpdateLighting(AF_ECS* _ecs, AF_LightingData* _lightingData);
 void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(AF_ECS* _ecs);
 void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
@@ -104,9 +106,12 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 // TODO: don't like passing in the camera or debug mesh
 //void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
 void AF_Renderer_StartRendering(float _backgroundColor[3]);
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs);
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh);
- 
+
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
+void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData);
+
+
 //void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
 //static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
 
