@@ -249,6 +249,73 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 	AF_ECS_ReSyncComponents(_ecs);
 }
 
+static inline void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
+	AF_Log("AF_ECS_DeleteEntity\n");
+	//entity->enabled = TRUE;
+	_entity->flags = AF_Component_SetEnabled(_entity->flags, FALSE);
+	_entity->flags = AF_Component_SetHas(_entity->flags, FALSE);
+	
+	// set the name
+	//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
+
+	// ===== Init all the component pointers =====
+	// Transform Component
+	_entity->parentTransform = NULL;
+
+	// original data is all living in fixed arrays per component
+	*_entity->transform = AF_CTransform3D_ZERO();
+	*_entity->sprite = AF_CSprite_ZERO();
+	
+	// Rigidbody3D
+	*_entity->rigidbody = AF_C3DRigidbody_ZERO();
+
+	// Colliders
+	*_entity->collider = AF_CCollider_ZERO();
+	
+	// Animation component
+	*_entity->animation = AF_CAnimation_ZERO();
+
+	// Add Meshes
+	*_entity->mesh = AF_CMesh_ZERO();
+
+	// Add text
+	*_entity->text = AF_CText_ZERO();
+
+	// Add audio
+	*_entity->audioSource = AF_CAudioSource_ZERO();
+
+	// player data
+	*_entity->playerData = AF_CPlayerData_ZERO();
+
+	// skeletal animations
+	*_entity->skeletalAnimation = AF_CSkeletalAnimation_ZERO();
+
+	// ai Behaviours
+	*_entity->aiBehaviour = AF_CAI_Behaviour_ZERO();
+	
+	// Camera Component
+	*_entity->camera = AF_CCamera_ZERO();
+
+	// Editor Component
+	*_entity->editorData = AF_CEditorData_ZERO();
+	
+	// Input controller
+	*_entity->inputController = AF_CInputController_ZERO();
+
+	// Scripts
+	for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+		*_entity->scripts[(AF_ECS_GetID(_entity->id_tag) * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j] = AF_CScript_ZERO();
+	}
+
+	// Lights
+	*_entity->light = AF_CLight_ZERO();
+
+	if(_ecs->entitiesCount != 0){
+		_ecs->currentEntity--;
+	}
+	
+}
+
 /*
 ====================
 AF_ECS_CreateEntity
