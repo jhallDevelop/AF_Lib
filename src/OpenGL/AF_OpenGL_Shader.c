@@ -10,6 +10,9 @@ This implementation is for OpenGL
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
 
+// Forward Declare
+GLuint AF_Shader_GetUniformLocation(uint32_t ID, const char* name);
+
 /*
 ====================
 AF_Shader_CheckCompileErrors
@@ -135,4 +138,82 @@ void AF_Shader_Delete(uint32_t programID) {
     } else {
         AF_Log_Error("AF_Shader_Delete: Invalid shader program ID (0)\n");
     }
+}
+
+
+// utility uniform functions
+// ------------------------------------------------------------------------
+void AF_Shader_SetBool(uint32_t ID, const char* name, bool value) 
+{   
+    glUniform1i(AF_Shader_GetUniformLocation(ID, name), (int)value); 
+}
+// ------------------------------------------------------------------------
+void AF_Shader_SetInt(uint32_t ID, const  char* name, int value) 
+{ 
+    glUniform1i(AF_Shader_GetUniformLocation(ID, name), value); 
+}
+// ------------------------------------------------------------------------
+void AF_Shader_SetFloat(uint32_t ID, const char* name, float value) 
+{ 
+    glUniform1f(AF_Shader_GetUniformLocation(ID, name), value); 
+}
+// ------------------------------------------------------------------------
+/*
+void AF_Shader_SetVec2(uint32_t ID, const  char* name, const Vec2 value) 
+{ 
+    glUniform2fv(AF_Shader_GetUniformLocation(ID, name), 1, &value.x); 
+}*/
+void AF_Shader_SetVec2(uint32_t ID, const  char* name, float x, float y) 
+{ 
+    glUniform2f(AF_Shader_GetUniformLocation(ID, name), x, y); 
+}
+// ------------------------------------------------------------------------
+/*
+void AF_Shader_SetVec3(uint32_t ID, const  char* name, const Vec3 value) 
+{ 
+    glUniform3fv(AF_Shader_GetUniformLocation(ID, name), 1, &value.x); 
+}*/
+
+void AF_Shader_SetVec3(uint32_t ID, const  char* name, float x, float y, float z) 
+{ 
+    glUniform3f(AF_Shader_GetUniformLocation(ID, name), x, y, z); 
+}
+// ------------------------------------------------------------------------
+/*
+void AF_Shader_SetVec4(uint32_t ID, const char* name, const Vec4 value) 
+{ 
+    glUniform4fv(AF_Shader_GetUniformLocation(ID, name), 1, &value.x); 
+}*/
+
+
+void AF_Shader_SetVec4(uint32_t ID, const  char* name, float x, float y, float z, float w) 
+{ 
+    glUniform4f(AF_Shader_GetUniformLocation(ID, name), x, y, z, w); 
+}
+/*
+// ------------------------------------------------------------------------
+void AF_Shader_SetMat2(uint32_t ID, const char* name, const glm::mat2 &mat) 
+{
+    glUniformMatrix2fv(glGetUniformLocation(ID, name), 1, GL_FALSE, &mat[0][0]);
+}*/
+/*
+// ------------------------------------------------------------------------
+void AF_Shader_SetMat3(uint32_t ID, const char* name, const glm::mat3 &mat) 
+{
+    glUniformMatrix3fv(glGetUniformLocation(ID, name), 1, GL_FALSE, &mat[0][0]);
+}
+    */
+// ------------------------------------------------------------------------
+void AF_Shader_SetMat4(uint32_t ID, const char* name, const Mat4 mat) 
+{
+    glUniformMatrix4fv(AF_Shader_GetUniformLocation(ID, name), 1, GL_FALSE, &mat.rows->x);
+}
+
+// Get uniform Location
+GLuint AF_Shader_GetUniformLocation(uint32_t ID, const char* name){
+    GLuint returnValue = glGetUniformLocation(ID, name);
+    if(returnValue == -1){
+        AF_Log_Error("AF_Shader_GetUniformLocation: Can't find uniform location %s in shader %i\n", name, ID);
+    }
+    return returnValue;
 }
