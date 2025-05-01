@@ -312,18 +312,14 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     // normal: texture_normalN
 
     // 1. diffuse maps
-    
-    //AF_Log("Editor_Model: loading DIFFUSE textures \n");
-    
-    
     _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
-
+    if(_meshData.material.diffuseTexture == nullptr){
+        AF_Log_Error("AF_MeshLoad_Assimp_ProcessMesh: FAILED to AF_MeshLoad_Assimp_LoadMaterialTextures \n");
+    }
     // 2. specular maps
-    //AF_Log("Editor_Model: loading Specular textures \n");
     _meshData.material.specularTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_SPECULAR);  
 
     // 3. normal maps   
-    //AF_Log("Editor_Model: loading Normal textures \n");
     _meshData.material.normalTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_HEIGHT);  
 
     // 4. ambient maps
@@ -368,10 +364,9 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
     uint32_t assimpMaterialTextureCount = _assimpMat.GetTextureCount(_assimpType);
     if(assimpMaterialTextureCount == 0){
         AF_Log_Warning("Editor_LoadMaterialTextures: No textures found for type %i\n", _assimpType);
-        return NULL;
+        //return NULL;
     }   
 
-    //AF_Texture* textures = (AF_Texture*)malloc(sizeof(AF_Texture) * textureCount);
     // prep the return texture pointer
     AF_Texture* returnTexturePtr = NULL;
 
@@ -383,7 +378,7 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
 
         // check string length
         if(str.length == 0){
-            AF_Log_Warning("Editor_LoadMaterialTextures: assimp Texture %i path is empty\n", i);
+            AF_Log_Error("Editor_LoadMaterialTextures: assimp Texture %i path is empty\n", i);
             continue;
         }
 
@@ -396,6 +391,7 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
             
 
         // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
+        /*
         bool skip = false;
         // look at all the available textures loaded
         //for(unsigned int j = 0; j < _assets.nextAvailableTexture; j++)
@@ -411,14 +407,15 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
                 skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
                 break;
             }
-        }
-        if(!skip)
+        }*/
+        returnTexturePtr = AF_Assets_GetTexture(&_assets, assimpTexturePath);
+        if(returnTexturePtr == nullptr)
         {   // if texture hasn't been loaded already, load it
             //Assets has a fixed array of textures that can be unlocked.
             // Add/unlock a new AF_Texture struct that can be used.
-            AF_Texture* assetTexturePtr = AF_Assets_AddTexture(&_assets);
-            if(assetTexturePtr == NULL){
-                AF_Log_Warning("Editor_LoadMaterialTextures: Failed to add texture to assets\n");
+            returnTexturePtr = AF_Assets_AddTexture(&_assets);
+            if(returnTexturePtr == NULL){
+                AF_Log_Error("Editor_LoadMaterialTextures: Failed to add texture to assets: Path: %s \n",assimpTexturePath);
                 return NULL;
             }
 
@@ -428,36 +425,31 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
             // e.g. model path will be ./assets/models/<modelname>/modelname.obj
             // texture path will be ./assets/models/<modelname>/<texturename>.png
             
-            std::snprintf(assetTexturePtr->path, sizeof(assetTexturePtr->path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
-            
-            
-            assetTexturePtr->id = AF_Renderer_LoadTexture(assetTexturePtr->path);
+            std::snprintf(returnTexturePtr->path, sizeof(returnTexturePtr->path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
+            returnTexturePtr->id = AF_Renderer_LoadTexture(returnTexturePtr->path);
 
             // Map the assimp texture type to our texture type
             if(_assimpType == aiTextureType_DIFFUSE){
-                assetTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_DIFFUSE;
+                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_DIFFUSE;
                 AF_Log("Editor_LoadMaterialTextures: Texture type is DIFFUSE\n");
             } else if (_assimpType == aiTextureType_SPECULAR){
-                assetTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_SPECULAR;
+                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_SPECULAR;
                 AF_Log("Editor_LoadMaterialTextures: Texture type is SPECULAR\n");
             } else if (_assimpType == aiTextureType_NORMALS){
-                assetTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NORMALS;
+                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NORMALS;
                 AF_Log("Editor_LoadMaterialTextures: Texture type is NORMALS\n");
             } else {
-                assetTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NONE;
+                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NONE;
                 AF_Log("Editor_LoadMaterialTextures: Texture type is NONE\n");
             }
                 
             
-            returnTexturePtr = assetTexturePtr;
         }
-    }
-    if(returnTexturePtr == NULL){
-        AF_Log_Warning("Editor_LoadMaterialTextures: No textures loaded, something went wrong\n");
     }
 
     return returnTexturePtr;
 }
+
 
 
 /*====================
