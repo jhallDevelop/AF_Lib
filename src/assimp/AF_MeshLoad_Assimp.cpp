@@ -311,6 +311,12 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     // specular: texture_specularN
     // normal: texture_normalN
 
+    // Need to determine is this mesh being loaded fresh, or being re-loaded.
+    // Don't load a texture if the data already exists
+    if(_meshData.material.diffuseTexture != nullptr){
+        return;
+    }
+    AF_Log_Error("AF_MeshLoad_Assimp_ProcessMesh: NEED TO FIGURE OUT HOW NOT TO OVERWRITE TEXTURES ON LOAD\n");
     // 1. diffuse maps
     _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
     if(_meshData.material.diffuseTexture == nullptr){
