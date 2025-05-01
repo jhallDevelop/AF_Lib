@@ -37,7 +37,7 @@ static inline AF_Texture AF_Texture_ZERO(void){
 	AF_Texture returnTexture = {
 		.id = 0,
 		.type = AF_TEXTURE_TYPE_NONE, 
-		.path = ""
+		.path = "\0"
 	};
 
 	return returnTexture;
