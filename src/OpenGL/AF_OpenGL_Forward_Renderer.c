@@ -140,6 +140,7 @@ unsigned int AF_Renderer_LoadTexture(char const * path)
 		
         glBindTexture(GL_TEXTURE_2D, textureID);
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -467,8 +468,10 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		}
 		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
 
+		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
+		Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
 		// Update the model matrix
-		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, _ecs->transforms[i].rot, _ecs->transforms[i].scale);
+		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
 		
 		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData);
 	}
