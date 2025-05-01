@@ -187,7 +187,7 @@ inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera)
     _camera->aspectRatio = (float)_camera->windowWidth / (float)_camera->windowHeight;
     
     // Convert FOV to radians and calculate tanHalfFov
-    _camera->tanHalfFov = AF_Math_Tan(AF_Math_DegreesToRadians(_camera->fov) / 2);
+    _camera->tanHalfFov = AF_Math_Tan(AF_Math_Radians(_camera->fov) / 2);
     
     // Calculate other elements for the projection matrix
     AF_FLOAT right = _camera->nearPlane * _camera->tanHalfFov;
