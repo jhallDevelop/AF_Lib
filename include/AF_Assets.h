@@ -7,11 +7,12 @@ Implementation of the assets struct and initialization function
 */
 #ifndef AF_ASSETS_H
 #define AF_ASSETS_H
-
+#include <string.h>
 #include "AF_Texture.h"
 #include "AF_MeshData.h"
 #include "AF_Log.h"
 #include "AF_Shader.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,6 +104,39 @@ static inline AF_Texture* AF_Assets_AddTexture(AF_Assets* _assets){
         AF_Log_Warning("AF_Assets_AddTexture: Max textures reached\n");
         return NULL;
     }
+}
+
+/*
+====================
+AF_Assets_GetTexture
+Implementation for getting a texture to the assets
+returns a pointer to the texture added in the assets/texture array
+====================
+*/
+static inline AF_Texture* AF_Assets_GetTexture(AF_Assets* _assets, const char* _texturePath){
+    if(_assets == NULL){
+        AF_Log_Warning("AF_Assets_AddTexture: passed null assets\n");
+        return NULL;
+    }
+    
+    AF_Texture* returnTexturePtr = NULL;
+    for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
+    {
+        if(strncmp(_assets->textures[j].path, _texturePath, MAX_PATH_CHAR_SIZE) == 0)
+        {
+            AF_Log("AF_Assets_GetTexture: strncmp %s | %s\n", _texturePath, _assets->textures[j].path);
+            // if a texture with the same filepath is already loaded, use this texture data
+            //AF_Log("AF_Assets_GetTexture: Found texture %s in assets: path: %s ID: %i\n", _texturePath, _assets->textures[j].path, returnTexturePtr->id);
+            returnTexturePtr = &_assets->textures[j];
+            break;
+        }
+    }
+
+    if(returnTexturePtr == NULL){
+        AF_Log_Warning("AF_Assets_GetTexture: Can't find texture in assets: path: %s\n", _texturePath);
+    }
+    
+    return returnTexturePtr;
 }
 
 /*
