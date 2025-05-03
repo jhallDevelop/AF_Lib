@@ -637,6 +637,9 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 			return;
 		}
 
+		// TODO: sort transparent objects before rendering
+		//https://learnopengl.com/Advanced-OpenGL/Blending
+
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 			
 		AF_CheckGLError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
