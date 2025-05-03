@@ -37,9 +37,9 @@ static inline AF_Material AF_Material_ZERO(void){
 	AF_Color color = {0,0,0,255};
 	AF_Material returnMaterial = {
 		.shaderID = 0,
-		.diffuseTexture = {0, AF_TEXTURE_TYPE_DIFFUSE, "\0"},	// NULL 
-		.normalTexture = {0, AF_TEXTURE_TYPE_NORMALS, "\0"},		// NULL
-		.specularTexture = {0, AF_TEXTURE_TYPE_SPECULAR, "\0"},	// NULL
+		.diffuseTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"},	// NULL 
+		.normalTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"},		// NULL
+		.specularTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"},	// NULL
 		.color = color,
 		.shininess = 0.0f
 	};
