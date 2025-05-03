@@ -21,6 +21,8 @@ This implementation is for OpenGL
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "AF_Assets.h"
+
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
 
@@ -164,6 +166,25 @@ void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName
     glUseProgram(_shaderID); // Bind the shader program
     glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
     glUseProgram(0);
+}
+
+AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath){
+	AF_Texture returnTexture = AF_Assets_GetTexture(_assets, _texturePath);
+	if(returnTexture.type == AF_TEXTURE_TYPE_NONE){
+		AF_Log("RenderMeshSection: Loading new texture\n");
+		// create a new texture struct stored in assets
+
+		// update the path of this new texture
+		snprintf(returnTexture.path, MAX_PATH_CHAR_SIZE, "%s", _texturePath);
+
+		// Update the texture id
+		returnTexture.id = AF_Renderer_LoadTexture(_texturePath);
+		// update the typed
+		returnTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
+		AF_Assets_AddTexture(_assets, returnTexture);
+	}
+	// swap the old texture ptr that this mesh links to with the new texture.
+	return returnTexture;
 }
 
 /*
@@ -341,6 +362,12 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	// Bind the IBO and set the buffer data
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
+
+	// Now that the mesh is loaded, we can delete the memory created for the verts and indices
+	free(_meshData->vertices);
+	_meshData->vertices = NULL;
+	free(_meshData->indices);
+	_meshData->indices = NULL;
 	AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
 }
 
@@ -505,44 +532,38 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	glUseProgram(shader); 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		
-		
-		// Bind the textures
-		if(_mesh->meshes == NULL){
-			AF_Log_Error("AF_Renderer_DrawMesh: meshes are Null reference \n");
-			return;
-		}
 
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
 		if(_mesh->textured == TRUE){
 			// ---- Diffuse Texture ----
-			if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
+			if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
 				uint32_t diffuseTextureBinding = 0;
 				glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
 				glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
 
 				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
 			}
 
 			/**/
 			// ---- Normal Texture ----
-			if((_mesh->meshes[i].material.normalTexture != NULL) && (_mesh->meshes[i].material.normalTexture->type != AF_TEXTURE_TYPE_NONE)){
+			if((_mesh->meshes[i].material.normalTexture.type != AF_TEXTURE_TYPE_NONE)){
 				uint32_t normalTextureBinding = 1;
 				glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
 				glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
 				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture->id);
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture.id);
 			}
 			
 
 			// ---- Specular Texture ----
-			if((_mesh->meshes[i].material.specularTexture != NULL) && (_mesh->meshes[i].material.specularTexture->type != AF_TEXTURE_TYPE_NONE)){
+			if((_mesh->meshes[i].material.specularTexture.type != AF_TEXTURE_TYPE_NONE)){
 				uint32_t specularTextureBinding = 2;
 				glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
 				glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
 				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture->id);
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture.id);
 			}
 		}
 
@@ -770,18 +791,18 @@ Destroy the material textures
 */
 void AF_Renderer_Destroy_Material_Textures(AF_Material* _material){
 	// Diffuse
-	if(_material->diffuseTexture != NULL){
-		glDeleteTextures(1, &_material->diffuseTexture->id);
+	if(_material->diffuseTexture.type != AF_TEXTURE_TYPE_NONE){
+		glDeleteTextures(1, &_material->diffuseTexture.id);
 	}
 
 	// Specular
-	if(_material->specularTexture != NULL){
-		glDeleteTextures(1, &_material->specularTexture->id);
+	if(_material->specularTexture.type != AF_TEXTURE_TYPE_NONE){
+		glDeleteTextures(1, &_material->specularTexture.id);
 	}
 
 	// Normal
-	if(_material->normalTexture != NULL){
-		glDeleteTextures(1, &_material->normalTexture->id);
+	if(_material->normalTexture.type != AF_TEXTURE_TYPE_NONE){
+		glDeleteTextures(1, &_material->normalTexture.id);
 	}
 }
 
@@ -810,14 +831,14 @@ void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 
 			
 			// Free the vertices and indices
-			free(mesh->vertices);
-			mesh->vertices = NULL;
-			free(mesh->indices);
-			mesh->indices = NULL;
+			//free(mesh->vertices);
+			//mesh->vertices = NULL;
+			//free(mesh->indices);
+			//mesh->indices = NULL;
 		}
 		// Free the meshes in the component correctly
-		free(_mesh->meshes);
-		_mesh->meshes = NULL;
+		//free(_mesh->meshes);
+		//_mesh->meshes = NULL;
 }
 
 

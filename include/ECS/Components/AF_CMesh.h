@@ -23,6 +23,7 @@ extern "C" {
 #endif  
 
 #define MAX_PATH_CHAR_SIZE 128
+#define MAX_MESH_COUNT 32
 
 enum AF_MESH_TYPE{
 	AF_MESH_TYPE_PLANE, 
@@ -35,7 +36,7 @@ enum AF_MESH_TYPE{
 // Mesh Struct
 typedef struct AF_CMesh {
     PACKED_CHAR enabled;
-    AF_MeshData* meshes;
+    AF_MeshData meshes[MAX_MESH_COUNT];
 	uint32_t meshCount;
     BOOL showDebug;
 	enum AF_MESH_TYPE meshType;
@@ -64,7 +65,7 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
     AF_CMesh returnMesh = {
 	//.has = FALSE,
 	.enabled = FALSE,
-	.meshes = NULL,
+	//.meshes = NULL,
 	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
@@ -82,6 +83,11 @@ static inline AF_CMesh AF_CMesh_ZERO(void){
 	};
 	// ensure its init and safe with null terminator
 	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
+
+	// init the meshes
+	for(uint32_t i = 0; i < MAX_MESH_COUNT; i++){
+		returnMesh.meshes[i] = AF_MeshData_ZERO();
+	}
     return returnMesh;
 }
 
@@ -99,7 +105,7 @@ static inline AF_CMesh AF_CMesh_ADD(void){
     AF_CMesh returnMesh = {
 	//.has = TRUE,
 	.enabled = component,
-	.meshes = NULL,
+	//.meshes = NULL,
 	.meshCount = 0,
 	.showDebug = FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
@@ -116,6 +122,11 @@ static inline AF_CMesh AF_CMesh_ADD(void){
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
+
+	// init the meshes
+	for(uint32_t i = 0; i < MAX_MESH_COUNT; i++){
+		returnMesh.meshes[i] = AF_MeshData_ZERO();
+	}
     return returnMesh;
 }
 

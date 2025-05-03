@@ -10,7 +10,7 @@ BOOL AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char
 //void AF_MeshLoad_Component(AF_CMesh* _meshComponent, AF_Assets* _assets);
 void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, AF_MeshData& _meshData, aiMesh& mesh, const aiScene& scene);
 void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent, uint32_t& _meshIndex, aiNode& _node, const aiScene& _scene);
-AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const char* _meshPath, aiMaterial& _assimpMat, aiTextureType _assimpType);
+AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const char* _meshPath, aiMaterial& _assimpMat, aiTextureType _assimpType);
 uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char* _vertPath, const char* _fragPath);
 
 /*
@@ -26,16 +26,12 @@ BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* 
     }
     
     // clear the mesh data first incase there is left over junk
-    //*_meshComponent = AF_CMesh_ZERO();
-
     // Call specific assimp varient of mesh loading
     BOOL isLoaded = AF_MeshLoad_Assimp(*_assets, *_meshComponent, _modelPath);
     if(isLoaded == FALSE){
         AF_Log_Error("AF_MeshLoad_Load: ERROR: Failed to load model from path %s\n", _modelPath);
         return FALSE;
     }
-    
-    
 
     AF_Log("Show Model File Browser \n");
     // delete the existing mesh data
@@ -53,10 +49,8 @@ BOOL AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* 
 
     // Blat the component. removing all memory
     AF_Log_Warning("Editor_Component_LoadModel: DISABLED destroying mesh, need to sync AF_Lib from home \n");
-    //AF_Renderer_DestroyMeshBuffers(&_meshComponent);
 
     //Load the new model from path
-    //_meshComponent = Editor_Model_LoadAssimp(_assets, meshPath);
 
     // copy back the shader paths
     snprintf(_meshComponent->shader.vertPath,sizeof(_meshComponent->shader.vertPath),"%s", vertCopy);
@@ -91,12 +85,12 @@ BOOL AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char
         return FALSE;
     }
     // Add the mesh component first
-    AF_CMesh returnMesh = AF_CMesh_ADD();
+    //AF_CMesh returnMesh = AF_CMesh_ADD();
     // copy in the mesh path
-    snprintf(returnMesh.meshPath, sizeof(returnMesh.meshPath), "%s", _modelPath);
-    returnMesh.meshType = AF_MESH_TYPE_MESH;
+    snprintf(_meshComponent.meshPath, sizeof(_meshComponent.meshPath), "%s", _modelPath);
+    _meshComponent.meshType = AF_MESH_TYPE_MESH;
     // Default is isImageFlipped = TRUE
-    AF_Renderer_SetFlipImage(returnMesh.isImageFlipped);
+    AF_Renderer_SetFlipImage(_meshComponent.isImageFlipped);
 
     // read file via ASSIMP
     Assimp::Importer importer;
@@ -114,16 +108,23 @@ BOOL AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char
         AF_Log_Error("Editor_Model: processNode: No meshes found in model\n");
         return FALSE;
     }
-    // allocate memory for the mesh component
-    _meshComponent.meshes = (AF_MeshData*)malloc(sizeof(AF_MeshData) * numMeshes);
     
-    if(_meshComponent.meshes == NULL){
-        AF_Log_Error("Editor_Model: processNode: FAILED to create mesh component\n");
-        return FALSE;
-    }
+    // Mesh data is cleared when we malloc and then call AF_MeshData_Zero(), meaning all material data is lost that might have been saved
+
+
+    // allocate memory for the mesh component
+    //_meshComponent.meshes = (AF_MeshData*)malloc(sizeof(AF_MeshData) * numMeshes);
+    
+    //if(_meshComponent.meshes == NULL){
+    //    AF_Log_Error("Editor_Model: processNode: FAILED to create mesh component\n");
+    //    return FALSE;
+    //}
     // initialise the mesh data
-    for(uint32_t i = 0; i < numMeshes; i++){
+    /*for(uint32_t i = 0; i < numMeshes; i++){
         _meshComponent.meshes[i] = AF_MeshData_ZERO();
+    }*/
+    if(numMeshes > MAX_MESH_COUNT){
+        AF_Log_Error("AF_MeshLoad_Assimp: trying to load more meshes than component supports %i Please increase MAX_MESH_COUNT in AF_CMesh componnet\n", MAX_MESH_COUNT);
     }
     _meshComponent.meshCount = numMeshes;
     // retrieve the directory path of the filepath
@@ -313,15 +314,33 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
 
     // Need to determine is this mesh being loaded fresh, or being re-loaded.
     // Don't load a texture if the data already exists
-    if(_meshData.material.diffuseTexture != nullptr){
+    
+    
+    // Is there already a mesh path.
+    
+    if(strcmp(_meshData.material.diffuseTexture.path, "\0") != 0){
+        // path isn't empty, don't load any new textures.
+        // this helps to avoid overwriting loaded textures if a mesh is re-loaded or being loaded in from memory. 
+        // Only progress if path is empty i.e. its likely this is a new component/mesh being loaded
+        //return;
+    }
+
+    // If there is already a texture that has been loaded previous, then don't load from assimp model, just use the previous texture data/path, and id
+    // Call reload texture
+    if(_meshData.material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
+    {
+        // Diffuse
+        _meshData.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.diffuseTexture.path);
+        // Normal
+        _meshData.material.normalTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.normalTexture.path);
+        // Specular
+        _meshData.material.specularTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.specularTexture.path);
         return;
     }
-    AF_Log_Error("AF_MeshLoad_Assimp_ProcessMesh: NEED TO FIGURE OUT HOW NOT TO OVERWRITE TEXTURES ON LOAD\n");
+   
     // 1. diffuse maps
     _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
-    if(_meshData.material.diffuseTexture == nullptr){
-        AF_Log_Error("AF_MeshLoad_Assimp_ProcessMesh: FAILED to AF_MeshLoad_Assimp_LoadMaterialTextures \n");
-    }
+    
     // 2. specular maps
     _meshData.material.specularTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_SPECULAR);  
 
@@ -366,15 +385,15 @@ Load the material and texture from the assimp materials
 
 ================
 */
-AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const char* _meshPath, aiMaterial& _assimpMat, aiTextureType _assimpType){
+AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const char* _meshPath, aiMaterial& _assimpMat, aiTextureType _assimpType){
     uint32_t assimpMaterialTextureCount = _assimpMat.GetTextureCount(_assimpType);
     if(assimpMaterialTextureCount == 0){
-        AF_Log_Warning("Editor_LoadMaterialTextures: No textures found for type %i\n", _assimpType);
+        AF_Log_Warning("AF_MeshLoad_Assimp_LoadMaterialTextures: No textures found for type %i\n", _assimpType);
         //return NULL;
     }   
 
     // prep the return texture pointer
-    AF_Texture* returnTexturePtr = NULL;
+    AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"};
 
     
     for(unsigned int i = 0; i < assimpMaterialTextureCount; i++)
@@ -384,7 +403,7 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
 
         // check string length
         if(str.length == 0){
-            AF_Log_Error("Editor_LoadMaterialTextures: assimp Texture %i path is empty\n", i);
+            AF_Log_Error("AF_MeshLoad_Assimp_LoadMaterialTextures: assimp Texture %i path is empty\n", i);
             continue;
         }
 
@@ -397,63 +416,36 @@ AF_Texture* AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const ch
             
 
         // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
-        /*
-        bool skip = false;
-        // look at all the available textures loaded
-        //for(unsigned int j = 0; j < _assets.nextAvailableTexture; j++)
-        for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
-        {
-            if(std::strcmp(_assets.textures[j].path, assimpTexturePath) == 0)
-            {
-                // if a texture with the same filepath is already loaded, use this texture data
-                //textures.push_back(_assetsLoaded[j]);
-                //AF_Log("Editor_LoadMaterialTextures: Texture with path %s already loaded\n", assimpTexturePath);
-                returnTexturePtr = &_assets.textures[j];
-
-                skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
-                break;
-            }
-        }*/
-        returnTexturePtr = AF_Assets_GetTexture(&_assets, assimpTexturePath);
-        if(returnTexturePtr == nullptr)
+        
+        returnTexture = AF_Assets_GetTexture(&_assets, assimpTexturePath);
+        if(returnTexture.type == AF_TEXTURE_TYPE_NONE)
         {   // if texture hasn't been loaded already, load it
-            //Assets has a fixed array of textures that can be unlocked.
-            // Add/unlock a new AF_Texture struct that can be used.
-            returnTexturePtr = AF_Assets_AddTexture(&_assets);
-            if(returnTexturePtr == NULL){
-                AF_Log_Error("Editor_LoadMaterialTextures: Failed to add texture to assets: Path: %s \n",assimpTexturePath);
-                return NULL;
-            }
-
-            // Combine the model path, with the texture path
-            // Textures are to be found at the same directory as the model
-            // extract the path from the model path
-            // e.g. model path will be ./assets/models/<modelname>/modelname.obj
-            // texture path will be ./assets/models/<modelname>/<texturename>.png
+            std::snprintf(returnTexture.path, sizeof(returnTexture.path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
+            returnTexture.id = AF_Renderer_LoadTexture(returnTexture.path);
             
-            std::snprintf(returnTexturePtr->path, sizeof(returnTexturePtr->path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
-            returnTexturePtr->id = AF_Renderer_LoadTexture(returnTexturePtr->path);
 
             // Map the assimp texture type to our texture type
             if(_assimpType == aiTextureType_DIFFUSE){
-                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_DIFFUSE;
-                AF_Log("Editor_LoadMaterialTextures: Texture type is DIFFUSE\n");
+                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_DIFFUSE;
+                AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is DIFFUSE\n");
             } else if (_assimpType == aiTextureType_SPECULAR){
-                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_SPECULAR;
-                AF_Log("Editor_LoadMaterialTextures: Texture type is SPECULAR\n");
+                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_SPECULAR;
+                AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is SPECULAR\n");
             } else if (_assimpType == aiTextureType_NORMALS){
-                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NORMALS;
-                AF_Log("Editor_LoadMaterialTextures: Texture type is NORMALS\n");
+                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_NORMALS;
+                AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is NORMALS\n");
             } else {
-                returnTexturePtr->type = AF_TextureType::AF_TEXTURE_TYPE_NONE;
-                AF_Log("Editor_LoadMaterialTextures: Texture type is NONE\n");
+                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_NONE;
+                AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is NONE\n");
             }
-                
+            
+            // Add this texture to the list of assets loaded
+            AF_Assets_AddTexture(&_assets, returnTexture);
             
         }
     }
 
-    return returnTexturePtr;
+    return returnTexture;
 }
 
 

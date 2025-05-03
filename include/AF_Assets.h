@@ -92,17 +92,12 @@ Implementation for adding a texture to the assets
 returns a pointer to the texture added in the assets/texture array
 ====================
 */
-static inline AF_Texture* AF_Assets_AddTexture(AF_Assets* _assets){
-    if(_assets == NULL){
-        AF_Log_Warning("AF_Assets_AddTexture: passed null assets\n");
-        return NULL;
-    }
+static inline void AF_Assets_AddTexture(AF_Assets* _assets, AF_Texture _texture){
     if(_assets->nextAvailableTexture < AF_ASSETS_MAX_TEXTURES){
         _assets->nextAvailableTexture++;
-        return &_assets->textures[_assets->nextAvailableTexture - 1];
+        _assets->textures[_assets->nextAvailableTexture] = _texture;
     }else{
         AF_Log_Warning("AF_Assets_AddTexture: Max textures reached\n");
-        return NULL;
     }
 }
 
@@ -113,13 +108,12 @@ Implementation for getting a texture to the assets
 returns a pointer to the texture added in the assets/texture array
 ====================
 */
-static inline AF_Texture* AF_Assets_GetTexture(AF_Assets* _assets, const char* _texturePath){
+static inline AF_Texture AF_Assets_GetTexture(AF_Assets* _assets, const char* _texturePath){
     if(_assets == NULL){
-        AF_Log_Warning("AF_Assets_AddTexture: passed null assets\n");
-        return NULL;
+        AF_Log_Error("AF_Assets_AddTexture: passed null assets\n");
     }
     
-    AF_Texture* returnTexturePtr = NULL;
+    AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"};
     for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
     {
         if(strncmp(_assets->textures[j].path, _texturePath, MAX_PATH_CHAR_SIZE) == 0)
@@ -127,16 +121,12 @@ static inline AF_Texture* AF_Assets_GetTexture(AF_Assets* _assets, const char* _
             AF_Log("AF_Assets_GetTexture: strncmp %s | %s\n", _texturePath, _assets->textures[j].path);
             // if a texture with the same filepath is already loaded, use this texture data
             //AF_Log("AF_Assets_GetTexture: Found texture %s in assets: path: %s ID: %i\n", _texturePath, _assets->textures[j].path, returnTexturePtr->id);
-            returnTexturePtr = &_assets->textures[j];
+            returnTexture = _assets->textures[j];
             break;
         }
     }
 
-    if(returnTexturePtr == NULL){
-        AF_Log_Warning("AF_Assets_GetTexture: Can't find texture in assets: path: %s\n", _texturePath);
-    }
-    
-    return returnTexturePtr;
+    return returnTexture;
 }
 
 /*

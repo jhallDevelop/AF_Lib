@@ -16,6 +16,7 @@ Definition for functions for rendering
 #include "ECS/Components/AF_CSprite.h"
 #include "AF_Debug.h"
 #include "AF_Time.h"
+#include "AF_Assets.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -159,6 +160,7 @@ void AF_Renderer_DestroyRenderer(AF_ECS* _ecs);
 //uint32_t AF_LoadTexture(const char* _texturePath, BOOL _flipTexture);
 void AF_Renderer_SetFlipImage(BOOL _flipImage);
 uint32_t AF_Renderer_LoadTexture(char const * path);
+AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath);
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
 //static unsigned int LoadTexture(char const * path);
 //static void SetDiffuseTexture(const unsigned int _shaderID);
