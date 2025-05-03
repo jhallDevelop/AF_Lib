@@ -304,7 +304,11 @@ static inline void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 
 	// Scripts
 	for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-		*_entity->scripts[(AF_ECS_GetID(_entity->id_tag) * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j] = AF_CScript_ZERO();
+		uint32_t entityID = AF_ECS_GetID(_entity->id_tag);
+		uint32_t scriptIndex = (entityID * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j;
+		
+		// check range of id
+		_ecs->scripts[scriptIndex] = AF_CScript_ZERO();
 	}
 
 	// Lights
