@@ -221,11 +221,21 @@ uint32_t AF_Renderer_Awake(void){
 
         // configure global opengl state
     // -----------------------------
-    
+    // Enable transparent blending
+	//glDepthFunc(GL_LESS);
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // if in 2d mode, disable depth testing
+    //glDisable(GL_DEPTH_TEST);
+
+	
+	// FACE CULLING
+	// TODO: Adjust per model
+	glCullFace(GL_BACK);  // Cull the back faces (this is the default)
+	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
+	glEnable(GL_CULL_FACE); // Enable culling
+	
     AF_CheckGLError( "Error initializing OpenGL! \n");
     //AF_CheckGLError("SLDGameRenderer::Initialise:: finishing up init: ");
     return success;
@@ -457,16 +467,7 @@ void AF_Renderer_StartRendering(float _backgroundColor[3] ){
     glClearColor(_backgroundColor[0], _backgroundColor[1],_backgroundColor[2], 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Enable transparent blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // if in 2d mode, disable depth testing
-    //glDisable(GL_DEPTH_TEST);
-
-	// TODO: Adjust per model
-	glCullFace(GL_BACK);  // Cull the back faces (this is the default)
-	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
-	glEnable(GL_CULL_FACE); // Enable culling
+    
 
 	
 }
