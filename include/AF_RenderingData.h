@@ -74,12 +74,24 @@ extern const AF_RendererPipeline_t AF_RendererPipeline_Mappings[];
 typedef struct AF_RenderingData{
     AF_Renderer_e rendererType;
     AF_RendererPipeline_e rendererPipelineType;
+    // Frame Buffer
+    uint32_t screenFBO_ID;
+    uint32_t screenRBO_ID;
+    uint32_t screenFBO_TextureID;
+    uint32_t screenFBO_ShaderID;
+    uint32_t screenQUAD_VAO;
+    uint32_t screenQUAD_VBO;
+    /// Depth Buffer
     uint32_t depthFrameBufferID;
     uint32_t depthMapTextureID;
     uint32_t depthRenderShaderID;
     uint32_t depthDebugShaderID;
     AF_Renderer_PolygonMode_e polygonMode;
 } AF_RenderingData;
+
+// ================ Screen FBO Data ================
+#define SCREEN_VERT_SHADER_PATH "screenFrameBuffer.vert"
+#define SCREEN_FRAG_SHADER_PATH "screenFrameBuffer.frag"
 
 // ================ Depth Data ================
 #define DEPTH_VERT_SHADER_PATH "depth.vert"
@@ -100,6 +112,12 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
 	AF_RenderingData returnRenderingData = {
 		.rendererType = (AF_Renderer_e)0,
         .rendererPipelineType = (AF_RendererPipeline_e)0,
+        .screenFBO_ID = 0,
+        .screenRBO_ID = 0,
+        .screenFBO_TextureID = 0,
+        .screenFBO_ShaderID = 0,
+        .screenQUAD_VAO = 0,
+        .screenQUAD_VBO = 0,
         .depthFrameBufferID = 0,
         .depthMapTextureID = 0,
         .depthRenderShaderID = 0,
