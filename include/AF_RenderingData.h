@@ -60,17 +60,35 @@ static const AF_RendererPipeline_t AF_RendererPipeline_Mappings[AF_RENDERER_PIPE
     {AF_RENDERER_DEFERRED, "Deferred"}
 };
 
+typedef enum AF_Renderer_PolygonMode_e {
+    AF_RENDERER_POLYGON_MODE_FILL = 0,
+    AF_RENDERER_POLYGON_MODE_POINT = 1,
+    AF_RENDERER_POLYGON_MODE_LINE = 2
+} AF_Renderer_PolygonMode_e;
+
 // Define the renderer mappings
 extern const AF_RendererPipeline_t AF_RendererPipeline_Mappings[];
 
 
 // =============== Rendering Data Struct =============== 
 typedef struct AF_RenderingData{
-	// TODO pack this
     AF_Renderer_e rendererType;
     AF_RendererPipeline_e rendererPipelineType;
-    AF_LightingData lightingData;
+    uint32_t depthFrameBufferID;
+    uint32_t depthMapTextureID;
+    uint32_t depthRenderShaderID;
+    uint32_t depthDebugShaderID;
+    AF_Renderer_PolygonMode_e polygonMode;
 } AF_RenderingData;
+
+// ================ Depth Data ================
+#define DEPTH_VERT_SHADER_PATH "depth.vert"
+#define DEPTH_FRAG_SHADER_PATH "depth.frag"
+#define DEPTH_DEBUG_VERT_SHADER_PATH "debugDepth.vert"
+#define DEPTH_DEBUG_FRAG_SHADER_PATH "debugDepth.frag"
+
+#define AF_RENDERINGDATA_SHADOW_WIDTH 1024
+#define AF_RENDERINGDATA_SHADOW_HEIGHT 1024
 
 /*
 ================
@@ -78,11 +96,15 @@ AF_AF_RenderingData_ZERO
 // Construct and return the rendering data
 ================
 */
-static inline AF_RenderingData AF_AF_RenderingData_ZERO(void){
+static inline AF_RenderingData AF_RenderingData_ZERO(void){
 	AF_RenderingData returnRenderingData = {
 		.rendererType = (AF_Renderer_e)0,
         .rendererPipelineType = (AF_RendererPipeline_e)0,
-        .lightingData = AF_AF_LightingData_ZERO()
+        .depthFrameBufferID = 0,
+        .depthMapTextureID = 0,
+        .depthRenderShaderID = 0,
+        .depthDebugShaderID = 0,
+        .polygonMode = AF_RENDERER_POLYGON_MODE_FILL
 	};
 
 	return returnRenderingData;

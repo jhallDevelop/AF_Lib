@@ -17,6 +17,7 @@ Definition for functions for rendering
 #include "AF_Debug.h"
 #include "AF_Time.h"
 #include "AF_Assets.h"
+#include "AF_RenderingData.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +28,7 @@ void CheckGLError(const char * _message);
 // Init
 //void AF_Renderer_Init(AF_ECS* _ecs, Vec2 _screenSize);
 uint32_t AF_Renderer_Awake(void);
-void AF_Renderer_Start(AF_ECS* _ecs);
+void AF_Renderer_Start(AF_RenderingData* _renderingData);
 void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
 void AF_Renderer_UpdateLighting(AF_ECS* _ecs, AF_LightingData* _lightingData);
 void AF_Renderer_Finish(void);
@@ -106,15 +107,29 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 // Draw
 // TODO: don't like passing in the camera or debug mesh
 //void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
-void AF_Renderer_StartRendering(float _backgroundColor[3]);
+void AF_Renderer_StartRendering(Vec4 _backgroundColor);
+void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity, uint32_t _frameBufferWidth, uint32_t _frameBufferHeight);
+void AF_Renderer_StartForwardRendering();
+void AF_Renderer_EndForwardRendering();
 
+
+// older draw mesh
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
 void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData);
 
+// New simplified draw mesh
+void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID);
 
 //void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
 //static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
+
+// Depth map frame buffer
+uint32_t AF_Renderer_CreateDepthMapFBO(void);
+uint32_t AF_Renderer_CreateDepthMapTexture(void);
+void AF_Renderer_BindDepthFrameBuffer(uint32_t _depthMapFBOID, uint32_t _depthMapTextureID);
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera);
+void AF_Renderer_EndDepthPass(uint32_t _screenWidth, uint32_t _screenHeight);
 
 
 // Destroy
@@ -162,6 +177,7 @@ void AF_Renderer_SetFlipImage(BOOL _flipImage);
 uint32_t AF_Renderer_LoadTexture(char const * path);
 AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath);
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
+void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
 //static unsigned int LoadTexture(char const * path);
 //static void SetDiffuseTexture(const unsigned int _shaderID);
 //static void SetSpecularTexture(const unsigned int _shaderID);

@@ -25,7 +25,6 @@ typedef struct AF_ProjectData{
 
     AF_PlatformData platformData;
     AF_BuildGameData buildData;
-    AF_RenderingData renderingData;
 }   AF_ProjectData;
 
 
@@ -45,7 +44,6 @@ static inline AF_ProjectData Editor_Project_Data_ZERO(void){
     returnData.defaultScenePath[0] = '\0';
     returnData.platformData = AF_PlatformData_ZERO();
     returnData.buildData = AF_BuildGameData_ZERO();
-    returnData.renderingData = AF_AF_RenderingData_ZERO();
 
     return returnData;
 }

@@ -241,19 +241,215 @@ uint32_t AF_Renderer_Awake(void){
     return success;
 } 
 
+void AF_Renderer_StartRendering(Vec4 _backgroundColor)
+{
+	// Clear Screen and buffers
+	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+/*
+====================
+AF_Renderer_Render
+Simple render command to decide how to progress other rendering steps
+====================
+*/
+void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity, uint32_t _frameBufferWidth, uint32_t _frameBufferHeight){
+
+	// START RENDERING
+	
+	AF_CheckGLError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
+
+	// Update lighting data
+	AF_Renderer_UpdateLighting(_ecs, _lightingData);
+
+
+	// Switch Between Renderer
+	switch(_renderingData->rendererType)
+	{
+		// FORWARD RENDERING
+		case AF_RENDERER_FORWARD:
+			AF_Renderer_StartForwardRendering(_ecs, _renderingData, _lightingData, _cameraEntity, _frameBufferWidth, _frameBufferHeight);
+			AF_Renderer_EndForwardRendering();
+		break;
+
+		// DEFERRED RENDERING
+		case AF_RENDERER_DEFERRED:
+			AF_Log_Warning("AF_Renderer_Render: Deferred Rendering NOT IMPLEMENTED\n");
+		break;
+
+		// FORWARD PLUS
+		case AF_RENDERER_FORWARD_PLUS:
+			AF_Log_Warning("AF_Renderer_Render: Forward+ Rendering NOT IMPLEMENTED\n");
+		break;
+
+	}
+	
+}
+
+/*
+====================
+AF_Renderer_SetPolygonMode
+Set the polygon mode used
+====================
+*/
+void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
+	switch(_polygonMode){
+		case AF_RENDERER_POLYGON_MODE_FILL:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		break;
+		case AF_RENDERER_POLYGON_MODE_POINT:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+		break;
+		case AF_RENDERER_POLYGON_MODE_LINE:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+
+	}
+}
+
+/*
+====================
+AF_Renderer_StartForwardRendering
+Simple render command to perform forward rendering steps
+====================
+*/
+void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity, uint32_t _frameBufferWidth, uint32_t _frameBufferHeight){
+
+	// ==== DEPTH PASS ====
+	// Draw Depth Pass
+	AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, _cameraEntity->camera);
+	
+
+	// Draw objects to depth 
+	// TODO: send the render pass type into draw meshes, as well as a shared shader
+	// e.g. if its a depth pass, then send a flag so other render steps are ignored, also send the depth shader
+	//AF_Renderer_DrawMeshes(&_cameraEntity->camera->viewMatrix, &_cameraEntity->camera->projectionMatrix, _ecs, &_cameraEntity->transform->pos, _lightingData);
+	// End Depth pass
+	//AF_Renderer_EndDepthPass(_frameBufferWidth, _frameBufferHeight);
+
+	// Draw Color Pass
+	
+	// ==== COLOR PASS ====
+	AF_Renderer_DrawMeshes(&_cameraEntity->camera->viewMatrix, &_cameraEntity->camera->projectionMatrix, _ecs, &_cameraEntity->transform->pos, _lightingData);
+	
+
+	// ==== LIGHTING PASS ====
+
+}
+
+void AF_Renderer_RenderDepthMeshes(AF_ECS* _ecs){
+	
+}
+
+/*
+====================
+AF_Renderer_EndForwardRendering
+Simple render command to cleanup forward rendering steps
+====================
+*/
+void AF_Renderer_EndForwardRendering(void){
+
+	// ==== DEPTH PASS ====
+
+	// ==== COLOR PASS ====
+
+	// ==== LIGHTING PASS ====
+
+}
+
+
+
 /*
 ====================
 AF_Renderer_Start
 Start function which occurs after everything is loaded in.
 ====================
 */
-void AF_Renderer_Start(AF_ECS* _ecs){
+void AF_Renderer_Start( AF_RenderingData* _renderingData){
 	AF_Log("AF_Renderer_Start\n");
-	if(_ecs == NULL){}
+	if(_renderingData == NULL){}
 	//AF_Renderer_InitMeshBuffers(&_ecs->entities[0], _ecs->entitiesCount);
+
+	// ==== Setup Depth Map and Texture ====
+	// Create Depth Frame Buffer and texture
+	_renderingData->depthFrameBufferID = AF_Renderer_CreateDepthMapFBO();
+	_renderingData->depthMapTextureID = AF_Renderer_CreateDepthMapTexture();
+	// Bind the frame buffer
+	AF_Renderer_BindDepthFrameBuffer(_renderingData->depthFrameBufferID, _renderingData->depthMapTextureID);
+
+	// Create the depth shader to use
+	char depthVertShaderFullPath[MAX_PATH_CHAR_SIZE];
+	char depthFragShaderFullPath[MAX_PATH_CHAR_SIZE];
+	snprintf(depthVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
+	snprintf(depthFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
+	_renderingData->depthRenderShaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath);
+
+	// Create the depth debug shader to use
+	
+	char depthDebugVertShaderFullPath[MAX_PATH_CHAR_SIZE];
+	char depthDebugFragShaderFullPath[MAX_PATH_CHAR_SIZE];
+	snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
+	snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
+	_renderingData->depthDebugShaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath);
+	 // shader configuration
+    // Set the depth texture to use when using the debugging shader
+    glUseProgram(_renderingData->depthDebugShaderID);
+	AF_Shader_SetInt(_renderingData->depthDebugShaderID, "depthMap", _renderingData->depthMapTextureID);
+    glUseProgram(0);
+	
 	
 }
 
+// ================= HELPER FUNCTIONS =====================
+
+/*
+====================
+AF_Renderer_CreateDepthMapFBO
+Create Depth map frame buffer object
+return framebuffer index uint32_t
+====================
+*/
+uint32_t AF_Renderer_CreateDepthMapFBO(void){
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	return depthMapFBO;
+}
+
+/*
+====================
+AF_Renderer_CreateDepthMapTexture
+Create Depth map texture and return the texture id
+====================
+*/
+uint32_t AF_Renderer_CreateDepthMapTexture(void){
+	
+	unsigned int depthMapTextureID;
+	glGenTextures(1, &depthMapTextureID);
+	glBindTexture(GL_TEXTURE_2D, depthMapTextureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 
+		AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
+
+	return depthMapTextureID;
+}
+
+/*
+====================
+AF_Renderer_BindDepthFrameBuffer
+Bind the depth FBO and Texture to the framebuffer command on the gpu
+====================
+*/
+void AF_Renderer_BindDepthFrameBuffer(uint32_t _depthMapFBOID, uint32_t _depthMapTextureID){
+	glBindFramebuffer(GL_FRAMEBUFFER, _depthMapFBOID);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthMapTextureID, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);  
+	
+}
 
 /*
 ====================
@@ -456,21 +652,202 @@ void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
 }
 
 
+
 /*
 ====================
-AF_Renderer_StartRendering
-Do the initial setup for rendering opengl
+AF_Render_StartDepthPath
+Do the initial setup for rendering a depth pass in opengl
 ====================
 */
-void AF_Renderer_StartRendering(float _backgroundColor[3] ){
-	AF_CheckGLError( "Error at start of Rendering OpenGL! \n");
-    glClearColor(_backgroundColor[0], _backgroundColor[1],_backgroundColor[2], 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera){
+	// 1. render depth of scene to texture (from light's perspective)
+	// --------------------------------------------------------------
+	
+	Mat4 lightProjection;
+	Mat4 lightView;
+	Mat4 lightSpaceMatrix;
+	float near_plane = 1.0f;
+	float far_plane = 7.5f;
+	//lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+	AF_CCamera depthCamera = AF_CCamera_ZERO();
+	depthCamera.nearPlane = near_plane;
+	depthCamera.farPlane = far_plane;
+	lightProjection = Mat4_Ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	//glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	Vec3 upDirection = {0.0f, 1.0f, 0.0f};
+	Vec3 targetPos = _ecs->entities[_lightingData->ambientLightEntityIndex].transform->pos;// lightPos 
+	Vec3 viewPos =  {0,2,0};	// 0
+	lightView = Mat4_Lookat(targetPos, viewPos, upDirection); //glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	lightSpaceMatrix = Mat4_MULT_M4(lightProjection, lightView);
 
-    
-
+	// render scene from light's point of view
+	glUseProgram(_renderingData->depthRenderShaderID); 
+	AF_Shader_SetMat4(_renderingData->depthRenderShaderID, "lightSpaceMatrix", lightSpaceMatrix);
+	
+	
+	glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);	
+	//glBindFramebuffer(GL_FRAMEBUFFER, _renderingData->depthFrameBufferID);//depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		AF_Render_DrawMeshElements(_ecs, &lightProjection, &viewPos, _renderingData->depthRenderShaderID);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+	// Reset Viewport
+	glViewport(0, 0, _camera->windowWidth, _camera->windowHeight);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	/*
+	
+	
+	
+	
+	
+	// render Depth map to quad for visual debugging
+	// ---------------------------------------------
+	glUseProgram(_renderingData->depthDebugShaderID);
+	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
+	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID);
+	//renderQuad();
+	unsigned int quadVAO = 0;
+	unsigned int quadVBO;
+	if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+*/
+	/*
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, woodTexture);
+	renderScene(simpleDepthShader);
+	*/
+	
 	
 }
+
+/*
+====================
+AF_Render_DrawMeshElements
+Simple DrawElements call on all ECS mesh components
+====================
+*/
+void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_Entity* entity = &_ecs->entities[i];
+		BOOL hasEntity = AF_Component_GetHas(entity->flags);
+		if(hasEntity == FALSE){
+			continue;
+		}
+
+		AF_CMesh* mesh = &_ecs->meshes[i];
+		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
+		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
+		// Skip if there is no rendering component
+		if(meshHas == FALSE){// || hasEnabled == FALSE){
+			continue;
+		}
+
+		// ---- Setup shader ----
+		uint32_t shader = mesh->shader.shaderID;
+		glUseProgram(shader); 
+		for(uint32_t x = 0; x < mesh->meshCount; x++){
+			
+			glUniform3f(glGetUniformLocation(shader, "viewPos"), _viewPos->x, _viewPos->y, _viewPos->z);//_cameraPos->x, _cameraPos->y, _cameraPos->z);//_viewMat->rows[3].x, _viewMat->rows[3].y, _viewMat->rows[3].z); 
+			
+
+			glBindVertexArray(mesh->meshes[x].vao);//_meshList->vao);
+			AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
+
+			// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+			glBindBuffer(GL_ARRAY_BUFFER, mesh->meshes[x].vbo);
+			AF_CheckGLError("Error binding VBO for drawing!");
+
+
+			//---------------Send command to Graphics API to Draw Triangles------------
+			
+			// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
+
+			// TODO: make this configurable from the editor component
+			//glEnable(GL_CULL_FACE);
+			//glCullFace(GL_BACK); // Default
+			//glFrontFace(GL_CCW); // Or GL_CW
+			//glFrontFace(GL_CW);
+			//AF_Log("==== Projection Matrix ====\n");
+			//AF_Util_Mat4_Log(*_projMat);
+			int projLocation = glGetUniformLocation(shader, "projection");
+			glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_lightProjection->rows);
+
+			// View
+			//AF_Log("==== View Matrix ====\n");
+			//AF_Util_Mat4_Log(*_viewMat);
+			int viewLocation = glGetUniformLocation(shader, "view");
+			glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_lightProjection->rows);
+
+			// Model
+			//AF_Log("==== Model Matrix ====\n");
+			//AF_Util_Mat4_Log(*_modelMat);
+			int modelLocation = glGetUniformLocation(shader, "model");
+			glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_lightProjection->rows);
+
+			//AF_Log("==== ------------------ ====\n");
+
+			// Texture 
+			//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
+
+			// send the camera data to the shader
+			// Prep drawing
+			unsigned int indexCount = mesh->meshes[x].indexCount;
+			if(indexCount == 0){
+				AF_Log_Warning("AF_Renderer_DrawMesh: indexCount is 0. Can't draw elements\n");
+				return;
+			}
+
+			// TODO: sort transparent objects before rendering
+			//https://learnopengl.com/Advanced-OpenGL/Blending
+
+			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+				
+			AF_CheckGLError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
+
+			glBindVertexArray(0);
+			AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
+		}
+
+	}
+}
+
+/*
+====================
+AF_Renderer_EndDepthPass
+Do the final cleanup for rendering a depth pass in opengl
+====================
+*/
+void AF_Renderer_EndDepthPass(uint32_t _screenWidth, uint32_t _screenHeight){
+	// reset viewport
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, _screenWidth, _screenHeight);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	/**/
+}
+		
 
 
 /*
@@ -503,8 +880,6 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		
 		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData);
 	}
-
-	
 }
 
 /*
@@ -532,8 +907,6 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	uint32_t shader = _mesh->shader.shaderID;
 	glUseProgram(shader); 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
-		
-
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
 		if(_mesh->textured == TRUE){
@@ -547,7 +920,6 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
 			}
 
-			/**/
 			// ---- Normal Texture ----
 			if((_mesh->meshes[i].material.normalTexture.type != AF_TEXTURE_TYPE_NONE)){
 				uint32_t normalTextureBinding = 1;
@@ -556,7 +928,6 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 				// and finally bind the texture
 				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture.id);
 			}
-			
 
 			// ---- Specular Texture ----
 			if((_mesh->meshes[i].material.specularTexture.type != AF_TEXTURE_TYPE_NONE)){

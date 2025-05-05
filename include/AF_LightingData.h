@@ -30,7 +30,7 @@ typedef struct AF_LightingData{
     uint8_t pointLightsFound;
 } AF_LightingData;
 
-static inline AF_LightingData AF_AF_LightingData_ZERO(void){
+static inline AF_LightingData AF_LightingData_ZERO(void){
 	AF_LightingData returnLightingData = {
 		.enabled = TRUE,
         .shadowsEnabled = TRUE,

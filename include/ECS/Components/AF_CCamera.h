@@ -143,32 +143,46 @@ Setup a camera component struct with settings for orthographic camera
 ====================
 */
 
-inline static Mat4 AF_Camera_GetOrthographicProjectionMatrix(AF_Window* _window, AF_CCamera* _camera) {
-    if(_window){}
-    // Get the framebuffer width and height as we work in pixels
-    //_camera->windowWidth = _window->frameBufferWidth;
-    //_camera->windowHeight = _window->frameBufferHeight;
-    _camera->fov = 45;
-    _camera->nearPlane = 0.1f;  // Set to a small positive value
-    _camera->farPlane = 100.0f;
-    _camera->aspectRatio = _camera->windowWidth / _camera->windowHeight;
-    _camera->tanHalfFov = AF_Math_Tan(_camera->fov / 2);
-    _camera->rangeInv = 1 / (_camera->farPlane - _camera->nearPlane);
-
-    AF_FLOAT orthoWidth = 10.0f;
-    AF_FLOAT orthoHeight = orthoWidth / _camera->aspectRatio;
-    AF_FLOAT right = orthoWidth / 2;
-    AF_FLOAT left = -orthoWidth / 2;
-    AF_FLOAT top = orthoHeight / 2;
-    AF_FLOAT bottom = -orthoHeight / 2;
-
+inline static Mat4 Mat4_Ortho(float _left, float _right, float _bottom, float _top, float _nearPlane, float _farPlane) {
     // Set the elements of the orthographic projection matrix
+    /*
     Mat4 orthMatrix = {{
-        {2.0f / (right - left), 0.0f, 0.0f, 0.0f},
-        {0.0f, 2.0f / (top - bottom), 0.0f, 0.0f},
-        {0.0f, 0.0f, -2.0f / (_camera->farPlane - _camera->nearPlane), 0.0f},
+        {2.0f / (_right - _left), 0.0f, 0.0f, 0.0f},
+        {0.0f, 2.0f / (_top - _bottom), 0.0f, 0.0f},
+        {0.0f, 0.0f, -2.0f / (_farPlane - _nearPlane), 0.0f},
         {0.0f, 0.0f, 0.0f, 1.0f}
     }};
+    */
+    //Calculate scaling factors
+    float scaleX = 2.0f / (_right - _left);
+    float scaleY = 2.0f / (_top - _bottom);
+    float scaleZ = -2.0f / (_farPlane - _nearPlane);
+
+    // Calculate translation factors
+    float transX = -(_right + _left) / (_right - _left);
+    float transY = -(_top + _bottom) / (_top - _bottom);
+    float transZ = -(_farPlane + _nearPlane) / (_farPlane - _nearPlane);
+
+    // Set the elements of the orthographic projection matrix
+    // Assuming column-major layout (like GLM, OpenGL expects): Column[Row]
+    // Mat4 orthMatrix = { Column0, Column1, Column2, Column3 }
+    // Or if row-major {{R0C0,R0C1,R0C2,R0C3}, {R1C0,...}, ...} - adjust below accordingly
+    Mat4 orthMatrix = {{
+        {scaleX,    0.0f,      0.0f,     0.0f}, // Column 0
+        {0.0f,      scaleY,    0.0f,     0.0f}, // Column 1
+        {0.0f,      0.0f,      scaleZ,   0.0f}, // Column 2
+        {transX,    transY,    transZ,   1.0f}  // Column 3 (Translation)
+    }};
+
+    // --- OR --- If your Mat4 initializer is row-major {{Row0}, {Row1}, ...}:
+    /*
+    Mat4 orthMatrix = {{
+        {scaleX,    0.0f,    0.0f,      transX},   // Row 0
+        {0.0f,      scaleY,  0.0f,      transY},   // Row 1
+        {0.0f,      0.0f,    scaleZ,    transZ},   // Row 2
+        {0.0f,      0.0f,    0.0f,      1.0f}     // Row 3
+    }};
+    */
 
     return orthMatrix;
 }
