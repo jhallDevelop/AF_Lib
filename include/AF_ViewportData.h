@@ -11,9 +11,9 @@ typedef struct AF_ViewportData {
     uint16_t viewPortPosY;
     uint16_t viewPortFramebufferWidth;
     uint16_t viewPortFramebufferHeight;
-    uint32_t fbo;
-    uint32_t textureID;
-    uint32_t rbo;
+    //uint32_t fbo;
+    //uint32_t textureID;
+    //uint32_t rbo;
     float backgroundColor[3];
     float mouseLookSensitivity;
     AF_Entity* cameraEntityPtr;
@@ -39,9 +39,9 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void){
     .viewPortPosY = 0,
     .viewPortFramebufferWidth = 0,
     .viewPortFramebufferHeight = 0,
-    .fbo = 0,
-    .textureID = 0,
-    .rbo = 0,
+    //.fbo = 0,
+    //.textureID = 0,
+    //.rbo = 0,
     .backgroundColor = {0.0f, 0.0f, 0.0f},
     .mouseLookSensitivity = 0.25f,
     .cameraEntityPtr = NULL,

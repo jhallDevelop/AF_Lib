@@ -107,12 +107,12 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 // Draw
 // TODO: don't like passing in the camera or debug mesh
 //void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
-void AF_Renderer_StartRendering(void);
+void AF_Renderer_StartRendering(Vec4 _backgroundColor);
 void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData);
+void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
 
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
-void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
+void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
 //void AF_Renderer_StartForwardRendering(void);
 void AF_Renderer_EndForwardRendering(void);
 
@@ -136,10 +136,11 @@ void AF_Renderer_DeleteFBO(uint32_t* _fboID);
 void AF_Renderer_DeleteRBO(uint32_t* _rboID);
 void AF_Renderer_DeleteTexture(uint32_t* _textureID);
 
-void AF_Renderer_CreateFramebuffer(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _textureID, uint16_t* _textureWidth, uint16_t* _textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType);
+void AF_Renderer_CreateFramebuffer(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _textureID, uint16_t* _textureWidth, uint16_t* _textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter);
 uint32_t AF_Renderer_CreateRBO(void);
-uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType);
+uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter);
 void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);
+void AF_Renderer_UnBindFrameBuffer(void);
 void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType);
 void AF_Renderer_BindRenderBuffer(uint32_t _rbo, uint32_t _screenWidth, uint32_t _screenHeight);
 void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera);

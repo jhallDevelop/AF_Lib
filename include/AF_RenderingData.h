@@ -82,9 +82,14 @@ typedef struct AF_RenderingData{
     uint32_t screenQUAD_VAO;
     uint32_t screenQUAD_VBO;
     /// Depth Buffer
-    uint32_t depthFrameBufferID;
+    uint32_t depthFBO_ID;
+    uint32_t depthRBO_ID;
     uint32_t depthMapTextureID;
     uint32_t depthRenderShaderID;
+    // Debug depth
+    uint32_t depthDebugFBO_ID;
+    uint32_t depthDebugRBO_ID;
+    uint32_t depthDebugTextureID;
     uint32_t depthDebugShaderID;
     AF_Renderer_PolygonMode_e polygonMode;
 } AF_RenderingData;
@@ -98,6 +103,7 @@ typedef struct AF_RenderingData{
 #define DEPTH_FRAG_SHADER_PATH "depth.frag"
 #define DEPTH_DEBUG_VERT_SHADER_PATH "debugDepth.vert"
 #define DEPTH_DEBUG_FRAG_SHADER_PATH "debugDepth.frag"
+
 
 #define AF_RENDERINGDATA_SHADOW_WIDTH 1024
 #define AF_RENDERINGDATA_SHADOW_HEIGHT 1024
@@ -118,9 +124,13 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
         .screenFBO_ShaderID = 0,
         .screenQUAD_VAO = 0,
         .screenQUAD_VBO = 0,
-        .depthFrameBufferID = 0,
+        .depthFBO_ID = 0,
+        .depthRBO_ID = 0,
         .depthMapTextureID = 0,
         .depthRenderShaderID = 0,
+        .depthDebugFBO_ID = 0,
+        .depthDebugRBO_ID = 0,
+        .depthDebugTextureID = 0,
         .depthDebugShaderID = 0,
         .polygonMode = AF_RENDERER_POLYGON_MODE_FILL
 	};

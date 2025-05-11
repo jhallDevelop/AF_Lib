@@ -327,25 +327,29 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
 
     // If there is already a texture that has been loaded previous, then don't load from assimp model, just use the previous texture data/path, and id
     // Call reload texture
+    /**/
     if(_meshData.material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
     {
+        AF_Log("AF_MeshLoad_Assimp_ProcessMesh: Mesh previously had texture loaded: Reload texture\n");
         // Diffuse
         _meshData.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.diffuseTexture.path);
         // Normal
-        _meshData.material.normalTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.normalTexture.path);
+        //_meshData.material.normalTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.normalTexture.path);
         // Specular
-        _meshData.material.specularTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.specularTexture.path);
+        //_meshData.material.specularTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.specularTexture.path);
+        
         return;
     }
    
     // 1. diffuse maps
+    AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: Mesh texture, hasn't been loaded before: Load Assimp Material Texture New\n");
     _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
     
     // 2. specular maps
-    _meshData.material.specularTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_SPECULAR);  
+    //_meshData.material.specularTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_SPECULAR);  
 
     // 3. normal maps   
-    _meshData.material.normalTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_HEIGHT);  
+    //_meshData.material.normalTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_HEIGHT);  
 
     // 4. ambient maps
     // TODO: implement this
@@ -420,6 +424,7 @@ AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const cha
         returnTexture = AF_Assets_GetTexture(&_assets, assimpTexturePath);
         if(returnTexture.type == AF_TEXTURE_TYPE_NONE)
         {   // if texture hasn't been loaded already, load it
+            AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture doesnt exist yet, Loading new texture from assimp path %s\n", assimpTexturePath);
             std::snprintf(returnTexture.path, sizeof(returnTexture.path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
             returnTexture.id = AF_Renderer_LoadTexture(returnTexture.path);
             
@@ -465,7 +470,7 @@ uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char*
     
     
     for (unsigned int j = 0; j < AF_ASSETS_MAX_SHADERS; j++) {
-        AF_Log("Checking: \n%s\n%s\n", _assetsLoaded.shaders[j].vertPath, _vertPath);
+        //AF_Log("Checking: \n%s\n%s\n", _assetsLoaded.shaders[j].vertPath, _vertPath);
 
         // Compare the vertex shader path
         if (strcmp(_assetsLoaded.shaders[j].vertPath, _vertPath) == 0) {

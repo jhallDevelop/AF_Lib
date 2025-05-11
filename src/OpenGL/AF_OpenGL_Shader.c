@@ -11,7 +11,7 @@ This implementation is for OpenGL
 #define GL_SILENCE_DEPRECATION
 
 // Forward Declare
-GLuint AF_Shader_GetUniformLocation(uint32_t ID, const char* name);
+GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name);
 
 /*
 ====================
@@ -210,8 +210,8 @@ void AF_Shader_SetMat4(uint32_t ID, const char* name, const Mat4 mat)
 }
 
 // Get uniform Location
-GLuint AF_Shader_GetUniformLocation(uint32_t ID, const char* name){
-    GLuint returnValue = glGetUniformLocation(ID, name);
+GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name){
+    GLint returnValue = glGetUniformLocation(ID, name);
     if(returnValue == -1){
         AF_Log_Error("AF_Shader_GetUniformLocation: Can't find uniform location %s in shader %i\n", name, ID);
     }
