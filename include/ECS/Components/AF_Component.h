@@ -62,13 +62,27 @@ static inline BOOL AF_Component_GetEnabled(flag_t _flags){
 
 /*
 ====================
-AF_Input_GetHas
+AF_Component_GetHas
 Function to get the has value
 ====================
 */
 static inline BOOL AF_Component_GetHas(flag_t _flags){
 
 	return (_flags & FLAG_HAS) != 0;
+}
+
+/*
+====================
+AF_Component_GetHasEnabled
+Function to determine if the flag is both enabled and has
+using bitwise operations
+====================
+*/
+static inline BOOL AF_Component_GetHasEnabled(flag_t _flags){
+	// Create a mask that has both FLAG_ENABLED and FLAG_HAS bits set
+    const flag_t MASK_HAS_ENABLED = FLAG_ENABLED | FLAG_HAS;
+    // Check if all bits in MASK_HAS_ENABLED are set in _flags
+    return (_flags & MASK_HAS_ENABLED) == MASK_HAS_ENABLED;
 }
 
 
