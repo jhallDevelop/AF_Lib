@@ -242,6 +242,7 @@ void AF_Renderer_StartRendering(Vec4 _backgroundColor)
 	// Clear Screen and buffers
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 }
 /*
 ====================
@@ -340,9 +341,12 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // Set clear color for the main scene (e.g., camera's background color)
     // Assuming camera->backgroundColor is a Vec4 or similar
     //glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, camera->backgroundColor.w);
-    
+    glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
-	glClearColor(0.1f, 0.1f, 0.15f, 1.0f); // Example clear color
+	
+	//glClearColor(0.1f, 0.1f, 0.15f, 1.0f); // Example clear color
+	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // Example clear color
+	//glClearColor(__apda, 0.1f, 0.15f, 1.0f);
     glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
 
@@ -629,7 +633,8 @@ unsigned int AF_Renderer_LoadTexture(char const * path) {
 
     unsigned int textureID = 0; // Initialize to 0
     int width, height, nrComponents;
-    stbi_set_flip_vertically_on_load(true); // Often needed for OpenGL, make it consistent or configurable
+	//AF_Renderer_SetFlipImage(true);
+    //stbi_set_flip_vertically_on_load(true); // Often needed for OpenGL, make it consistent or configurable
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
 
     if (data) {

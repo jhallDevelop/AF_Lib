@@ -343,6 +343,7 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
    
     // 1. diffuse maps
     AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: Mesh texture, hasn't been loaded before: Load Assimp Material Texture New\n");
+    //AF_Renderer_SetFlipImage(_meshData.)
     _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
     
     // 2. specular maps
@@ -398,7 +399,6 @@ AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const cha
 
     // prep the return texture pointer
     AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"};
-
     
     for(unsigned int i = 0; i < assimpMaterialTextureCount; i++)
     {
@@ -418,16 +418,13 @@ AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const cha
         char assimpTexturePath[256];
         std::snprintf(assimpTexturePath, sizeof(assimpTexturePath), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
             
-
         // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
-        
         returnTexture = AF_Assets_GetTexture(&_assets, assimpTexturePath);
         if(returnTexture.type == AF_TEXTURE_TYPE_NONE)
         {   // if texture hasn't been loaded already, load it
             AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture doesnt exist yet, Loading new texture from assimp path %s\n", assimpTexturePath);
             std::snprintf(returnTexture.path, sizeof(returnTexture.path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
             returnTexture.id = AF_Renderer_LoadTexture(returnTexture.path);
-            
 
             // Map the assimp texture type to our texture type
             if(_assimpType == aiTextureType_DIFFUSE){
