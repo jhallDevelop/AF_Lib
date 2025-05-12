@@ -73,7 +73,7 @@ void AF_Shader_SetVec3(uint32_t ID, const  char* name, float x, float y, float z
 //void AF_Shader_SetVec4(uint32_t ID, const char* name, const Vec4 value);
 void AF_Shader_SetVec4(uint32_t ID, const  char* name, float x, float y, float z, float w);
 void AF_Shader_SetMat4(uint32_t ID, const char* name, const Mat4 mat);
-
+void AF_Shader_Use(uint32_t _id);
 
 #ifdef __cplusplus
 }
