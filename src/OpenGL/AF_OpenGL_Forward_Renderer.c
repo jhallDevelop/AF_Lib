@@ -407,7 +407,6 @@ void AF_Renderer_RenderDepthMeshes(AF_ECS* _ecs){
 }
 
 
-
 // ============================ TEXTURES ================================ 
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
@@ -539,16 +538,13 @@ void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _vie
 	if(_shaderID == 0){}
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
-		BOOL hasEntity = AF_Component_GetHas(entity->flags);
-		if(hasEntity == FALSE){
+		if(!AF_Component_GetHas(entity->flags)){
 			continue;
 		}
 
 		AF_CMesh* mesh = &_ecs->meshes[i];
-		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
-		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
 		// Skip if there is no rendering component
-		if(meshHas == FALSE){// || hasEnabled == FALSE){
+		if(!AF_Component_GetHasEnabled(mesh->enabled)){// || hasEnabled == FALSE){
 			continue;
 		}
 
@@ -1337,17 +1333,14 @@ void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
 
 		AF_Entity* entity = &_ecs->entities[i];
 		// Only search enabled entities
-		BOOL entityEnabled = AF_Component_GetEnabled(entity->flags);
-		if(entityEnabled == FALSE){
+		if(!AF_Component_GetEnabled(entity->flags)){
 			continue;
 		}
 
 		// search if this is a light component that is is enabled
 		AF_CLight* light = &_ecs->lights[i];
-		BOOL hasLightComponent = AF_Component_GetHas(light->enabled);
-		BOOL hasLightComponentEnabled = AF_Component_GetEnabled(light->enabled);
 
-		if(hasLightComponent == FALSE || hasLightComponentEnabled == FALSE){
+		if(!AF_Component_GetHasEnabled(light->enabled)){
 			continue;
 		}
 
