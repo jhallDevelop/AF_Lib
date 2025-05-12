@@ -23,27 +23,141 @@ Definition for functions for rendering
 extern "C" {
 #endif
 
-void CheckGLError(const char * _message);
 
-// Init
-//void AF_Renderer_Init(AF_ECS* _ecs, Vec2 _screenSize);
+
+// ============================ DEFAULT ================================ 
 uint32_t AF_Renderer_Awake(void);
 void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
 void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
-void AF_Renderer_UpdateLighting(AF_ECS* _ecs, AF_LightingData* _lightingData);
+void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
 void AF_Renderer_Finish(void);
 void AF_Renderer_Shutdown(AF_ECS* _ecs);
-void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
-//void AF_Renderer_Debug(void);
 
 
+// ============================ TEXTURES ================================ 
+// Textures
+void AF_Renderer_SetFlipImage(BOOL _flipImage);
+uint32_t AF_Renderer_LoadTexture(char const * path);
+AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath);
+void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
+
+// ============================  Forward Rendering ================================ 
+void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
+void AF_Renderer_EndForwardRendering(void);
+
+// ============================  DRAW ================================ 
+void AF_Renderer_StartRendering(Vec4 _backgroundColor);
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
+void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID);
+void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
 
 
-// Looped creation function that calls AF_Renderer_CreateMeshBuffer
+// ============================  MESH BUFFERS ================================ 
+void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData);
 void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount);
-
-// Singular creation function
 void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);  
+
+
+// ============================  FRAME BUFFERS ================================ 
+void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
+
+uint32_t AF_Renderer_CreateFBO(void);
+void AF_Renderer_CreateFramebuffer(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _textureID, uint16_t* _textureWidth, uint16_t* _textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter);
+uint32_t AF_Renderer_CreateRBO(void);
+uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter);
+void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);
+void AF_Renderer_UnBindFrameBuffer(void);
+void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType);
+void AF_Renderer_BindRenderBuffer(uint32_t _rbo, uint32_t _screenWidth, uint32_t _screenHeight);
+
+
+
+// ============================  DEPTH ================================ 
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera);
+void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
+
+
+
+
+// ============================  LIGHTING ================================ 
+void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData);
+void AF_Renderer_UpdateLighting(AF_ECS* _ecs, AF_LightingData* _lightingData);
+
+// ============================  ANIMATION ================================ 
+
+void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
+
+
+// ============================  DESTROY / CLEANUP ================================ 
+// Destroy
+void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
+void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
+void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs);
+void AF_Renderer_DeleteFBO(uint32_t* _fboID);
+void AF_Renderer_DeleteRBO(uint32_t* _rboID);
+void AF_Renderer_DeleteTexture(uint32_t* _textureID);
+
+
+
+// ====================================== HELPER FUNCTIONS =====================================
+void AF_Renderer_CheckFrameBufferStatus(const char* _message);
+void AF_Renderer_CheckError(const char* _message);
+void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
+
+
+
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // AF_RENDERER_H
+
+// ========== JUNK / OLD FUNCTIONS FROM VULKAN ===========
+
+//static unsigned int LoadTexture(char const * path);
+//static void SetDiffuseTexture(const unsigned int _shaderID);
+//static void SetSpecularTexture(const unsigned int _shaderID);
+//static void SetEmissionTexture(const unsigned int _shaderID);
+//static void SetEmissionMaskTexture(const unsigned int _shaderID);
+// Cleanup
+//static void CleanUpMesh(const unsigned int _shaderID);
+//void CloseWindow();
+//void CleanUp();
+//void CleanupSwapChain();
+
+
+// Error checking
+// Util
+//static void CheckGLError(std::string _message);
+//bool CheckValidationLayerSupport();
+//void SetupDebugMessager();
+//void PickPhysicalDevice();
+
+// Load Models
+//void LoadModel(CModel& _model, std::vector<AF_Vertex>& _vertices, std::vector<uint32_t>& _indices);
+
+
+// Getters and setters
+//VkSampler& GetTextureSampler();
+//std::vector<VkImageView>& GetImageViews();
+//VkImageView& GetCurrentImageView();
+//VkImageView& GetCurrentEditorImageView();
+//void SetEditorMode(const bool _state);
+//void SetViewportEditor(const bool _state);
+//uint32_t GetDrawCalls() const;
+//VkExtent2D& GetSwapChainExtent() const;
+//bool GetFramebufferResized() const;
+//void SetFramebufferResized(const bool _state);
+//static glm::vec3 CalculateFront(const CTransform3D& _transform);
+//std::vector<AF_Mesh>& getMeshes() const override;
+
+//void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
+//static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
+//uint32_t AF_LoadTexture(const char* _texturePath, BOOL _flipTexture);
 
 //void Init(GLFWwindow* _window, std::vector<Entity*>& _entities);
 //void InitRenderingData(std::vector<Entity*>& _entities);
@@ -102,108 +216,4 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 //AF_Material& CreateMaterial(const AF_Vec2 _screenDimensions, const std::string& _vertShaderPath, const std::string& _fragShaderPath, const std::string& _diffuseTexturePath) override;
 //AF_Mesh& CreateMesh(const AF_Vec2& _cameraSize, const std::string& _vertShaderPath, const std::string& _fragShaderPath, const std::string& _texturePath)  override;
 
-
-
-// Draw
-// TODO: don't like passing in the camera or debug mesh
-//void AF_Renderer_DisplayRenderer(AF_Window* _window, AF_Entity* _cameraEntity, AF_ECS* _ecs, uint32_t shaderID);
-void AF_Renderer_StartRendering(Vec4 _backgroundColor);
-void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-
-void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
-void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
-//void AF_Renderer_StartForwardRendering(void);
-void AF_Renderer_EndForwardRendering(void);
-
-
-// older draw mesh
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
-void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData);
-
-// New simplified draw mesh
-void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID);
-
-//void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
-//static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
-
-// Depth map frame buffer
-void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData);
-void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
-uint32_t AF_Renderer_CreateFBO(void);
-void AF_Renderer_DeleteFBO(uint32_t* _fboID);
-void AF_Renderer_DeleteRBO(uint32_t* _rboID);
-void AF_Renderer_DeleteTexture(uint32_t* _textureID);
-
-void AF_Renderer_CreateFramebuffer(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _textureID, uint16_t* _textureWidth, uint16_t* _textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter);
-uint32_t AF_Renderer_CreateRBO(void);
-uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter);
-void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);
-void AF_Renderer_UnBindFrameBuffer(void);
-void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType);
-void AF_Renderer_BindRenderBuffer(uint32_t _rbo, uint32_t _screenWidth, uint32_t _screenHeight);
-void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera);
-void AF_Renderer_EndDepthPass(uint32_t _screenWidth, uint32_t _screenHeight);
-
-
-// Destroy
-void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
-void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
-void AF_Renderer_Destroy_Shader(uint32_t _shaderID);
-void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs);
-// Cleanup
-//static void CleanUpMesh(const unsigned int _shaderID);
-//void CloseWindow();
-//void CleanUp();
-//void CleanupSwapChain();
-
-
-// Error checking
-// Util
-//static void CheckGLError(std::string _message);
-//bool CheckValidationLayerSupport();
-//void SetupDebugMessager();
-//void PickPhysicalDevice();
-
-// Load Models
-//void LoadModel(CModel& _model, std::vector<AF_Vertex>& _vertices, std::vector<uint32_t>& _indices);
-
-
-// Getters and setters
-//VkSampler& GetTextureSampler();
-//std::vector<VkImageView>& GetImageViews();
-//VkImageView& GetCurrentImageView();
-//VkImageView& GetCurrentEditorImageView();
-//void SetEditorMode(const bool _state);
-//void SetViewportEditor(const bool _state);
-//uint32_t GetDrawCalls() const;
-//VkExtent2D& GetSwapChainExtent() const;
-//bool GetFramebufferResized() const;
-//void SetFramebufferResized(const bool _state);
-//static glm::vec3 CalculateFront(const CTransform3D& _transform);
-//std::vector<AF_Mesh>& getMeshes() const override;
-
-
-
-// Textures
-//uint32_t AF_LoadTexture(const char* _texturePath, BOOL _flipTexture);
-void AF_Renderer_SetFlipImage(BOOL _flipImage);
-uint32_t AF_Renderer_LoadTexture(char const * path);
-AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath);
-void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
-void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
-//static unsigned int LoadTexture(char const * path);
-//static void SetDiffuseTexture(const unsigned int _shaderID);
-//static void SetSpecularTexture(const unsigned int _shaderID);
-//static void SetEmissionTexture(const unsigned int _shaderID);
-//static void SetEmissionMaskTexture(const unsigned int _shaderID);
-
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // AF_RENDERER_H
 

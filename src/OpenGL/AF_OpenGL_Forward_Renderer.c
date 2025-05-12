@@ -2,7 +2,7 @@
 ===============================================================================
 AF_OpenGL_Renderer Implementation
 
-Implementation of the AF_LIB rendering functions
+Implementation of the AF_Renderer rendering functions
 This implementation is for OpenGL
 ===============================================================================
 */
@@ -46,16 +46,9 @@ const char* stackUnderflow = "STACK_UNDERFLOW";
 const char* outOfMemory = "OUT_OF_MEMORY";
 const char* invalidFrameBufferOperation = "INVALID_FRAMEBUFFER_OPERATION";
 
-
-// Forward Declare helper function specific to OpenGL
-void AF_CheckGLError(const char* _message);
-void AF_Renderer_CheckFrameBufferStatus(const char* _message);
-
-// Quad Verts
-
 /*
 ====================
-AF_LIB_Awake
+AF_Renderer_Awake
 Init OpenGL
 ====================
 */
@@ -65,7 +58,7 @@ uint32_t AF_Renderer_Awake(void){
     //Initialize GLEW
     glewExperimental = GL_TRUE; 
     GLenum glewError = glewInit();
-    AF_CheckGLError( "Error initializing GLEW! \n");
+    AF_Renderer_CheckError( "Error initializing GLEW! \n");
 
     // -----------------------------
     // Enable transparent blending
@@ -83,8 +76,8 @@ uint32_t AF_Renderer_Awake(void){
 	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
 	glEnable(GL_CULL_FACE); // Enable culling
 	
-    AF_CheckGLError( "Error initializing OpenGL! \n");
-    //AF_CheckGLError("SLDGameRenderer::Initialise:: finishing up init: ");
+    AF_Renderer_CheckError( "Error initializing OpenGL! \n");
+    //AF_Renderer_CheckError("SLDGameRenderer::Initialise:: finishing up init: ");
     return success;
 } 
 
@@ -253,7 +246,7 @@ Simple render command to decide how to progress other rendering steps
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
 
 	// START RENDERING
-	AF_CheckGLError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
+	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
 
 	// Update lighting data
 	AF_Renderer_UpdateLighting(_ecs, _lightingData);
@@ -415,260 +408,7 @@ void AF_Renderer_RenderDepthMeshes(AF_ECS* _ecs){
 
 
 
-/*
-====================
-AF_LIB_DestroyRenderer
-Destroy the renderer
-====================
-*/
-void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs){
-    AF_Log("%s Destroyed\n", openglRendererFileTitle);
-	if(_ecs == NULL){
-		AF_Log_Error("AF_Renderer_DestroyRenderer: ECS is NULL\n");
-		return;
-	}
-	// Destroy the meshes
-    for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
-		AF_CMesh* meshComponent = &_ecs->meshes[i];
-		if(meshComponent == NULL){
-			AF_Log_Error("AF_Renderer_DestroyRenderer: MeshComponent is NULL\n");
-			continue;
-		}
-		BOOL hasMesh = AF_Component_GetHas(meshComponent->enabled);
-		BOOL hasEnabled = AF_Component_GetEnabled(meshComponent->enabled);
-		// Skip if there is no rendering component
-		if(hasMesh == FALSE || hasEnabled == FALSE){
-			continue;
-		}
-		// Destroy the mesh buffers
-		
-		// Destory the material textures
-		for(uint32_t j = 0; j < meshComponent->meshCount; j++){
-			AF_Renderer_Destroy_Material_Textures(&meshComponent->meshes[j].material);
-		}
-		
-		// Destroy mesh shader
-		AF_Renderer_Destroy_Shader(meshComponent->shader.shaderID);
-
-		// Destroy the mesh buffers
-		AF_Renderer_DestroyMeshBuffers(meshComponent);
-
-		
-
-		// zero the component
-		*meshComponent = AF_CMesh_ZERO();
-    }
-
-	// Delete Frame buffer stuff
-	// Destroy renderbuffers
-	// Screen buffers
-	glDeleteRenderbuffers(1, &_renderingData->screenRBO_ID);
-	glDeleteFramebuffers(1, &_renderingData->screenFBO_ID);
-
-	// Depth Buffers
-	glDeleteFramebuffers(1, &_renderingData->depthFBO_ID);
-	glDeleteFramebuffers(1, &_renderingData->depthRBO_ID);
-
-	// Screen Quad
-	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VAO);
-	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VBO);
-	// Delete textures
-
-	// Delete Shaders
-       
-        //glDeleteTexture(_meshList->materials[0].textureID);
-    AF_CheckGLError( "Error Destroying Renderer OpenGL! \n");
-}
-
-
-
-// ====================================== HELPER FUNCTIONS =====================================
-
-/*
-====================
-AF_Renderer_CreateScreenFBOQuadMeshBuffer
-Render the quad to the screen and swap the frame buffers over.
-====================
-*/
-void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
-    glDisable(GL_DEPTH_TEST);
-
-    glUseProgram(_renderingData->depthDebugShaderID);
-
-    // Uniforms for linearization (optional, shader dependent)
-    float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
-    AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
-    AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
-
-    glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
-    glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID); // Bind your actual depth map texture
-
-    if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
-        AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
-    }
-    glBindVertexArray(_renderingData->screenQUAD_VAO);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    glBindVertexArray(0);
-    glUseProgram(0);
-    // Consider re-enabling depth test if needed by subsequent rendering
-    // glEnable(GL_DEPTH_TEST);
-}
-
-/*
-====================
-AF_Renderer_CreateScreenFBOQuadMeshBuffer
-Create the screen quad mesh buffers
-====================
-*/
-void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData){
-	// screen quad VAO
-	unsigned int quadVAO, quadVBO;
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(QUAD_VERTICES), &QUAD_VERTICES, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-	_renderingData->screenQUAD_VAO = quadVAO;
-	_renderingData->screenQUAD_VBO = quadVBO;
-}
-
-
-/*
-====================
-AF_Renderer_CheckFrameBufferStatus
-Helper function for checking for GL errors for frame buffers
-====================
-*/
-void AF_Renderer_CheckFrameBufferStatus(const char* _message){
-	// In AF_Renderer_Start_ScreenFrameBuffers, replace the check with this:
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE) {
-		// Log the specific error code!
-		const char* statusStr = "";
-		switch (status) {
-			case GL_FRAMEBUFFER_UNDEFINED:                     statusStr = "GL_FRAMEBUFFER_UNDEFINED"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:         statusStr = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER"; break;
-			case GL_FRAMEBUFFER_UNSUPPORTED:                   statusStr = "GL_FRAMEBUFFER_UNSUPPORTED"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"; break;
-			// case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:   statusStr = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"; break; // If using newer GL
-			default:                                           statusStr = "Unknown Error"; break;
-		}
-		// Make sure the error message accurately reflects where it's coming from
-		AF_Log_Error("AF_Renderer_Start_ScreenFrameBuffers: ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status: 0x%x (%s): %s\n", status, statusStr, _message);
-	}
-}
-
-
-/*
-====================
-AF_CheckGLError
-Helper function for checking for GL errors
-====================
-*/
-void AF_CheckGLError(const char* _message){    
-    GLenum errorCode = GL_NO_ERROR;
-    errorCode = glGetError();
-    const char* errorMessage = "";
-    if(errorMessage){}
-    while ((errorCode = glGetError()) != GL_NO_ERROR)
-    {
-	switch (errorCode)
-        {
-            case GL_INVALID_ENUM:                  errorMessage  = invalidEnum; break;
-            case GL_INVALID_VALUE:                 errorMessage  = invalidValue; break;
-            case GL_INVALID_OPERATION:             errorMessage  = invalidOperation; break;
-            case GL_STACK_OVERFLOW:                errorMessage  = stackOverflow; break;
-            case GL_STACK_UNDERFLOW:               errorMessage  = stackUnderflow; break;
-            case GL_OUT_OF_MEMORY:                 errorMessage  = outOfMemory; break;
-            case GL_INVALID_FRAMEBUFFER_OPERATION: errorMessage  = invalidFrameBufferOperation; break;
-        }
-    AF_Log_Error(_message,errorMessage);
-
-    }
-           //printf("\nGL Error: %i\n", error);
-}
-
-
-/*
-====================
-AF_Renderer_SetPolygonMode
-Set the polygon mode used
-====================
-*/
-void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
-	switch(_polygonMode){
-		case AF_RENDERER_POLYGON_MODE_FILL:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		break;
-		case AF_RENDERER_POLYGON_MODE_POINT:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-		break;
-		case AF_RENDERER_POLYGON_MODE_LINE:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		break;
-
-	}
-}
-
-
-
-// utility function for loading a 2D texture from file
-// ---------------------------------------------------
-unsigned int AF_Renderer_LoadTexture(char const * path) {
-    if (!path || path[0] == '\0') {
-        AF_Log_Error("AF_Renderer_LoadTexture: Null or empty texture path provided.\n");
-        return 0; // Return 0 for invalid path
-    }
-
-    unsigned int textureID = 0; // Initialize to 0
-    int width, height, nrComponents;
-	//AF_Renderer_SetFlipImage(true);
-    //stbi_set_flip_vertically_on_load(true); // Often needed for OpenGL, make it consistent or configurable
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-
-    if (data) {
-		glBindTexture(GL_TEXTURE_2D,0); // free the old bind texture if deleted
-        glGenTextures(1, &textureID); // Generate ID only if data is loaded
-        glBindTexture(GL_TEXTURE_2D, textureID);
-
-        GLenum internalFormat = GL_RGB;
-        GLenum dataFormat = GL_RGB;
-        if (nrComponents == 1) {
-            internalFormat = GL_RED; dataFormat = GL_RED;
-        } else if (nrComponents == 3) {
-            internalFormat = GL_RGB8; dataFormat = GL_RGB; // Use sized internal format
-        } else if (nrComponents == 4) {
-            internalFormat = GL_RGBA8; dataFormat = GL_RGBA; // Use sized internal format
-        }
-
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glBindTexture(GL_TEXTURE_2D, 0); // Good practice: unbind after configuring
-        stbi_image_free(data);
-        return textureID;
-    } else {
-        AF_Log_Error("AF_Renderer_LoadTexture: Texture failed to load at path: \"%s\" (stbi_load error: %s)\n", path, stbi_failure_reason());
-        // No textureID was generated and bound with data, so return 0
-        return 0;
-    }
-}
+// ============================ TEXTURES ================================ 
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
     glUseProgram(_shaderID); // Bind the shader program
@@ -676,6 +416,12 @@ void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName
     glUseProgram(0);
 }
 
+/*
+====================
+AF_Renderer_ReLoadTexture
+Reload textures
+====================
+*/
 AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath) {
     AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, ""}; // Initialize to invalid
 
@@ -728,6 +474,518 @@ void AF_Renderer_SetFlipImage(BOOL _flipImage)	{
     stbi_set_flip_vertically_on_load(isFlipped);
 }
 
+
+/*
+====================
+AF_Renderer_LoadTexture
+Load textures
+====================
+*/
+unsigned int AF_Renderer_LoadTexture(char const * path) {
+    if (!path || path[0] == '\0') {
+        AF_Log_Error("AF_Renderer_LoadTexture: Null or empty texture path provided.\n");
+        return 0; // Return 0 for invalid path
+    }
+
+    unsigned int textureID = 0; // Initialize to 0
+    int width, height, nrComponents;
+	//AF_Renderer_SetFlipImage(true);
+    //stbi_set_flip_vertically_on_load(true); // Often needed for OpenGL, make it consistent or configurable
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+
+    if (data) {
+		glBindTexture(GL_TEXTURE_2D,0); // free the old bind texture if deleted
+        glGenTextures(1, &textureID); // Generate ID only if data is loaded
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        GLenum internalFormat = GL_RGB;
+        GLenum dataFormat = GL_RGB;
+        if (nrComponents == 1) {
+            internalFormat = GL_RED; dataFormat = GL_RED;
+        } else if (nrComponents == 3) {
+            internalFormat = GL_RGB8; dataFormat = GL_RGB; // Use sized internal format
+        } else if (nrComponents == 4) {
+            internalFormat = GL_RGBA8; dataFormat = GL_RGBA; // Use sized internal format
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glBindTexture(GL_TEXTURE_2D, 0); // Good practice: unbind after configuring
+        stbi_image_free(data);
+        return textureID;
+    } else {
+        AF_Log_Error("AF_Renderer_LoadTexture: Texture failed to load at path: \"%s\" (stbi_load error: %s)\n", path, stbi_failure_reason());
+        // No textureID was generated and bound with data, so return 0
+        return 0;
+    }
+}
+
+
+// ============================  DRAW ================================ 
+
+/*
+====================
+AF_Render_DrawMeshElements
+Simple DrawElements call on all ECS mesh components
+====================
+*/
+void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID){
+	if(_shaderID == 0){}
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_Entity* entity = &_ecs->entities[i];
+		BOOL hasEntity = AF_Component_GetHas(entity->flags);
+		if(hasEntity == FALSE){
+			continue;
+		}
+
+		AF_CMesh* mesh = &_ecs->meshes[i];
+		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
+		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
+		// Skip if there is no rendering component
+		if(meshHas == FALSE){// || hasEnabled == FALSE){
+			continue;
+		}
+
+		// ---- Setup shader ----
+		//uint32_t shader = _shaderID;//mesh->shader.shaderID;
+		glUseProgram(_shaderID); 
+		for(uint32_t x = 0; x < mesh->meshCount; x++){
+			
+			glBindVertexArray(mesh->meshes[x].vao);//_meshList->vao);
+			AF_Renderer_CheckError( "AF_Render_DrawMeshElements: Error bind vao Rendering OpenGL! \n");
+
+			// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+			glBindBuffer(GL_ARRAY_BUFFER, mesh->meshes[x].vbo);
+			AF_Renderer_CheckError("AF_Render_DrawMeshElements: Error binding VBO for drawing!");
+
+
+			//---------------Send command to Graphics API to Draw Triangles------------
+			
+			// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
+
+			// TODO: make this configurable from the editor component
+			//glEnable(GL_CULL_FACE);
+			//glCullFace(GL_BACK); // Default
+			//glFrontFace(GL_CCW); // Or GL_CW
+			//glFrontFace(GL_CW);
+			
+			AF_Shader_SetMat4(_shaderID,"model", *_lightProjection);
+			//AF_Log("==== ------------------ ====\n");
+
+			// Texture 
+			//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
+
+			// send the camera data to the shader
+			// Prep drawing
+			unsigned int indexCount = mesh->meshes[x].indexCount;
+			if(indexCount == 0){
+				AF_Log_Warning("AF_Render_DrawMeshElements: indexCount is 0. Can't draw elements\n");
+				return;
+			}
+
+
+			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+				
+			AF_Renderer_CheckError( "AF_Render_DrawMeshElements drawElements Rendering OpenGL! \n");
+			glUseProgram(0); 
+			glBindVertexArray(0);
+			AF_Renderer_CheckError( "AF_Render_DrawMeshElements: bindvertexarray(0) Rendering OpenGL! \n");
+		}
+
+	}
+}
+	
+
+/*
+====================
+AF_Renderer_DrawMeshes
+Loop through the entities and draw the meshes that have components attached
+====================
+*/
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_Entity* entity = &_ecs->entities[i];
+		if(!AF_Component_GetHas(entity->flags)){
+			continue;
+		}
+
+		AF_CMesh* mesh = &_ecs->meshes[i];
+		// Skip if there is no rendering component
+		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == FALSE){
+			continue;
+		}
+		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
+
+		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
+		Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
+		// Update the model matrix
+		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
+		
+		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData);
+	}
+}
+
+/*
+====================
+AF_Renderer_DrawMesh
+Loop through the meshes in a component and draw using opengl
+====================
+*/
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
+	// draw meshes
+	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
+	{
+		AF_Log_Error("AF_Renderer_DrawMesh: Passed Null reference \n");
+		return;
+	}
+	
+	// don't render if we are not enabled or the component isn't supposed to render
+	if(!AF_Component_GetHasEnabled(_mesh->enabled)){
+		return;
+	}
+	// TODO: this is very expensive. batch these up or just per model, use one shader/material
+	// ---- Setup shader ----
+	uint32_t shader = _mesh->shader.shaderID;
+	glUseProgram(shader); 
+	for(uint32_t i = 0; i < _mesh->meshCount; i++){
+		// TODO: Render based on shader type 
+		// Does the shader use Textures?
+		if(_mesh->textured == TRUE){
+			// ---- Diffuse Texture ----
+			if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
+				uint32_t diffuseTextureBinding = 0;
+				glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
+				glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
+
+				// and finally bind the texture
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
+			}
+
+			/*
+			// ---- Normal Texture ----
+			if((_mesh->meshes[i].material.normalTexture.type != AF_TEXTURE_TYPE_NONE)){
+				uint32_t normalTextureBinding = 1;
+				glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
+				glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
+				// and finally bind the texture
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture.id);
+			}
+
+			// ---- Specular Texture ----
+			if((_mesh->meshes[i].material.specularTexture.type != AF_TEXTURE_TYPE_NONE)){
+				uint32_t specularTextureBinding = 2;
+				glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
+				glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
+				// and finally bind the texture
+				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture.id);
+			}*/
+		}
+
+
+		// Does the shader use lighting?
+        //if(_mesh->recieveLights == TRUE){
+		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
+		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
+		// ideally shininess is set to 32.0f
+		/*
+		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
+			uint32_t diffuseTextureBinding = 0;
+			glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
+			glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
+
+			// and finally bind the texture
+			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
+		}*/
+
+		// Get the next available lights and send data to shader up to MAX_LIGHT_NUM, likley 4
+		if(_mesh->recieveLights == TRUE){
+			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
+		}
+		
+
+		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
+		AF_Renderer_CheckError( "Error bind vao Rendering OpenGL! \n");
+
+		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
+		AF_Renderer_CheckError("Error binding VBO for drawing!");
+
+
+		//---------------Send command to Graphics API to Draw Triangles------------
+		
+		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
+
+		// TODO: make this configurable from the editor component
+		//glEnable(GL_CULL_FACE);
+		//glCullFace(GL_BACK); // Default
+		//glFrontFace(GL_CCW); // Or GL_CW
+		//glFrontFace(GL_CW);
+		//AF_Log("==== Projection Matrix ====\n");
+		//AF_Util_Mat4_Log(*_projMat);
+		int projLocation = glGetUniformLocation(shader, "projection");
+		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
+
+		// View
+		//AF_Log("==== View Matrix ====\n");
+		//AF_Util_Mat4_Log(*_viewMat);
+		int viewLocation = glGetUniformLocation(shader, "view");
+		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
+
+		// Model
+		//AF_Log("==== Model Matrix ====\n");
+		//AF_Util_Mat4_Log(*_modelMat);
+		int modelLocation = glGetUniformLocation(shader, "model");
+		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
+
+		//AF_Log("==== ------------------ ====\n");
+
+		// Texture 
+		//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
+
+		// send the camera data to the shader
+		// Prep drawing
+		unsigned int indexCount = _mesh->meshes[i].indexCount;
+		if(indexCount == 0){
+			AF_Log_Warning("AF_Renderer_DrawMesh: indexCount is 0. Can't draw elements\n");
+			return;
+		}
+
+		// TODO: sort transparent objects before rendering
+		//https://learnopengl.com/Advanced-OpenGL/Blending
+
+		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+			
+		AF_Renderer_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
+
+		glBindVertexArray(0);
+		AF_Renderer_CheckError( "Error bindvertexarray(0) Rendering OpenGL! \n");
+		
+	}
+	// Unbind shader
+    glUseProgram(0);
+
+    // Unbind textures explicitly from the units they were bound to
+    // Assuming these were the maximum units you might have used within the loop.
+    // If _mesh->textured was false, these calls are harmless.
+    if(_mesh->textured == TRUE) { // Only unbind if textures were potentially bound
+        // Check each texture type again, similar to how you bound them
+        // This is a bit repetitive; ideally, you'd track which units were used.
+        // For now, let's assume you used up to 3 units if textured.
+
+        // Diffuse Texture was on unit 0
+        glActiveTexture(GL_TEXTURE0 + 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Normal Texture was on unit 1
+        glActiveTexture(GL_TEXTURE0 + 1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // Specular Texture was on unit 2
+        glActiveTexture(GL_TEXTURE0 + 2);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    // It's good practice to reset the active texture unit to a default,
+    // though well-behaved subsequent code (like ImGui's backend) should set its own.
+    glActiveTexture(GL_TEXTURE0);
+}
+
+/*
+====================
+AF_Renderer_CreateScreenFBOQuadMeshBuffer
+Render the quad to the screen and swap the frame buffers over.
+====================
+*/
+void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
+    glDisable(GL_DEPTH_TEST);
+
+    glUseProgram(_renderingData->depthDebugShaderID);
+
+    // Uniforms for linearization (optional, shader dependent)
+    float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
+    AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
+    AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
+
+    glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
+    glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID); // Bind your actual depth map texture
+
+    if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
+        AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
+    }
+    glBindVertexArray(_renderingData->screenQUAD_VAO);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    // Consider re-enabling depth test if needed by subsequent rendering
+    // glEnable(GL_DEPTH_TEST);
+}
+
+
+
+// ============================  MESH BUFFERS ================================ 
+
+/*
+====================
+AF_Renderer_InitMeshBuffers
+Init the mesh buffers for OpenGL
+====================
+*/
+void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){ 
+    if (_entityCount == 0) {
+    AF_Log_Error("No meshes to draw!\n");
+    	return;
+    }
+
+    for(uint32_t i = 0; i < _entityCount; i++){
+	   //AF_CMesh* mesh = _entities[i].mesh;
+
+	    BOOL hasMesh = AF_Component_GetHas(_mesh->enabled);
+	    // Skip setting up if we don't have a mesh component
+	    if(hasMesh == FALSE){
+			continue;
+	    }
+
+		AF_Renderer_CheckError( "Mesh has no indices!\n");
+
+		// for each sub mesh. setup the mesh buffers
+		for(uint32_t j = 0; j < _mesh->meshCount; j++){
+			if(_mesh->meshes[j].vertexCount < 1){
+				// skip creating mesh buffer as we don't have any vetices
+				AF_Log_Warning("AF_Renderer_InitMeshBuffers: skip creating mesh buffer as we don't have any vetices\n");
+				continue;
+			}
+			AF_Renderer_CreateMeshBuffer(&_mesh->meshes[j]);
+		}
+    }
+}
+
+/*
+====================
+AF_Renderer_CreateMeshBuffer
+Do the initial setup for a models mesh buffer
+====================
+*/
+void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
+	if(_meshData == NULL){
+		AF_Log_Error("Invalid _meshData, is NULL!\n");
+		return;
+	}
+	
+	if (_meshData->vertexCount == 0 || _meshData->indexCount == 0) {
+		AF_Log_Error("Invalid vertex or index data!\n");
+		return;
+	}
+		
+	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
+	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
+	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
+	AF_Renderer_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
+		
+	GLuint gVAO, gVBO, gEBO;
+	glGenVertexArrays(1, &gVAO);
+	glGenBuffers(1, &gVBO);
+	glGenBuffers(1, &gEBO);
+	AF_Renderer_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
+	glBindVertexArray(gVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+	AF_Renderer_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
+
+	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
+	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, _meshData->vertices, GL_STATIC_DRAW);
+	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the verts.\n");
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Bind the IBO and set the buffer data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
+	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
+
+	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
+	// Vertex positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// Vertex normals
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	// Vertex tangent attributes
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	// Vertex bi tangent attributes
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
+
+	// Vertex texture coords
+	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
+	glEnableVertexAttribArray(4);
+
+	AF_Renderer_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
+
+	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+	glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+	// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+	glBindVertexArray(0); 
+
+	_meshData->vao = gVAO;
+	_meshData->vbo = gVBO;
+	_meshData->ibo = gEBO;
+	// Bind the IBO and set the buffer data
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
+
+	// Now that the mesh is loaded, we can delete the memory created for the verts and indices
+	free(_meshData->vertices);
+	_meshData->vertices = NULL;
+	free(_meshData->indices);
+	_meshData->indices = NULL;
+	AF_Renderer_CheckError( "Error InitMesh Buffers for OpenGL! \n");
+}
+
+
+/*
+====================
+AF_Renderer_CreateScreenFBOQuadMeshBuffer
+Create the screen quad mesh buffers
+====================
+*/
+void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData){
+	// screen quad VAO
+	unsigned int quadVAO, quadVBO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(QUAD_VERTICES), &QUAD_VERTICES, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	_renderingData->screenQUAD_VAO = quadVAO;
+	_renderingData->screenQUAD_VBO = quadVBO;
+}
+
+
+
+// ============================  FRAME BUFFERS ================================ 
 
 
 /*
@@ -794,37 +1052,38 @@ uint32_t AF_Renderer_CreateRBO(void)
 	return rBO;
 }
 
-/*====================
-AF_Renderer_DeleteFBO
-Delete a frame buffer to render to
-====================*/
-void AF_Renderer_DeleteFBO(uint32_t* _fboID)
-{
-	glDeleteFramebuffers(1, _fboID);
-	*_fboID = 0;
+
+
+/*
+====================
+AF_Renderer_BindDepthFrameBuffer
+Bind the depth FBO to the framebuffer command on the gpu
+====================
+*/
+void AF_Renderer_BindFrameBuffer(uint32_t _fBOID){
+	glBindFramebuffer(GL_FRAMEBUFFER, _fBOID);
 }
 
-
-/*====================
-AF_Renderer_DeleteRBO
-Delete a render buffer object
-====================*/
-void AF_Renderer_DeleteRBO(uint32_t* _rboID)
-{
-	glDeleteRenderbuffers(1, _rboID);
-	*_rboID = 0;
+/*
+====================
+AF_Renderer_UnBindFrameBuffer
+UnBind the depth FBO to the framebuffer command on the gpu
+====================
+*/
+void AF_Renderer_UnBindFrameBuffer(void){
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-/*====================
-AF_Renderer_DeleteTexture
-Delete a texture buffer object
-====================*/
-void AF_Renderer_DeleteTexture(uint32_t* _textureID)
-{
-	glDeleteTextures(1, _textureID);
-	*_textureID = 0;
+/*
+====================
+AF_Renderer_BindFrameBufferToTexture
+Bind the depth FBO and Texture to the framebuffer command on the gpu
+====================
+*/
+void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType){
+	glBindFramebuffer(GL_FRAMEBUFFER, _fBOID);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, _textureAttatchmentType, GL_TEXTURE_2D, _textureID, 0);
 }
-
 
 
 /*
@@ -888,157 +1147,164 @@ uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureH
 }
 
 
-
-
+// ============================  DEPTH ================================ 
 /*
 ====================
-AF_Renderer_BindDepthFrameBuffer
-Bind the depth FBO to the framebuffer command on the gpu
+AF_Render_StartDepthPath
+Do the initial setup for rendering a depth pass in opengl
 ====================
 */
-void AF_Renderer_BindFrameBuffer(uint32_t _fBOID){
-	glBindFramebuffer(GL_FRAMEBUFFER, _fBOID);
-}
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera){
+	// 1. render depth of scene to texture (from light's perspective)
+	// --------------------------------------------------------------
+	
+	Mat4 lightProjection;
+	Mat4 lightView;
+	Mat4 lightSpaceMatrix;
+	float near_plane = 1.0f;
+	float far_plane = 7.5f;
+	//lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+	AF_CCamera depthCamera = AF_CCamera_ZERO();
+	depthCamera.nearPlane = near_plane;
+	depthCamera.farPlane = far_plane;
+	lightProjection = Mat4_Ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	//glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	Vec3 upDirection = {0.0f, 1.0f, 0.0f};
+	Vec3 targetPos = _ecs->entities[_lightingData->ambientLightEntityIndex].transform->pos;// lightPos 
 
-void AF_Renderer_UnBindFrameBuffer(void){
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
+	Vec3 viewPos =  {0,0,0};	// 0
+	lightView = Mat4_Lookat(targetPos, viewPos, upDirection); //glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	lightSpaceMatrix = Mat4_MULT_M4(lightProjection, lightView);
 
-/*
-====================
-AF_Renderer_BindFrameBufferToTexture
-Bind the depth FBO and Texture to the framebuffer command on the gpu
-====================
-*/
-void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType){
-	glBindFramebuffer(GL_FRAMEBUFFER, _fBOID);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, _textureAttatchmentType, GL_TEXTURE_2D, _textureID, 0);
-}
+	// render scene from light's point of view
+	AF_Shader_Use(_renderingData->depthRenderShaderID); 
+	AF_Shader_SetMat4(_renderingData->depthRenderShaderID, "lightSpaceMatrix", lightSpaceMatrix);
 
-/*
-====================
-AF_Renderer_InitMeshBuffers
-Init the mesh buffers for OpenGL
-====================
-*/
-void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){ 
-    if (_entityCount == 0) {
-    AF_Log_Error("No meshes to draw!\n");
-    	return;
+	// Render meshes
+	AF_Render_DrawMeshElements(_ecs, &lightProjection, &viewPos, _renderingData->depthRenderShaderID);
+	AF_Shader_Use(0);
+	
+	/*
+	// render Depth map to quad for visual debugging
+	// ---------------------------------------------
+	glUseProgram(_renderingData->depthDebugShaderID);
+	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
+	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID);
+	//renderQuad();
+	unsigned int quadVAO = 0;
+	unsigned int quadVBO;
+	if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     }
-
-    for(uint32_t i = 0; i < _entityCount; i++){
-	   //AF_CMesh* mesh = _entities[i].mesh;
-
-	    BOOL hasMesh = AF_Component_GetHas(_mesh->enabled);
-	    // Skip setting up if we don't have a mesh component
-	    if(hasMesh == FALSE){
-			continue;
-	    }
-
-		AF_CheckGLError( "Mesh has no indices!\n");
-
-		// for each sub mesh. setup the mesh buffers
-		for(uint32_t j = 0; j < _mesh->meshCount; j++){
-			if(_mesh->meshes[j].vertexCount < 1){
-				// skip creating mesh buffer as we don't have any vetices
-				AF_Log_Warning("AF_Renderer_InitMeshBuffers: skip creating mesh buffer as we don't have any vetices\n");
-				continue;
-			}
-			AF_Renderer_CreateMeshBuffer(&_mesh->meshes[j]);
-		}
-    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+*/
+	/*
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, woodTexture);
+	renderScene(simpleDepthShader);
+	*/
 }
 
+// ============================  LIGHTING ================================ 
 /*
 ====================
-AF_Renderer_CreateMeshBuffer
-Do the initial setup for a models mesh buffer
+AF_Renderer_RenderForwardPointLights
+Update shaders with lighting data
 ====================
 */
-void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
-	if(_meshData == NULL){
-		AF_Log_Error("Invalid _meshData, is NULL!\n");
-		return;
+void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData){
+	
+	// if we have a found ambient light
+	if(_lightingData->ambientLightEntityIndex > 0){
+		AF_CLight* light = &_ecs->lights[_lightingData->ambientLightEntityIndex];
+		glUniform1f(glGetUniformLocation(_shader, "material.shininess"), 32.0f);
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.direction"), light->direction.x, light->direction.y, light->direction.z);
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.ambient"),  light->ambientCol.x, light->ambientCol.y, light->ambientCol.z); 
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.diffuse"),  light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);
+		glUniform3f(glGetUniformLocation(_shader, "dirLight.specular"),  light->specularCol.x, light->specularCol.y, light->specularCol.z);
+	}
+	// if we have a found spot light
+	
+	if(_lightingData->spotLightEntityIndex > 0){
+		AF_Entity* spotLightEntity = &_ecs->entities[_lightingData->spotLightEntityIndex];
+		AF_CLight* spotLight = &_ecs->lights[_lightingData->spotLightEntityIndex];
+		Vec3* spotLightPos = &spotLightEntity->transform->pos;
+		
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.ambient"), spotLight->ambientCol.x, spotLight->ambientCol.y, spotLight->ambientCol.z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.diffuse"), spotLight->diffuseCol.x, spotLight->diffuseCol.y, spotLight->diffuseCol.z);
+		glUniform3f(glGetUniformLocation(_shader, "spotLight.specular"), spotLight->specularCol.x, spotLight->specularCol.y, spotLight->specularCol.z);
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.constant"), spotLight->constant); 
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.linear"), spotLight->linear);
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.quadratic"), spotLight->quadratic);
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.cutoff"), AF_Math_Cos(AF_Math_Radians(spotLight->cutOff)));
+		glUniform1f(glGetUniformLocation(_shader, "spotLight.outerCutOff"), AF_Math_Cos(AF_Math_Radians(spotLight->outerCutoff)));
 	}
 	
-	if (_meshData->vertexCount == 0 || _meshData->indexCount == 0) {
-		AF_Log_Error("Invalid vertex or index data!\n");
-		return;
+	// if we have a found point lights, for each found light
+	for(uint8_t i = 0; i < _lightingData->pointLightsFound; i++){
+		// Point Light
+		uint16_t pointLightEntityIndex = _lightingData->pointLightIndexArray[i];
+		AF_CLight* light = &_ecs->lights[pointLightEntityIndex];
+		char posUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(posUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
+		Vec3* lightPosition = &_ecs->entities[pointLightEntityIndex].transform->pos;
+		glUniform3f(glGetUniformLocation(_shader, posUniformName), lightPosition->x, lightPosition->y, lightPosition->z);
+		
+		// Ambient
+		char ambientUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(ambientUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
+		glUniform3f(glGetUniformLocation(_shader, ambientUniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);
+		
+		// Diffuse
+		char pointUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(pointUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
+		glUniform3f(glGetUniformLocation(_shader, pointUniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z); 
+		
+		// Specular
+		char specUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(specUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
+		glUniform3f(glGetUniformLocation(_shader, specUniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);
+		
+		// Constant
+		char constantUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(constantUniformName, MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
+		GLint unformShaderName = glGetUniformLocation(_shader, constantUniformName);
+		AF_Shader_SetFloat(_shader, constantUniformName, light->constant);
+	
+		// Linear
+		char linearUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(linearUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
+		glUniform1f(glGetUniformLocation(_shader, linearUniformName), light->linear);//0.09f); //_light->linear);//0.09f); 
+
+		// Quadratic
+		char quadraticUniformName[MAX_PATH_CHAR_SIZE];
+		snprintf(quadraticUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
+		glUniform1f(glGetUniformLocation(_shader, quadraticUniformName), light->quadratic);//0.032f); //_light->quadratic);//0.032f); 
 	}
-		
-	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
-	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
-	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	AF_CheckGLError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
-		
-	GLuint gVAO, gVBO, gEBO;
-	glGenVertexArrays(1, &gVAO);
-	glGenBuffers(1, &gVBO);
-	glGenBuffers(1, &gEBO);
-	AF_CheckGLError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
-
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
-	glBindVertexArray(gVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-	AF_CheckGLError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
-
-	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
-	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, _meshData->vertices, GL_STATIC_DRAW);
-	AF_CheckGLError( "OpenGL error occurred during glBufferData for the verts.\n");
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Bind the IBO and set the buffer data
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
-	AF_CheckGLError( "OpenGL error occurred during glBufferData for the indexes.\n");
-
-	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
-	// Vertex positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	// Vertex normals
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	// Vertex tangent attributes
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	// Vertex bi tangent attributes
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
-	glEnableVertexAttribArray(3);
-
-	// Vertex texture coords
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
-	glEnableVertexAttribArray(4);
-
-	AF_CheckGLError( "OpenGL error occurred during assignment of vertexAttribs.\n");
-
-	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-	glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-	// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-	glBindVertexArray(0); 
-
-	_meshData->vao = gVAO;
-	_meshData->vbo = gVBO;
-	_meshData->ibo = gEBO;
-	// Bind the IBO and set the buffer data
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
-
-	// Now that the mesh is loaded, we can delete the memory created for the verts and indices
-	free(_meshData->vertices);
-	_meshData->vertices = NULL;
-	free(_meshData->indices);
-	_meshData->indices = NULL;
-	AF_CheckGLError( "Error InitMesh Buffers for OpenGL! \n");
+	
 }
 
 /*
@@ -1117,459 +1383,76 @@ void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
 
 
 
-/*
-====================
-AF_Render_StartDepthPath
-Do the initial setup for rendering a depth pass in opengl
-====================
-*/
-void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera){
-	// 1. render depth of scene to texture (from light's perspective)
-	// --------------------------------------------------------------
-	
-	Mat4 lightProjection;
-	Mat4 lightView;
-	Mat4 lightSpaceMatrix;
-	float near_plane = 1.0f;
-	float far_plane = 7.5f;
-	//lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
-	AF_CCamera depthCamera = AF_CCamera_ZERO();
-	depthCamera.nearPlane = near_plane;
-	depthCamera.farPlane = far_plane;
-	lightProjection = Mat4_Ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	//glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	Vec3 upDirection = {0.0f, 1.0f, 0.0f};
-	Vec3 targetPos = _ecs->entities[_lightingData->ambientLightEntityIndex].transform->pos;// lightPos 
 
-	Vec3 viewPos =  {0,0,0};	// 0
-	lightView = Mat4_Lookat(targetPos, viewPos, upDirection); //glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-	lightSpaceMatrix = Mat4_MULT_M4(lightProjection, lightView);
 
-	// render scene from light's point of view
-	glUseProgram(_renderingData->depthRenderShaderID); 
-	AF_Shader_SetMat4(_renderingData->depthRenderShaderID, "lightSpaceMatrix", lightSpaceMatrix);
 
-	// Render meshes
-	AF_Render_DrawMeshElements(_ecs, &lightProjection, &viewPos, _renderingData->depthRenderShaderID);
-	glUseProgram(0);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
-	/*
-	
-	
-	
-	
-	
-	// render Depth map to quad for visual debugging
-	// ---------------------------------------------
-	glUseProgram(_renderingData->depthDebugShaderID);
-	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
-	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID);
-	//renderQuad();
-	unsigned int quadVAO = 0;
-	unsigned int quadVBO;
-	if (quadVAO == 0)
-    {
-        float quadVertices[] = {
-            // positions        // texture Coords
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        };
-        // setup plane VAO
-        glGenVertexArrays(1, &quadVAO);
-        glGenBuffers(1, &quadVBO);
-        glBindVertexArray(quadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    }
-    glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-*/
-	/*
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, woodTexture);
-	renderScene(simpleDepthShader);
-	*/
-	
-	
-}
+// ============================  DESTROY / CLEANUP ================================ 
 
 /*
 ====================
-AF_Render_DrawMeshElements
-Simple DrawElements call on all ECS mesh components
+AF_Renderer_DestroyRenderer
+Destroy the renderer
 ====================
 */
-void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID){
-	if(_shaderID == 0){}
-	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-		AF_Entity* entity = &_ecs->entities[i];
-		BOOL hasEntity = AF_Component_GetHas(entity->flags);
-		if(hasEntity == FALSE){
-			continue;
-		}
-
-		AF_CMesh* mesh = &_ecs->meshes[i];
-		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
-		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
-		// Skip if there is no rendering component
-		if(meshHas == FALSE){// || hasEnabled == FALSE){
-			continue;
-		}
-
-		// ---- Setup shader ----
-		//uint32_t shader = _shaderID;//mesh->shader.shaderID;
-		glUseProgram(_shaderID); 
-		for(uint32_t x = 0; x < mesh->meshCount; x++){
-			
-			glBindVertexArray(mesh->meshes[x].vao);//_meshList->vao);
-			AF_CheckGLError( "AF_Render_DrawMeshElements: Error bind vao Rendering OpenGL! \n");
-
-			// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
-			glBindBuffer(GL_ARRAY_BUFFER, mesh->meshes[x].vbo);
-			AF_CheckGLError("AF_Render_DrawMeshElements: Error binding VBO for drawing!");
-
-
-			//---------------Send command to Graphics API to Draw Triangles------------
-			
-			// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
-
-			// TODO: make this configurable from the editor component
-			//glEnable(GL_CULL_FACE);
-			//glCullFace(GL_BACK); // Default
-			//glFrontFace(GL_CCW); // Or GL_CW
-			//glFrontFace(GL_CW);
-			
-			AF_Shader_SetMat4(_shaderID,"model", *_lightProjection);
-			//AF_Log("==== ------------------ ====\n");
-
-			// Texture 
-			//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
-
-			// send the camera data to the shader
-			// Prep drawing
-			unsigned int indexCount = mesh->meshes[x].indexCount;
-			if(indexCount == 0){
-				AF_Log_Warning("AF_Render_DrawMeshElements: indexCount is 0. Can't draw elements\n");
-				return;
-			}
-
-
-			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-				
-			AF_CheckGLError( "AF_Render_DrawMeshElements drawElements Rendering OpenGL! \n");
-			glUseProgram(0); 
-			glBindVertexArray(0);
-			AF_CheckGLError( "AF_Render_DrawMeshElements: bindvertexarray(0) Rendering OpenGL! \n");
-		}
-
-	}
-}
-
-/*
-====================
-AF_Renderer_EndDepthPass
-Do the final cleanup for rendering a depth pass in opengl
-====================
-*/
-void AF_Renderer_EndDepthPass(uint32_t _screenWidth, uint32_t _screenHeight){
-	// reset viewport
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glViewport(0, 0, _screenWidth, _screenHeight);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	/**/
-}
-		
-
-
-/*
-====================
-AF_Renderer_DrawMeshes
-Loop through the entities and draw the meshes that have components attached
-====================
-*/
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
-	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-		AF_Entity* entity = &_ecs->entities[i];
-		BOOL hasEntity = AF_Component_GetHas(entity->flags);
-		if(hasEntity == FALSE){
-			continue;
-		}
-
-		AF_CMesh* mesh = &_ecs->meshes[i];
-		BOOL meshHas = AF_Component_GetHas(mesh->enabled);
-		BOOL hasEnabled = AF_Component_GetEnabled(mesh->enabled);
-		// Skip if there is no rendering component
-		if(meshHas == FALSE){// || hasEnabled == FALSE){
-			continue;
-		}
-		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
-
-		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
-		Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
-		// Update the model matrix
-		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
-		
-		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData);
-	}
-	
-}
-
-/*
-====================
-AF_Renderer_DrawMesh
-Loop through the meshes in a component and draw using opengl
-====================
-*/
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
-	// draw meshes
-	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
-	{
-		AF_Log_Error("AF_Renderer_DrawMesh: Passed Null reference \n");
+void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs){
+    AF_Log("%s Destroyed\n", openglRendererFileTitle);
+	if(_ecs == NULL){
+		AF_Log_Error("AF_Renderer_DestroyRenderer: ECS is NULL\n");
 		return;
 	}
-	
-	BOOL hasMesh = AF_Component_GetHas(_mesh->enabled);
-	BOOL isEnabled = AF_Component_GetEnabled(_mesh->enabled);
-	// don't render if we are not enabled or the component isn't supposed to render
-	if(hasMesh == FALSE || isEnabled == FALSE){
-		return;;
-	}
-	// TODO: this is very expensive. batch these up or just per model, use one shader/material
-	// ---- Setup shader ----
-	uint32_t shader = _mesh->shader.shaderID;
-	glUseProgram(shader); 
-	for(uint32_t i = 0; i < _mesh->meshCount; i++){
-		// TODO: Render based on shader type 
-		// Does the shader use Textures?
-		if(_mesh->textured == TRUE){
-			// ---- Diffuse Texture ----
-			if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
-				uint32_t diffuseTextureBinding = 0;
-				glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
-				glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
-
-				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
-			}
-
-			/*
-			// ---- Normal Texture ----
-			if((_mesh->meshes[i].material.normalTexture.type != AF_TEXTURE_TYPE_NONE)){
-				uint32_t normalTextureBinding = 1;
-				glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
-				glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
-				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture.id);
-			}
-
-			// ---- Specular Texture ----
-			if((_mesh->meshes[i].material.specularTexture.type != AF_TEXTURE_TYPE_NONE)){
-				uint32_t specularTextureBinding = 2;
-				glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
-				glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
-				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture.id);
-			}*/
+	// Destroy the meshes
+    for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
+		AF_CMesh* meshComponent = &_ecs->meshes[i];
+		if(meshComponent == NULL){
+			AF_Log_Error("AF_Renderer_DestroyRenderer: MeshComponent is NULL\n");
+			continue;
 		}
-
-
-		// Does the shader use lighting?
-        //if(_mesh->recieveLights == TRUE){
-		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
-		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z);//_viewMat->rows[3].x, _viewMat->rows[3].y, _viewMat->rows[3].z); 
-		// ideally shininess is set to 32.0f
-		/*
-		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
-			uint32_t diffuseTextureBinding = 0;
-			glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
-			glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
-
-			// and finally bind the texture
-			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
-		}*/
-
-		// Get the next available lights and send data to shader up to MAX_LIGHT_NUM, likley 4
-		if(_mesh->recieveLights == TRUE){
-			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
+		BOOL hasMesh = AF_Component_GetHas(meshComponent->enabled);
+		BOOL hasEnabled = AF_Component_GetEnabled(meshComponent->enabled);
+		// Skip if there is no rendering component
+		if(hasMesh == FALSE || hasEnabled == FALSE){
+			continue;
+		}
+		// Destroy the mesh buffers
+		
+		// Destory the material textures
+		for(uint32_t j = 0; j < meshComponent->meshCount; j++){
+			AF_Renderer_Destroy_Material_Textures(&meshComponent->meshes[j].material);
 		}
 		
+		// Destroy mesh shader
+		AF_Shader_Delete(meshComponent->shader.shaderID);
 
-		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
-		AF_CheckGLError( "Error bind vao Rendering OpenGL! \n");
+		// Destroy the mesh buffers
+		AF_Renderer_DestroyMeshBuffers(meshComponent);
 
-		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
-		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
-		AF_CheckGLError("Error binding VBO for drawing!");
-
-
-		//---------------Send command to Graphics API to Draw Triangles------------
 		
-		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
 
-		// TODO: make this configurable from the editor component
-		//glEnable(GL_CULL_FACE);
-		//glCullFace(GL_BACK); // Default
-		//glFrontFace(GL_CCW); // Or GL_CW
-		//glFrontFace(GL_CW);
-		//AF_Log("==== Projection Matrix ====\n");
-		//AF_Util_Mat4_Log(*_projMat);
-		int projLocation = glGetUniformLocation(shader, "projection");
-		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
-
-		// View
-		//AF_Log("==== View Matrix ====\n");
-		//AF_Util_Mat4_Log(*_viewMat);
-		int viewLocation = glGetUniformLocation(shader, "view");
-		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
-
-		// Model
-		//AF_Log("==== Model Matrix ====\n");
-		//AF_Util_Mat4_Log(*_modelMat);
-		int modelLocation = glGetUniformLocation(shader, "model");
-		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
-
-		//AF_Log("==== ------------------ ====\n");
-
-		// Texture 
-		//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
-
-		// send the camera data to the shader
-		// Prep drawing
-		unsigned int indexCount = _mesh->meshes[i].indexCount;
-		if(indexCount == 0){
-			AF_Log_Warning("AF_Renderer_DrawMesh: indexCount is 0. Can't draw elements\n");
-			return;
-		}
-
-		// TODO: sort transparent objects before rendering
-		//https://learnopengl.com/Advanced-OpenGL/Blending
-
-		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-			
-		AF_CheckGLError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
-
-		glBindVertexArray(0);
-		AF_CheckGLError( "Error bindvertexarray(0) Rendering OpenGL! \n");
-		
-	}
-	// Unbind shader
-    glUseProgram(0);
-
-    // Unbind textures explicitly from the units they were bound to
-    // Assuming these were the maximum units you might have used within the loop.
-    // If _mesh->textured was false, these calls are harmless.
-    if(_mesh->textured == TRUE) { // Only unbind if textures were potentially bound
-        // Check each texture type again, similar to how you bound them
-        // This is a bit repetitive; ideally, you'd track which units were used.
-        // For now, let's assume you used up to 3 units if textured.
-
-        // Diffuse Texture was on unit 0
-        glActiveTexture(GL_TEXTURE0 + 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        // Normal Texture was on unit 1
-        glActiveTexture(GL_TEXTURE0 + 1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        // Specular Texture was on unit 2
-        glActiveTexture(GL_TEXTURE0 + 2);
-        glBindTexture(GL_TEXTURE_2D, 0);
+		// zero the component
+		*meshComponent = AF_CMesh_ZERO();
     }
 
-    // It's good practice to reset the active texture unit to a default,
-    // though well-behaved subsequent code (like ImGui's backend) should set its own.
-    glActiveTexture(GL_TEXTURE0);
+	// Delete Frame buffer stuff
+	// Destroy renderbuffers
+	// Screen buffers
+	glDeleteRenderbuffers(1, &_renderingData->screenRBO_ID);
+	glDeleteFramebuffers(1, &_renderingData->screenFBO_ID);
+
+	// Depth Buffers
+	glDeleteFramebuffers(1, &_renderingData->depthFBO_ID);
+	glDeleteFramebuffers(1, &_renderingData->depthRBO_ID);
+
+	// Screen Quad
+	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VAO);
+	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VBO);
+	// Delete textures
+
+	// Delete Shaders
+       
+        //glDeleteTexture(_meshList->materials[0].textureID);
+    AF_Renderer_CheckError( "Error Destroying Renderer OpenGL! \n");
 }
 
-void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData){
-	
-	// if we have a found ambient light
-	if(_lightingData->ambientLightEntityIndex > 0){
-		AF_CLight* light = &_ecs->lights[_lightingData->ambientLightEntityIndex];
-		glUniform1f(glGetUniformLocation(_shader, "material.shininess"), 32.0f);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.direction"), light->direction.x, light->direction.y, light->direction.z);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.ambient"),  light->ambientCol.x, light->ambientCol.y, light->ambientCol.z); 
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.diffuse"),  light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.specular"),  light->specularCol.x, light->specularCol.y, light->specularCol.z);
-	}
-	// if we have a found spot light
-	
-	if(_lightingData->spotLightEntityIndex > 0){
-		AF_Entity* spotLightEntity = &_ecs->entities[_lightingData->spotLightEntityIndex];
-		AF_CLight* spotLight = &_ecs->lights[_lightingData->spotLightEntityIndex];
-		Vec3* spotLightPos = &spotLightEntity->transform->pos;
-		
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.ambient"), spotLight->ambientCol.x, spotLight->ambientCol.y, spotLight->ambientCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.diffuse"), spotLight->diffuseCol.x, spotLight->diffuseCol.y, spotLight->diffuseCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.specular"), spotLight->specularCol.x, spotLight->specularCol.y, spotLight->specularCol.z);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.constant"), spotLight->constant); 
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.linear"), spotLight->linear);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.quadratic"), spotLight->quadratic);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.cutoff"), AF_Math_Cos(AF_Math_Radians(spotLight->cutOff)));
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.outerCutOff"), AF_Math_Cos(AF_Math_Radians(spotLight->outerCutoff)));
-	}
-	
-	// if we have a found point lights, for each found light
-	for(uint8_t i = 0; i < _lightingData->pointLightsFound; i++){
-		// Point Light
-		//AF_Log("Point Light: %i (entityIndex: %i)\n", i, _lightingData->pointLightIndexArray[i]);
-		uint16_t pointLightEntityIndex = _lightingData->pointLightIndexArray[i];
-		AF_CLight* light = &_ecs->lights[pointLightEntityIndex];
-		char posUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(posUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
-		Vec3* lightPosition = &_ecs->entities[pointLightEntityIndex].transform->pos;
-		glUniform3f(glGetUniformLocation(_shader, posUniformName), lightPosition->x, lightPosition->y, lightPosition->z);//-0.2f, 1.0f, -0.3f);//_lightPos->x, _lightPos->y, _lightPos->z);//-0.2f, 1.0f, -0.3f);
-		
-		// Ambient
-		char ambientUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(ambientUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
-		glUniform3f(glGetUniformLocation(_shader, ambientUniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);//0.05f, 0.05f, 0.05f); //_light->ambientCol.x, _light->ambientCol.y, _light->ambientCol.z);//0.05f, 0.05f, 0.05f);  
-		
-		// Diffuse
-		char pointUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(pointUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
-		glUniform3f(glGetUniformLocation(_shader, pointUniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);//0.4f, 0.4f, 0.4f); //_light->diffuseCol.x, _light->diffuseCol.y, _light->diffuseCol.z); //0.4f, 0.4f, 0.4f); 
-		
-		// Specular
-		char specUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(specUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
-		glUniform3f(glGetUniformLocation(_shader, specUniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);////0.5f, 0.5f, 0.5f); //_light->specularCol.x, _light->specularCol.y, _light->specularCol.z);//0.5f, 0.5f, 0.5f); 
-		
-		// Constant
-		char constantUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(constantUniformName, MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
-		GLint unformShaderName = glGetUniformLocation(_shader, constantUniformName);
-		AF_Shader_SetFloat(_shader, constantUniformName, light->constant);
-	
-		// Linear
-		char linearUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(linearUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
-		glUniform1f(glGetUniformLocation(_shader, linearUniformName), light->linear);//0.09f); //_light->linear);//0.09f); 
-
-		// Quadratic
-		char quadraticUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(quadraticUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
-		glUniform1f(glGetUniformLocation(_shader, quadraticUniformName), light->quadratic);//0.032f); //_light->quadratic);//0.032f); 
-	}
-	
-}
-
-
-void AF_Renderer_Destroy_Shader(uint32_t _shaderID){
-	glDeleteProgram(_shaderID);
-}
 
 
 /*
@@ -1604,7 +1487,6 @@ Destroy the mesh renderer component renderer data
 void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 		// for each mesh
 		for(uint32_t j = 0; j < _mesh->meshCount; j++){
-			// optional: de-allocate all resources once they've outlived their purpose:
 			// ------------------------------------------------------------------------
 			AF_MeshData* mesh = &_mesh->meshes[j];
 			if(mesh == NULL){
@@ -1616,17 +1498,121 @@ void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 			glDeleteVertexArrays(1, &mesh->ibo);
 			glDeleteBuffers(1, &mesh->vbo);
 			glDeleteBuffers(1, &mesh->ibo);
-			//glDeleteProgram(mesh->material.shaderID);
-
-			
-			// Free the vertices and indices
-			//free(mesh->vertices);
-			//mesh->vertices = NULL;
-			//free(mesh->indices);
-			//mesh->indices = NULL;
 		}
-		// Free the meshes in the component correctly
-		//free(_mesh->meshes);
-		//_mesh->meshes = NULL;
+}
+
+/*====================
+AF_Renderer_DeleteFBO
+Delete a frame buffer to render to
+====================*/
+void AF_Renderer_DeleteFBO(uint32_t* _fboID)
+{
+	glDeleteFramebuffers(1, _fboID);
+	*_fboID = 0;
+}
+
+
+/*====================
+AF_Renderer_DeleteRBO
+Delete a render buffer object
+====================*/
+void AF_Renderer_DeleteRBO(uint32_t* _rboID)
+{
+	glDeleteRenderbuffers(1, _rboID);
+	*_rboID = 0;
+}
+
+/*====================
+AF_Renderer_DeleteTexture
+Delete a texture buffer object
+====================*/
+void AF_Renderer_DeleteTexture(uint32_t* _textureID)
+{
+	glDeleteTextures(1, _textureID);
+	*_textureID = 0;
+}
+
+
+// ====================================== HELPER FUNCTIONS =====================================
+
+
+/*
+====================
+AF_Renderer_CheckFrameBufferStatus
+Helper function for checking for GL errors for frame buffers
+====================
+*/
+void AF_Renderer_CheckFrameBufferStatus(const char* _message){
+	// In AF_Renderer_Start_ScreenFrameBuffers, replace the check with this:
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		// Log the specific error code!
+		const char* statusStr = "";
+		switch (status) {
+			case GL_FRAMEBUFFER_UNDEFINED:                     statusStr = "GL_FRAMEBUFFER_UNDEFINED"; break;
+			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:         statusStr = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"; break;
+			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"; break;
+			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"; break;
+			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER"; break;
+			case GL_FRAMEBUFFER_UNSUPPORTED:                   statusStr = "GL_FRAMEBUFFER_UNSUPPORTED"; break;
+			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"; break;
+			// case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:   statusStr = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"; break; // If using newer GL
+			default:                                           statusStr = "Unknown Error"; break;
+		}
+		// Make sure the error message accurately reflects where it's coming from
+		AF_Log_Error("AF_Renderer_Start_ScreenFrameBuffers: ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status: 0x%x (%s): %s\n", status, statusStr, _message);
+	}
+}
+
+
+/*
+====================
+AF_Renderer_CheckError
+Helper function for checking for GL errors
+====================
+*/
+void AF_Renderer_CheckError(const char* _message){    
+    GLenum errorCode = GL_NO_ERROR;
+    errorCode = glGetError();
+    const char* errorMessage = "";
+    if(errorMessage){}
+    while ((errorCode = glGetError()) != GL_NO_ERROR)
+    {
+	switch (errorCode)
+        {
+            case GL_INVALID_ENUM:                  errorMessage  = invalidEnum; break;
+            case GL_INVALID_VALUE:                 errorMessage  = invalidValue; break;
+            case GL_INVALID_OPERATION:             errorMessage  = invalidOperation; break;
+            case GL_STACK_OVERFLOW:                errorMessage  = stackOverflow; break;
+            case GL_STACK_UNDERFLOW:               errorMessage  = stackUnderflow; break;
+            case GL_OUT_OF_MEMORY:                 errorMessage  = outOfMemory; break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION: errorMessage  = invalidFrameBufferOperation; break;
+        }
+    AF_Log_Error(_message,errorMessage);
+
+    }
+           //printf("\nGL Error: %i\n", error);
+}
+
+
+/*
+====================
+AF_Renderer_SetPolygonMode
+Set the polygon mode used
+====================
+*/
+void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
+	switch(_polygonMode){
+		case AF_RENDERER_POLYGON_MODE_FILL:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		break;
+		case AF_RENDERER_POLYGON_MODE_POINT:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+		break;
+		case AF_RENDERER_POLYGON_MODE_LINE:
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+
+	}
 }
 
