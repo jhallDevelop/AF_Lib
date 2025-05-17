@@ -70,7 +70,7 @@ void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);
 void AF_Renderer_UnBindFrameBuffer(void);
 void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType);
 void AF_Renderer_BindRenderBuffer(uint32_t _rbo, uint32_t _screenWidth, uint32_t _screenHeight);
-
+void AF_Renderer_FrameResized(void* _renderingData);
 
 
 // ============================  DEPTH ================================ 

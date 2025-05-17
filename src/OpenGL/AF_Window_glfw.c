@@ -21,6 +21,7 @@ Calls GLFW library to handling window creation and input handling
 const char* glfwWindowFileTitle = "AF_Window_GLFW:";
 
 
+
 /*
 ====================
 error_callback
@@ -108,8 +109,12 @@ void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
         AF_Log_Error("%s window_pos_callback: afAppData is NULL\n", glfwWindowFileTitle);
         return;
     }
-        afAppData->window.windowXPos = _xpos;
-        afAppData->window.windowYPos = _ypos;
+    afAppData->window.windowXPos = _xpos;
+    afAppData->window.windowYPos = _ypos;
+    if(afAppData->rendererData.frameResizeFnctPtr != NULL){
+        WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
+        windowFunctPtr(&afAppData->rendererData);
+    }
 }
 
 /*
@@ -120,17 +125,7 @@ when the framebuffer size changes, update the glViewport
 */
 void framebuffer_size_callback(GLFWwindow* _window, int _width, int _height)
 {
-    if(_width || _height){}
-    int32_t width = 0;
-    int32_t height = 0;
-    glViewport(0, 0, width, height);
-
-    AF_AppData* afAppData = (AF_AppData*)glfwGetWindowUserPointer(_window);
-    if(afAppData == NULL){
-        AF_Log_Error("%s window_pos_callback: afAppData is NULL\n", glfwWindowFileTitle);
-        return;
-    }
-    glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
+    if (_width == 0 || _height == 0) return; // Avoid issues with minimized windows
 }
 
 /*
@@ -143,7 +138,6 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
 {
     if(_width || _height){}
     int width, height;
-
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
 
@@ -153,9 +147,26 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
         AF_Log_Error("%s window_size_callback: afAppData is NULL\n", glfwWindowFileTitle);
         return;
     }
-    afAppData->window.windowWidth = _width;
-    afAppData->window.windowHeight = _height;
+
+    AF_Window* window = &afAppData->window;
+    window->windowWidth = _width;
+    window->windowHeight = _height;
+    // Changing this will force a re-size to the correct value if in editor mode
+    int xpos, ypos;
+    glfwGetWindowPos((GLFWwindow*)_window, &xpos, &ypos);
+    afAppData->window.windowXPos = xpos;
+    afAppData->window.windowYPos = ypos;
+    window->frameBufferWidth = _width;
+    window->frameBufferHeight = _height;
+
+    // update the frame buffer
+    if(afAppData->rendererData.frameResizeFnctPtr != NULL){
+        WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
+        windowFunctPtr(&afAppData->rendererData);
+    }
 }
+
+
 
 /*
 ====================
@@ -224,18 +235,18 @@ Create a window using GLFW
 BOOL AF_Window_Create(void* _appData) {
     
     if(!_appData){
-        AF_Log("%s CreateWindow: _appData is NULL\n", glfwWindowFileTitle);
-        AF_Log_Error("%s CreateWindow: failed to create window\n", glfwWindowFileTitle);
+        AF_Log("%s AF_Window_Create: _appData is NULL\n", glfwWindowFileTitle);
+        AF_Log_Error("%s AF_Window_Create: failed to create window\n", glfwWindowFileTitle);
         return FALSE;
     }
 
-    AF_Log("%s Create Window\n", glfwWindowFileTitle);
+    AF_Log("%s AF_Window_Create\n", glfwWindowFileTitle);
     glfwSetErrorCallback(error_callback);
 
     if (!glfwInit())
     {
         // Initialization failed
-        AF_Log_Error("%sCreateWindow: Failed to init glfw\n", glfwWindowFileTitle);
+        AF_Log_Error("%s AF_Window_Create: Failed to init glfw\n", glfwWindowFileTitle);
         return FALSE;
     }
  
@@ -246,26 +257,29 @@ BOOL AF_Window_Create(void* _appData) {
 
     AF_AppData* appData = (AF_AppData*)_appData;
     AF_Window* _window = &appData->window;
-    AF_Log("AF_Lib_CreateWindow: appData %p, window %p \n",appData, &appData->window);
+    AF_Log("AF_Window_Create: appData %p, window %p width: %i height: %i \n",appData, &appData->window, _window->windowWidth, _window->windowHeight);
    
     GLFWwindow* glfwWindow = glfwCreateWindow(_window->windowWidth, _window->windowHeight, _window->title, NULL, NULL);
    
     if (!glfwWindow)
     {
         // Window or context creation failed
-         AF_Log_Error("%s CreateWindow: Failed to create a window\n", glfwWindowFileTitle);
+         AF_Log_Error("%s AF_Window_Create: Failed to create a window, glfwWindow is null\n", glfwWindowFileTitle);
          return FALSE;
     }
     // assign the glfw window ptr to the struct passed in
     _window->window = glfwWindow;
 
     // Set the framebuffer sies
-    int width, height;
+    int width =  (int)_window->windowWidth;
+    int height = (int)_window->windowHeight;
     glfwGetFramebufferSize(glfwWindow, &width, &height);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, _window->windowWidth, _window->windowHeight);
 
-     _window->frameBufferWidth = width; 
-     _window->frameBufferHeight = height;
+     //_window->frameBufferWidth = width; 
+     //_window->frameBufferHeight = height;
+    //_window->windowWidth = width;
+    //_window->windowHeight = height;
 
     // make current context
     glfwMakeContextCurrent(glfwWindow);
@@ -329,8 +343,10 @@ void AF_Window_Render(AF_Window* _window){
     glfwGetFramebufferSize((GLFWwindow*)_window->window, &width, &height);
     glViewport(0, 0, width, height);
 
-    _window->frameBufferWidth = width; 
-    _window->frameBufferHeight = height;
+    //_window->frameBufferWidth = width; 
+    //_window->frameBufferHeight = height;
+    _window->windowWidth = width;
+    _window->windowHeight = height;
 
 
     /* Swap front and back buffers */

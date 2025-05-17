@@ -37,8 +37,8 @@ typedef struct  {
     AF_FLOAT nearPlane;
     AF_FLOAT farPlane;
     AF_FLOAT aspectRatio;
-    AF_FLOAT windowWidth;
-    AF_FLOAT windowHeight;
+    //AF_FLOAT windowWidth;
+    //AF_FLOAT windowHeight;
     AF_FLOAT tanHalfFov;
     AF_FLOAT rangeInv;
     BOOL orthographic;
@@ -68,8 +68,8 @@ inline static AF_CCamera AF_CCamera_ZERO(void){
 		.fov = 0,
 		.nearPlane = 0,
 		.aspectRatio = 0,
-		.windowWidth = 0,
-		.windowHeight = 0,
+		//.windowWidth = 0,
+		//.windowHeight = 0,
 		.tanHalfFov = 0,
 		.rangeInv = 0,
 		.orthographic = FALSE,
@@ -114,8 +114,8 @@ inline static AF_CCamera AF_CCamera_ADD(BOOL _isOrthographic){
 		.nearPlane = 0.1f,
 		.farPlane = 100.0f,
 		.aspectRatio = 0,
-		.windowWidth = 0,
-		.windowHeight = 0,
+		//.windowWidth = 0,
+		//.windowHeight = 0,
 		.tanHalfFov = AF_Math_Tan(45 / 2), //AF_Math_Tan(halfFov)
 		.rangeInv = 1 / 100 - 0, // 1/farPlane - nearPlane
 		.orthographic = _isOrthographic,
@@ -194,11 +194,12 @@ Setup a camera component struct with settings for a perspective camera
 ====================
 */
 
-inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera) {
+inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight) {
     //https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix.html
     // Get the framebuffer width and height as we work in pixels
     // Set perspective camera settings
-    _camera->aspectRatio = (float)_camera->windowWidth / (float)_camera->windowHeight;
+    //_camera->aspectRatio = (float)_camera->windowWidth / (float)_camera->windowHeight;
+    _camera->aspectRatio = (float)_windowWidth / (float)_windowHeight;
     
     // Convert FOV to radians and calculate tanHalfFov
     _camera->tanHalfFov = AF_Math_Tan(AF_Math_Radians(_camera->fov) / 2);

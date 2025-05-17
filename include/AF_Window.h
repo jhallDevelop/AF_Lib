@@ -11,6 +11,7 @@ Definition of Window helper functions
 #include <stdint.h>
 #include "AF_Lib_Define.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,15 +30,13 @@ typedef struct {
     const char* title;      // Offset 16 (8 bytes)
     
     // Group all uint16_t members together to minimize padding
-    uint16_t windowXPos;    // Offset 24 (2 bytes)
-    uint16_t windowYPos;    // Offset 26 (2 bytes)
+    AF_FLOAT windowXPos;    // Offset 24 (2 bytes)
+    AF_FLOAT windowYPos;    // Offset 26 (2 bytes)
     uint16_t windowWidth;   // Offset 28 (2 bytes)
     uint16_t windowHeight;  // Offset 30 (2 bytes)
     uint16_t frameBufferWidth;  // Offset 32 (2 bytes)
     uint16_t frameBufferHeight; // Offset 34 (2 bytes)
-    
-    // Add explicit padding to reach next 8-byte boundary
-    uint8_t _padding[6];    // Offset 36-41 (6 bytes of padding)
+    BOOL isFrameUpdated;
 } AF_Window;
 #pragma pack(pop)   // Restore previous packing
 
@@ -52,7 +51,8 @@ inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth
         .windowWidth =  _windowWidth,
         .windowHeight = _windowHeight,
         .frameBufferWidth = _windowWidth,
-        .frameBufferHeight = _windowHeight
+        .frameBufferHeight = _windowHeight,
+        .isFrameUpdated = FALSE
     };
 
     return window;

@@ -7,10 +7,11 @@
 
 
 typedef struct AF_ViewportData {
-    uint16_t viewPortPosX;
-    uint16_t viewPortPosY;
-    uint16_t viewPortFramebufferWidth;
-    uint16_t viewPortFramebufferHeight;
+    AF_Window* windowPtr;
+    //uint16_t viewPortPosX;
+    //uint16_t viewPortPosY;
+    //uint16_t viewPortFramebufferWidth;
+    //uint16_t viewPortFramebufferHeight;
     //uint32_t fbo;
     //uint32_t textureID;
     //uint32_t rbo;
@@ -35,10 +36,11 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void){
 	};
     
     AF_ViewportData viewportData = {
-    .viewPortPosX = 0,
-    .viewPortPosY = 0,
-    .viewPortFramebufferWidth = 0,
-    .viewPortFramebufferHeight = 0,
+    .windowPtr = NULL,
+    //.viewPortPosX = 0,
+    //.viewPortPosY = 0,
+    //.viewPortFramebufferWidth = 0,
+    //.viewPortFramebufferHeight = 0,
     //.fbo = 0,
     //.textureID = 0,
     //.rbo = 0,

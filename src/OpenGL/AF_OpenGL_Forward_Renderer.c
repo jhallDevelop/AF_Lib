@@ -96,15 +96,23 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	// ==== Setup Depth Map and Texture ====
 	uint16_t depthTextureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;
 	uint16_t depthTextureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;
+
+	// In AF_Renderer_Start_ScreenFrameBuffers, after AF_Renderer_CreateFramebuffer
+	_renderingData->viewportTextureWidth = *_screenWidth;  // Initialized from main window
+	_renderingData->viewportTextureHeight = *_screenHeight;
+	_renderingData->viewportSizeDirty = FALSE; // Or TRUE if you want it to immediately conform to first ImGui panel size
+	
 	AF_Renderer_Start_DepthFrameBuffers(_renderingData, &depthTextureWidth, &depthTextureHeight);
 
 	// ==== Setup Screen FBO (for main scene render to ImGui viewport) ====
     if (_screenWidth != NULL && _screenHeight != NULL && *_screenWidth > 0 && *_screenHeight > 0) {
         AF_Renderer_Start_ScreenFrameBuffers(_renderingData, _screenWidth, _screenHeight);
+		//AF_Log_Warning("AF_Renderer_Start: TODO: Create Depth frame buffer\n");
+		//AF_Log_Warning("AF_Renderer_Start: TODO: Create debug Depth frame buffer\n");
     } else {
         AF_Log_Error("AF_Renderer_Start: Screen dimensions not valid for initial screen FBO setup. Attempting with default or expect Editor_Viewport_Render to create.\n"); 
     }
-
+	
 	/*
 
     // ==== Setup Screen Quad VAO/VBO (used by RenderScreenFBOQuad) ====
@@ -130,18 +138,19 @@ void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint
 	// ============ SCREEN FRAME BUFFER OBJECT =========== 
     uint32_t* fbo = &_renderingData->screenFBO_ID;
     uint32_t* rbo = &_renderingData->screenRBO_ID;
+	//AF_Log_Error("AF_Renderer_Start_ScreenFrameBuffers: ScreenFBO_TextureID is being deleted before dditor_Viewport_Render function is called. Need to figure out why\n");
     uint32_t* textureID = &_renderingData->screenFBO_TextureID;
-    uint16_t* viewportWidth = _screenWidth;
-    uint16_t* viewportHeight = _screenHeight;
-    // Create the frame buffer, containing many steps (fbo, rbo, texture id ext)
-    AF_Renderer_CreateFramebuffer(fbo, rbo, textureID, viewportWidth, viewportHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
 
+    // Create the frame buffer, containing many steps (fbo, rbo, texture id ext)
+    AF_Renderer_CreateFramebuffer(fbo, rbo, textureID, _screenWidth, _screenHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+        
 	// Create the screen shader to use
 	char screenVertShaderFullPath[MAX_PATH_CHAR_SIZE];
 	char screenFragShaderFullPath[MAX_PATH_CHAR_SIZE];
 	snprintf(screenVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
 	snprintf(screenFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
 	_renderingData->screenFBO_ShaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath);
+	
 	// Set the screen Frame buffer texture
 	glUseProgram(_renderingData->screenFBO_ShaderID);
 	AF_Shader_SetInt(_renderingData->screenFBO_ShaderID, "screenTexture", 0);
@@ -245,6 +254,8 @@ Simple render command to decide how to progress other rendering steps
 */
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
 
+	
+
 	// START RENDERING
 	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
 
@@ -272,8 +283,8 @@ void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_Light
 		break;
 
 	}
-	
 }
+
 
 
 /*
@@ -284,24 +295,15 @@ Simple render command to perform forward rendering steps
 */
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
     AF_CCamera* camera = _cameraEntity->camera;
-    uint16_t mainCameraWidth = (uint16_t)camera->windowWidth;   // Width for screenFBO_TextureID
-    uint16_t mainCameraHeight = (uint16_t)camera->windowHeight; // Height for screenFBO_TextureID
-
     // Ensure critical FBOs are valid (simple check, robust check is glCheckFramebufferStatus in creation)
     if (_renderingData->depthFBO_ID == 0 || _renderingData->screenFBO_ID == 0 || _renderingData->depthDebugFBO_ID == 0) {
-        //AF_Log_Error("AF_Renderer_StartForwardRendering: One or more critical FBOs are not initialized!\n");
+        AF_Log_Error("AF_Renderer_StartForwardRendering: One or more critical FBOs are not initialized!\n");
         //return;
     }
 
-    if ((mainCameraWidth > 0 && mainCameraHeight > 0 )){//&& (viewPort->isResized == TRUE)) || viewPort->isRefreshed == FALSE) {
-        // Delete the existing framebuffer, texture, and renderbuffer if they exist
-        AF_Renderer_CreateFramebuffer(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_TextureID, &mainCameraWidth, &mainCameraHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+	// TODO: call this from event
+    //AF_Renderer_FrameResized( _renderingData, _cameraEntity);
 
-        //update the glviewport size and position
-        //glViewport(viewPort->viewPortPosX, viewPort->viewPortPosY, viewPort->viewPortFramebufferWidth, viewPort->viewPortFramebufferHeight);
-		//glViewport(0, 0, mainCameraWidth, mainCameraHeight);
-        //viewPort->isResized = TRUE;
-    }
 
     // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
     // This pass renders scene geometry from the light's perspective to a depth texture.
@@ -328,8 +330,16 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // This FBO is typically managed (created/resized) by your Editor_Viewport_Render.
 
 	// tODO change back to screen fbo
+	
     AF_Renderer_BindFrameBuffer(_renderingData->screenFBO_ID);
-    glViewport(0, 0, mainCameraWidth, mainCameraHeight); // Viewport for the main scene render
+    AF_Window* window = _renderingData->windowPtr;
+	if(window == NULL){
+		AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
+		return;
+	}
+	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
+	
+	//glViewport(0, 0, window->windowWidth, window->windowHeight); // Viewport for the main scene render
 
     // Set clear color for the main scene (e.g., camera's background color)
     // Assuming camera->backgroundColor is a Vec4 or similar
@@ -535,7 +545,7 @@ Simple DrawElements call on all ECS mesh components
 ====================
 */
 void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID){
-	if(_shaderID == 0){}
+	if(_shaderID == 0 || _viewPos->x == 0){}
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
 		if(!AF_Component_GetHas(entity->flags)){
@@ -983,6 +993,33 @@ void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData)
 
 // ============================  FRAME BUFFERS ================================ 
 
+/*
+====================
+AF_Renderer_FrameResized
+Called by event or callback
+Update the Framebuffer as the window size has changed
+====================
+*/
+void AF_Renderer_FrameResized(void* _renderingData){
+	if(_renderingData == NULL){
+		AF_Log_Error("AF_Renderer_FrameResized: passed null reference\n");
+		return;
+	}
+	AF_RenderingData* renderingDataPtr = (AF_RenderingData*)_renderingData;
+
+	AF_Window* window = renderingDataPtr->windowPtr;
+	if(window == NULL){
+		AF_Log_Error("AF_Renderer_FrameResized: window is null\n");
+		return;
+	}
+	if ((window->frameBufferWidth <= 0 || window->frameBufferHeight <= 0)){
+		AF_Log_Error("AF_Renderer_FrameResized: width: %i height: %i = to or less than 0\n", window->frameBufferWidth, window->frameBufferHeight);
+		return;
+	}
+    // Call the resize function
+	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFBO_ID, &renderingDataPtr->screenRBO_ID, &renderingDataPtr->screenFBO_TextureID, &window->frameBufferWidth, &window->frameBufferHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+}
+
 
 /*
 ====================
@@ -1005,6 +1042,7 @@ Create FBO, RBO, and Texture to use in frame buffer rendering for color
 */
 void AF_Renderer_CreateFramebuffer(uint32_t *_fbo, uint32_t *_rbo, uint32_t *_textureID, uint16_t *_textureWidth, uint16_t *_textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter)
 {
+	if(_readBufferType == 0){}
 	// Delete the existing framebuffer, texture, and renderbuffer if they exist
     AF_Renderer_DeleteFBO(_fbo);
     AF_Renderer_DeleteRBO(_rbo);
@@ -1014,7 +1052,6 @@ void AF_Renderer_CreateFramebuffer(uint32_t *_fbo, uint32_t *_rbo, uint32_t *_te
     // Generate the framebuffer id
     *_fbo = AF_Renderer_CreateFBO();
     AF_Renderer_BindFrameBuffer(*_fbo);
-	
     // Generate texture to render to
 	*_textureID = AF_Renderer_CreateFBOTexture(*_textureWidth, *_textureHeight, _internalFormat, GL_UNSIGNED_BYTE, _minFilter, _magFilter);
 
@@ -1153,7 +1190,7 @@ Do the initial setup for rendering a depth pass in opengl
 void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera){
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
-	
+	if(_camera == NULL){}
 	Mat4 lightProjection;
 	Mat4 lightView;
 	Mat4 lightSpaceMatrix;
@@ -1373,9 +1410,6 @@ void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
 		}
 	}
 }
-
-
-
 
 
 

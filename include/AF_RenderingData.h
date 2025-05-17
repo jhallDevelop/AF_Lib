@@ -11,8 +11,10 @@ Calls vfprintf but adds some colour to text output
 #define AF_RENDERINGDATA_H
 
 #include "AF_Lib_Define.h"
+#include "AF_Window.h"
 #include "AF_LightingData.h"
 #include "AF_Vec3.h"
+typedef void (*WindowFuncPtr)(void*);
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,6 +94,12 @@ typedef struct AF_RenderingData{
     uint32_t depthDebugTextureID;
     uint32_t depthDebugShaderID;
     AF_Renderer_PolygonMode_e polygonMode;
+    WindowFuncPtr frameResizeFnctPtr;
+    AF_Window* windowPtr;
+    // In AF_RenderingData
+    uint16_t viewportTextureWidth;  // The width the FBO texture should be / currently is
+    uint16_t viewportTextureHeight; // The height the FBO texture should be / currently is
+    BOOL     viewportSizeDirty;     // Flag if it needs to be recreated
 } AF_RenderingData;
 
 // ================ Screen FBO Data ================
@@ -132,7 +140,13 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
         .depthDebugRBO_ID = 0,
         .depthDebugTextureID = 0,
         .depthDebugShaderID = 0,
-        .polygonMode = AF_RENDERER_POLYGON_MODE_FILL
+        .polygonMode = AF_RENDERER_POLYGON_MODE_FILL,
+        .frameResizeFnctPtr = NULL,
+        .windowPtr = NULL,
+        // In AF_RenderingData
+        .viewportTextureWidth = 0,  // The width the FBO texture should be / currently is
+        .viewportTextureHeight = 0, // The height the FBO texture should be / currently is
+        .viewportSizeDirty = FALSE    // Flag if it needs to be recreated
 	};
 
 	return returnRenderingData;

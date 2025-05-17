@@ -468,9 +468,9 @@ static inline void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FL
 
 
     
-    camera->windowWidth = _windowWidth;
-    camera->windowHeight = _windowHeight;
-    camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(_cameraEntityPtr->camera);
+    //camera->windowWidth = _windowWidth;
+    //camera->windowHeight = _windowHeight;
+    camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(_cameraEntityPtr->camera, _windowWidth, _windowHeight);
     
 }
 
