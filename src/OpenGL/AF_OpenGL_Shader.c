@@ -217,3 +217,8 @@ GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name){
     }
     return returnValue;
 }
+
+void AF_Shader_Use(uint32_t _id){
+    glUseProgram(_id); 
+}
+
