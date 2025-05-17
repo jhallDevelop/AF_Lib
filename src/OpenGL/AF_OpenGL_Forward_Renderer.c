@@ -93,20 +93,20 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	if(_renderingData == NULL || _screenWidth == NULL || _screenHeight == NULL){}
 	
 
-	// ==== Setup Depth Map and Texture ====
-	uint16_t depthTextureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;
-	uint16_t depthTextureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;
-
-	// In AF_Renderer_Start_ScreenFrameBuffers, after AF_Renderer_CreateFramebuffer
-	_renderingData->viewportTextureWidth = *_screenWidth;  // Initialized from main window
-	_renderingData->viewportTextureHeight = *_screenHeight;
-	_renderingData->viewportSizeDirty = FALSE; // Or TRUE if you want it to immediately conform to first ImGui panel size
 	
-	AF_Renderer_Start_DepthFrameBuffers(_renderingData, &depthTextureWidth, &depthTextureHeight);
 
 	// ==== Setup Screen FBO (for main scene render to ImGui viewport) ====
     if (_screenWidth != NULL && _screenHeight != NULL && *_screenWidth > 0 && *_screenHeight > 0) {
-        AF_Renderer_Start_ScreenFrameBuffers(_renderingData, _screenWidth, _screenHeight);
+        AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_ShaderID, &_renderingData->screenFBO_TextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH);
+
+		// ==== Setup Depth Map and Texture ====
+		AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->depthDebugFBO_ID, &_renderingData->depthDebugRBO_ID, &_renderingData->depthDebugShaderID, &_renderingData->depthDebugTextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH);
+
+		//uint16_t depthTextureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;
+		//uint16_t depthTextureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;
+		//AF_Renderer_Start_DepthFrameBuffers(_renderingData, &depthTextureWidth, &depthTextureHeight);
+		//AF_Renderer_Start_DepthDebugFrameBuffers(_renderingData, _screenWidth, _screenHeight);
+
 		//AF_Log_Warning("AF_Renderer_Start: TODO: Create Depth frame buffer\n");
 		//AF_Log_Warning("AF_Renderer_Start: TODO: Create debug Depth frame buffer\n");
     } else {
@@ -125,60 +125,103 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
     AF_Log("  depthDebugFBO_ID: %u, depthDebugTextureID: %u\n", _renderingData->depthDebugFBO_ID, _renderingData->depthDebugTextureID);
     AF_Log("  screenFBO_ID: %u, screenFBO_TextureID: %u\n", _renderingData->screenFBO_ID, _renderingData->screenFBO_TextureID);
 	*/
-	AF_Log_Error("AF_Renderer_Start: Disabled depth and debug FBO creation\n");
 }
 
 /*
 ====================
 AF_Renderer_Start_ScreenFrameBuffers
-Start function which frame buffers are initialised
+Start function which screen frame buffers are initialised
 ====================
 */
-void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
+void AF_Renderer_Start_ScreenFrameBuffers(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _shaderID, uint32_t* _textureID,  uint16_t* _screenWidth, uint16_t* _screenHeight, const char* _vertPath, const char* _fragPath){
 	// ============ SCREEN FRAME BUFFER OBJECT =========== 
-    uint32_t* fbo = &_renderingData->screenFBO_ID;
-    uint32_t* rbo = &_renderingData->screenRBO_ID;
-	//AF_Log_Error("AF_Renderer_Start_ScreenFrameBuffers: ScreenFBO_TextureID is being deleted before dditor_Viewport_Render function is called. Need to figure out why\n");
-    uint32_t* textureID = &_renderingData->screenFBO_TextureID;
 
     // Create the frame buffer, containing many steps (fbo, rbo, texture id ext)
-    AF_Renderer_CreateFramebuffer(fbo, rbo, textureID, _screenWidth, _screenHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+    AF_Renderer_CreateFramebuffer(_fbo, 
+		_rbo, 
+		_textureID, 
+		_screenWidth, 
+		_screenHeight, 
+		GL_RGB, 
+		GL_COLOR_ATTACHMENT0, 
+		GL_TRUE, 
+		GL_TRUE, 
+		GL_LINEAR, 
+		GL_LINEAR);
         
 	// Create the screen shader to use
 	char screenVertShaderFullPath[MAX_PATH_CHAR_SIZE];
 	char screenFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-	snprintf(screenVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
-	snprintf(screenFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
-	_renderingData->screenFBO_ShaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath);
+	snprintf(screenVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", _vertPath);
+	snprintf(screenFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", _fragPath);
+	*_shaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath);
 	
 	// Set the screen Frame buffer texture
-	glUseProgram(_renderingData->screenFBO_ShaderID);
-	AF_Shader_SetInt(_renderingData->screenFBO_ShaderID, "screenTexture", 0);
+	glUseProgram(*_shaderID);
+	AF_Shader_SetInt(*_shaderID, "screenTexture", 0);
     glUseProgram(0);
 }
 
 /*
 ====================
+AF_Renderer_Start_DepthDebugFrameBuffers
+Start function which depth debug frame buffers are initialised
+====================
+*/
+void AF_Renderer_Start_DepthDebugFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
+	uint32_t* depthDebugFbo = &_renderingData->depthFBO_ID;
+    uint32_t* depthDebugRbo = &_renderingData->depthRBO_ID;
+    uint32_t* depthDebugTexture = &_renderingData->depthMapTextureID;
+
+	AF_Renderer_CreateFramebuffer(
+		&_renderingData->depthDebugFBO_ID,
+		&_renderingData->depthDebugRBO_ID, 
+		&_renderingData->depthDebugTextureID, // This is the texture ImGui will display
+		&_screenWidth,
+		&_screenHeight,
+		GL_RGB,                    // It MUST be a color texture (e.g., GL_RGB, GL_RGBA)
+		GL_COLOR_ATTACHMENT0,      // Attach as color
+		GL_FALSE,                  // No depth buffer needed for this debug FBO itself
+		GL_FALSE,                  // No stencil buffer needed for this debug FBO itself
+		GL_LINEAR,                 // Min filter
+		GL_LINEAR                  // Mag filter
+	);
+
+	// Create the depth debug shader to use
+	char depthDebugVertShaderFullPath[MAX_PATH_CHAR_SIZE];
+	char depthDebugFragShaderFullPath[MAX_PATH_CHAR_SIZE];
+	//snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
+	//snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
+	snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
+	snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
+	_renderingData->depthDebugShaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath);
+	 // shader configuration
+    // Set the depth texture to use when using the debugging shader
+    glUseProgram(_renderingData->depthDebugShaderID);
+	AF_Shader_SetInt(_renderingData->depthDebugShaderID, "depthMap", 0);
+    glUseProgram(0);
+}
+
+
+/*
+====================
 AF_Renderer_Start_DepthFrameBuffers
-Start function which depth buffers are initialised
+Start function which depth frame buffers are initialised
 ====================
 */
 void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
 	// ============ SCREEN FRAME BUFFER OBJECT =========== 
-    uint32_t* fbo = &_renderingData->depthFBO_ID;
-    uint32_t* rbo = &_renderingData->depthRBO_ID;
-    uint32_t* textureID = &_renderingData->depthMapTextureID;
-    uint16_t* viewportWidth = _screenWidth;
-    uint16_t* viewportHeight = _screenHeight;
+    uint32_t* depthFbo = &_renderingData->depthFBO_ID;
+    uint32_t* depthRbo = &_renderingData->depthRBO_ID;
+    uint32_t* depthTexture = &_renderingData->depthMapTextureID;
+
     // Create the frame buffer, containing many steps (fbo, rbo, texture id ext)
-    //AF_Renderer_CreateFramebuffer(fbo, rbo, textureID, viewportWidth, viewportHeight, GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT, GL_NONE, GL_NONE, GL_NEAREST, GL_NEAREST);
-	//AF_Renderer_CreateFramebuffer(fbo, rbo, textureID, viewportWidth, viewportHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
-	AF_Renderer_CreateFramebuffer(
-		fbo,
-		rbo, // Or &_renderingData->depthRBO_ID if you insist on an RBO AND a depth texture (unusual for simple depth map)
-		textureID,
-		viewportWidth,
-		viewportHeight,
+    AF_Renderer_CreateFramebuffer(
+		depthFbo,
+		depthFbo, // Or &_renderingData->depthRBO_ID if you insist on an RBO AND a depth texture (unusual for simple depth map)
+		depthTexture,
+		_screenWidth,
+		_screenHeight,
 		GL_DEPTH_COMPONENT24,      // Internal format for the depth texture
 		GL_DEPTH_ATTACHMENT,       // Attach it as a depth buffer
 		GL_NONE,                   // No color buffer to draw to
@@ -197,38 +240,7 @@ void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint1
 	_renderingData->depthRenderShaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath);
 	
 	
-	// Create the depth debug shader to use
-	char depthDebugVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-	char depthDebugFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-	snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
-	snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
-	_renderingData->depthDebugShaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath);
-	 // shader configuration
-    // Set the depth texture to use when using the debugging shader
-    glUseProgram(_renderingData->depthDebugShaderID);
-	AF_Shader_SetInt(_renderingData->depthDebugShaderID, "depthMap", 0);//_renderingData->depthMapTextureID);
-    glUseProgram(0);
-
-	// Create depth debug frame buffer to render to texture 
-	uint16_t debugTexWidth = AF_RENDERINGDATA_SHADOW_WIDTH;  // Or specific size for debug texture
-	uint16_t debugTexHeight = AF_RENDERINGDATA_SHADOW_HEIGHT; // Or specific size for debug texture
-
-	AF_Renderer_CreateFramebuffer(
-		&_renderingData->depthDebugFBO_ID,
-		&_renderingData->depthDebugRBO_ID, // You likely don't need a separate RBO for depth/stencil on this FBO
-			  // if you're just drawing a full-screen quad with depth test disabled.
-			  // If AF_Renderer_CreateFramebuffer requires an RBO pointer, pass &_renderingData->depthDebugRBO_ID
-			  // but ensure createDepth/createStencil params are FALSE for this call if not needed.
-		&_renderingData->depthDebugTextureID, // This is the texture ImGui will display
-		&debugTexWidth,
-		&debugTexHeight,
-		GL_RGB,                    // It MUST be a color texture (e.g., GL_RGB, GL_RGBA)
-		GL_COLOR_ATTACHMENT0,      // Attach as color
-		GL_FALSE,                  // No depth buffer needed for this debug FBO itself
-		GL_FALSE,                  // No stencil buffer needed for this debug FBO itself
-		GL_LINEAR,                 // Min filter
-		GL_LINEAR                  // Mag filter
-	);
+	
 	// TODO: use this for shadow map shader
 	/*
 	glUseProgram(_renderingData->shadowShaderID);
@@ -372,10 +384,18 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Populates _renderingData->depthDebugTextureID) ====
     // This pass takes the raw _renderingData->depthMapTextureID, uses _renderingData->depthDebugShaderID
     // to convert depth to a visual format (e.g., grayscale), and renders this to _renderingData->depthDebugTextureID.
-/*
     AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFBO_ID);
+
+	// =============
+	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
+    glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
+    glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+    glDepthMask(GL_TRUE);    // Ensure depth writing is on
+
+	// =========
     // Viewport for the debug texture (typically same dimensions as the shadow map)
-    glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
+    //glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
     //glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Clear debug texture to black
     //glClear(GL_COLOR_BUFFER_BIT);         // Only clear color; depth test is disabled in RenderScreenFBOQuad
 
@@ -383,10 +403,21 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // - Use _renderingData->depthDebugShaderID
     // - Bind _renderingData->depthMapTextureID as input texture
     // - Draw a full-screen quad
-    AF_Renderer_RenderScreenFBOQuad(_renderingData);
+    //AF_Renderer_RenderScreenFBOQuad(_renderingData);
+	//AF_Render_DrawMeshElements(_ecs, &camera->projectionMatrix, &_cameraEntity->transform->pos, _renderingData->depthDebugShaderID);
+	AF_Renderer_DrawMeshes(
+        &camera->viewMatrix,
+        &camera->projectionMatrix,
+        _ecs,
+        &_cameraEntity->transform->pos, // Camera position for lighting calculations
+        _lightingData
+        // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
+        // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
+        // to implement shadows. You might need to pass _renderingData or these specific items.
+    );
 
     AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
-*/
+
 
     // All off-screen rendering is complete.
     // The main application loop will now handle ImGui rendering,
@@ -1018,6 +1049,8 @@ void AF_Renderer_FrameResized(void* _renderingData){
 	}
     // Call the resize function
 	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFBO_ID, &renderingDataPtr->screenRBO_ID, &renderingDataPtr->screenFBO_TextureID, &window->frameBufferWidth, &window->frameBufferHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+	// resize the debug frame buffer
+	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthDebugFBO_ID, &renderingDataPtr->depthDebugRBO_ID, &renderingDataPtr->depthDebugTextureID, &window->frameBufferWidth, &window->frameBufferHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
 }
 
 

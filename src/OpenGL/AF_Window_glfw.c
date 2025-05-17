@@ -106,7 +106,7 @@ void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
 
     AF_AppData* afAppData = (AF_AppData*)glfwGetWindowUserPointer(_window);
     if(afAppData == NULL){
-        AF_Log_Error("%s window_pos_callback: afAppData is NULL\n", glfwWindowFileTitle);
+        AF_Log_Error("%s window_pos_callback: AF_AppData is NULL\n", glfwWindowFileTitle);
         return;
     }
     afAppData->window.windowXPos = _xpos;
@@ -152,10 +152,6 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
     window->windowWidth = _width;
     window->windowHeight = _height;
     // Changing this will force a re-size to the correct value if in editor mode
-    int xpos, ypos;
-    glfwGetWindowPos((GLFWwindow*)_window, &xpos, &ypos);
-    afAppData->window.windowXPos = xpos;
-    afAppData->window.windowYPos = ypos;
     window->frameBufferWidth = _width;
     window->frameBufferHeight = _height;
 

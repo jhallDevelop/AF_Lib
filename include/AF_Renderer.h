@@ -60,7 +60,8 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 
 
 // ============================  FRAME BUFFERS ================================ 
-void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
+//void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
+void AF_Renderer_Start_ScreenFrameBuffers(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _shaderID, uint32_t* _textureID,  uint16_t* _screenWidth, uint16_t* _screenHeight, const char* _vertPath, const char* _fragPath);
 
 uint32_t AF_Renderer_CreateFBO(void);
 void AF_Renderer_CreateFramebuffer(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _textureID, uint16_t* _textureWidth, uint16_t* _textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter);
@@ -76,7 +77,7 @@ void AF_Renderer_FrameResized(void* _renderingData);
 // ============================  DEPTH ================================ 
 void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera);
 void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-
+void AF_Renderer_Start_DepthDebugFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
 
 
 
