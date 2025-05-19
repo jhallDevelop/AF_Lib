@@ -23,6 +23,8 @@ This implementation is for OpenGL
 
 #include "AF_Assets.h"
 
+#define NO_SHARED_SHADER 0
+
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
 
@@ -92,16 +94,41 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	AF_Log("AF_Renderer_Start\n");
 	if(_renderingData == NULL || _screenWidth == NULL || _screenHeight == NULL){}
 	
-
-	
-
 	// ==== Setup Screen FBO (for main scene render to ImGui viewport) ====
     if (_screenWidth != NULL && _screenHeight != NULL && *_screenWidth > 0 && *_screenHeight > 0) {
-        AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_ShaderID, &_renderingData->screenFBO_TextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH);
-
+        //AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_ShaderID, &_renderingData->screenFBO_TextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH, "screenTexture");
+		char screenVertShaderFullPath[MAX_PATH_CHAR_SIZE];
+		char screenFragShaderFullPath[MAX_PATH_CHAR_SIZE];
+		snprintf(screenVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
+		snprintf(screenFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
+		AF_FrameBufferData screenBufferData = {
+			.fbo = 0,
+			.rbo = 0,
+			.shaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath),
+			.textureID = 0,
+			.textureWidth = *_screenWidth,
+			.textureHeight = *_screenHeight,
+			.vertPath = screenVertShaderFullPath, 
+			.fragPath = screenFragShaderFullPath, 
+			.shaderTextureName = "screenTexture",
+			.internalFormat = GL_RGB,
+			.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
+			.drawBufferType = GL_TRUE,
+			.readBufferType = GL_TRUE,
+			.minFilter = GL_LINEAR,
+			.magFilter = GL_LINEAR
+		};
+		// Set the screen Frame buffer texture
+		AF_Shader_SetInt(screenBufferData.shaderID, screenBufferData.shaderTextureName, 0);
+		// copy to the render data to use
+		_renderingData->screenFrameBufferData = screenBufferData;
+	
+		//AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFrameBufferData);
 		// ==== Setup Depth Map and Texture ====
-		AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->depthDebugFBO_ID, &_renderingData->depthDebugRBO_ID, &_renderingData->depthDebugShaderID, &_renderingData->depthDebugTextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH);
+		_renderingData->depthDebugFrameBufferData = screenBufferData;
 
+		// setup depth frame buffer
+		_renderingData->depthFrameBufferData = screenBufferData;
 		//uint16_t depthTextureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;
 		//uint16_t depthTextureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;
 		//AF_Renderer_Start_DepthFrameBuffers(_renderingData, &depthTextureWidth, &depthTextureHeight);
@@ -125,42 +152,9 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
     AF_Log("  depthDebugFBO_ID: %u, depthDebugTextureID: %u\n", _renderingData->depthDebugFBO_ID, _renderingData->depthDebugTextureID);
     AF_Log("  screenFBO_ID: %u, screenFBO_TextureID: %u\n", _renderingData->screenFBO_ID, _renderingData->screenFBO_TextureID);
 	*/
-}
-
-/*
-====================
-AF_Renderer_Start_ScreenFrameBuffers
-Start function which screen frame buffers are initialised
-====================
-*/
-void AF_Renderer_Start_ScreenFrameBuffers(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _shaderID, uint32_t* _textureID,  uint16_t* _screenWidth, uint16_t* _screenHeight, const char* _vertPath, const char* _fragPath){
-	// ============ SCREEN FRAME BUFFER OBJECT =========== 
-
-    // Create the frame buffer, containing many steps (fbo, rbo, texture id ext)
-    AF_Renderer_CreateFramebuffer(_fbo, 
-		_rbo, 
-		_textureID, 
-		_screenWidth, 
-		_screenHeight, 
-		GL_RGB, 
-		GL_COLOR_ATTACHMENT0, 
-		GL_TRUE, 
-		GL_TRUE, 
-		GL_LINEAR, 
-		GL_LINEAR);
-        
-	// Create the screen shader to use
-	char screenVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-	char screenFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-	snprintf(screenVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", _vertPath);
-	snprintf(screenFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", _fragPath);
-	*_shaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath);
 	
-	// Set the screen Frame buffer texture
-	glUseProgram(*_shaderID);
-	AF_Shader_SetInt(*_shaderID, "screenTexture", 0);
-    glUseProgram(0);
 }
+
 
 /*
 ====================
@@ -169,6 +163,7 @@ Start function which depth debug frame buffers are initialised
 ====================
 */
 void AF_Renderer_Start_DepthDebugFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
+	/*
 	uint32_t* depthDebugFbo = &_renderingData->depthFBO_ID;
     uint32_t* depthDebugRbo = &_renderingData->depthRBO_ID;
     uint32_t* depthDebugTexture = &_renderingData->depthMapTextureID;
@@ -200,6 +195,8 @@ void AF_Renderer_Start_DepthDebugFrameBuffers(AF_RenderingData* _renderingData, 
     glUseProgram(_renderingData->depthDebugShaderID);
 	AF_Shader_SetInt(_renderingData->depthDebugShaderID, "depthMap", 0);
     glUseProgram(0);
+
+	*/
 }
 
 
@@ -210,6 +207,7 @@ Start function which depth frame buffers are initialised
 ====================
 */
 void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
+		/*
 	// ============ SCREEN FRAME BUFFER OBJECT =========== 
     uint32_t* depthFbo = &_renderingData->depthFBO_ID;
     uint32_t* depthRbo = &_renderingData->depthRBO_ID;
@@ -242,7 +240,7 @@ void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint1
 	
 	
 	// TODO: use this for shadow map shader
-	/*
+
 	glUseProgram(_renderingData->shadowShaderID);
 	AF_Shader_SetInt(_renderingData->shadowShaderID, "diffuseTexture", 0);
 	AF_Shader_SetInt(_renderingData->shadowShaderID, "shadowMap", 1);
@@ -265,9 +263,6 @@ Simple render command to decide how to progress other rendering steps
 ====================
 */
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
-
-	
-
 	// START RENDERING
 	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
 
@@ -307,11 +302,13 @@ Simple render command to perform forward rendering steps
 */
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
     AF_CCamera* camera = _cameraEntity->camera;
+	// TODO: guard this as its expensive every frame
+	AF_Renderer_FrameResized(_renderingData);
     // Ensure critical FBOs are valid (simple check, robust check is glCheckFramebufferStatus in creation)
-    if (_renderingData->depthFBO_ID == 0 || _renderingData->screenFBO_ID == 0 || _renderingData->depthDebugFBO_ID == 0) {
-        AF_Log_Error("AF_Renderer_StartForwardRendering: One or more critical FBOs are not initialized!\n");
+    //if (_renderingData->depthFBO_ID == 0 || _renderingData->screenFBO_ID == 0 || _renderingData->depthDebugFBO_ID == 0) {
+    //    AF_Log_Error("AF_Renderer_StartForwardRendering: One or more critical FBOs are not initialized!\n");
         //return;
-    }
+    //}
 
 	// TODO: call this from event
     //AF_Renderer_FrameResized( _renderingData, _cameraEntity);
@@ -343,7 +340,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 
 	// tODO change back to screen fbo
 	
-    AF_Renderer_BindFrameBuffer(_renderingData->screenFBO_ID);
+    AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
     AF_Window* window = _renderingData->windowPtr;
 	if(window == NULL){
 		AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
@@ -372,7 +369,9 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         &camera->projectionMatrix,
         _ecs,
         &_cameraEntity->transform->pos, // Camera position for lighting calculations
-        _lightingData
+        _lightingData,
+		NO_SHARED_SHADER
+	
         // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
         // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
         // to implement shadows. You might need to pass _renderingData or these specific items.
@@ -384,7 +383,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Populates _renderingData->depthDebugTextureID) ====
     // This pass takes the raw _renderingData->depthMapTextureID, uses _renderingData->depthDebugShaderID
     // to convert depth to a visual format (e.g., grayscale), and renders this to _renderingData->depthDebugTextureID.
-    AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFBO_ID);
+    AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
 
 	// =============
 	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
@@ -410,7 +409,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         &camera->projectionMatrix,
         _ecs,
         &_cameraEntity->transform->pos, // Camera position for lighting calculations
-        _lightingData
+        _lightingData,
+		_renderingData->depthDebugFrameBufferData.shaderID
         // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
         // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
         // to implement shadows. You might need to pass _renderingData or these specific items.
@@ -645,7 +645,7 @@ AF_Renderer_DrawMeshes
 Loop through the entities and draw the meshes that have components attached
 ====================
 */
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
 		if(!AF_Component_GetHas(entity->flags)){
@@ -664,7 +664,7 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		// Update the model matrix
 		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
 		
-		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData);
+		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride);
 	}
 }
 
@@ -674,7 +674,7 @@ AF_Renderer_DrawMesh
 Loop through the meshes in a component and draw using opengl
 ====================
 */
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData){
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride){
 	// draw meshes
 	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
 	{
@@ -688,7 +688,15 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	}
 	// TODO: this is very expensive. batch these up or just per model, use one shader/material
 	// ---- Setup shader ----
-	uint32_t shader = _mesh->shader.shaderID;
+	uint32_t shader = 0;
+	// if we are not using a shared shader then use the individual mesh shader
+	if(_shaderOverride == NO_SHARED_SHADER){
+		shader = _mesh->shader.shaderID;
+	}else{
+		// otherwise use a shared shader
+		shader = _shaderOverride;
+	}
+	
 	glUseProgram(shader); 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 
@@ -843,15 +851,15 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
     glDisable(GL_DEPTH_TEST);
 
-    glUseProgram(_renderingData->depthDebugShaderID);
+    glUseProgram(_renderingData->depthDebugFrameBufferData.shaderID);
 
     // Uniforms for linearization (optional, shader dependent)
     float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
-    AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
-    AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
+    AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "near_plane", near_plane);
+    AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "far_plane", far_plane);
 
     glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
-    glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID); // Bind your actual depth map texture
+    glBindTexture(GL_TEXTURE_2D, _renderingData->depthDebugFrameBufferData.textureID); // Bind your actual depth map texture
 
     if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
         AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
@@ -1023,7 +1031,6 @@ void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData)
 
 
 // ============================  FRAME BUFFERS ================================ 
-
 /*
 ====================
 AF_Renderer_FrameResized
@@ -1048,9 +1055,21 @@ void AF_Renderer_FrameResized(void* _renderingData){
 		return;
 	}
     // Call the resize function
-	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFBO_ID, &renderingDataPtr->screenRBO_ID, &renderingDataPtr->screenFBO_TextureID, &window->frameBufferWidth, &window->frameBufferHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+	// TODO this is a bit messy
+	//AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFBO_ID, &renderingDataPtr->screenRBO_ID, &renderingDataPtr->screenFBO_TextureID, &window->frameBufferWidth, &window->frameBufferHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+	//update the screen size
+	renderingDataPtr->screenFrameBufferData.textureWidth = window->frameBufferWidth;
+	renderingDataPtr->screenFrameBufferData.textureHeight = window->frameBufferHeight;
+	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFrameBufferData);
+
+
+	renderingDataPtr->depthFrameBufferData.textureWidth = window->frameBufferWidth;
+	renderingDataPtr->depthFrameBufferData.textureHeight = window->frameBufferHeight;
+	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthFrameBufferData);
+
 	// resize the debug frame buffer
-	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthDebugFBO_ID, &renderingDataPtr->depthDebugRBO_ID, &renderingDataPtr->depthDebugTextureID, &window->frameBufferWidth, &window->frameBufferHeight, GL_RGB, GL_COLOR_ATTACHMENT0, GL_TRUE, GL_TRUE, GL_LINEAR, GL_LINEAR);
+	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthDebugFrameBufferData);
+
 }
 
 
@@ -1073,30 +1092,31 @@ AF_Renderer_CreateFramebuffer
 Create FBO, RBO, and Texture to use in frame buffer rendering for color
 ====================
 */
-void AF_Renderer_CreateFramebuffer(uint32_t *_fbo, uint32_t *_rbo, uint32_t *_textureID, uint16_t *_textureWidth, uint16_t *_textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter)
+void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _frameBufferData)
 {
-	if(_readBufferType == 0){}
+	if(_frameBufferData->drawBufferType == 0){}
 	// Delete the existing framebuffer, texture, and renderbuffer if they exist
-    AF_Renderer_DeleteFBO(_fbo);
-    AF_Renderer_DeleteRBO(_rbo);
-	AF_Renderer_DeleteTexture(_textureID);
+    AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
+    AF_Renderer_DeleteRBO(&_frameBufferData->rbo);
+	AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
 
     
     // Generate the framebuffer id
-    *_fbo = AF_Renderer_CreateFBO();
-    AF_Renderer_BindFrameBuffer(*_fbo);
+    _frameBufferData->fbo = AF_Renderer_CreateFBO();
+    AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
+	//AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer: FBO\n");
     // Generate texture to render to
-	*_textureID = AF_Renderer_CreateFBOTexture(*_textureWidth, *_textureHeight, _internalFormat, GL_UNSIGNED_BYTE, _minFilter, _magFilter);
+	_frameBufferData->textureID = AF_Renderer_CreateFBOTexture(_frameBufferData);
 
-	AF_Renderer_BindFrameBufferToTexture(*_fbo, *_textureID, _textureAttatchmentType);
+	AF_Renderer_BindFrameBufferToTexture(_frameBufferData->fbo, _frameBufferData->textureID, _frameBufferData->textureAttatchmentType);
 
     // Generate renderbuffer for depth and stencil
-    *_rbo = AF_Renderer_CreateRBO();
-    AF_Renderer_BindRenderBuffer(*_rbo, *_textureWidth, *_textureHeight);
-    AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer\n");
+    _frameBufferData->rbo = AF_Renderer_CreateRBO();
+    AF_Renderer_BindRenderBuffer(_frameBufferData->rbo, _frameBufferData->textureWidth, _frameBufferData->textureHeight);
+    AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer: RBO\n");
 	
 	// TODO: take in as args as some buffers e.g. depth buffer need this
-	if((GLint)_drawBufferType == GL_NONE){
+	if((GLint)_frameBufferData->drawBufferType == GL_NONE){
 		glDrawBuffer(GL_NONE);
     	glReadBuffer(GL_NONE);
 	}
@@ -1177,7 +1197,8 @@ Create Depth map texture and return the texture id
 ====================
 */
 // Modified Texture Creation Function
-uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter){ // Added params
+uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
+//uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter){ // Added params
 
     unsigned int fboTextureID = 0;
 	glBindTexture(GL_TEXTURE_2D,0);
@@ -1186,20 +1207,20 @@ uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureH
 
     // Determine format based on internalFormat (simplified example)
     GLenum format = GL_RGB; // Default
-    if ((GLenum)_internalFormat == GL_DEPTH_COMPONENT) {
+    if ((GLenum)_frameBufferData->internalFormat == GL_DEPTH_COMPONENT) {
         format = GL_DEPTH_COMPONENT;
-    } else if ((GLenum)_internalFormat == GL_RGBA || (GLenum)_internalFormat == GL_RGBA16F || (GLenum)_internalFormat == GL_RGBA32F) {
+    } else if ((GLenum)_frameBufferData->internalFormat == GL_RGBA || (GLenum)_frameBufferData->internalFormat == GL_RGBA16F || (GLenum)_frameBufferData->internalFormat == GL_RGBA32F) {
          format = GL_RGBA;
     } // Add more cases if needed
     
     glTexImage2D(GL_TEXTURE_2D, 0, format, // Use the specific internal format
-        _textureWidth, _textureHeight, 0,
+        _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0,
         format, // Use the determined format
-        (GLenum)_pixelDataType, // Use the specified data type
+        (GLenum)GL_UNSIGNED_BYTE, //->pixelDataType, // Use the specified data type
         NULL);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_minFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)_magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_frameBufferData->minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)_frameBufferData->magFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1243,11 +1264,11 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	lightSpaceMatrix = Mat4_MULT_M4(lightProjection, lightView);
 
 	// render scene from light's point of view
-	AF_Shader_Use(_renderingData->depthRenderShaderID); 
-	AF_Shader_SetMat4(_renderingData->depthRenderShaderID, "lightSpaceMatrix", lightSpaceMatrix);
+	AF_Shader_Use(_renderingData->depthDebugFrameBufferData.shaderID); 
+	AF_Shader_SetMat4(_renderingData->depthDebugFrameBufferData.shaderID, "lightSpaceMatrix", lightSpaceMatrix);
 
 	// Render meshes
-	AF_Render_DrawMeshElements(_ecs, &lightProjection, &viewPos, _renderingData->depthRenderShaderID);
+	AF_Render_DrawMeshElements(_ecs,  &lightProjection, &viewPos, _renderingData->depthDebugFrameBufferData.shaderID);
 	AF_Shader_Use(0);
 	
 	/*
@@ -1495,12 +1516,17 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 	// Delete Frame buffer stuff
 	// Destroy renderbuffers
 	// Screen buffers
-	glDeleteRenderbuffers(1, &_renderingData->screenRBO_ID);
-	glDeleteFramebuffers(1, &_renderingData->screenFBO_ID);
+
+	glDeleteFramebuffers(1, &_renderingData->screenFrameBufferData.fbo);
+	glDeleteRenderbuffers(1, &_renderingData->screenFrameBufferData.rbo);
 
 	// Depth Buffers
-	glDeleteFramebuffers(1, &_renderingData->depthFBO_ID);
-	glDeleteFramebuffers(1, &_renderingData->depthRBO_ID);
+	glDeleteFramebuffers(1, &_renderingData->depthDebugFrameBufferData.fbo);
+	glDeleteFramebuffers(1, &_renderingData->depthDebugFrameBufferData.rbo);
+
+	// Depth Buffers
+	glDeleteFramebuffers(1, &_renderingData->depthFrameBufferData.fbo);
+	glDeleteFramebuffers(1, &_renderingData->depthFrameBufferData.rbo);
 
 	// Screen Quad
 	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VAO);
@@ -1620,7 +1646,7 @@ void AF_Renderer_CheckFrameBufferStatus(const char* _message){
 			default:                                           statusStr = "Unknown Error"; break;
 		}
 		// Make sure the error message accurately reflects where it's coming from
-		AF_Log_Error("AF_Renderer_Start_ScreenFrameBuffers: ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status: 0x%x (%s): %s\n", status, statusStr, _message);
+		AF_Log_Error("AF_Renderer_CheckFrameBufferStatus: ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status: 0x%x (%s): %s\n", status, statusStr, _message);
 	}
 }
 

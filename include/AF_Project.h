@@ -52,9 +52,9 @@ inline static void AF_Project_SyncEntities(AF_AppData* _appData){
     _appData->assets = AF_Assets_ZERO();
 
     // Reset the frame buffer data as it will be re-loaded
-    _appData->rendererData.screenFBO_ID = 0;
-    _appData->rendererData.screenRBO_ID = 0;
-    _appData->rendererData.screenFBO_TextureID = 0;
+    _appData->rendererData.screenFrameBufferData.fbo = 0;
+    _appData->rendererData.depthFrameBufferData.fbo = 0;
+    _appData->rendererData.depthDebugFrameBufferData.fbo = 0;
     
     // Load Reload meshes
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){

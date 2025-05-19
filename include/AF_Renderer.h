@@ -18,6 +18,7 @@ Definition for functions for rendering
 #include "AF_Time.h"
 #include "AF_Assets.h"
 #include "AF_RenderingData.h"
+#include "AF_FrameBufferData.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,9 +48,9 @@ void AF_Renderer_EndForwardRendering(void);
 
 // ============================  DRAW ================================ 
 void AF_Renderer_StartRendering(Vec4 _backgroundColor);
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData);
-void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID);
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride);
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride);
+void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _projection, Vec3* _cameraPos, uint32_t _shaderID);
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
 
 
@@ -61,12 +62,12 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 
 // ============================  FRAME BUFFERS ================================ 
 //void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-void AF_Renderer_Start_ScreenFrameBuffers(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _shaderID, uint32_t* _textureID,  uint16_t* _screenWidth, uint16_t* _screenHeight, const char* _vertPath, const char* _fragPath);
+void AF_Renderer_Start_ScreenFrameBuffers(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _shaderID, uint32_t* _textureID,  uint16_t* _screenWidth, uint16_t* _screenHeight, const char* _vertPath, const char* _fragPath, const char* _shaderTextureName);
 
 uint32_t AF_Renderer_CreateFBO(void);
-void AF_Renderer_CreateFramebuffer(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _textureID, uint16_t* _textureWidth, uint16_t* _textureHeight, uint32_t _internalFormat, uint32_t _textureAttatchmentType, uint32_t _drawBufferType, uint32_t _readBufferType, uint32_t _minFilter, uint32_t _magFilter);
+void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _framebufferData);
 uint32_t AF_Renderer_CreateRBO(void);
-uint32_t AF_Renderer_CreateFBOTexture(uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter);
+uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _framebufferData);
 void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);
 void AF_Renderer_UnBindFrameBuffer(void);
 void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType);

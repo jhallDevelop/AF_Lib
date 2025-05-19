@@ -14,6 +14,7 @@ Calls vfprintf but adds some colour to text output
 #include "AF_Window.h"
 #include "AF_LightingData.h"
 #include "AF_Vec3.h"
+#include "AF_FrameBufferData.h"
 typedef void (*WindowFuncPtr)(void*);
 
 #ifdef __cplusplus
@@ -77,22 +78,25 @@ typedef struct AF_RenderingData{
     AF_Renderer_e rendererType;
     AF_RendererPipeline_e rendererPipelineType;
     // Frame Buffer
-    uint32_t screenFBO_ID;
-    uint32_t screenRBO_ID;
-    uint32_t screenFBO_TextureID;
-    uint32_t screenFBO_ShaderID;
+    AF_FrameBufferData screenFrameBufferData;
+    //uint32_t screenFBO_ID;
+    //uint32_t screenRBO_ID;
+    //uint32_t screenFBO_TextureID;
+    //uint32_t screenFBO_ShaderID;
     uint32_t screenQUAD_VAO;
     uint32_t screenQUAD_VBO;
     /// Depth Buffer
-    uint32_t depthFBO_ID;
-    uint32_t depthRBO_ID;
-    uint32_t depthMapTextureID;
-    uint32_t depthRenderShaderID;
+    AF_FrameBufferData depthFrameBufferData;
+    //uint32_t depthFBO_ID;
+    //uint32_t depthRBO_ID;
+    //uint32_t depthMapTextureID;
+    //uint32_t depthRenderShaderID;
     // Debug depth
-    uint32_t depthDebugFBO_ID;
-    uint32_t depthDebugRBO_ID;
-    uint32_t depthDebugTextureID;
-    uint32_t depthDebugShaderID;
+    AF_FrameBufferData depthDebugFrameBufferData;
+    //uint32_t depthDebugFBO_ID;
+    //uint32_t depthDebugRBO_ID;
+    //uint32_t depthDebugTextureID;
+    //uint32_t depthDebugShaderID;
     AF_Renderer_PolygonMode_e polygonMode;
     WindowFuncPtr frameResizeFnctPtr;
     AF_Window* windowPtr;
@@ -126,20 +130,11 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
 	AF_RenderingData returnRenderingData = {
 		.rendererType = (AF_Renderer_e)0,
         .rendererPipelineType = (AF_RendererPipeline_e)0,
-        .screenFBO_ID = 0,
-        .screenRBO_ID = 0,
-        .screenFBO_TextureID = 0,
-        .screenFBO_ShaderID = 0,
+        .screenFrameBufferData = AF_FrameBufferData_ZERO(),
         .screenQUAD_VAO = 0,
         .screenQUAD_VBO = 0,
-        .depthFBO_ID = 0,
-        .depthRBO_ID = 0,
-        .depthMapTextureID = 0,
-        .depthRenderShaderID = 0,
-        .depthDebugFBO_ID = 0,
-        .depthDebugRBO_ID = 0,
-        .depthDebugTextureID = 0,
-        .depthDebugShaderID = 0,
+        .depthFrameBufferData = AF_FrameBufferData_ZERO(),
+        .depthDebugFrameBufferData = AF_FrameBufferData_ZERO(),
         .polygonMode = AF_RENDERER_POLYGON_MODE_FILL,
         .frameResizeFnctPtr = NULL,
         .windowPtr = NULL,
