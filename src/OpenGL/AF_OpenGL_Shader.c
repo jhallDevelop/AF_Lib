@@ -150,7 +150,9 @@ void AF_Shader_SetBool(uint32_t ID, const char* name, bool value)
 // ------------------------------------------------------------------------
 void AF_Shader_SetInt(uint32_t ID, const  char* name, int value) 
 { 
+    glUseProgram(ID);
     glUniform1i(AF_Shader_GetUniformLocation(ID, name), value); 
+    glUseProgram(0);
 }
 // ------------------------------------------------------------------------
 void AF_Shader_SetFloat(uint32_t ID, const char* name, float value) 
