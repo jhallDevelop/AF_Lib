@@ -125,7 +125,7 @@ when the framebuffer size changes, update the glViewport
 */
 void framebuffer_size_callback(GLFWwindow* _window, int _width, int _height)
 {
-    if (_width == 0 || _height == 0) return; // Avoid issues with minimized windows
+    if (_width == 0 || _height == 0 || _window == NULL) return; // Avoid issues with minimized windows
 }
 
 /*
