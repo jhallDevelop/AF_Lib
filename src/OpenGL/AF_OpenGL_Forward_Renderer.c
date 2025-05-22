@@ -22,11 +22,13 @@ This implementation is for OpenGL
 #include "stb_image.h"
 
 #include "AF_Assets.h"
+#include "AF_GL_Util.h"
 
 #define NO_SHARED_SHADER 0
 
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
+
 
 float QUAD_VERTICES[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 	// positions   // texCoords
@@ -60,7 +62,7 @@ uint32_t AF_Renderer_Awake(void){
     //Initialize GLEW
     glewExperimental = GL_TRUE; 
     GLenum glewError = glewInit();
-    AF_Renderer_CheckError( "Error initializing GLEW! \n");
+    AF_GL_CheckError( "Error initializing GLEW! \n");
 
     // -----------------------------
     // Enable transparent blending
@@ -78,8 +80,8 @@ uint32_t AF_Renderer_Awake(void){
 	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
 	glEnable(GL_CULL_FACE); // Enable culling
 	
-    AF_Renderer_CheckError( "Error initializing OpenGL! \n");
-    //AF_Renderer_CheckError("SLDGameRenderer::Initialise:: finishing up init: ");
+    AF_GL_CheckError( "Error initializing OpenGL! \n");
+    //AF_GL_CheckError("SLDGameRenderer::Initialise:: finishing up init: ");
     return success;
 } 
 
@@ -128,18 +130,67 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		_renderingData->depthDebugFrameBufferData = screenBufferData;
 
 		// setup depth frame buffer
-		_renderingData->depthFrameBufferData = screenBufferData;
-		//uint16_t depthTextureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;
-		//uint16_t depthTextureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;
-		//AF_Renderer_Start_DepthFrameBuffers(_renderingData, &depthTextureWidth, &depthTextureHeight);
-		//AF_Renderer_Start_DepthDebugFrameBuffers(_renderingData, _screenWidth, _screenHeight);
+		char depthVertShaderFullPath[MAX_PATH_CHAR_SIZE];
+		char depthFragShaderFullPath[MAX_PATH_CHAR_SIZE];
+		snprintf(depthVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
+		snprintf(depthFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
+		AF_FrameBufferData depthBufferData = {
+			.fbo = 0,
+			.rbo = 0,
+			.shaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath),
+			.textureID = 0,
+			.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH,
+			.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT,
+			.vertPath = depthVertShaderFullPath, 
+			.fragPath = depthFragShaderFullPath, 
+			.shaderTextureName = "",
+			.internalFormat = GL_DEPTH_COMPONENT,
+			.textureAttatchmentType = GL_DEPTH_ATTACHMENT,
+			.drawBufferType = GL_NONE,
+			.readBufferType = GL_NONE,
+			.minFilter = GL_NEAREST,
+			.magFilter = GL_NEAREST
+		};
 
-		//AF_Log_Warning("AF_Renderer_Start: TODO: Create Depth frame buffer\n");
-		//AF_Log_Warning("AF_Renderer_Start: TODO: Create debug Depth frame buffer\n");
+		
+		// Set the screen Frame buffer texture
+		_renderingData->depthFrameBufferData = depthBufferData;
+
+
+		// Setup depth debug frame buffer
+		// setup depth frame buffer
+		char depthDebugVertShaderFullPath[MAX_PATH_CHAR_SIZE];
+		char depthDebugFragShaderFullPath[MAX_PATH_CHAR_SIZE];
+		snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
+		snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
+		AF_FrameBufferData depthDebugBufferData = {
+			.fbo = 0,
+			.rbo = 0,
+			.shaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath),
+			.textureID = 0,
+			.textureWidth = *_screenWidth,
+			.textureHeight = *_screenHeight,
+			.vertPath = screenVertShaderFullPath, 
+			.fragPath = screenFragShaderFullPath, 
+			.shaderTextureName = "depthMap",
+			.internalFormat = GL_RGB,
+			.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
+			.drawBufferType = GL_TRUE,
+			.readBufferType = GL_TRUE,
+			.minFilter = GL_LINEAR,
+			.magFilter = GL_LINEAR
+		};
+
+		
+		// Set the screen Frame buffer texture
+		_renderingData->depthDebugFrameBufferData = depthDebugBufferData;
     } else {
         AF_Log_Error("AF_Renderer_Start: Screen dimensions not valid for initial screen FBO setup. Attempting with default or expect Editor_Viewport_Render to create.\n"); 
     }
 	
+	// Recreate the quad mesh buffers
+	AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
+
 	/*
 
     // ==== Setup Screen Quad VAO/VBO (used by RenderScreenFBOQuad) ====
@@ -156,48 +207,6 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 }
 
 
-/*
-====================
-AF_Renderer_Start_DepthDebugFrameBuffers
-Start function which depth debug frame buffers are initialised
-====================
-*/
-void AF_Renderer_Start_DepthDebugFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
-	/*
-	uint32_t* depthDebugFbo = &_renderingData->depthFBO_ID;
-    uint32_t* depthDebugRbo = &_renderingData->depthRBO_ID;
-    uint32_t* depthDebugTexture = &_renderingData->depthMapTextureID;
-
-	AF_Renderer_CreateFramebuffer(
-		&_renderingData->depthDebugFBO_ID,
-		&_renderingData->depthDebugRBO_ID, 
-		&_renderingData->depthDebugTextureID, // This is the texture ImGui will display
-		&_screenWidth,
-		&_screenHeight,
-		GL_RGB,                    // It MUST be a color texture (e.g., GL_RGB, GL_RGBA)
-		GL_COLOR_ATTACHMENT0,      // Attach as color
-		GL_FALSE,                  // No depth buffer needed for this debug FBO itself
-		GL_FALSE,                  // No stencil buffer needed for this debug FBO itself
-		GL_LINEAR,                 // Min filter
-		GL_LINEAR                  // Mag filter
-	);
-
-	// Create the depth debug shader to use
-	char depthDebugVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-	char depthDebugFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-	//snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
-	//snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
-	snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
-	snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
-	_renderingData->depthDebugShaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath);
-	 // shader configuration
-    // Set the depth texture to use when using the debugging shader
-    glUseProgram(_renderingData->depthDebugShaderID);
-	AF_Shader_SetInt(_renderingData->depthDebugShaderID, "depthMap", 0);
-    glUseProgram(0);
-
-	*/
-}
 
 
 /*
@@ -264,7 +273,7 @@ Simple render command to decide how to progress other rendering steps
 */
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
 	// START RENDERING
-	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
+	AF_GL_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
 
 	// Update lighting data
 	AF_Renderer_UpdateLighting(_ecs, _lightingData);
@@ -301,36 +310,23 @@ Simple render command to perform forward rendering steps
 ====================
 */
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
-    AF_CCamera* camera = _cameraEntity->camera;
+    AF_GL_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
+	AF_CCamera* camera = _cameraEntity->camera;
 	// TODO: guard this as its expensive every frame
 	AF_Renderer_FrameResized(_renderingData);
-    // Ensure critical FBOs are valid (simple check, robust check is glCheckFramebufferStatus in creation)
-    //if (_renderingData->depthFBO_ID == 0 || _renderingData->screenFBO_ID == 0 || _renderingData->depthDebugFBO_ID == 0) {
-    //    AF_Log_Error("AF_Renderer_StartForwardRendering: One or more critical FBOs are not initialized!\n");
-        //return;
-    //}
-
-	// TODO: call this from event
-    //AF_Renderer_FrameResized( _renderingData, _cameraEntity);
-
 
     // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
     // This pass renders scene geometry from the light's perspective to a depth texture.
-	/*
+	
     glEnable(GL_DEPTH_TEST); // Depth testing must be enabled for the depth pass
     glDepthMask(GL_TRUE);    // Enable writing to the depth buffer
 
-    AF_Renderer_BindFrameBuffer(_renderingData->depthFBO_ID);
-    glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
-    //glClear(GL_DEPTH_BUFFER_BIT); // Only clear depth for a depth-only FBO
-
-    // AF_Renderer_StartDepthPass configures the light's view/projection,
-    // sets the depth shader, and calls AF_Render_DrawMeshElements (or similar)
+	glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
+    AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
+	glClear(GL_DEPTH_BUFFER_BIT); // Only clear depth for a depth-only FBO
     // to draw relevant objects.
-    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, camera); // Pass main camera for now, StartDepthPass should derive light's camera
-
+    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
     AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
-*/
 
     // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
     // This pass renders the scene normally from the main camera's perspective.
@@ -370,7 +366,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         _ecs,
         &_cameraEntity->transform->pos, // Camera position for lighting calculations
         _lightingData,
-		NO_SHARED_SHADER
+		NO_SHARED_SHADER,
+		_renderingData
 	
         // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
         // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
@@ -380,49 +377,17 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
 
+	
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Populates _renderingData->depthDebugTextureID) ====
     // This pass takes the raw _renderingData->depthMapTextureID, uses _renderingData->depthDebugShaderID
     // to convert depth to a visual format (e.g., grayscale), and renders this to _renderingData->depthDebugTextureID.
-    AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
-
-	// =============
-	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
-    glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
-    glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    glDepthMask(GL_TRUE);    // Ensure depth writing is on
-
-	// =========
-    // Viewport for the debug texture (typically same dimensions as the shadow map)
-    //glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
-    //glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Clear debug texture to black
-    //glClear(GL_COLOR_BUFFER_BIT);         // Only clear color; depth test is disabled in RenderScreenFBOQuad
-
-    // AF_Renderer_RenderScreenFBOQuad should internally:
-    // - Use _renderingData->depthDebugShaderID
-    // - Bind _renderingData->depthMapTextureID as input texture
-    // - Draw a full-screen quad
-    //AF_Renderer_RenderScreenFBOQuad(_renderingData);
-	//AF_Render_DrawMeshElements(_ecs, &camera->projectionMatrix, &_cameraEntity->transform->pos, _renderingData->depthDebugShaderID);
-	AF_Renderer_DrawMeshes(
-        &camera->viewMatrix,
-        &camera->projectionMatrix,
-        _ecs,
-        &_cameraEntity->transform->pos, // Camera position for lighting calculations
-        _lightingData,
-		_renderingData->depthDebugFrameBufferData.shaderID
-        // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
-        // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
-        // to implement shadows. You might need to pass _renderingData or these specific items.
-    );
-
-    AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
-
+    AF_Renderer_RenderScreenFBOQuad(_renderingData);
 
     // All off-screen rendering is complete.
     // The main application loop will now handle ImGui rendering,
     // which will use _renderingData->screenFBO_TextureID (for the viewport)
     // and _renderingData->depthDebugTextureID (for the depth map debug window).
+	AF_GL_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
 }
 
 
@@ -569,75 +534,6 @@ unsigned int AF_Renderer_LoadTexture(char const * path) {
 
 // ============================  DRAW ================================ 
 
-/*
-====================
-AF_Render_DrawMeshElements
-Simple DrawElements call on all ECS mesh components
-====================
-*/
-void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _lightProjection, Vec3* _viewPos, uint32_t _shaderID){
-	if(_shaderID == 0 || _viewPos->x == 0){}
-	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-		AF_Entity* entity = &_ecs->entities[i];
-		if(!AF_Component_GetHas(entity->flags)){
-			continue;
-		}
-
-		AF_CMesh* mesh = &_ecs->meshes[i];
-		// Skip if there is no rendering component
-		if(!AF_Component_GetHasEnabled(mesh->enabled)){// || hasEnabled == FALSE){
-			continue;
-		}
-
-		// ---- Setup shader ----
-		//uint32_t shader = _shaderID;//mesh->shader.shaderID;
-		glUseProgram(_shaderID); 
-		for(uint32_t x = 0; x < mesh->meshCount; x++){
-			
-			glBindVertexArray(mesh->meshes[x].vao);//_meshList->vao);
-			AF_Renderer_CheckError( "AF_Render_DrawMeshElements: Error bind vao Rendering OpenGL! \n");
-
-			// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
-			glBindBuffer(GL_ARRAY_BUFFER, mesh->meshes[x].vbo);
-			AF_Renderer_CheckError("AF_Render_DrawMeshElements: Error binding VBO for drawing!");
-
-
-			//---------------Send command to Graphics API to Draw Triangles------------
-			
-			// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
-
-			// TODO: make this configurable from the editor component
-			//glEnable(GL_CULL_FACE);
-			//glCullFace(GL_BACK); // Default
-			//glFrontFace(GL_CCW); // Or GL_CW
-			//glFrontFace(GL_CW);
-			
-			AF_Shader_SetMat4(_shaderID,"model", *_lightProjection);
-			//AF_Log("==== ------------------ ====\n");
-
-			// Texture 
-			//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
-
-			// send the camera data to the shader
-			// Prep drawing
-			unsigned int indexCount = mesh->meshes[x].indexCount;
-			if(indexCount == 0){
-				AF_Log_Warning("AF_Render_DrawMeshElements: indexCount is 0. Can't draw elements\n");
-				return;
-			}
-
-
-			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-				
-			AF_Renderer_CheckError( "AF_Render_DrawMeshElements drawElements Rendering OpenGL! \n");
-			glUseProgram(0); 
-			glBindVertexArray(0);
-			AF_Renderer_CheckError( "AF_Render_DrawMeshElements: bindvertexarray(0) Rendering OpenGL! \n");
-		}
-
-	}
-}
-	
 
 /*
 ====================
@@ -645,7 +541,7 @@ AF_Renderer_DrawMeshes
 Loop through the entities and draw the meshes that have components attached
 ====================
 */
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride){
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
 		if(!AF_Component_GetHas(entity->flags)){
@@ -664,8 +560,9 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		// Update the model matrix
 		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
 		
-		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride);
+		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
+	AF_GL_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
 }
 
 /*
@@ -674,7 +571,7 @@ AF_Renderer_DrawMesh
 Loop through the meshes in a component and draw using opengl
 ====================
 */
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride){
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
 	// draw meshes
 	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
 	{
@@ -697,19 +594,34 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		shader = _shaderOverride;
 	}
 	
-	glUseProgram(shader); 
+	
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
 		if(_mesh->textured == TRUE){
+			
 			// ---- Diffuse Texture ----
-			if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
-				uint32_t diffuseTextureBinding = 0;
-				glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
-				glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
+			//if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
+			
+			if(_shaderOverride == NO_SHARED_SHADER){	
+				// ---- Diffuse Texture ----
+				if (_mesh->meshes[i].material.diffuseTexture.id != 0) { // Assuming type check already done
+					uint32_t diffuseTextureUnit = 0;
+					glActiveTexture(GL_TEXTURE0 + diffuseTextureUnit);
+					glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
+					AF_Shader_SetInt(shader, "material.diffuse", diffuseTextureUnit); // Set sampler to unit 0
+				}
+			
+				// ---- Shadow Map ----
+				if (_lightingData->shadowsEnabled == TRUE && _renderingData->depthFrameBufferData.textureID != 0) {
+					uint32_t shadowMapTextureUnit = 1; // Define texture unit for shadow map (e.g., unit 1)
+					glActiveTexture(GL_TEXTURE0 + shadowMapTextureUnit);
+					glBindTexture(GL_TEXTURE_2D, _renderingData->depthFrameBufferData.textureID); // Bind actual shadow map texture to unit 1
+					AF_Shader_SetInt(shader, "shadowMap", shadowMapTextureUnit); // Tell "shadowMap" sampler to use TEXTURE UNIT 1
 
-				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
+					// Set the light space matrix
+					AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowLightSpaceMatrix); // Tell "shadowMap" sampler to use TEXTURE UNIT 1
+				}
 			}
 
 			/*
@@ -736,6 +648,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// Does the shader use lighting?
         //if(_mesh->recieveLights == TRUE){
 		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
+		glUseProgram(shader); 
 		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
 		// ideally shininess is set to 32.0f
 		/*
@@ -755,11 +668,11 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		
 
 		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
-		AF_Renderer_CheckError( "Error bind vao Rendering OpenGL! \n");
+		AF_GL_CheckError( "Error bind vao Rendering OpenGL! \n");
 
 		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
 		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
-		AF_Renderer_CheckError("Error binding VBO for drawing!");
+		AF_GL_CheckError("Error binding VBO for drawing!");
 
 
 		//---------------Send command to Graphics API to Draw Triangles------------
@@ -773,9 +686,9 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		//glFrontFace(GL_CW);
 		//AF_Log("==== Projection Matrix ====\n");
 		//AF_Util_Mat4_Log(*_projMat);
+		
 		int projLocation = glGetUniformLocation(shader, "projection");
 		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
-
 		// View
 		//AF_Log("==== View Matrix ====\n");
 		//AF_Util_Mat4_Log(*_viewMat);
@@ -804,12 +717,13 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// TODO: sort transparent objects before rendering
 		//https://learnopengl.com/Advanced-OpenGL/Blending
 
+		
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 			
-		AF_Renderer_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
+		AF_GL_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
 
 		glBindVertexArray(0);
-		AF_Renderer_CheckError( "Error bindvertexarray(0) Rendering OpenGL! \n");
+		AF_GL_CheckError( "Error bindvertexarray(0) Rendering OpenGL! \n");
 		
 	}
 	// Unbind shader
@@ -827,13 +741,13 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
         glActiveTexture(GL_TEXTURE0 + 0);
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        // Normal Texture was on unit 1
+        // Shadow map Texture was on unit 1
         glActiveTexture(GL_TEXTURE0 + 1);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         // Specular Texture was on unit 2
-        glActiveTexture(GL_TEXTURE0 + 2);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        //glActiveTexture(GL_TEXTURE0 + 2);
+        //glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     // It's good practice to reset the active texture unit to a default,
@@ -848,15 +762,19 @@ Render the quad to the screen and swap the frame buffers over.
 ====================
 */
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
+	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
+	
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
+	AF_Renderer_UnBindFrameBuffer();
+	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
     glDisable(GL_DEPTH_TEST);
 
     glUseProgram(_renderingData->depthDebugFrameBufferData.shaderID);
 
     // Uniforms for linearization (optional, shader dependent)
-    float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
-    AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "near_plane", near_plane);
-    AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "far_plane", far_plane);
+    //float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
+    //AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "near_plane", near_plane);
+    //AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "far_plane", far_plane);
 
     glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
     glBindTexture(GL_TEXTURE_2D, _renderingData->depthDebugFrameBufferData.textureID); // Bind your actual depth map texture
@@ -864,14 +782,18 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
     if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
         AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
     }
+	
     glBindVertexArray(_renderingData->screenQUAD_VAO);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glBindVertexArray(0);
     glUseProgram(0);
+	AF_Renderer_UnBindFrameBuffer();
+	
     // Consider re-enabling depth test if needed by subsequent rendering
     // glEnable(GL_DEPTH_TEST);
+	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Render debug quad\n");
 }
 
 
@@ -899,7 +821,7 @@ void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){
 			continue;
 	    }
 
-		AF_Renderer_CheckError( "Mesh has no indices!\n");
+		AF_GL_CheckError( "Mesh has no indices!\n");
 
 		// for each sub mesh. setup the mesh buffers
 		for(uint32_t j = 0; j < _mesh->meshCount; j++){
@@ -933,28 +855,28 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
 	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
 	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	AF_Renderer_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
+	AF_GL_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
 		
 	GLuint gVAO, gVBO, gEBO;
 	glGenVertexArrays(1, &gVAO);
 	glGenBuffers(1, &gVBO);
 	glGenBuffers(1, &gEBO);
-	AF_Renderer_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+	AF_GL_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
 
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
 	glBindVertexArray(gVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-	AF_Renderer_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
+	AF_GL_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
 
 	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
 	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, _meshData->vertices, GL_STATIC_DRAW);
-	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the verts.\n");
+	AF_GL_CheckError( "OpenGL error occurred during glBufferData for the verts.\n");
 	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Bind the IBO and set the buffer data
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
-	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
+	AF_GL_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
 	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
 	// Vertex positions
@@ -977,7 +899,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
 	glEnableVertexAttribArray(4);
 
-	AF_Renderer_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
+	AF_GL_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
 
 	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0); 
@@ -1001,7 +923,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	_meshData->vertices = NULL;
 	free(_meshData->indices);
 	_meshData->indices = NULL;
-	AF_Renderer_CheckError( "Error InitMesh Buffers for OpenGL! \n");
+	AF_GL_CheckError("Error InitMesh Buffers for OpenGL! \n");
 }
 
 
@@ -1062,12 +984,13 @@ void AF_Renderer_FrameResized(void* _renderingData){
 	renderingDataPtr->screenFrameBufferData.textureHeight = window->frameBufferHeight;
 	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFrameBufferData);
 
-
-	renderingDataPtr->depthFrameBufferData.textureWidth = window->frameBufferWidth;
-	renderingDataPtr->depthFrameBufferData.textureHeight = window->frameBufferHeight;
+	renderingDataPtr->depthFrameBufferData.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;//window->frameBufferWidth;
+	renderingDataPtr->depthFrameBufferData.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;//window->frameBufferHeight;
 	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthFrameBufferData);
 
 	// resize the debug frame buffer
+	renderingDataPtr->depthDebugFrameBufferData.textureWidth = window->frameBufferWidth;
+	renderingDataPtr->depthDebugFrameBufferData.textureHeight = window->frameBufferHeight;
 	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthDebugFrameBufferData);
 
 }
@@ -1241,44 +1164,79 @@ AF_Render_StartDepthPath
 Do the initial setup for rendering a depth pass in opengl
 ====================
 */
-void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera){
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs){
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
-	if(_camera == NULL){}
-	Mat4 lightProjection;
-	Mat4 lightView;
-	Mat4 lightSpaceMatrix;
+	Mat4 shadowLightProjection;
+	//Mat4 shadowLightView;
+	Mat4 shadowLightSpaceMatrix;
+	
+	//float near_plane = 1.0f;
+	//float far_plane = 7.5f;
+	float outerBounds =  7.5f;
 	float near_plane = 1.0f;
-	float far_plane = 7.5f;
+	float far_plane = 10.0f;
 	//lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
+	
 	AF_CCamera depthCamera = AF_CCamera_ZERO();
 	depthCamera.nearPlane = near_plane;
 	depthCamera.farPlane = far_plane;
-	lightProjection = Mat4_Ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	//glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	Vec3 upDirection = {0.0f, 1.0f, 0.0f};
-	Vec3 targetPos = _ecs->entities[_lightingData->ambientLightEntityIndex].transform->pos;// lightPos 
-
-	Vec3 viewPos =  {0,0,0};	// 0
-	lightView = Mat4_Lookat(targetPos, viewPos, upDirection); //glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-	lightSpaceMatrix = Mat4_MULT_M4(lightProjection, lightView);
-
-	// render scene from light's point of view
-	AF_Shader_Use(_renderingData->depthDebugFrameBufferData.shaderID); 
-	AF_Shader_SetMat4(_renderingData->depthDebugFrameBufferData.shaderID, "lightSpaceMatrix", lightSpaceMatrix);
-
-	// Render meshes
-	AF_Render_DrawMeshElements(_ecs,  &lightProjection, &viewPos, _renderingData->depthDebugFrameBufferData.shaderID);
-	AF_Shader_Use(0);
+	shadowLightProjection = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, near_plane, far_plane);
 	
-	/*
+	//AF_Log("=========shadowLightProjection========\n");
+	//AF_Util_Mat4_Log(shadowLightProjection);
+	Vec3 upDirection = {0.0f, 1.0f, 0.0f};
+	Vec3 cameraDirection = {-0.5f, -1.0f, -0.5f};
+	Vec3 mainLightDirection = Vec3_NORMALIZE(cameraDirection);
+	Vec3 targetPos =  {0,0,0};	
+	Vec3 light_eye_position = {-2.0f, 4.0f, -1.0f};//Vec3_MINUS(targetPos, Vec3_MULT_SCALAR(mainLightDirection, 20.0f)); // Position light 20 units back from scene center
+
+	//Vec3 eye = _ecs->entities[_lightingData->ambientLightEntityIndex].transform->pos;// lightPos 
+	//Vec3 eye = {-2.0f, 4.0f, -1.0f};
+	// Before Mat4_Lookat for shadowLightView
+	Vec3 leftDirection = {1.0f, 0.0f, 0.0f};
+	if (fabs(Vec3_DOT(mainLightDirection, upDirection)) > 0.99f) { // If light direction is nearly vertical
+		upDirection = leftDirection; // Use X-axis as 'up' to avoid gimbal lock
+	}
+	//shadowLightView = Mat4_Lookat(targetPos, eye, upDirection); 
+	Mat4 shadowLightView = Mat4_Lookat(targetPos, light_eye_position, upDirection); 
+	//AF_Log("=========shadowLightView========\n");
+	//AF_Util_Mat4_Log(shadowLightView);
+
+	shadowLightSpaceMatrix = Mat4_MULT_M4(shadowLightProjection, shadowLightView);
+	// copy the matrix to the lighting data
+	_lightingData->shadowLightSpaceMatrix = shadowLightSpaceMatrix;
+	//AF_Log("=========shadowLightSpaceMatrix========\n");
+	//AF_Util_Mat4_Log(shadowLightSpaceMatrix);
+	// render scene from light's point of view
+	
+	if(_lightingData->shadowsEnabled == TRUE){
+		AF_Shader_SetMat4(_renderingData->depthFrameBufferData.shaderID, "lightSpaceMatrix", _lightingData->shadowLightSpaceMatrix);	
+	}
+	// Render meshes
+	AF_Renderer_DrawMeshes(
+        &depthCamera.viewMatrix,
+        &depthCamera.projectionMatrix,
+        _ecs,
+        &light_eye_position,//eye, // Camera position for lighting calculations
+        _lightingData,
+		_renderingData->depthFrameBufferData.shaderID,
+		_renderingData
+    );
+	
+	
+	
 	// render Depth map to quad for visual debugging
 	// ---------------------------------------------
-	glUseProgram(_renderingData->depthDebugShaderID);
+	// Bind the debug depth frame buffer image
+	
+	/*
+	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+	AF_Shader_Use(_renderingData->depthDebugFrameBufferData.shaderID);
 	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
 	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _renderingData->depthMapTextureID);
+	glBindTexture(GL_TEXTURE_2D, _renderingData->depthDebugFrameBufferData.textureID);
 	//renderQuad();
 	unsigned int quadVAO = 0;
 	unsigned int quadVBO;
@@ -1305,7 +1263,9 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
     glBindVertexArray(quadVAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
-*/
+	AF_Shader_Use(0);
+	AF_Renderer_UnBindFrameBuffer();
+	*/
 	/*
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, woodTexture);
@@ -1536,7 +1496,7 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 	// Delete Shaders
        
         //glDeleteTexture(_meshList->materials[0].textureID);
-    AF_Renderer_CheckError( "Error Destroying Renderer OpenGL! \n");
+    AF_GL_CheckError( "Error Destroying Renderer OpenGL! \n");
 }
 
 
@@ -1651,34 +1611,7 @@ void AF_Renderer_CheckFrameBufferStatus(const char* _message){
 }
 
 
-/*
-====================
-AF_Renderer_CheckError
-Helper function for checking for GL errors
-====================
-*/
-void AF_Renderer_CheckError(const char* _message){    
-    GLenum errorCode = GL_NO_ERROR;
-    errorCode = glGetError();
-    const char* errorMessage = "";
-    if(errorMessage){}
-    while ((errorCode = glGetError()) != GL_NO_ERROR)
-    {
-	switch (errorCode)
-        {
-            case GL_INVALID_ENUM:                  errorMessage  = invalidEnum; break;
-            case GL_INVALID_VALUE:                 errorMessage  = invalidValue; break;
-            case GL_INVALID_OPERATION:             errorMessage  = invalidOperation; break;
-            case GL_STACK_OVERFLOW:                errorMessage  = stackOverflow; break;
-            case GL_STACK_UNDERFLOW:               errorMessage  = stackUnderflow; break;
-            case GL_OUT_OF_MEMORY:                 errorMessage  = outOfMemory; break;
-            case GL_INVALID_FRAMEBUFFER_OPERATION: errorMessage  = invalidFrameBufferOperation; break;
-        }
-    AF_Log_Error(_message,errorMessage);
 
-    }
-           //printf("\nGL Error: %i\n", error);
-}
 
 
 /*

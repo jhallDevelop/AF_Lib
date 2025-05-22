@@ -167,22 +167,23 @@ inline static Mat4 Mat4_Ortho(float _left, float _right, float _bottom, float _t
     // Assuming column-major layout (like GLM, OpenGL expects): Column[Row]
     // Mat4 orthMatrix = { Column0, Column1, Column2, Column3 }
     // Or if row-major {{R0C0,R0C1,R0C2,R0C3}, {R1C0,...}, ...} - adjust below accordingly
+   /*
     Mat4 orthMatrix = {{
         {scaleX,    0.0f,      0.0f,     0.0f}, // Column 0
         {0.0f,      scaleY,    0.0f,     0.0f}, // Column 1
         {0.0f,      0.0f,      scaleZ,   0.0f}, // Column 2
         {transX,    transY,    transZ,   1.0f}  // Column 3 (Translation)
     }};
-
+     */
     // --- OR --- If your Mat4 initializer is row-major {{Row0}, {Row1}, ...}:
-    /*
+    
     Mat4 orthMatrix = {{
         {scaleX,    0.0f,    0.0f,      transX},   // Row 0
         {0.0f,      scaleY,  0.0f,      transY},   // Row 1
         {0.0f,      0.0f,    scaleZ,    transZ},   // Row 2
         {0.0f,      0.0f,    0.0f,      1.0f}     // Row 3
     }};
-    */
+   
 
     return orthMatrix;
 }

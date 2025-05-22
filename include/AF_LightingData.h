@@ -28,6 +28,7 @@ typedef struct AF_LightingData{
     uint16_t spotLightEntityIndex;
     uint16_t pointLightIndexArray[MAX_LIGHT_NUM];
     uint8_t pointLightsFound;
+    Mat4 shadowLightSpaceMatrix;
 } AF_LightingData;
 
 static inline AF_LightingData AF_LightingData_ZERO(void){
@@ -39,7 +40,8 @@ static inline AF_LightingData AF_LightingData_ZERO(void){
         .ambientLightEntityIndex = 0,
         .spotLightEntityIndex = 0,
         .pointLightIndexArray = {0,0,0,0},
-        .pointLightsFound = 0
+        .pointLightsFound = 0,
+        .shadowLightSpaceMatrix = Mat4_ZERO()
 	};
 
 	return returnLightingData;

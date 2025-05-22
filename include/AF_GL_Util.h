@@ -10,7 +10,7 @@
 
 #define AF_GL_DEBUG_LOG(msg) do { AF_GL_CheckError(__FILE__, __LINE__, msg); } while(0)
 
-void AF_GL_CheckError(const char *file, int line, const char *message) {
+void AF_GL_CheckError(const char *message) {
     GLenum error = glGetError();
     while (error != GL_NO_ERROR) {
         const char *errorString;
@@ -41,10 +41,9 @@ void AF_GL_CheckError(const char *file, int line, const char *message) {
             default:
                 errorString = "UNKNOWN_ERROR";
         }
-        fprintf(stderr, "OpenGL Error: %s | %s:%d | Message: %s\n", errorString, file, line, message);
+        fprintf(stderr, "OpenGL Error: %s | Message: %s\n", errorString, message);
         error = glGetError(); // Continue checking for additional errors
     }
 }
-
 
 #endif

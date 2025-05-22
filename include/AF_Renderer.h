@@ -48,9 +48,8 @@ void AF_Renderer_EndForwardRendering(void);
 
 // ============================  DRAW ================================ 
 void AF_Renderer_StartRendering(Vec4 _backgroundColor);
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride);
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride);
-void AF_Render_DrawMeshElements(AF_ECS* _ecs, Mat4* _projection, Vec3* _cameraPos, uint32_t _shaderID);
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
 
 
@@ -61,8 +60,6 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 
 
 // ============================  FRAME BUFFERS ================================ 
-//void AF_Renderer_Start_ScreenFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-void AF_Renderer_Start_ScreenFrameBuffers(uint32_t* _fbo, uint32_t* _rbo, uint32_t* _shaderID, uint32_t* _textureID,  uint16_t* _screenWidth, uint16_t* _screenHeight, const char* _vertPath, const char* _fragPath, const char* _shaderTextureName);
 
 uint32_t AF_Renderer_CreateFBO(void);
 void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _framebufferData);
@@ -76,10 +73,8 @@ void AF_Renderer_FrameResized(void* _renderingData);
 
 
 // ============================  DEPTH ================================ 
-void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, AF_CCamera* _camera);
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs);
 void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-void AF_Renderer_Start_DepthDebugFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-
 
 
 // ============================  LIGHTING ================================ 
@@ -104,7 +99,6 @@ void AF_Renderer_DeleteTexture(uint32_t* _textureID);
 
 // ====================================== HELPER FUNCTIONS =====================================
 void AF_Renderer_CheckFrameBufferStatus(const char* _message);
-void AF_Renderer_CheckError(const char* _message);
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
 
 
