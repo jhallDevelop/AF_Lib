@@ -85,7 +85,6 @@ uint32_t AF_Renderer_Awake(void){
     return success;
 } 
 
-
 /*
 ====================
 AF_Renderer_Start
@@ -121,7 +120,9 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.magFilter = GL_LINEAR
 		};
 		// Set the screen Frame buffer texture
+		AF_Shader_Use(screenBufferData.shaderID);
 		AF_Shader_SetInt(screenBufferData.shaderID, screenBufferData.shaderTextureName, 0);
+		AF_Shader_Use(0);
 		// copy to the render data to use
 		_renderingData->screenFrameBufferData = screenBufferData;
 	
@@ -134,7 +135,7 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		char depthFragShaderFullPath[MAX_PATH_CHAR_SIZE];
 		snprintf(depthVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
 		snprintf(depthFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
-		AF_FrameBufferData depthBufferData = {
+		/*AF_FrameBufferData depthBufferData = {
 			.fbo = 0,
 			.rbo = 0,
 			.shaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath),
@@ -150,6 +151,23 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.readBufferType = GL_NONE,
 			.minFilter = GL_NEAREST,
 			.magFilter = GL_NEAREST
+		};*/
+		AF_FrameBufferData depthBufferData = {
+			.fbo = 0,
+			.rbo = 0,
+			.shaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath),
+			.textureID = 0,
+			.textureWidth = *_screenWidth,
+			.textureHeight = *_screenHeight,
+			.vertPath = depthVertShaderFullPath, 
+			.fragPath = depthFragShaderFullPath, 
+			.shaderTextureName = "screenTexture",
+			.internalFormat = GL_RGB,
+			.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
+			.drawBufferType = GL_TRUE,
+			.readBufferType = GL_TRUE,
+			.minFilter = GL_LINEAR,
+			.magFilter = GL_LINEAR
 		};
 
 		
@@ -181,7 +199,9 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.magFilter = GL_LINEAR
 		};
 
-		
+		AF_Shader_Use(depthDebugBufferData.shaderID);
+		AF_Shader_SetInt(depthDebugBufferData.shaderID, depthDebugBufferData.shaderTextureName, 0);
+		AF_Shader_Use(0);
 		// Set the screen Frame buffer texture
 		_renderingData->depthDebugFrameBufferData = depthDebugBufferData;
     } else {
@@ -192,7 +212,6 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
 
 	/*
-
     // ==== Setup Screen Quad VAO/VBO (used by RenderScreenFBOQuad) ====
     // This is already called inside AF_Renderer_Start_ScreenFrameBuffers.
     // If AF_Renderer_Start_ScreenFrameBuffers might not run (e.g., due to screenWidth being 0),
@@ -203,60 +222,8 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
     AF_Log("  depthDebugFBO_ID: %u, depthDebugTextureID: %u\n", _renderingData->depthDebugFBO_ID, _renderingData->depthDebugTextureID);
     AF_Log("  screenFBO_ID: %u, screenFBO_TextureID: %u\n", _renderingData->screenFBO_ID, _renderingData->screenFBO_TextureID);
 	*/
-	
 }
 
-
-
-
-/*
-====================
-AF_Renderer_Start_DepthFrameBuffers
-Start function which depth frame buffers are initialised
-====================
-*/
-void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
-		/*
-	// ============ SCREEN FRAME BUFFER OBJECT =========== 
-    uint32_t* depthFbo = &_renderingData->depthFBO_ID;
-    uint32_t* depthRbo = &_renderingData->depthRBO_ID;
-    uint32_t* depthTexture = &_renderingData->depthMapTextureID;
-
-    // Create the frame buffer, containing many steps (fbo, rbo, texture id ext)
-    AF_Renderer_CreateFramebuffer(
-		depthFbo,
-		depthFbo, // Or &_renderingData->depthRBO_ID if you insist on an RBO AND a depth texture (unusual for simple depth map)
-		depthTexture,
-		_screenWidth,
-		_screenHeight,
-		GL_DEPTH_COMPONENT24,      // Internal format for the depth texture
-		GL_DEPTH_ATTACHMENT,       // Attach it as a depth buffer
-		GL_NONE,                   // No color buffer to draw to
-		GL_NONE,                   // No color buffer to read from
-		GL_NEAREST,                // Min filter for depth (often nearest)
-		GL_NEAREST                 // Mag filter for depth (often nearest)
-	);
-	// Create a frame
-	// Create Depth Frame Buffer and textured
-	// Create the depth shader to use
-	
-	char depthVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-	char depthFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-	snprintf(depthVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
-	snprintf(depthFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
-	_renderingData->depthRenderShaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath);
-	
-	
-	
-	// TODO: use this for shadow map shader
-
-	glUseProgram(_renderingData->shadowShaderID);
-	AF_Shader_SetInt(_renderingData->shadowShaderID, "diffuseTexture", 0);
-	AF_Shader_SetInt(_renderingData->shadowShaderID, "shadowMap", 1);
-	glUseProgram(0);
-	*/
-	
-}
 
 void AF_Renderer_StartRendering(Vec4 _backgroundColor)
 {
@@ -315,18 +282,45 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// TODO: guard this as its expensive every frame
 	AF_Renderer_FrameResized(_renderingData);
 
+	AF_Window* window = _renderingData->windowPtr;
+	if(window == NULL){
+		AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
+		return;
+	}
+
     // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
     // This pass renders scene geometry from the light's perspective to a depth texture.
 	
-    glEnable(GL_DEPTH_TEST); // Depth testing must be enabled for the depth pass
-    glDepthMask(GL_TRUE);    // Enable writing to the depth buffer
+   
+	
 
-	glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
     AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
-	glClear(GL_DEPTH_BUFFER_BIT); // Only clear depth for a depth-only FBO
+	//glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
+	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
+	
+    glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+    glDepthMask(GL_TRUE);    // Ensure depth writing is on
+	
+	//glClear(GL_DEPTH_BUFFER_BIT); // Only clear depth for a depth-only FBO
     // to draw relevant objects.
     AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
-    AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
+    /*
+	AF_Renderer_DrawMeshes(
+        &camera->viewMatrix,
+        &camera->projectionMatrix,
+        _ecs,
+        &_cameraEntity->transform->pos, // Camera position for lighting calculations
+        _lightingData,
+		NO_SHARED_SHADER,
+		_renderingData
+	
+        // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
+        // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
+        // to implement shadows. You might need to pass _renderingData or these specific items.
+    );
+	*/
+	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
     // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
     // This pass renders the scene normally from the main camera's perspective.
@@ -337,27 +331,15 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// tODO change back to screen fbo
 	
     AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-    AF_Window* window = _renderingData->windowPtr;
-	if(window == NULL){
-		AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
-		return;
-	}
 	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
-	
-	//glViewport(0, 0, window->windowWidth, window->windowHeight); // Viewport for the main scene render
-
     // Set clear color for the main scene (e.g., camera's background color)
     // Assuming camera->backgroundColor is a Vec4 or similar
     //glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, camera->backgroundColor.w);
     glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
 	
-	//glClearColor(0.1f, 0.1f, 0.15f, 1.0f); // Example clear color
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // Example clear color
-	//glClearColor(__apda, 0.1f, 0.15f, 1.0f);
     glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
-
     // AF_Renderer_DrawMeshes renders all visible entities using their respective materials,
     // shaders, lighting, and applies shadows using depthMapTextureID and lightSpaceMatrix.
     AF_Renderer_DrawMeshes(
@@ -375,14 +357,27 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     );
     // After this, _renderingData->screenFBO_TextureID contains the final rendered scene.
     AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
-
-
 	
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Populates _renderingData->depthDebugTextureID) ====
     // This pass takes the raw _renderingData->depthMapTextureID, uses _renderingData->depthDebugShaderID
     // to convert depth to a visual format (e.g., grayscale), and renders this to _renderingData->depthDebugTextureID.
-    AF_Renderer_RenderScreenFBOQuad(_renderingData);
+	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
 
+	//glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
+    // draw green
+	glClearColor(0.0f, 0.0f, 1.0f, 1.0f); // Example clear color
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
+	
+    //glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+	glDisable(GL_DEPTH_TEST); // Ensure depth testing is on
+	// And optionally, if you're not writing depth for the quad:
+	// glDepthMask(GL_FALSE);
+	// otherwise
+    //glDepthMask(GL_TRUE);    // Ensure depth writing is on
+
+	AF_Renderer_RenderScreenFBOQuad(_renderingData);
+	AF_Renderer_UnBindFrameBuffer();
+	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     // All off-screen rendering is complete.
     // The main application loop will now handle ImGui rendering,
     // which will use _renderingData->screenFBO_TextureID (for the viewport)
@@ -413,8 +408,7 @@ void AF_Renderer_RenderDepthMeshes(AF_ECS* _ecs){
 }
 
 
-// ============================ TEXTURES ================================ 
-
+// ============================ TEXTURES =================================
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
     glUseProgram(_shaderID); // Bind the shader program
     glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
@@ -593,7 +587,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// otherwise use a shared shader
 		shader = _shaderOverride;
 	}
-	
+	glUseProgram(shader); 
 	
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 
@@ -648,7 +642,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// Does the shader use lighting?
         //if(_mesh->recieveLights == TRUE){
 		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
-		glUseProgram(shader); 
+		
 		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
 		// ideally shininess is set to 32.0f
 		/*
@@ -765,35 +759,39 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
 	
     //glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
-	AF_Renderer_UnBindFrameBuffer();
-	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+	
     glDisable(GL_DEPTH_TEST);
-
+	//glCullFace(GL_BACK);  // Cull the back faces (this is the default)
+	//glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
+	glDisable(GL_CULL_FACE); // Disable culling
+	
+	
     glUseProgram(_renderingData->depthDebugFrameBufferData.shaderID);
-
+	
     // Uniforms for linearization (optional, shader dependent)
-    //float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
+    
+	//float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
     //AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "near_plane", near_plane);
     //AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "far_plane", far_plane);
-
+	
     glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
-    glBindTexture(GL_TEXTURE_2D, _renderingData->depthDebugFrameBufferData.textureID); // Bind your actual depth map texture
+    glBindTexture(GL_TEXTURE_2D, _renderingData->depthFrameBufferData.textureID); // Bind your actual depth map texture
 
     if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
         AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
     }
 	
     glBindVertexArray(_renderingData->screenQUAD_VAO);
-
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	
     glBindVertexArray(0);
     glUseProgram(0);
-	AF_Renderer_UnBindFrameBuffer();
+	
 	
     // Consider re-enabling depth test if needed by subsequent rendering
     // glEnable(GL_DEPTH_TEST);
-	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Render debug quad\n");
+	glEnable(GL_CULL_FACE); // Enable culling
+	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Finish Render debug quad\n");
 }
 
 
@@ -857,7 +855,9 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
 	AF_GL_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
 		
-	GLuint gVAO, gVBO, gEBO;
+	GLuint gVAO = 0;
+	GLuint gVBO = 0;
+	GLuint gEBO = 0;
 	glGenVertexArrays(1, &gVAO);
 	glGenBuffers(1, &gVBO);
 	glGenBuffers(1, &gEBO);
@@ -1167,109 +1167,135 @@ Do the initial setup for rendering a depth pass in opengl
 void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs){
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
-	Mat4 shadowLightProjection;
-	//Mat4 shadowLightView;
-	Mat4 shadowLightSpaceMatrix;
 	
-	//float near_plane = 1.0f;
-	//float far_plane = 7.5f;
-	float outerBounds =  7.5f;
-	float near_plane = 1.0f;
-	float far_plane = 10.0f;
-	//lightProjection = glm::perspective(glm::radians(45.0f), (GLfloat)SHADOW_WIDTH / (GLfloat)SHADOW_HEIGHT, near_plane, far_plane); // note that if you use a perspective projection matrix you'll have to change the light position as the current light position isn't enough to reflect the whole scene
 	
-	AF_CCamera depthCamera = AF_CCamera_ZERO();
-	depthCamera.nearPlane = near_plane;
-	depthCamera.farPlane = far_plane;
-	shadowLightProjection = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, near_plane, far_plane);
+	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
+	AF_CTransform3D* depthCamTransform = depthCameraEntity->transform;
+	AF_CCamera* depthCamera = depthCameraEntity->camera;//AF_CCamera_ZERO();
+	//depthCamera->nearPlane = 1.0f;
+	//depthCamera.farPlane = 7.5f;
+	float outerBounds =  10.0f;
+	if(depthCamera->orthographic){
+		depthCamera->projectionMatrix = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, depthCamera->nearPlane, depthCamera->farPlane);
+	}else{
+		depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
+	}
 	
+	depthCamTransform->modelMat = Mat4_ToModelMat4(depthCamTransform->pos, depthCamTransform->rot, depthCamTransform->scale);
 	//AF_Log("=========shadowLightProjection========\n");
 	//AF_Util_Mat4_Log(shadowLightProjection);
-	Vec3 upDirection = {0.0f, 1.0f, 0.0f};
-	Vec3 cameraDirection = {-0.5f, -1.0f, -0.5f};
-	Vec3 mainLightDirection = Vec3_NORMALIZE(cameraDirection);
-	Vec3 targetPos =  {0,0,0};	
-	Vec3 light_eye_position = {-2.0f, 4.0f, -1.0f};//Vec3_MINUS(targetPos, Vec3_MULT_SCALAR(mainLightDirection, 20.0f)); // Position light 20 units back from scene center
 
-	//Vec3 eye = _ecs->entities[_lightingData->ambientLightEntityIndex].transform->pos;// lightPos 
+    // calculate Right
+	depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
+    Vec3 right = Vec3_NORMALIZE(Vec3_CROSS( depthCamera->cameraFront, depthCamera->cameraWorldUp));
+	depthCamera->cameraRight = right;
+
+    // calculate up
+    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(depthCamera->cameraRight,  depthCamera->cameraFront));
+	depthCamera->cameraUp = up;
+
+	Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
+    depthCamera->viewMatrix = viewMatrix;
+
 	//Vec3 eye = {-2.0f, 4.0f, -1.0f};
-	// Before Mat4_Lookat for shadowLightView
-	Vec3 leftDirection = {1.0f, 0.0f, 0.0f};
-	if (fabs(Vec3_DOT(mainLightDirection, upDirection)) > 0.99f) { // If light direction is nearly vertical
-		upDirection = leftDirection; // Use X-axis as 'up' to avoid gimbal lock
-	}
-	//shadowLightView = Mat4_Lookat(targetPos, eye, upDirection); 
-	Mat4 shadowLightView = Mat4_Lookat(targetPos, light_eye_position, upDirection); 
+	//Vec3 eye = Vec3_NORMALIZE(depthCamTransform->pos); // lightPos 
+	//Vec3 targetPos =  {0,0,0};	
+	//Mat4 shadowLightView =  Mat4_Lookat(targetPos, eye, upDirection); 
 	//AF_Log("=========shadowLightView========\n");
-	//AF_Util_Mat4_Log(shadowLightView);
+	//AF_Util_Mat4_Log(depthCamera.viewMatrix);
 
-	shadowLightSpaceMatrix = Mat4_MULT_M4(shadowLightProjection, shadowLightView);
+	//Mat4_MULT_M4(shadowLightView, shadowLightProjection);
 	// copy the matrix to the lighting data
-	_lightingData->shadowLightSpaceMatrix = shadowLightSpaceMatrix;
+	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->viewMatrix, depthCamera->projectionMatrix);
 	//AF_Log("=========shadowLightSpaceMatrix========\n");
 	//AF_Util_Mat4_Log(shadowLightSpaceMatrix);
 	// render scene from light's point of view
 	
-	if(_lightingData->shadowsEnabled == TRUE){
-		AF_Shader_SetMat4(_renderingData->depthFrameBufferData.shaderID, "lightSpaceMatrix", _lightingData->shadowLightSpaceMatrix);	
-	}
-	// Render meshes
-	AF_Renderer_DrawMeshes(
-        &depthCamera.viewMatrix,
-        &depthCamera.projectionMatrix,
+	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+    glDepthMask(GL_TRUE);    // Ensure depth writing is on
+	glDepthFunc(GL_LESS);
+    // AF_Renderer_DrawMeshes renders all visible entities using their respective materials,
+    // shaders, lighting, and applies shadows using depthMapTextureID and lightSpaceMatrix.
+    AF_Renderer_DrawMeshes(
+        &depthCamera->viewMatrix,//camera->viewMatrix,
+        &depthCamera->projectionMatrix,//camera->projectionMatrix,
         _ecs,
-        &light_eye_position,//eye, // Camera position for lighting calculations
+        &depthCamTransform->pos,//_cameraEntity->transform->pos, // Camera position for lighting calculations
         _lightingData,
-		_renderingData->depthFrameBufferData.shaderID,
+		NO_SHARED_SHADER, //_renderingData->depthFrameBufferData.shaderID, //
 		_renderingData
+	
+        // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
+        // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
+        // to implement shadows. You might need to pass _renderingData or these specific items.
     );
-	
-	
-	
-	// render Depth map to quad for visual debugging
-	// ---------------------------------------------
-	// Bind the debug depth frame buffer image
-	
+
 	/*
-	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
-	AF_Shader_Use(_renderingData->depthDebugFrameBufferData.shaderID);
-	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "near_plane", near_plane);
-	//AF_Shader_SetFloat(_renderingData->depthDebugShaderID, "far_plane", far_plane);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, _renderingData->depthDebugFrameBufferData.textureID);
-	//renderQuad();
-	unsigned int quadVAO = 0;
-	unsigned int quadVBO;
-	if (quadVAO == 0)
-    {
-        float quadVertices[] = {
-            // positions        // texture Coords
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        };
-        // setup plane VAO
-        glGenVertexArrays(1, &quadVAO);
-        glGenBuffers(1, &quadVBO);
-        glBindVertexArray(quadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    }
-    glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-	AF_Shader_Use(0);
-	AF_Renderer_UnBindFrameBuffer();
-	*/
-	/*
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, woodTexture);
-	renderScene(simpleDepthShader);
+	glUseProgram(_renderingData->depthFrameBufferData.shaderID);
+    // Set the combined lightSpaceMatrix for the depth shader ONCE
+    AF_Shader_SetMat4(_renderingData->depthFrameBufferData.shaderID, "lightSpaceMatrix", shadowLightSpaceMatrix);
+	AF_GL_CheckError( "AF_Renderer_StartDepthPass: Set lightSpaceMatrix to shader! \n");
+
+    for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
+        AF_Entity* entity = &_ecs->entities[i];
+        if (!AF_Component_GetHasEnabled(entity->flags)) 
+		{
+			continue;
+		}
+
+        AF_CMesh* _mesh = &_ecs->meshes[i];
+        if (!AF_Component_GetHasEnabled(_mesh->enabled)) {
+			continue;
+		}
+        // if (!meshComponent->castsShadows) continue; // Optional: only draw shadow casters
+
+        //AF_CTransform3D* modelTransform = &_ecs->transforms[i];
+        //Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x), AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
+        //Mat4 modelMatrix = Mat4_ToModelMat4(modelTransform->pos, rotationToRadians, modelTransform->scale);
+		uint32_t shader = _renderingData->depthFrameBufferData.shaderID;
+        // Set the model matrix for the current object IN THE DEPTH SHADER
+
+		// Set the model mat
+		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
+
+		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
+		Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
+		// Update the model matrix
+		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
+        AF_Shader_SetMat4(shader, "model", modelMatColumn);
+
+		AF_GL_CheckError( "AF_Renderer_StartDepthPass: Set model to shader! \n");
+
+        for(uint32_t j = 0; j < _mesh->meshCount; j++){
+	
+			glBindVertexArray(_mesh->meshes[j].vao);//_meshList->vao);
+			AF_GL_CheckError( "AF_Renderer_StartDepthPass: Error bind vao Rendering OpenGL! \n");
+	
+			// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+			glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[j].vbo);
+			AF_GL_CheckError("AF_Renderer_StartDepthPass: Error binding VBO for drawing!");
+			
+			// Prep drawing
+			unsigned int indexCount = _mesh->meshes[j].indexCount;
+			if(indexCount == 0){
+				AF_Log_Warning("AF_Renderer_StartDepthPass: indexCount is 0. Can't draw elements\n");
+				return;
+			}
+		
+			// Draw
+			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+			AF_GL_CheckError( "AF_Renderer_StartDepthPass drawElements Rendering OpenGL! \n");
+
+			glBindVertexArray(0);
+			AF_GL_CheckError( "AF_Renderer_StartDepthPass: Error bindvertexarray(0) Rendering OpenGL! \n");
+		}
+	
+		// It's good practice to reset the active texture unit to a default,
+		// though well-behaved subsequent code (like ImGui's backend) should set its own.
+		glActiveTexture(GL_TEXTURE0);
+	}
+	// Unbind shader
+	glUseProgram(0);
 	*/
 }
 
@@ -1609,9 +1635,6 @@ void AF_Renderer_CheckFrameBufferStatus(const char* _message){
 		AF_Log_Error("AF_Renderer_CheckFrameBufferStatus: ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status: 0x%x (%s): %s\n", status, statusStr, _message);
 	}
 }
-
-
-
 
 
 /*
