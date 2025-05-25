@@ -165,8 +165,8 @@ inline static void AF_SActions_MouseLook(AF_AppData* _appData, AF_CCamera* _came
     AF_Input* input =  &_appData->input;
     
     // update the camera based on the pitch and yaw of the mouse;
-    float xPos = -input->mouseX;
-    float yPos = -input->mouseY;
+    float xPos = input->mouseX;
+    float yPos = input->mouseY;
     
     // Check if this is the first frame of holding down the right mouse button
     if (input->firstMouse == TRUE) {
