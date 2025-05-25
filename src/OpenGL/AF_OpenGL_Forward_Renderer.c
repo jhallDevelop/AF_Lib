@@ -158,8 +158,8 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.rbo = 0,
 			.shaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath),
 			.textureID = 0,
-			.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH,//*_screenWidth,
-			.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT,//*_screenHeight,
+			.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH,
+			.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT,
 			.vertPath = depthVertShaderFullPath, 
 			.fragPath = depthFragShaderFullPath, 
 			.shaderTextureName = "",
@@ -312,7 +312,9 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
     // to draw relevant objects.
+	//glCullFace(GL_BACK);
     AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
+	//glCullFace(GL_FRONT);
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
     // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
@@ -1137,21 +1139,22 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 		depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
 	}
 	
-	depthCamTransform->modelMat = Mat4_ToModelMat4(depthCamTransform->pos, depthCamTransform->rot, depthCamTransform->scale);
+	//depthCamTransform->modelMat = Mat4_ToModelMat4(depthCamTransform->pos, depthCamTransform->rot, depthCamTransform->scale);
 	//AF_Log("=========shadowLightProjection========\n");
 	//AF_Util_Mat4_Log(shadowLightProjection);
 
     // calculate Right
-	depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
-    Vec3 right = Vec3_NORMALIZE(Vec3_CROSS( depthCamera->cameraFront, depthCamera->cameraWorldUp));
-	depthCamera->cameraRight = right;
+	Vec3 centre = {0.0f, 0.0f, 0.0f};
+	//depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
+    //Vec3 right = Vec3_NORMALIZE(Vec3_CROSS( depthCamera->cameraFront, depthCamera->cameraWorldUp));
+	//depthCamera->cameraRight = right;
 
     // calculate up
-    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(depthCamera->cameraRight,  depthCamera->cameraFront));
+    Vec3 up = {0,1,0};//Vec3_NORMALIZE(Vec3_CROSS(depthCamera->cameraRight,  depthCamera->cameraFront));
 	depthCamera->cameraUp = up;
 
-	Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
-    depthCamera->viewMatrix = viewMatrix;
+	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
+	depthCamera->viewMatrix = Mat4_Lookat(centre, depthCamTransform->pos, depthCamera->cameraUp);
 
 	// copy the matrix to the lighting data
 	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);
