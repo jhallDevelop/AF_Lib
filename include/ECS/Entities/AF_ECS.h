@@ -422,6 +422,7 @@ static inline AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
         if(hasCamera == TRUE){
             cameraEntity = &_ecs->entities[i];
             AF_Log("AF_ECS_GetCamera: GetCamera: Success\n");
+			break;
         }
     }
 	if(cameraEntity == NULL){
