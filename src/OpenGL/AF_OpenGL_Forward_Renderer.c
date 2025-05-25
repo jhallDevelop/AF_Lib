@@ -298,8 +298,6 @@ Simple render command to perform forward rendering steps
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
     AF_GL_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
 	AF_CCamera* camera = _cameraEntity->camera;
-	// TODO: guard this as its expensive every frame
-	//
 
 	AF_Window* window = _renderingData->windowPtr;
 	if(window == NULL){
@@ -309,46 +307,19 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 
     // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
     // This pass renders scene geometry from the light's perspective to a depth texture.
-	
-   
-	
-
     AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
-	//glViewport(0, 0, AF_RENDERINGDATA_SHADOW_WIDTH, AF_RENDERINGDATA_SHADOW_HEIGHT);
-	//glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
 	glViewport(0, 0, _renderingData->depthFrameBufferData.textureWidth, _renderingData->depthFrameBufferData.textureHeight); // Viewport for the main scene render
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
-	//glClear(GL_DEPTH_BUFFER_BIT); // Only clear depth for a depth-only FBO
-	
-    //glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    //glDepthMask(GL_TRUE);    // Ensure depth writing is on
-	
-	
+	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+    glDepthMask(GL_TRUE);    // Ensure depth writing is on
     // to draw relevant objects.
     AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
-
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
     // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
-    // This pass renders the scene normally from the main camera's perspective.
-    // It uses the _renderingData->depthMapTextureID for shadow calculations.
-    // Output goes to _renderingData->screenFBO_ID (which has _renderingData->screenFBO_TextureID attached).
-    // This FBO is typically managed (created/resized) by your Editor_Viewport_Render.
-
-	// tODO change back to screen fbo
-	
     AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
-    // Set clear color for the main scene (e.g., camera's background color)
-    // Assuming camera->backgroundColor is a Vec4 or similar
-    //glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, camera->backgroundColor.w);
-    //glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
-	
-    //glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    //glDepthMask(GL_TRUE);    // Ensure depth writing is on
-    // AF_Renderer_DrawMeshes renders all visible entities using their respective materials,
-    // shaders, lighting, and applies shadows using depthMapTextureID and lightSpaceMatrix.
+	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+    glDepthMask(GL_TRUE);    // Ensure depth writing is on
     AF_Renderer_DrawMeshes(
         &camera->viewMatrix,
         &camera->projectionMatrix,
@@ -357,38 +328,19 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         _lightingData,
 		NO_SHARED_SHADER,
 		_renderingData
-	
-        // Note: AF_Renderer_DrawMeshes needs access to _renderingData->depthMapTextureID
-        // and the lightSpaceMatrix (calculated in AF_Renderer_StartDepthPass)
-        // to implement shadows. You might need to pass _renderingData or these specific items.
     );
     // After this, _renderingData->screenFBO_TextureID contains the final rendered scene.
     AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 	
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Populates _renderingData->depthDebugTextureID) ====
-    // This pass takes the raw _renderingData->depthMapTextureID, uses _renderingData->depthDebugShaderID
-    // to convert depth to a visual format (e.g., grayscale), and renders this to _renderingData->depthDebugTextureID.
 	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
-
-	//glClearColor(camera->backgroundColor.x, camera->backgroundColor.y, camera->backgroundColor.z, 1.0f); // Example clear color
-    // draw green
-	//glClearColor(0.0f, 0.0f, 1.0f, 1.0f); // Example clear color
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear color and depth
-	
-    //glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-	//glDisable(GL_DEPTH_TEST); // Ensure depth testing is on
-	// And optionally, if you're not writing depth for the quad:
-	// glDepthMask(GL_FALSE);
-	// otherwise
-    //glDepthMask(GL_TRUE);    // Ensure depth writing is on
-
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE); // Disable culling
 	AF_Renderer_RenderScreenFBOQuad(_renderingData);
+	glEnable(GL_CULL_FACE); // Enable culling
 	AF_Renderer_UnBindFrameBuffer();
-	//glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    // All off-screen rendering is complete.
-    // The main application loop will now handle ImGui rendering,
-    // which will use _renderingData->screenFBO_TextureID (for the viewport)
-    // and _renderingData->depthDebugTextureID (for the depth map debug window).
+
+
 	AF_GL_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
 }
 
@@ -770,13 +722,6 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
 	
     //glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
-	
-    glDisable(GL_DEPTH_TEST);
-	//glCullFace(GL_BACK);  // Cull the back faces (this is the default)
-	//glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
-	glDisable(GL_CULL_FACE); // Disable culling
-	
-	
     glUseProgram(_renderingData->depthDebugFrameBufferData.shaderID);
 	
     // Uniforms for linearization (optional, shader dependent)
@@ -801,7 +746,7 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 	
     // Consider re-enabling depth test if needed by subsequent rendering
     // glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE); // Enable culling
+	
 	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Finish Render debug quad\n");
 }
 
@@ -1214,8 +1159,7 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	//AF_Util_Mat4_Log(shadowLightSpaceMatrix);
 	// render scene from light's point of view
 	
-	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    glDepthMask(GL_TRUE);    // Ensure depth writing is on
+	
 	//glDepthFunc(GL_LESS);
     // AF_Renderer_DrawMeshes renders all visible entities using their respective materials,
     // shaders, lighting, and applies shadows using depthMapTextureID and lightSpaceMatrix.
