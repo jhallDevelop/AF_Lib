@@ -150,9 +150,9 @@ void AF_Shader_SetBool(uint32_t ID, const char* name, bool value)
 // ------------------------------------------------------------------------
 void AF_Shader_SetInt(uint32_t ID, const  char* name, int value) 
 { 
-    glUseProgram(ID);
+    //glUseProgram(ID);
     glUniform1i(AF_Shader_GetUniformLocation(ID, name), value); 
-    glUseProgram(0);
+    //glUseProgram(0);
 }
 // ------------------------------------------------------------------------
 void AF_Shader_SetFloat(uint32_t ID, const char* name, float value) 
@@ -208,9 +208,9 @@ void AF_Shader_SetMat3(uint32_t ID, const char* name, const glm::mat3 &mat)
 // ------------------------------------------------------------------------
 void AF_Shader_SetMat4(uint32_t ID, const char* name, const Mat4 mat) 
 {
-    AF_Shader_Use(ID); 
+    //AF_Shader_Use(ID); 
     glUniformMatrix4fv(AF_Shader_GetUniformLocation(ID, name), 1, GL_FALSE, &mat.rows->x);
-    AF_Shader_Use(0);
+    //AF_Shader_Use(0);
 }
 
 // Get uniform Location
