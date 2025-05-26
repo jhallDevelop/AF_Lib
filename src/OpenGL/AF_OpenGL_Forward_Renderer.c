@@ -76,9 +76,7 @@ uint32_t AF_Renderer_Awake(void){
 	
 	// FACE CULLING
 	// TODO: Adjust per model
-	glCullFace(GL_BACK);  // Cull the back faces (this is the default)
-	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)
-	glEnable(GL_CULL_FACE); // Enable culling
+	
 	
     AF_GL_CheckError( "Error initializing OpenGL! \n");
     //AF_GL_CheckError("SLDGameRenderer::Initialise:: finishing up init: ");
@@ -305,6 +303,11 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 		return;
 	}
 
+	// 0. ===== General Rendering
+	//glCullFace(GL_BACK);  // Cull the back faces (this is the default)
+	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)CCW
+	//glEnable(GL_CULL_FACE); // Enable culling 
+
     // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
     // This pass renders scene geometry from the light's perspective to a depth texture.
     AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
@@ -312,9 +315,10 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
     // to draw relevant objects.
-	//glCullFace(GL_BACK);
-    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
+	glEnable(GL_CULL_FACE); // Enable culling
 	//glCullFace(GL_FRONT);
+    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
+	//glCullFace(GL_BACK);
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
     // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
@@ -322,6 +326,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
+	glCullFace(GL_BACK);
     AF_Renderer_DrawMeshes(
         &camera->viewMatrix,
         &camera->projectionMatrix,
@@ -1102,13 +1107,17 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_frameBufferData->minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)_frameBufferData->magFilter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // Add wrap parameters if needed (often GL_CLAMP_TO_EDGE for FBO textures)
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
     return fboTextureID;
