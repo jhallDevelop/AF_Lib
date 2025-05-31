@@ -10,6 +10,9 @@ This implementation is for OpenGL
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
 
+// set to 0 if ignoring shader errors or 1 if logging them
+#define SHADER_ERROR_LOG 0
+
 // Forward Declare
 GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name);
 
@@ -216,7 +219,7 @@ void AF_Shader_SetMat4(uint32_t ID, const char* name, const Mat4 mat)
 // Get uniform Location
 GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name){
     GLint returnValue = glGetUniformLocation(ID, name);
-    if(returnValue == -1){
+    if(returnValue == -1 && SHADER_ERROR_LOG == 1){
         AF_Log_Error("AF_Shader_GetUniformLocation: Can't find uniform location %s in shader %i\n", name, ID);
     }
     return returnValue;
