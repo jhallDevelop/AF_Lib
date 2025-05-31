@@ -194,7 +194,6 @@ AF_Ccamera_GetPerspectiveProjectionMatrix
 Setup a camera component struct with settings for a perspective camera
 ====================
 */
-
 inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight) {
     //https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/opengl-perspective-projection-matrix.html
     // Get the framebuffer width and height as we work in pixels
@@ -211,26 +210,6 @@ inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera,
     AF_FLOAT top = right / _camera->aspectRatio;
     AF_FLOAT bottom = -top;
     
-    // Set elements of the perspective projection matrix
-    /*
-    Mat4 perspectiveMatrix = {{
-        {2.0f * _camera->nearPlane / (right - left), 0.0f, 0.0f, 0.0f},
-        {0.0f, 2.0f * _camera->nearPlane / (top - bottom), 0.0f, 0.0f},
-        {(right + left) / (right - left), (top + bottom) / (top - bottom), -( _camera->farPlane + _camera->nearPlane ) / (_camera->farPlane - _camera->nearPlane), -1.0f},
-        {0.0f, 0.0f, -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane), 0.0f}
-    }};
-    */
-
-   // TODO: Make this switch depending if its orthographic or perspective
-   /*
-   Mat4 perspectiveMatrix = {{
-        {2.0f * _camera->nearPlane / (right - left), 0.0f, 0.0f, 0.0f},
-        {0.0f, 2.0f * _camera->nearPlane / (top - bottom), 0.0f, 0.0f},
-        {0.0f, 0.0f, -( _camera->farPlane + _camera->nearPlane ) / (_camera->farPlane - _camera->nearPlane), -2.0f * _camera->farPlane * _camera->nearPlane / (_camera->farPlane - _camera->nearPlane)},
-        {0.0f, 0.0f, -1.0f, 0.0f}
-    }};*/
-
-
     // Frustum boundaries (in view space)
     float l = left;      // Left clipping plane (e.g., -screen aspect ratio)
     float r = right;     // Right clipping plane (e.g., screen aspect ratio)
@@ -245,13 +224,8 @@ inline static Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera,
         {0.0f,         0.0f,          -(f+n)/(f-n),              -2*f*n/(f-n)},           // Row 2
         {0.0f,         0.0f,          -1.0f,                     0.0f}             // Row 3
     }};
-
-    
     return perspectiveMatrix;
 }
-
-
-
 
 
 /*
