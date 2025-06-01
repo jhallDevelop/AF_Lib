@@ -133,7 +133,7 @@ static inline void AF_ECS_Init(AF_ECS* _ecs){
 	assert(_ecs != NULL && "AF_ECS_Init: argument is null");
 	// Initialise all entities in the entity pool with default values
 	_ecs->entitiesCount = AF_ECS_TOTAL_ENTITIES;
-
+	_ecs->currentEntity = 0; // init to 0
 	
 	for(uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; i++){
 		
