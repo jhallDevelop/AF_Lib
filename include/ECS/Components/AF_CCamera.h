@@ -62,7 +62,7 @@ inline static AF_CCamera AF_CCamera_ZERO(void){
 		.cameraFront = {0,0,0},
 		.cameraUp = {0,0,0},
 		.cameraRight = {0,0,0},
-		.cameraWorldUp = {0,0,0},
+		.cameraWorldUp = {0,1,0},
 		.yaw = 0,
 		.pitch = 0,
 		.fov = 0,
