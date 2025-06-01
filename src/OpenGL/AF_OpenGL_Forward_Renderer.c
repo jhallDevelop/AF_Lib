@@ -1135,7 +1135,11 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
 	
-	
+	// if ambientLightEntityIndex is not set, then we can't render the depth pass
+	if(_lightingData->ambientLightEntityIndex <= 0){
+		//AF_Log_Error("AF_Renderer_StartDepthPass: ambientLightEntityIndex is not set, can't render depth pass\n");
+		return;
+	}
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
 	AF_CTransform3D* depthCamTransform = depthCameraEntity->transform;
 	AF_CCamera* depthCamera = depthCameraEntity->camera;//AF_CCamera_ZERO();
