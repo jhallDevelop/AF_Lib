@@ -77,11 +77,14 @@ Make a directory, and return if it was successful
 ====================
 */
 static inline BOOL AF_Util_MakeDirectory(const char* _filePath){
+    #if _WIN32
+    printf("AF_Util_MakeDirectory: windows not implemented yet\n");
+#elif
     if(mkdir(_filePath, 0777) == -1){
         AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n",_filePath);
         return FALSE;
     }
-    
+#endif
     // if we succeed then we return true
     AF_Log("AF_Util_MakeFolder: SUCCESS: Directory created: %s\n", _filePath);
     return TRUE;
@@ -99,6 +102,9 @@ static inline char* AF_Util_ReadFile(const char* thisFilePath) {
     #ifdef PLATFORM_GB
         printf("TODO: Failed to read file from %s \n Need implement file read for platform GB\n", thisFilePath);
 	return NULL;
+    #elif _WIN32
+    printf("AF_Util_ReadFile: Windows read file not implemented yet\n");
+    return NULL;
     #else
     FILE* _fileOpen = fopen(thisFilePath, "r");
     if (_fileOpen == NULL) {

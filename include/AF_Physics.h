@@ -698,7 +698,7 @@ static inline BOOL AF_Physics_AABB_Test(AF_ECS* _ecs){
 						 distances[5] = maxA.z - minB.z;  // distance of box ’b ’ to ’ near ’ of ’a ’.
 					
 					//TODO: where is __FLT_MAX__ defined? may not be portable
-					float penetration = __FLT_MAX__;
+					float penetration = 2147483647;//__FLT_MAX__;
 					Vec3 bestAxis = {0,0,0};	// default value
 					for(int j = 0; j < facesCount; ++j){
 						if(distances[j] < penetration){

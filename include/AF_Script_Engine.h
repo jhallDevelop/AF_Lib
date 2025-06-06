@@ -10,7 +10,11 @@ Definitions for helper functions to load and use scripts
 #include "AF_File.h"
 #include "AF_Log.h"
 #include "AF_AppData.h"
+#ifdef _WIN32
+
+#elif
 #include <dlfcn.h>
+#endif
 #include "ECS/Components/AF_Component.h"
 
 
@@ -45,6 +49,10 @@ Return the pointer to the shared object
 ===============================================================================
 */
 inline static void* AF_Script_Load(const char* _filePath){
+    void* scriptPtr = NULL;
+#ifdef _WIN32
+    AF_Log_Error("AF_Script_Load: Windows not defined\n");
+#elif
     // Check file path 
     if(strncmp(_filePath, "", MAX_PROJECTDATA_FILE_PATH) == 0){
         AF_Log_Error("AF_Script_Load: file path is empty\n");
@@ -53,7 +61,7 @@ inline static void* AF_Script_Load(const char* _filePath){
 
     // Open a file for binary reading
     FILE* file = AF_File_OpenFile(_filePath, "rb");
-    void *scriptPtr = NULL;
+    
     if (file == NULL) {
         AF_Log_Error("AF_Script_Load: FAILED to open file %s\n", _filePath);
         return scriptPtr;
@@ -66,6 +74,7 @@ inline static void* AF_Script_Load(const char* _filePath){
             return scriptPtr;
         }
     }   
+#endif
 
     return scriptPtr;
 }
@@ -83,6 +92,9 @@ inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSh
         return;
     }
 
+#ifdef _WIN32
+    AF_Log_Error("AF_Script_Bind_Functions: Windows not defined\n");
+#elif
     // ==== START Func ==== 
     // Get the script name
     char startFuncName[MAX_FUNCTION_NAME];
@@ -133,6 +145,7 @@ inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSh
     }
 
     _script->destroyFuncPtr = destroyScriptFunctPtr;
+#endif
 }
 
 
@@ -181,10 +194,14 @@ inline static void AF_Script_UnLoad(void* _scriptSharedObjPtr){
 
     int eret;
     // Close the shared objects
+#ifdef _WIN32
+    AF_Log_Error("AF_Script_UnLoad: Windows not defined\n");
+#elif
     eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {
         AF_Log_Error("AF_Script_UnLoad: Failed to close shared object 1: %s\n", dlerror());
     }
+#endif
 }
 
 /*
@@ -226,11 +243,16 @@ Return the pointer to the shared object
 */
 inline static ScriptFuncPtr AF_GetScriptFuncPtr(void* _sharedObjectPtr, const char* _funcName){
     // Load functions from the shared objects
+    ScriptFuncPtr scriptFunctPtr1 = NULL;
+#ifdef _WIN32
+    AF_Log_Error("AF_GetScriptFuncPtr: Windows not defined\n");
+#elif
     ScriptFuncPtr scriptFunctPtr1 = (ScriptFuncPtr) dlsym(_sharedObjectPtr, _funcName);
     char *error = dlerror(); // Check for any error after dlsym
     if (error != NULL) {
         AF_Log_Error("Game_App_Awake: Failed to load %s: %s\n", _funcName, error);
     }
+#endif
     return scriptFunctPtr1;
 }
 
