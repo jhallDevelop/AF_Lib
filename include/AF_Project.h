@@ -15,6 +15,7 @@ AF_PROJECT_H
 #include "AF_File.h"
 #include "AF_Renderer.h"
 #include "AF_MeshLoad.h"
+#include "ECS/Components/AF_Component.h"
 
 
 #ifdef __cplusplus

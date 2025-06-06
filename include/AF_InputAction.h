@@ -13,6 +13,8 @@ Definition for the input action struct
 //#include "AF_Input.h"
 #include "AF_Vec2.h"
 #include "AF_Vec3.h"
+#include <stddef.h> // For NULL
+#include "AF_Log.h"
 
 #ifdef __cplusplus
 extern "C" {    

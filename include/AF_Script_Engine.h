@@ -11,7 +11,7 @@ Definitions for helper functions to load and use scripts
 #include "AF_Log.h"
 #include "AF_AppData.h"
 #include <dlfcn.h>
-
+#include "ECS/Components/AF_Component.h"
 
 
 #define MAX_FUNCTION_NAME 1024

@@ -6,12 +6,18 @@ Definition for the camera component struct
 and helper functions
 ===============================================================================
 */
+#ifndef AF_CTEXT_H
+#define AF_CTEXT_H
+
 #include "AF_Vec2.h"
 #include "AF_Vec4.h"
 #include "AF_Lib_Define.h"
 
-#ifndef AF_CTEXT_H
-#define AF_CTEXT_H
+
+
+#ifdef __cplusplus
+extern "C" {    
+#endif
 
 typedef struct AF_CText {
     PACKED_CHAR enabled;	    // 1 byte
@@ -26,52 +32,11 @@ typedef struct AF_CText {
     void* textData;
 } AF_CText;
 
-/*
-====================
-AF_CText_ZERO
-Function used to create an empty text component
-====================
-*/
-static inline AF_CText AF_CText_ZERO(void){
-    AF_CText returnMesh = {
-	FALSE,
-    FALSE,
-    FALSE,
-    0,
-    NULL,
-    NULL,
-    {0,0},
-    {0,0},
-    {0,0,0,1},
-    NULL
-    };
-    return returnMesh;
-}
+AF_CText AF_CText_ADD(void);
+AF_CText AF_CText_ZERO(void);
 
-/*
-====================
-AF_CText_ADD
-Function used to Add the component
-====================
-*/
-static inline AF_CText AF_CText_ADD(void){
-    PACKED_CHAR component = 0;
-    component = AF_Component_SetHas(component, TRUE);
-    component = AF_Component_SetEnabled(component, TRUE);
-
-    AF_CText returnMesh = {
-	component,
-    TRUE,
-    TRUE,
-    0,
-    NULL,
-    NULL,
-    {0,0},
-    {0,0},
-    {0,0,0,1},
-    NULL
-    };
-    return returnMesh;
+#ifdef __cplusplus
 }
+#endif
 
 #endif

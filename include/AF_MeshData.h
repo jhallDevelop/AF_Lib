@@ -8,7 +8,7 @@ AF_MeshData_H
 #define AF_MESH_DATA_H
 #include "AF_Material.h"
 #include "AF_Vertex.h"
-
+#include <stddef.h> // For NULL
 #ifdef __cplusplus
 extern "C" {
 #endif

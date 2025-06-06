@@ -8,8 +8,12 @@ and helper functions
 */
 #ifndef AF_AI_ACTION_H
 #define AF_AI_ACTION_H
+#include "AF_Lib_Define.h"
+#include <stddef.h> // For NULL
 
-//#include "ECS/Entities/AF_Entity.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum AI_ACTION_Type {
 	AI_ACTION_DEFAULT = 0,
@@ -38,6 +42,9 @@ static inline AF_AI_Action AF_AI_Action_Zero(void){
 	};
 	return zeroAction;
 }
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif //AF_AI_ACTION_H

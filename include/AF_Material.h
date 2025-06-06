@@ -16,7 +16,7 @@ extern "C" {
 
 #include "AF_Texture.h"
 
-typedef struct __attribute__((packed)) {
+typedef struct AF_Color {
 	uint8_t r;
 	uint8_t g;
 	uint8_t b;

@@ -30,43 +30,12 @@ typedef struct {
     Vec2 scale;
 } AF_CTransform2D;
 
-/*
-====================
-AF_CTransform2D_ZERO
-Empty constructor
-====================
-*/
-static inline AF_CTransform2D AF_CTransform2D_ZERO(void){
-	AF_CTransform2D returnTransform = {
-        .enabled = FALSE,
-        .pos = {0, 0},
-        .rot = {0, 0},
-        .scale = {1, 1}
-	// Default position matrix
-    };
-	return returnTransform;
-}
-
-/*
-====================
-AF_CTransform2D_ADD
-Add component constructor for the component
-====================
-*/
-static inline AF_CTransform2D AF_CTransform2D_ADD(void){
-	AF_CTransform2D returnTransform = {
-        //.has = TRUE,
-        .enabled = TRUE,
-        .pos = {0, 0},
-        .rot = {0, 0},
-        .scale = {1, 1}
-	// Default position matrix
-    };
-	return returnTransform;
-}
 
 #ifdef __cplusplus
 }
 #endif
+
+AF_CTransform2D AF_CTransform2D_ZERO(void);
+AF_CTransform2D AF_CTransform2D_ADD(void);
 
 #endif  // AF_TRANSFORM2D_H

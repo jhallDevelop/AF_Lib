@@ -35,9 +35,9 @@ typedef struct AF_Texture {
 
 static inline AF_Texture AF_Texture_ZERO(void){
 	AF_Texture returnTexture = {
-		.id = 0,
-		.type = AF_TEXTURE_TYPE_NONE, 
-		.path = "\0"
+		0,	//.id 
+		AF_TEXTURE_TYPE_NONE, //.type = 
+		"\0"	// .path =
 	};
 
 	return returnTexture;
