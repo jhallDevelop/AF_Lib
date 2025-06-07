@@ -49,21 +49,22 @@ typedef struct AF_AppData {
 } AF_AppData;
 #pragma pack(pop)
 
-static inline AF_AppData AF_AppData_ZERO(void){
+static inline void AF_AppData_Init(AF_AppData* _appData){
+    if (_appData == NULL) {
+		AF_Log_Error("AF_AppData_ZERO: _appData is NULL");
+        return;
+    }
     Vec4 blackColor = {0,0,0,0};
-    AF_AppData returnAppData ={
-        // Initialise the app data
-        .backgrounColor = blackColor,
-        .time = AF_Time_ZERO(0),
-        .window = AF_Window_ZERO("", 0, 0),
-        .input = AF_Input_ZERO(),
-        .assets = AF_Assets_ZERO(),
-        .projectData = Editor_Project_Data_ZERO(),
-        .rendererData = AF_RenderingData_ZERO(),
-        .isRunning = AF_FALSE,
-        .isFullscreen = AF_FALSE
-    };
-    return returnAppData;
+    _appData->backgrounColor = blackColor;
+    _appData->time = AF_Time_ZERO(0);
+    _appData->window = AF_Window_ZERO("", 0, 0);
+    _appData->input = AF_Input_ZERO();
+    _appData->assets = AF_Assets_ZERO();
+    _appData->projectData = Editor_Project_Data_ZERO();
+    _appData->rendererData = AF_RenderingData_ZERO();
+    _appData->isRunning = AF_FALSE;
+    _appData->isFullscreen = AF_FALSE;
+    
 }
 
 
