@@ -428,9 +428,9 @@ Set the flip image for stb_image.h
 ====================
 */
 // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-void AF_Renderer_SetFlipImage(BOOL _flipImage)	{
+void AF_Renderer_SetFlipImage(af_bool_t _flipImage)	{
 	bool isFlipped = false;
-	if(_flipImage == FALSE){
+	if(_flipImage == AF_FALSE){
 		isFlipped = false;
 	}else{
 		isFlipped = true;
@@ -510,7 +510,7 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 
 		AF_CMesh* mesh = &_ecs->meshes[i];
 		// Skip if there is no rendering component
-		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == FALSE){
+		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == AF_FALSE){
 			continue;
 		}
 		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
@@ -560,7 +560,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
-		if(_mesh->textured == TRUE){
+		if(_mesh->textured == AF_TRUE){
 			
 			// ---- Diffuse Texture ----
 			//if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
@@ -575,7 +575,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 				}
 			
 				// ---- Shadow Map ----
-				if (_lightingData->shadowsEnabled == TRUE && _renderingData->depthFrameBufferData.textureID != 0) {
+				if (_lightingData->shadowsEnabled == AF_TRUE && _renderingData->depthFrameBufferData.textureID != 0) {
 					
 					uint32_t shadowMapTextureUnit = 1; // Define texture unit for shadow map (e.g., unit 1)
 					glActiveTexture(GL_TEXTURE0 + shadowMapTextureUnit);
@@ -610,7 +610,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 
 		// Does the shader use lighting?
-        //if(_mesh->recieveLights == TRUE){
+        //if(_mesh->recieveLights == AF_TRUE){
 		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
 		
 		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
@@ -626,7 +626,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		}*/
 
 		// Get the next available lights and send data to shader up to MAX_LIGHT_NUM, likley 4
-		if(_mesh->recieveLights == TRUE){
+		if(_mesh->recieveLights == AF_TRUE){
 			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
 		}
 		
@@ -696,7 +696,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
     // Unbind textures explicitly from the units they were bound to
     // Assuming these were the maximum units you might have used within the loop.
     // If _mesh->textured was false, these calls are harmless.
-    if(_mesh->textured == TRUE) { // Only unbind if textures were potentially bound
+    if(_mesh->textured == AF_TRUE) { // Only unbind if textures were potentially bound
         // Check each texture type again, similar to how you bound them
         // This is a bit repetitive; ideally, you'd track which units were used.
         // For now, let's assume you used up to 3 units if textured.
@@ -776,9 +776,9 @@ void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){
     for(uint32_t i = 0; i < _entityCount; i++){
 	   //AF_CMesh* mesh = _entities[i].mesh;
 
-	    BOOL hasMesh = AF_Component_GetHas(_mesh->enabled);
+	    af_bool_t hasMesh = AF_Component_GetHas(_mesh->enabled);
 	    // Skip setting up if we don't have a mesh component
-	    if(hasMesh == FALSE){
+	    if(hasMesh == AF_FALSE){
 			continue;
 	    }
 
@@ -1291,12 +1291,12 @@ void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
 
 	// search all lights in the entities
 	// store the point lights, ambient, and spot light
-	BOOL ambientLightFound = FALSE;
-	BOOL spotLightfound = FALSE;
-	BOOL allPointLightsFound = FALSE;
+	af_bool_t ambientLightFound = AF_FALSE;
+	af_bool_t spotLightfound = AF_FALSE;
+	af_bool_t allPointLightsFound = AF_FALSE;
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
 		// early exit if we have found all available lights
-		if(ambientLightFound == TRUE && spotLightfound == TRUE && allPointLightsFound == TRUE){
+		if(ambientLightFound == AF_TRUE && spotLightfound == AF_TRUE && allPointLightsFound == AF_TRUE){
 			break;
 		}
 
@@ -1366,10 +1366,10 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 			AF_Log_Error("AF_Renderer_DestroyRenderer: MeshComponent is NULL\n");
 			continue;
 		}
-		BOOL hasMesh = AF_Component_GetHas(meshComponent->enabled);
-		BOOL hasEnabled = AF_Component_GetEnabled(meshComponent->enabled);
+		af_bool_t hasMesh = AF_Component_GetHas(meshComponent->enabled);
+		af_bool_t hasEnabled = AF_Component_GetEnabled(meshComponent->enabled);
 		// Skip if there is no rendering component
-		if(hasMesh == FALSE || hasEnabled == FALSE){
+		if(hasMesh == AF_FALSE || hasEnabled == AF_FALSE){
 			continue;
 		}
 		// Destroy the mesh buffers

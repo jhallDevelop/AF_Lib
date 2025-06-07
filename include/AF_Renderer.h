@@ -37,7 +37,7 @@ void AF_Renderer_Shutdown(AF_ECS* _ecs);
 
 // ============================ TEXTURES ================================ 
 // Textures
-void AF_Renderer_SetFlipImage(BOOL _flipImage);
+void AF_Renderer_SetFlipImage(af_bool_t _flipImage);
 uint32_t AF_Renderer_LoadTexture(char const * path);
 AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath);
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
@@ -154,7 +154,7 @@ void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
 
 //void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
 //static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
-//uint32_t AF_LoadTexture(const char* _texturePath, BOOL _flipTexture);
+//uint32_t AF_LoadTexture(const char* _texturePath, af_bool_t _flipTexture);
 
 //void Init(GLFWwindow* _window, std::vector<Entity*>& _entities);
 //void InitRenderingData(std::vector<Entity*>& _entities);

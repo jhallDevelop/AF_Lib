@@ -9,8 +9,8 @@ Empty constructor
 */
 AF_CTransform3D AF_CTransform3D_ZERO(void){ //
 	AF_CTransform3D returnTransform = {
-        //.has = FALSE,
-        .enabled = FALSE,
+        //.has = AF_FALSE,
+        .enabled = AF_FALSE,
         .pos = {0, 0, 0},
         .localPos = {0, 0, 0},
         .rot = {0, 0, 0},
@@ -31,8 +31,8 @@ Add component constructor for the component
 */
 AF_CTransform3D AF_CTransform3D_ADD(void){
 	AF_CTransform3D returnTransform = {
-        //.has = TRUE,
-        .enabled = TRUE,
+        //.has = AF_TRUE,
+        .enabled = AF_TRUE,
         .pos = {0, 0, 0},
         .localPos = {0, 0, 0},
         .rot = {0, 0, 0},

@@ -7,9 +7,9 @@ Initialisation constructor function
 ====================
 */
 AF_CCamera AF_CCamera_ZERO(void){
-	PACKED_CHAR component = FALSE;
-	component = AF_Component_SetHas(component, FALSE);
-	component = AF_Component_SetEnabled(component, FALSE);
+	PACKED_CHAR component = AF_FALSE;
+	component = AF_Component_SetHas(component, AF_FALSE);
+	component = AF_Component_SetEnabled(component, AF_FALSE);
 	AF_CCamera returnCamera = {
 		.enabled = component,
 		.cameraFront = {0,0,0},
@@ -25,7 +25,7 @@ AF_CCamera AF_CCamera_ZERO(void){
 		//.windowHeight = 0,
 		.tanHalfFov = 0,
 		.rangeInv = 0,
-		.orthographic = FALSE,
+		.orthographic = AF_FALSE,
 		.projectionMatrix =  {{
 			{1,0,0,0},
 			{0,1,0,0},
@@ -50,11 +50,11 @@ Add the camera component
 Initialise with enable and has set to true
 ====================
 */
-AF_CCamera AF_CCamera_ADD(BOOL _isOrthographic){
+AF_CCamera AF_CCamera_ADD(af_bool_t _isOrthographic){
 		
-	PACKED_CHAR component = FALSE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_FALSE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCamera returnCamera = {
 		.enabled = component,
 		.cameraFront = {0, 0, -1},

@@ -22,7 +22,7 @@ AF_Collision Struct used for registering collisions
 ====================
 */
 typedef struct AF_Collision {
-	BOOL collided;
+	af_bool_t collided;
 	void* entity1;
 	void* entity2;
 	void (*callback)(struct AF_Collision*);

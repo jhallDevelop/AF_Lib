@@ -21,8 +21,8 @@ extern "C" {
 
 typedef struct AF_CText {
     PACKED_CHAR enabled;	    // 1 byte
-    BOOL isDirty;
-    BOOL isShowing;
+    af_bool_t isDirty;
+    af_bool_t isShowing;
     uint8_t fontID;
     const char* fontPath;
     const char* text;

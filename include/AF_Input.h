@@ -200,9 +200,9 @@ typedef struct {
     Vec2 controlSticks[CONTROLLER_COUNT];
 
     // Mouse
-    BOOL mouse1Down;
-    BOOL mouse2Down;
-    BOOL firstMouse;
+    af_bool_t mouse1Down;
+    af_bool_t mouse2Down;
+    af_bool_t firstMouse;
     float lastMouseX;
     float lastMouseY;
     float mouseX;
@@ -266,9 +266,9 @@ static inline AF_Input AF_Input_ZERO(void){
         Vec2 controlStick = {0, 0};
         input.controlSticks[i] = controlStick;
     }
-    input.firstMouse = TRUE;
-    input.mouse1Down = FALSE;
-    input.mouse2Down = FALSE;
+    input.firstMouse = AF_TRUE;
+    input.mouse1Down = AF_FALSE;
+    input.mouse2Down = AF_FALSE;
     input.mouseX = 0;
     input.mouseY = 0;
     return input;
@@ -309,7 +309,7 @@ AF_Input_EncodeKey
 Function to encode the key into a pressed state
 ====================
 */
-static inline char AF_Input_EncodeKey(PACKED_CHAR _keyCode, BOOL _isPressed) {
+static inline char AF_Input_EncodeKey(PACKED_CHAR _keyCode, af_bool_t _isPressed) {
     char returnedChar = _keyCode & KEYCODE_MASK; // Ensure only lower 7 bits are used for keycode
 
     if (_isPressed) {
@@ -337,7 +337,7 @@ AF_Input_IsKeyPressed
 Function to check if the key is pressed
 ====================
 */
-static inline BOOL AF_Input_IsKeyPressed(PACKED_CHAR _encodedKey) {
+static inline af_bool_t AF_Input_IsKeyPressed(PACKED_CHAR _encodedKey) {
     return (_encodedKey & PRESSED_MASK) != 0;  // Check if the 8th bit is set
 }
 

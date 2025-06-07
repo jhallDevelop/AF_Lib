@@ -21,8 +21,8 @@ typedef struct AF_ViewportData {
     AF_Material gridlineMaterial;
     uint32_t gridlineVAO;
     uint32_t gridlineVBO;
-    BOOL isResized;
-    BOOL isRefreshed;
+    af_bool_t isResized;
+    af_bool_t isRefreshed;
 } AF_ViewportData;
 
 inline static AF_ViewportData AF_ViewportData_ZERO(void){
@@ -50,8 +50,8 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void){
     .gridlineMaterial = returnMaterial,
     .gridlineVAO = 0,
     .gridlineVBO = 0,
-    .isResized = TRUE,
-    .isRefreshed = FALSE
+    .isResized = AF_TRUE,
+    .isRefreshed = AF_FALSE
     };
 
     return viewportData;

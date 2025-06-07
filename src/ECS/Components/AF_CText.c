@@ -8,9 +8,9 @@ Function used to create an empty text component
 */
 AF_CText AF_CText_ZERO(void){
     AF_CText returnMesh = {
-    .enabled = FALSE,
-    .isDirty = FALSE,
-    .isShowing = FALSE,
+    .enabled = AF_FALSE,
+    .isDirty = AF_FALSE,
+    .isShowing = AF_FALSE,
     .fontID = 0,
     .fontPath = NULL,
     .text = NULL,
@@ -29,13 +29,13 @@ Function used to Add the component
 */
 AF_CText AF_CText_ADD(void){
     PACKED_CHAR component = 0;
-    component = AF_Component_SetHas(component, TRUE);
-    component = AF_Component_SetEnabled(component, TRUE);
+    component = AF_Component_SetHas(component, AF_TRUE);
+    component = AF_Component_SetEnabled(component, AF_TRUE);
 
     AF_CText returnMesh = {
 	component,
-    TRUE,
-    TRUE,
+    AF_TRUE,
+    AF_TRUE,
     0,
     NULL,
     NULL,

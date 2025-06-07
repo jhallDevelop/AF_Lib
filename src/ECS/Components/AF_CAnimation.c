@@ -10,12 +10,12 @@ Empty constructor for the AF_CAnimation component
 AF_CAnimation AF_CAnimation_ZERO(void){
 	AF_CAnimation returnAnimation = {
 		//.has = false,
-		.enabled = FALSE,
+		.enabled = AF_FALSE,
 		.animationSpeed = 0,
 		.nextFrameTime = 0,
 		.currentFrame = 0,
 		.animationFrames = 0,
-		.loop = TRUE
+		.loop = AF_TRUE
 	};
 	return returnAnimation;
 }
@@ -27,9 +27,9 @@ ADD component and set default values
 ====================
 */
 AF_CAnimation AF_CAnimation_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CAnimation returnAnimation = {
 		//.has = true,
 		.enabled = component,
@@ -37,7 +37,7 @@ AF_CAnimation AF_CAnimation_ADD(void){
 		.nextFrameTime = 0,
 		.currentFrame = 0,
 		.animationFrames = 0,
-		.loop = TRUE
+		.loop = AF_TRUE
 	};
 	return returnAnimation;
 }

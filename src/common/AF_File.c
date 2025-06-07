@@ -1,7 +1,12 @@
 #include "AF_File.h"
 #include <stdint.h>
 #include <sys/types.h>
+#ifdef _WIN32
+//#include <windows.h> // Main Windows header
+#else
 #include <dirent.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,8 +25,8 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
         AF_Log_Error("AF_File_OpenFile: FAILED to open file. _path is NULL\n");
         return 0;
     }
-    FILE* f;
-    f = fopen(_path, _writeCommands);//"r+");
+    FILE* f = NULL;
+    f = fopen_s(&f, _path, _writeCommands);//"r+");
     if (f == NULL) {
         AF_Log_Error("AF_File_OpenFile: FAILED: to open file %s\n", _path);
         return 0;
@@ -152,21 +157,24 @@ Take in list of files, and return the list ordered alphabetically
 void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
 
     if (_fileList->numberOfFiles < 2) {
-        _fileList->isSorted = TRUE;
+        _fileList->isSorted = AF_TRUE;
         return;
     }
 
     char tempBuffer[MAX_FILELIST_BUFFER_SIZE];
-    strncpy(tempBuffer, _fileList->stringBuffer, MAX_FILELIST_BUFFER_SIZE);
+	snprintf(tempBuffer, MAX_FILELIST_BUFFER_SIZE, "%s", _fileList->stringBuffer);
+    //strncpy(tempBuffer, _fileList->stringBuffer, MAX_FILELIST_BUFFER_SIZE);
     tempBuffer[MAX_FILELIST_BUFFER_SIZE - 1] = '\0';
 
     char* filePointers[MAX_FILELIST_BUFFER_SIZE] = {0};
     uint32_t fileCount = 0;
 
     char* token = strtok(tempBuffer, ",");
+    char* context = NULL;
     while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
         filePointers[fileCount++] = token;
-        token = strtok(NULL, ",");
+        
+        token = strtok_s(NULL, ",", &context);
     }
     qsort(filePointers, fileCount, sizeof(char*), AF_File_CompareItemsByValue);
 
@@ -195,8 +203,11 @@ Take in a buffer to store the data
 Return a char list of files in the path
 ================================
 */
-void AF_File_ListFiles(const char *path, AF_FileList* _fileList, BOOL _isAlphabetical)
+void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAlphabetical)
 {
+#ifdef _WIN32
+    AF_Log_Error("AF_File_ListFiles: Windows not implemented\n");
+#else
     struct dirent *dp;
     DIR *dir = opendir(path);
 
@@ -232,8 +243,8 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, BOOL _isAlphabe
 
     // Close directory stream
     closedir(dir);
-    if(_isAlphabetical == TRUE){
+    if(_isAlphabetical == AF_TRUE){
         AF_File_OrderAlphabetically(_fileList);
     }
-    
+#endif
 }

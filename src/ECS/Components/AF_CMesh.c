@@ -9,21 +9,21 @@ Function used to create an empty mesh component
 */
 AF_CMesh AF_CMesh_ZERO(void){
     AF_CMesh returnMesh = {
-	//.has = FALSE,
-	.enabled = FALSE,
+	//.has = AF_FALSE,
+	.enabled = AF_FALSE,
 	//.meshes = NULL,
 	.meshCount = 0,
-	.showDebug = FALSE,
+	.showDebug = AF_FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
 	.shader = AF_Shader_ZERO(),
-	.isImageFlipped = FALSE,
+	.isImageFlipped = AF_FALSE,
 	.meshID = 0,
-	.isAnimating = FALSE,
-	.textured = FALSE,
-	.transparent = FALSE,
-	.recieveLights = FALSE,
-	.recieveShadows = FALSE,
-	.castShadows = FALSE,
+	.isAnimating = AF_FALSE,
+	.textured = AF_FALSE,
+	.transparent = AF_FALSE,
+	.recieveLights = AF_FALSE,
+	.recieveShadows = AF_FALSE,
+	.castShadows = AF_FALSE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};
@@ -44,27 +44,27 @@ Function used to Add the component
 ====================
 */
 AF_CMesh AF_CMesh_ADD(void){
-    PACKED_CHAR component = TRUE;
-    component = AF_Component_SetHas(component, TRUE);
-    component = AF_Component_SetEnabled(component, TRUE);
+    PACKED_CHAR component = AF_TRUE;
+    component = AF_Component_SetHas(component, AF_TRUE);
+    component = AF_Component_SetEnabled(component, AF_TRUE);
 
     AF_CMesh returnMesh = {
-	//.has = TRUE,
+	//.has = AF_TRUE,
 	.enabled = component,
 	//.meshes = NULL,
 	.meshCount = 0,
-	.showDebug = FALSE,
+	.showDebug = AF_FALSE,
 	.meshType = AF_MESH_TYPE_PLANE,
 	.meshPath = DEFAULT_MODEL_PATH,
 	.shader = AF_Shader_ZERO(),
-	.isImageFlipped = FALSE,
+	.isImageFlipped = AF_FALSE,
 	.meshID = 0,
-	.isAnimating = FALSE,
-	.textured = TRUE,
-	.transparent = TRUE,
-	.recieveLights = TRUE,
-	.recieveShadows = TRUE,
-	.castShadows = TRUE,
+	.isAnimating = AF_FALSE,
+	.textured = AF_TRUE,
+	.transparent = AF_TRUE,
+	.recieveLights = AF_TRUE,
+	.recieveShadows = AF_TRUE,
+	.castShadows = AF_TRUE,
 	.modelMatrix = NULL,
 	.displayListBuffer = NULL
 	};

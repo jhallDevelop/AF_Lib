@@ -5,7 +5,7 @@
 typedef struct AF_FileList {
     char stringBuffer[MAX_FILELIST_BUFFER_SIZE];
     uint32_t numberOfFiles;
-    BOOL isSorted;
+    af_bool_t isSorted;
 } AF_FileList;
 
 #endif

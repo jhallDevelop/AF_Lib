@@ -10,11 +10,11 @@ Function used to create an empty text component
 */
 AF_CAudioSource AF_CAudioSource_ZERO(void){
     AF_CAudioSource returnMesh = {
-	.enabled = FALSE,
+	.enabled = AF_FALSE,
     .clip = {0,0,0},
     .channel = 255,
-    .loop = FALSE,
-    .isPlaying = FALSE,
+    .loop = AF_FALSE,
+    .isPlaying = AF_FALSE,
     .clipData = NULL
     };
     return returnMesh;
@@ -28,15 +28,15 @@ Function used to Add the component
 */
 AF_CAudioSource AF_CAudioSource_ADD(void){
     PACKED_CHAR component = 0;
-    component = AF_Component_SetHas(component, TRUE);
-    component = AF_Component_SetEnabled(component, TRUE);
+    component = AF_Component_SetHas(component, AF_TRUE);
+    component = AF_Component_SetEnabled(component, AF_TRUE);
 
     AF_CAudioSource returnMesh = {
 	.enabled = component,
     .clip = {0,0,0},
     .channel = 255,
-    .loop = FALSE,
-    .isPlaying = FALSE,
+    .loop = AF_FALSE,
+    .isPlaying = AF_FALSE,
     .clipData = NULL
     };
     return returnMesh;

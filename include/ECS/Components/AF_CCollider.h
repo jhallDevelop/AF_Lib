@@ -30,7 +30,7 @@ typedef struct {
 	Vec3 pos;
     //AF_Rect bounds;
     AF_Collision collision; //TODO: why do we need this?
-    BOOL showDebug;
+    af_bool_t showDebug;
 	Vec3 broadphaseAABB;
 } AF_CCollider;
 

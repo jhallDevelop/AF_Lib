@@ -11,15 +11,15 @@ AF_CPlayerData AF_CPlayerData_ZERO(void){
 	Vec3 startPosition = {0,0,0};
 	AF_CPlayerData returnComponent = {
 		//.has = false,
-		.enabled = FALSE,
-		.isHuman = FALSE,
-		.isCarrying = FALSE,
-		.isCarried = FALSE,
+		.enabled = AF_FALSE,
+		.isHuman = AF_FALSE,
+		.isCarrying = AF_FALSE,
+		.isCarried = AF_FALSE,
         .carryingEntity = 0,
         .health = 0,
-        .isAlive = FALSE,
-		.isAttacking = FALSE,
-		.isJumping = FALSE,
+        .isAlive = AF_FALSE,
+		.isAttacking = AF_FALSE,
+		.isJumping = AF_FALSE,
 		.movementSpeed = 0,
 		.score = 0,
 		.startPosition = startPosition,
@@ -37,21 +37,21 @@ ADD component and set default values
 ====================
 */
 AF_CPlayerData AF_CPlayerData_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	Vec3 startPosition = {0,0,0};
 	AF_CPlayerData returnComponent = {
 		//.has = true,
 		.enabled = component,
-		.isHuman = TRUE,
-		.isCarrying = FALSE,
-		.isCarried = FALSE,
+		.isHuman = AF_TRUE,
+		.isCarrying = AF_FALSE,
+		.isCarried = AF_FALSE,
         .carryingEntity = 0,
         .health = 100,
-        .isAlive = TRUE,
-		.isAttacking = FALSE,
-		.isJumping = FALSE,
+        .isAlive = AF_TRUE,
+		.isAttacking = AF_FALSE,
+		.isJumping = AF_FALSE,
 		.movementSpeed = 0,
 		.score = 0,
 		.startPosition = startPosition,

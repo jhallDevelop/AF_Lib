@@ -30,8 +30,8 @@ basic struct for the transform component
 // Size is 64 bytes
 typedef struct {
     PACKED_CHAR enabled;
-    //BOOL has;// = FALSE;
-    //BOOL enabled;// = FALSE;
+    //af_bool_t has;// = AF_FALSE;
+    //af_bool_t enabled;// = AF_FALSE;
     Vec3 pos;// = {0.0f, 0.0f, 0.0f};
     Vec3 localPos;
     Vec3 rot;// = {0.0f, 0.0f, 0.0f};

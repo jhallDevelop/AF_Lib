@@ -64,14 +64,14 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
     // TODO: work for multiple controllers
     for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
 		if(AF_Input_GetKeyCode(input->keys[0][i].code) == key){
-			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, TRUE); 
+			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, AF_TRUE); 
 		}
 	}
     }else if(action == GLFW_RELEASE){
 	// find the key and set it to release
 	for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
 		if(AF_Input_GetKeyCode(input->keys[0][i].code) == key){
-			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, FALSE); 
+			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, AF_FALSE); 
 		}
 	}
 
@@ -179,10 +179,10 @@ static void cursor_position_callback(GLFWwindow* _window, double _xpos, double _
     }
 
     // Reset the last mouse position if this is the first movement after pressing the right mouse button
-    if (appData->input.firstMouse == TRUE && appData->input.mouse2Down == TRUE) {
+    if (appData->input.firstMouse == AF_TRUE && appData->input.mouse2Down == AF_TRUE) {
         appData->input.lastMouseX = _xpos;
         appData->input.lastMouseY = _ypos;
-        appData->input.firstMouse = FALSE; // Prevent resetting on subsequent movements
+        appData->input.firstMouse = AF_FALSE; // Prevent resetting on subsequent movements
     }
 
     // Update current mouse position
@@ -212,11 +212,11 @@ static void mouse_button_callback(GLFWwindow* _window, int button, int action, i
     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
         // Update right mouse button state and reset firstMouse flag
         if (action == GLFW_PRESS) {
-            appData->input.mouse2Down = TRUE;
-            appData->input.firstMouse = TRUE; // Ensure reset for next cursor movement
+            appData->input.mouse2Down = AF_TRUE;
+            appData->input.firstMouse = AF_TRUE; // Ensure reset for next cursor movement
         } else if (action == GLFW_RELEASE) {
-            appData->input.mouse2Down = FALSE;
-            appData->input.firstMouse = TRUE; // Prepare for future presses
+            appData->input.mouse2Down = AF_FALSE;
+            appData->input.firstMouse = AF_TRUE; // Prepare for future presses
         }
     }
 }
@@ -228,12 +228,12 @@ AF_Window_CreateWindow
 Create a window using GLFW
 ====================
 */
-BOOL AF_Window_Create(void* _appData) {
+af_bool_t AF_Window_Create(void* _appData) {
     
     if(!_appData){
         AF_Log("%s AF_Window_Create: _appData is NULL\n", glfwWindowFileTitle);
         AF_Log_Error("%s AF_Window_Create: failed to create window\n", glfwWindowFileTitle);
-        return FALSE;
+        return AF_FALSE;
     }
 
     AF_Log("%s AF_Window_Create\n", glfwWindowFileTitle);
@@ -243,7 +243,7 @@ BOOL AF_Window_Create(void* _appData) {
     {
         // Initialization failed
         AF_Log_Error("%s AF_Window_Create: Failed to init glfw\n", glfwWindowFileTitle);
-        return FALSE;
+        return AF_FALSE;
     }
  
     // If using openGL 3.3
@@ -261,7 +261,7 @@ BOOL AF_Window_Create(void* _appData) {
     {
         // Window or context creation failed
          AF_Log_Error("%s AF_Window_Create: Failed to create a window, glfwWindow is null\n", glfwWindowFileTitle);
-         return FALSE;
+         return AF_FALSE;
     }
     // assign the glfw window ptr to the struct passed in
     _window->window = glfwWindow;
@@ -304,7 +304,7 @@ BOOL AF_Window_Create(void* _appData) {
     // Set the user ptr of the window to 
     glfwSetWindowTitle((GLFWwindow*) appData->window.window, appData->projectData.name);
 
-    return TRUE;
+    return AF_TRUE;
 }
 
 
@@ -314,17 +314,17 @@ AF_Window_UpdateWindow
 Update the window
 ====================
 */
-BOOL AF_Window_Update(AF_Window* _window){
+af_bool_t AF_Window_Update(AF_Window* _window){
     // while
     if (glfwWindowShouldClose(_window->window))
     {
         // Close the window
-        return FALSE;
+        return AF_FALSE;
     }
 
     
     // return true (we are still running)
-    return TRUE;
+    return AF_TRUE;
 }
 
 /*

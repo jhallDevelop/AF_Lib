@@ -9,8 +9,8 @@ Function used to create an empty component
 */
 AF_CLight AF_CLight_ZERO(void){
     AF_CLight returnObject = {
-	//.has = FALSE,
-	.enabled = FALSE
+	//.has = AF_FALSE,
+	.enabled = AF_FALSE
     };
     return returnObject;
 }
@@ -22,12 +22,12 @@ Function used to Add the component
 ====================
 */
 AF_CLight AF_CLight_ADD(void){
-    PACKED_CHAR component = TRUE;
-    component = AF_Component_SetHas(component, TRUE);
-    component = AF_Component_SetEnabled(component, TRUE);
+    PACKED_CHAR component = AF_TRUE;
+    component = AF_Component_SetHas(component, AF_TRUE);
+    component = AF_Component_SetEnabled(component, AF_TRUE);
     Vec3 vec3Zero = {0.0f, 0.0f, 0.0f};
     AF_CLight returnObject = {
-	//.has = TRUE,
+	//.has = AF_TRUE,
 	.enabled = component,
     .lightType = AF_LIGHT_TYPE_AMBIENT,
     .direction = {0.0f, -1.0f, 0.0f},

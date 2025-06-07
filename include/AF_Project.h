@@ -38,8 +38,8 @@ inline static void AF_Project_SyncEntities(AF_AppData* _appData){
     AF_Log_Warning("AF_Project_SyncEntities: disabled destroying mesh buffers before ecs sync. may need to re-implement. Currently cause\n"); 
     /*
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
-        BOOL hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
-        if(hasMesh == FALSE){
+        af_bool_t hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
+        if(hasMesh == AF_FALSE){
             continue;
         }
         AF_Renderer_DestroyMeshBuffers(&_appData->ecs.meshes[i]);
@@ -60,13 +60,13 @@ inline static void AF_Project_SyncEntities(AF_AppData* _appData){
     // Load Reload meshes
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
         
-        BOOL hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
-        if(hasMesh == FALSE){
+        af_bool_t hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
+        if(hasMesh == AF_FALSE){
             continue;
         }
         
         // init the mesh
-        BOOL meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
+        af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
         if(meshLoadSuccess == false){
             AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
             continue;

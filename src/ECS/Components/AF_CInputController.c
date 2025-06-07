@@ -11,7 +11,7 @@ Empty constructor for the CRigidbody component
 AF_CInputController AF_CInputController_ZERO(void){
 	// create a version to use
 	AF_CInputController inputController = {
-		.enabled = FALSE,
+		.enabled = AF_FALSE,
 		.inputActionCount = 0,
 	};
 	// init the input actions array
@@ -29,9 +29,9 @@ enable the component and set some values to default values.
 ====================
 */
 AF_CInputController AF_CInputController_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 
 	AF_CInputController inputController = {
 		.enabled = component,

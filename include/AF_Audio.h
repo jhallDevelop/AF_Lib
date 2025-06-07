@@ -56,7 +56,7 @@ AF_Audio_PLAY
 Definition for Audio playing 
 ====================
 */
-void AF_Audio_Play(AF_CAudioSource* _audioSource, float _volume, BOOL _isLooping);
+void AF_Audio_Play(AF_CAudioSource* _audioSource, float _volume, af_bool_t _isLooping);
 
 /*
 ====================

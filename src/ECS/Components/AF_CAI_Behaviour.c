@@ -8,9 +8,9 @@ Empty constructor for the AF_CAI_BEHAVIOUR component
 ====================
 */
 AF_CAI_Behaviour AF_CAI_Behaviour_ZERO(void){
-	PACKED_CHAR component = FALSE;
-	component = AF_Component_SetHas(component, FALSE);
-	component = AF_Component_SetEnabled(component, FALSE);
+	PACKED_CHAR component = AF_FALSE;
+	component = AF_Component_SetHas(component, AF_FALSE);
+	component = AF_Component_SetEnabled(component, AF_FALSE);
 	AF_AI_Action emtyActions = AF_AI_Action_Zero();
 	AF_CAI_Behaviour returnAI_Action = {
 		//.has = true,
@@ -29,9 +29,9 @@ ADD component and set default values
 ====================
 */
 AF_CAI_Behaviour AF_CAI_Behaviour_ADD(void){//
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_AI_Action emtyActions = AF_AI_Action_Zero();
 	AF_CAI_Behaviour returnAI_Action = {
 		//.has = true,

@@ -10,8 +10,8 @@ Empty constructor for the AF_CSprite component
 AF_CSprite AF_CSprite_ZERO(void){
 	AF_CSprite returnSprite = {
 		//.has = false,
-		.enabled = FALSE,
-		.loop = TRUE,
+		.enabled = AF_FALSE,
+		.loop = AF_TRUE,
 		.currentFrame = 0,
 		.animationFrames = 0,
 		.currentFrameTime = 0,
@@ -21,14 +21,14 @@ AF_CSprite AF_CSprite_ZERO(void){
 		.spriteSize = {0, 0},
 		.spriteScale = {0,0},
 		.spriteRotation = 0.0f,
-		.flipX = FALSE,
-		.flipY = FALSE,
+		.flipX = AF_FALSE,
+		.flipY = AF_FALSE,
 		.spriteSheetSize = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
 		.spritePath = NULL,
 		.spriteData = NULL,
-		.isPlaying = FALSE,
-		.filtering = FALSE
+		.isPlaying = AF_FALSE,
+		.filtering = AF_FALSE
 		};
 	return returnSprite;
 }
@@ -40,13 +40,13 @@ ADD component and set default values
 ====================
 */
 AF_CSprite AF_CSprite_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CSprite returnSprite = {
 		//.has = true,
 		.enabled = component,
-		.loop = TRUE,
+		.loop = AF_TRUE,
 		.currentFrame = 0,
 		.animationFrames = 0,
 		.currentFrameTime = 0,
@@ -56,14 +56,14 @@ AF_CSprite AF_CSprite_ADD(void){
 		.spriteSize = {0, 0},
 		.spriteScale = {0,0},
 		.spriteRotation = 0.0f,
-		.flipX = FALSE,
-		.flipY = FALSE,
+		.flipX = AF_FALSE,
+		.flipY = AF_FALSE,
 		.spriteSheetSize = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
 		.spritePath = NULL,
 		.spriteData = NULL,
-		.isPlaying = FALSE, 
-		.filtering = FALSE
+		.isPlaying = AF_FALSE, 
+		.filtering = AF_FALSE
 	};
 	return returnSprite;
 }

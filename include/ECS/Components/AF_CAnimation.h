@@ -25,7 +25,7 @@ typedef struct {			// 64 or 128 bytes
 	AF_FLOAT nextFrameTime;		// 16 or 32 bytes
 	uint8_t currentFrame;		// 8 bytes
 	uint8_t animationFrames;	// 8 bytes
-	BOOL loop;			// 8 bytes
+	af_bool_t loop;			// 8 bytes
 } AF_CAnimation;
 
 AF_CAnimation AF_CAnimation_ZERO(void);

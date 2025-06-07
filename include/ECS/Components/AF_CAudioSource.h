@@ -19,8 +19,8 @@ typedef struct AF_CAudioSource {
     PACKED_CHAR enabled;	
     AF_AudioClip clip;
     uint8_t channel;
-    BOOL loop;
-    BOOL isPlaying;
+    af_bool_t loop;
+    af_bool_t isPlaying;
     void* clipData; // special void* for data if needed .e.g wav64 format for n64/libdragon
 } AF_CAudioSource;
 

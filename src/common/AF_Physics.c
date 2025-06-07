@@ -71,12 +71,12 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 
 	
 
-	if((AF_Component_GetHas(rigidbody->enabled) == TRUE) && (AF_Component_GetEnabled(rigidbody->enabled) == TRUE)){
+	if((AF_Component_GetHas(rigidbody->enabled) == AF_TRUE) && (AF_Component_GetEnabled(rigidbody->enabled) == AF_TRUE)){
 	
 		
 		//debgf("Physics: upate: velocity x: %f y: %f z: %f\n", rigidbody->velocity.x, rigidbody->velocity.y, rigidbody->velocity.z);
 		// if the object isn't static
-		if(rigidbody->inverseMass > 0 || rigidbody->isKinematic == TRUE){
+		if(rigidbody->inverseMass > 0 || rigidbody->isKinematic == AF_TRUE){
 				AF_Physics_IntegrateAccell(rigidbody, _dt);
 				AF_Physics_IntegrateVelocity(transform, rigidbody, _dt);  
 		    }
@@ -87,7 +87,7 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 		// update the bounds position
 		collider->pos = _ecs->transforms[i].pos;
 		// clear all collsision except keep the callback
-		AF_Collision clearedCollision = {FALSE, NULL, NULL, collider->collision.callback, {0,0,0}, 0.0f, {0,0,0}, 0};
+		AF_Collision clearedCollision = {AF_FALSE, NULL, NULL, collider->collision.callback, {0,0,0}, 0.0f, {0,0,0}, 0};
 		collider->collision = clearedCollision;
 	}
 }
@@ -119,12 +119,12 @@ void AF_Physics_LateRenderUpdate(AF_ECS* _ecs){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateRenderUpdate pass in a null reference\n");
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_CCollider* collider = &_ecs->colliders[i];
-		if(collider->showDebug != TRUE){
+		if(collider->showDebug != AF_TRUE){
 			//AF_Log("Physics: LateRenderUpate: not showing debug %i\n", i);
 			continue;
 		}
 
-		if(collider->collision.collided != TRUE){
+		if(collider->collision.collided != AF_TRUE){
 			//AF_Log("Physics: LateRenderUpate: not colided\n");
 			continue;
 		}

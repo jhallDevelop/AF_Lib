@@ -19,8 +19,8 @@ extern "C" {
 
 typedef struct AF_LightingData{
 	// TODO pack this
-    BOOL enabled;
-    BOOL shadowsEnabled;
+    af_bool_t enabled;
+    af_bool_t shadowsEnabled;
     uint32_t maxLights; 
     uint8_t ambientColor[3];
     // Counting up the lights
@@ -33,8 +33,8 @@ typedef struct AF_LightingData{
 
 static inline AF_LightingData AF_LightingData_ZERO(void){
 	AF_LightingData returnLightingData = {
-		.enabled = TRUE,
-        .shadowsEnabled = TRUE,
+		.enabled = AF_TRUE,
+        .shadowsEnabled = AF_TRUE,
         .maxLights = MAX_LIGHT_NUM,
 		.ambientColor = { 255, 255, 255},	
         .ambientLightEntityIndex = 0,

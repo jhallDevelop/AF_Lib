@@ -27,7 +27,7 @@ AF_CSkeletalAnimation AF_CSkeletalAnimation_ZERO(void){
         .nextFrameTime = 0,
         .currentFrame = 0,
         .animationFrames = 0,
-        .loop = FALSE
+        .loop = AF_FALSE
 	};
 	return returnAnimation;
 }
@@ -39,9 +39,9 @@ ADD component and set default values
 ====================
 */
 AF_CSkeletalAnimation AF_CSkeletalAnimation_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CSkeletalAnimation returnAnimation = {
     .enabled = component,
         .model = NULL,
@@ -60,7 +60,7 @@ AF_CSkeletalAnimation AF_CSkeletalAnimation_ADD(void){
         .nextFrameTime = 0,
         .currentFrame = 0,
         .animationFrames = 0,
-        .loop = FALSE
+        .loop = AF_FALSE
 	};
 	return returnAnimation;
 }

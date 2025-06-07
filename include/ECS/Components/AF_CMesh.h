@@ -38,19 +38,19 @@ typedef struct AF_CMesh {
     PACKED_CHAR enabled;
     AF_MeshData meshes[MAX_MESH_COUNT];
 	uint32_t meshCount;
-    BOOL showDebug;
+    af_bool_t showDebug;
 	enum AF_MESH_TYPE meshType;
 	char meshPath[MAX_PATH_CHAR_SIZE];
 	AF_Shader shader;
-	BOOL isImageFlipped;		// flip the textures on load
+	af_bool_t isImageFlipped;		// flip the textures on load
 	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
 	uint8_t meshID;		// only fit 255 mesh types
-	BOOL isAnimating;	// belongs in animation component
-	BOOL textured;
-    BOOL transparent;
-    BOOL recieveLights;
-    BOOL recieveShadows;
-    BOOL castShadows;
+	af_bool_t isAnimating;	// belongs in animation component
+	af_bool_t textured;
+    af_bool_t transparent;
+    af_bool_t recieveLights;
+    af_bool_t recieveShadows;
+    af_bool_t castShadows;
 	void* modelMatrix;	// belongs in transform, unless nessisary
 	void* displayListBuffer;	
 } AF_CMesh;

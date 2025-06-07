@@ -48,10 +48,10 @@ AF_InputAction struct
 ====================
 */
 typedef struct AF_InputAction {
-    BOOL enabled;
+    af_bool_t enabled;
     AF_Key key;
     AF_ActionType actionType;
-    BOOL boolBuffer;
+    af_bool_t boolBuffer;
     uint32_t uintBuffer;
     float floatBuffer;
     Vec2 vec2Buffer;
@@ -85,10 +85,10 @@ Init for an AF_InputAction struct
 */
 inline static AF_InputAction AF_InputAction_ZERO(void){
     AF_InputAction returnIA = {
-        .enabled = FALSE,
+        .enabled = AF_FALSE,
         .key = {0, 0, 0},
         .actionType = ACTION_TYPE_NONE,
-        .boolBuffer = FALSE,
+        .boolBuffer = AF_FALSE,
         .uintBuffer = 0,
         .floatBuffer = 0.0f,
         .vec2Buffer = {0.0f, 0.0f},

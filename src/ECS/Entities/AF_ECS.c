@@ -88,8 +88,8 @@ void AF_ECS_Init(AF_ECS* _ecs){
 		
 		AF_Entity* entity = &_ecs->entities[i];
 		flag_t* componentState = &entity->flags;
- 		//entity->enabled = TRUE;
-		entity->flags = AF_Component_SetEnabled(*componentState, TRUE);
+ 		//entity->enabled = AF_TRUE;
+		entity->flags = AF_Component_SetEnabled(*componentState, AF_TRUE);
 		entity->id_tag = AF_ECS_AssignID(entity->id_tag, i);
 		entity->id_tag = AF_ECS_AssignTag(entity->id_tag, 0);
 		
@@ -200,9 +200,9 @@ void AF_ECS_Init(AF_ECS* _ecs){
 
 void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 	AF_Log("AF_ECS_DeleteEntity\n");
-	//entity->enabled = TRUE;
-	_entity->flags = AF_Component_SetEnabled(_entity->flags, FALSE);
-	_entity->flags = AF_Component_SetHas(_entity->flags, FALSE);
+	//entity->enabled = AF_TRUE;
+	_entity->flags = AF_Component_SetEnabled(_entity->flags, AF_FALSE);
+	_entity->flags = AF_Component_SetHas(_entity->flags, AF_FALSE);
 	
 	// set the name
 	//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
@@ -283,8 +283,8 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
     AF_Entity* entity = &_ecs->entities[_ecs->currentEntity];
     entity->id_tag = AF_ECS_AssignID(entity->id_tag, _ecs->currentEntity);
     PACKED_CHAR* componentState = &entity->flags;
-	entity->flags = AF_Component_SetHas(*componentState, TRUE);
-	entity->flags = AF_Component_SetEnabled(*componentState, TRUE);
+	entity->flags = AF_Component_SetHas(*componentState, AF_TRUE);
+	entity->flags = AF_Component_SetEnabled(*componentState, AF_TRUE);
 
     // Give this entity a default transform component that is enabled
     if(entity == NULL){
@@ -367,8 +367,8 @@ AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
     AF_Entity* cameraEntity = NULL;
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         AF_CCamera* entityCameraComponent = &_ecs->cameras[i];
-        BOOL hasCamera = AF_Component_GetHas(entityCameraComponent->enabled);
-        if(hasCamera == TRUE){
+        af_bool_t hasCamera = AF_Component_GetHas(entityCameraComponent->enabled);
+        if(hasCamera == AF_TRUE){
             cameraEntity = &_ecs->entities[i];
             AF_Log("AF_ECS_GetCamera: GetCamera: Success\n");
 			break;
@@ -391,8 +391,8 @@ void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FLOAT _windowWid
 
     AF_CTransform3D* cameraTransform = _cameraEntityPtr->transform;
     AF_CCamera* camera = _cameraEntityPtr->camera;
-    BOOL hasCameraComponent = AF_Component_GetHas(camera->enabled);
-    if(hasCameraComponent == FALSE){
+    af_bool_t hasCameraComponent = AF_Component_GetHas(camera->enabled);
+    if(hasCameraComponent == AF_FALSE){
         AF_Log_Error("AF_Camera_UpdateCameraVectors: Can't update camera vectors, passed entity has no camera component\n");
         return;
     }

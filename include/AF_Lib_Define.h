@@ -1,7 +1,7 @@
 /*
 ===============================================================================
 AF_LIB_DEFINE_H
-define extra types e.g. BOOL which doesn't exist in c
+define extra types e.g. af_bool_t which doesn't exist in c
 
 ===============================================================================
 */
@@ -11,9 +11,9 @@ define extra types e.g. BOOL which doesn't exist in c
 // Define Static
 
 // Define Bool
-#define TRUE 1
-#define FALSE 0
-typedef char BOOL;		// 1 byte
+#define AF_TRUE 1
+#define AF_FALSE 0
+typedef char af_bool_t;		// 1 byte
 typedef char PACKED_CHAR;	// 1 byte
 typedef uint16_t PACKED_UINT16;	// 2 bytes
 typedef uint32_t PACKED_UINT32;	// 4 bytes

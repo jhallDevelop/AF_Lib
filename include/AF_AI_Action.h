@@ -25,7 +25,7 @@ typedef enum AI_ACTION_Type {
 
 // Typedef for readability (optional but common in C)
 typedef struct AF_AI_Action {
-    BOOL enabled;
+    af_bool_t enabled;
     AI_ACTION_Type actionType;
     void* sourceEntity;    // Avoids circular dependency with AF_Entity
     void* targetEntity;
@@ -34,7 +34,7 @@ typedef struct AF_AI_Action {
 
 static inline AF_AI_Action AF_AI_Action_Zero(void){
 	AF_AI_Action zeroAction = {
-		.enabled = FALSE,
+		.enabled = AF_FALSE,
 		.actionType = AI_ACTION_DEFAULT,
 		.sourceEntity = NULL,
 		.targetEntity = NULL,

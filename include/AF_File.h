@@ -19,7 +19,7 @@ void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize);
 void AF_File_CloseFile(FILE* _filePtr);
 int AF_File_CompareItemsByValue(const void* lhs, const void* rhs);
 void AF_File_OrderAlphabetically(AF_FileList* _fileList);
-void AF_File_ListFiles(const char *path, AF_FileList* _fileList, BOOL _isAlphabetical);
+void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAlphabetical);
 #ifdef __cplusplus
 }
 #endif

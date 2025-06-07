@@ -60,8 +60,8 @@ static inline AF_AppData AF_AppData_ZERO(void){
         .assets = AF_Assets_ZERO(),
         .projectData = Editor_Project_Data_ZERO(),
         .rendererData = AF_RenderingData_ZERO(),
-        .isRunning = FALSE,
-        .isFullscreen = FALSE
+        .isRunning = AF_FALSE,
+        .isFullscreen = AF_FALSE
     };
     return returnAppData;
 }

@@ -21,10 +21,10 @@ AF_CSprite
 */
 // size is 64 bytes
 typedef struct {
-	//BOOL has;
-	//BOOL enabled;
+	//af_bool_t has;
+	//af_bool_t enabled;
 	PACKED_CHAR enabled;	    // 1 byte
-	BOOL loop;		    // 1 byte
+	af_bool_t loop;		    // 1 byte
 	char currentFrame;	    // 1 byte
 	char animationFrames;	    // 1 byte
 	AF_FLOAT currentFrameTime;
@@ -34,14 +34,14 @@ typedef struct {
 	Vec2 spriteSize;    	// size of sprite in pixels
 	Vec2 spriteScale;		// transform scale
 	float spriteRotation;	// rotation
-	BOOL flipX;
-	BOOL flipY;
+	af_bool_t flipX;
+	af_bool_t flipY;
 	Vec2 spriteSheetSize;    // 8 bytes
 	uint8_t spriteColor[4];
 	const char* spritePath;
 	void* spriteData; // special ptr for sprite data to be cast when known
-	BOOL isPlaying;
-	BOOL filtering;
+	af_bool_t isPlaying;
+	af_bool_t filtering;
 	
 } AF_CSprite;
 

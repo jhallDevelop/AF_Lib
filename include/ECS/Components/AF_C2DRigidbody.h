@@ -23,9 +23,9 @@ Component used to contain data for physics
 */
 // size is 64 bytes
 typedef struct {
-    //BOOL has;
-    BOOL enabled;
-    BOOL isKinematic;
+    //af_bool_t has;
+    af_bool_t enabled;
+    af_bool_t isKinematic;
     uint32_t  gravity;
     Vec2 velocity;
 } AF_C2DRigidbody;

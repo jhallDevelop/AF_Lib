@@ -36,7 +36,7 @@ typedef struct {
     uint16_t windowHeight;  // Offset 30 (2 bytes)
     uint16_t frameBufferWidth;  // Offset 32 (2 bytes)
     uint16_t frameBufferHeight; // Offset 34 (2 bytes)
-    BOOL isFrameUpdated;
+    af_bool_t isFrameUpdated;
 } AF_Window;
 #pragma pack(pop)   // Restore previous packing
 
@@ -52,7 +52,7 @@ inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth
         .windowHeight = _windowHeight,
         .frameBufferWidth = _windowWidth,
         .frameBufferHeight = _windowHeight,
-        .isFrameUpdated = FALSE
+        .isFrameUpdated = AF_FALSE
     };
 
     return window;
@@ -65,7 +65,7 @@ Create the window and init all the window things
 Platform/library dependent. Likely using glfw
 ====================
 */
-BOOL AF_Window_Create(void* _appData);
+af_bool_t AF_Window_Create(void* _appData);
 
 /*
 ====================
@@ -75,7 +75,7 @@ Platform/library dependent. Likely using glfw
 
 ====================
 */
-BOOL AF_Window_Update(AF_Window* _window);
+af_bool_t AF_Window_Update(AF_Window* _window);
 
 
 /*

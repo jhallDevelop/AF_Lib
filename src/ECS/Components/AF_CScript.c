@@ -9,9 +9,9 @@ Initialisation constructor function
 ====================
 */
 AF_CScript AF_CScript_ZERO(void){
-    PACKED_CHAR component = FALSE;
-	component = AF_Component_SetHas(component, FALSE);
-	component = AF_Component_SetEnabled(component, FALSE);
+    PACKED_CHAR component = AF_FALSE;
+	component = AF_Component_SetHas(component, AF_FALSE);
+	component = AF_Component_SetEnabled(component, AF_FALSE);
 	AF_CScript returnComponent = {
 		.enabled = component,
 		.scriptName = "\0",
@@ -34,9 +34,9 @@ Initialise with enable and has set to true
 */
 AF_CScript AF_CScript_ADD(void){
 		
-	PACKED_CHAR component = FALSE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_FALSE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CScript returnComponent = {
 		.enabled = component,
 		.scriptName = "\0",

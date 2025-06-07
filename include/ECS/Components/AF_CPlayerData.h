@@ -29,17 +29,17 @@ AF_CSprite
 */
 // size is 64 bytes
 typedef struct  {
-	//BOOL has;
-	//BOOL enabled;
+	//af_bool_t has;
+	//af_bool_t enabled;
 	PACKED_CHAR enabled;	    // 1 byte
-	BOOL isHuman;
-	BOOL isCarrying;
-	BOOL isCarried;
+	af_bool_t isHuman;
+	af_bool_t isCarrying;
+	af_bool_t isCarried;
     int carryingEntity;
     float health;
-    BOOL isAlive;
-	BOOL isAttacking;
-	BOOL isJumping;
+    af_bool_t isAlive;
+	af_bool_t isAttacking;
+	af_bool_t isJumping;
 	float movementSpeed;
 	int score;
 	Vec3 startPosition;

@@ -41,8 +41,8 @@ Also provide a line thickness size
 ====================
 */
 //void AF_Debug_DrawLine(float _xPos1, float _yPos1, float _xPos2, float _yPos2, float _size, AF_Mesh* _mesh, AF_Mat4 _viewMatrix, AF_Mat4 _projectionMatrix, AF_Mat4 _modelMatrix);
-void AF_Debug_DrawLineWorld(Vec3* _point1, Vec3* _point2, AF_FLOAT _color[], BOOL _ignoreDepth);
-void AF_Debug_DrawLineArrayWorld(Vec3* _lineArray, int _arraySize, AF_FLOAT _color[], BOOL _ignoreDepth);
+void AF_Debug_DrawLineWorld(Vec3* _point1, Vec3* _point2, AF_FLOAT _color[], af_bool_t _ignoreDepth);
+void AF_Debug_DrawLineArrayWorld(Vec3* _lineArray, int _arraySize, AF_FLOAT _color[], af_bool_t _ignoreDepth);
 #ifdef __cplusplus
 }
 #endif

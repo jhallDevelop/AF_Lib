@@ -103,8 +103,8 @@ AF_CMesh AF_Debug_Init_DrawLine(void){
 
 	// Setup the returned mesh data
 	AF_CMesh returnMesh = AF_CMesh_ZERO();
-	//returnMesh.has = TRUE;
-	returnMesh.enabled = AF_Component_SetEnabled(returnMesh.enabled, TRUE);
+	//returnMesh.has = AF_TRUE;
+	returnMesh.enabled = AF_Component_SetEnabled(returnMesh.enabled, AF_TRUE);
 	/*
 	returnMesh.vertices = &debugLineVerts[0];
 	returnMesh.vertexCount = 6;

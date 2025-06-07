@@ -14,18 +14,18 @@ enable the component and set some values to default values.
 ====================
 */
 AF_CCollider AF_CCollider_ZERO(void){
-	PACKED_CHAR component = FALSE;
-	component = AF_Component_SetHas(component, FALSE);
-	component = AF_Component_SetEnabled(component, FALSE);
+	PACKED_CHAR component = AF_FALSE;
+	component = AF_Component_SetHas(component, AF_FALSE);
+	component = AF_Component_SetEnabled(component, AF_FALSE);
 	AF_CCollider collider = {
 		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {0,0,0},
 		.pos = {0,0,0},
-		.showDebug = FALSE,
+		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
-    collider.collision.collided  = FALSE;
+    collider.collision.collided  = AF_FALSE;
 	collider.collision.entity1 = NULL;
 	collider.collision.entity2 = NULL;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
@@ -44,18 +44,18 @@ enable the component and set some values to default values.
 ====================
 */
 AF_CCollider AF_CCollider_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {1,1,1},
 		.pos = {0,0,0},
-		.showDebug = FALSE,
+		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
-        collider.collision.collided  = FALSE;
+        collider.collision.collided  = AF_FALSE;
 	collider.collision.entity1 = NULL;
 	collider.collision.entity2 = NULL;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
@@ -75,18 +75,18 @@ enable the component and set some values to default values.
 ====================
 */
 AF_CCollider AF_CCollider_Sphere_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
 		.type = Sphere,
 		.boundingVolume = {1,1,1},
 		.pos = {0,0,0},
-		.showDebug = FALSE,
+		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
-        collider.collision.collided  = FALSE;
+        collider.collision.collided  = AF_FALSE;
 	collider.collision.entity1 = NULL;
 	collider.collision.entity2 = NULL;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
@@ -104,18 +104,18 @@ enable the component and set some values to default values.
 ====================
 */
 AF_CCollider AF_CCollider_Box_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {1,1,1},
 		.pos = {0,0,0},
-		.showDebug = FALSE,
+		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
-        collider.collision.collided  = FALSE;
+        collider.collision.collided  = AF_FALSE;
 	collider.collision.entity1 = NULL;
 	collider.collision.entity2 = NULL;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
@@ -133,18 +133,18 @@ enable the component and set some values to default values.
 ====================
 */
 AF_CCollider AF_CCollider_Plane_ADD(void){
-	PACKED_CHAR component = TRUE;
-	component = AF_Component_SetHas(component, TRUE);
-	component = AF_Component_SetEnabled(component, TRUE);
+	PACKED_CHAR component = AF_TRUE;
+	component = AF_Component_SetHas(component, AF_TRUE);
+	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
 		.type = Plane,
 		.boundingVolume = {0,.001f,0},
 		.pos = {0,0,0},
-		.showDebug = FALSE,
+		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
-        collider.collision.collided  = FALSE;
+        collider.collision.collided  = AF_FALSE;
 	collider.collision.entity1 = NULL;
 	collider.collision.entity2 = NULL;
 	collider.collision.callback = AF_Collision_DummyCallback;

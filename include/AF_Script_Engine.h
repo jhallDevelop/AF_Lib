@@ -31,14 +31,14 @@ Check if the entity is enabled
 Check if the entity has a script that is enabled
 ===============================================================================
 */
-inline static BOOL AF_HasScriptEnabled(AF_CScript* _script){
+inline static af_bool_t AF_HasScriptEnabled(AF_CScript* _script){
  
-    BOOL hasComponent = AF_Component_GetHas(_script->enabled);
-    BOOL componentIsEnabled = AF_Component_GetEnabled(_script->enabled);
-    if(hasComponent == FALSE || componentIsEnabled == FALSE){
-        return FALSE;
+    af_bool_t hasComponent = AF_Component_GetHas(_script->enabled);
+    af_bool_t componentIsEnabled = AF_Component_GetEnabled(_script->enabled);
+    if(hasComponent == AF_FALSE || componentIsEnabled == AF_FALSE){
+        return AF_FALSE;
     }
-    return TRUE;
+    return AF_TRUE;
 }
 
 /*
@@ -162,7 +162,7 @@ inline static void AF_Script_Load_And_Bind_Functions(AF_AppData* _AppData, AF_EC
         AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             AF_CScript* script = entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == FALSE){
+            if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
             // set the correct script path as the build location may have changed.
@@ -216,7 +216,7 @@ inline static void AF_Script_UnloadScripts(AF_ECS* _ecs){
         AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             AF_CScript* script = entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == FALSE){
+            if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
     
@@ -269,7 +269,7 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
         AF_Entity* entity = &_appData->ecs.entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             AF_CScript* script = entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == FALSE){
+            if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
             
@@ -299,7 +299,7 @@ inline static void AF_Script_Call_Update(AF_AppData* _appData){
 
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             AF_CScript* script = entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == FALSE){
+            if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
         
@@ -328,7 +328,7 @@ inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
         AF_Entity* entity = &_appData->ecs.entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             AF_CScript* script = entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == FALSE){
+            if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
     

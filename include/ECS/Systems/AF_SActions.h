@@ -98,8 +98,8 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
     }
     AF_CInputController* _inputController = _entity->inputController;
     // Doublecheck the input controller has
-    BOOL hasInputController = AF_Component_GetHas(_inputController->enabled);
-    if(hasInputController == FALSE){
+    af_bool_t hasInputController = AF_Component_GetHas(_inputController->enabled);
+    if(hasInputController == AF_FALSE){
         return;
     }
 
@@ -134,8 +134,8 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
             // Update the action function pointer
             inputAction->actionFuncPtr = AF_SActions_Add_Velocity;
 
-            //if (inputAction->keyPtr->pressed == FALSE){
-            if (inputAction->key.pressed == FALSE && inputAction->key.held == FALSE){
+            //if (inputAction->keyPtr->pressed == AF_FALSE){
+            if (inputAction->key.pressed == AF_FALSE && inputAction->key.held == AF_FALSE){
                 inputAction->actionFuncPtr(1, _entity, &ZERO_Vec3);
                 //_entity->rigidbody->velocity = {0.0f, 0.0f, 0.0f};
             } else{
@@ -169,10 +169,10 @@ inline static void AF_SActions_MouseLook(AF_AppData* _appData, AF_CCamera* _came
     float yPos = input->mouseY;
     
     // Check if this is the first frame of holding down the right mouse button
-    if (input->firstMouse == TRUE) {
+    if (input->firstMouse == AF_TRUE) {
         input->lastMouseX = xPos;
         input->lastMouseY = yPos;
-        input->firstMouse = FALSE; // Mark as initialized to avoid resetting on subsequent frames
+        input->firstMouse = AF_FALSE; // Mark as initialized to avoid resetting on subsequent frames
         return; // Skip this frame to prevent any snapping
     }
 

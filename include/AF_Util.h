@@ -65,7 +65,7 @@ AF_Util_FileExists
 Check a file exists
 ====================
 */
-static inline BOOL AF_Util_FileExists(const char* _filePath){
+static inline af_bool_t AF_Util_FileExists(const char* _filePath){
     struct stat buffer;   
     return (stat(_filePath, &buffer) == 0);
 }
@@ -76,18 +76,18 @@ AF_Util_MakeDirectory
 Make a directory, and return if it was successful
 ====================
 */
-static inline BOOL AF_Util_MakeDirectory(const char* _filePath){
+static inline af_bool_t AF_Util_MakeDirectory(const char* _filePath){
     #if _WIN32
     printf("AF_Util_MakeDirectory: windows not implemented yet\n");
 #elif
     if(mkdir(_filePath, 0777) == -1){
         AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n",_filePath);
-        return FALSE;
+        return AF_FALSE;
     }
 #endif
     // if we succeed then we return true
     AF_Log("AF_Util_MakeFolder: SUCCESS: Directory created: %s\n", _filePath);
-    return TRUE;
+    return AF_TRUE;
 }
 
 
@@ -170,12 +170,12 @@ Return 1 if string is empty
 REturn 0 if string is not empty
 ====================
 */
-static inline BOOL AF_STRING_IS_EMPTY(const char* _string){
+static inline af_bool_t AF_STRING_IS_EMPTY(const char* _string){
     // null check the const char*, then see if the first element is a end of line
     if ((_string != NULL) && (_string[0] == '\0')) {
-        return TRUE;
+        return AF_TRUE;
     }else {
-        return FALSE;
+        return AF_FALSE;
     }
 }
 
