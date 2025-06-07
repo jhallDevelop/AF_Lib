@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #ifdef _WIN32
-//#include <windows.h> // Main Windows header
+#include <windows.h> // Main Windows header
 #else
 #include <dirent.h>
 #endif
@@ -26,7 +26,14 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
         return 0;
     }
     FILE* f = NULL;
-    f = fopen_s(&f, _path, _writeCommands);//"r+");
+    errno_t err = fopen_s(&f, _path, _writeCommands);
+
+    // A return value of 0 means success. f is now valid.
+    if (err != 0) {
+        AF_Log_Error("AF_File_OpenFile: FAILED to open file %s (Error code: %d)\n", _path, err);
+        return NULL;
+    }
+
     if (f == NULL) {
         AF_Log_Error("AF_File_OpenFile: FAILED: to open file %s\n", _path);
         return 0;
