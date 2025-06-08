@@ -1,6 +1,8 @@
 #include "AF_File.h"
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+
 #ifdef _WIN32
 #include <windows.h> // Main Windows header
 #else
@@ -213,7 +215,8 @@ Return a char list of files in the path
 void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAlphabetical)
 {
 #ifdef _WIN32
-    AF_Log_Error("AF_File_ListFiles: Windows not implemented\n");
+	// Windows implementation using FindFirstFile and FindNextFile
+	AF_Log_Error("AF_File_ListFiles: Windows not implemented\n");
 #else
     struct dirent *dp;
     DIR *dir = opendir(path);
@@ -254,4 +257,82 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAl
         AF_File_OrderAlphabetically(_fileList);
     }
 #endif
+}
+
+/*
+====================
+AF_File_FileExists
+Check a file exists
+====================
+*/
+af_bool_t AF_File_FileExists(const char* _filePath) {
+    struct stat buffer;
+    return (stat(_filePath, &buffer) == 0);
+}
+
+/*
+====================
+AF_File_MakeDirectory
+Make a directory, and return if it was successful
+====================
+*/
+af_bool_t AF_File_MakeDirectory(const char* _filePath) {
+    if (mkdir(_filePath, 0777) == -1) {
+        AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n", _filePath);
+        return AF_FALSE;
+    }
+    // if we succeed then we return true
+    AF_Log("AF_Util_MakeFolder: SUCCESS: Directory created: %s\n", _filePath);
+    return AF_TRUE;
+}
+
+/*
+=====================
+AF_File_SizeOfFile
+Get the size of a file
+=====================
+*/
+uint32_t AF_File_GetFileSize(const char* _filePath) {
+    struct stat st;
+    if (stat(_filePath, &st) != 0) {
+        AF_Log_Error("AF_Util: Size of file: Failed to get file size for %s\n", _filePath);
+        return 0; // Return 0 if the file does not exist or an error occurs
+    }
+    return (uint32_t)st.st_size; // Return the size of the file in bytes
+}
+
+/*
+====================
+AF_File_ReadFile
+Read file from path into a provided buffer
+====================
+*/
+af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _filePath, const char* _readCommand) {
+
+    FILE* _fileOpen = fopen(_filePath, _readCommand);
+    if (_fileOpen == NULL) {
+        AF_Log_Error("AF_Util: Read File: Failed to read file \n%s \nCheck file exists\n\n", _filePath);
+        return AF_FALSE;
+    }
+
+	//char* buffer = (char*)malloc(fileSize + 1); // +1 for null terminator   
+    if(!_buffer) {
+        AF_Log_Error("AF_Util: Read File: Memory allocation failed\n");
+        fclose(_fileOpen);
+        return AF_FALSE;
+	}
+
+	size_t bytesRead = fread(_buffer, 1, _bufferSize, _fileOpen);
+    if (bytesRead < (size_t)_bufferSize && ferror(_fileOpen)) {
+        AF_Log_Error("AF_Util: Read File: Error reading file \n%s\n", _filePath);
+        free(_buffer);
+        fclose(_fileOpen);
+        return AF_FALSE;
+    }
+
+	_buffer[bytesRead] = '\0'; // Null-terminate the string
+
+	fclose(_fileOpen);
+	return AF_TRUE; // Return the buffer containing the file contents
+    
 }

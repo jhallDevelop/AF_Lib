@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include "AF_Renderer.h"
 #include "AF_Util.h"
+#include "AF_File.h"
 
 // Forward declare assimp specific definitions
 af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* path);
@@ -20,7 +21,7 @@ Generic implementation that will call assimp specific function
 ================
 */
 af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
-    if(AF_Util_FileExists(_modelPath) == AF_FALSE){
+    if(AF_File_FileExists(_modelPath) == AF_FALSE){
         AF_Log_Error("AF_MeshLoad_Load: ERROR: File doesn't exist %s\n", _modelPath);
         return AF_FALSE;
     }
