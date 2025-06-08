@@ -24,7 +24,6 @@ typedef struct {
     uint32_t vao;
     uint32_t vbo;
     uint32_t ibo;
-    AF_Material material;
 } AF_MeshData;
 
 static inline AF_MeshData AF_MeshData_ZERO(void){
@@ -35,8 +34,7 @@ static inline AF_MeshData AF_MeshData_ZERO(void){
         .indexCount = 0,
         .vao = 0,
         .vbo = 0,
-        .ibo = 0,
-        .material = AF_Material_ZERO()  // {shaderid, diffuse, normal, specular, color, shininess}
+        .ibo = 0
     };
     return returnMesh;
 }

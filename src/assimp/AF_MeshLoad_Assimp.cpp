@@ -9,8 +9,8 @@
 // Forward declare assimp specific definitions
 af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* path);
 //void AF_MeshLoad_Component(AF_CMesh* _meshComponent, AF_Assets* _assets);
-void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, AF_MeshData& _meshData, aiMesh& mesh, const aiScene& scene);
-void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent, uint32_t& _meshIndex, aiNode& _node, const aiScene& _scene);
+void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, AF_MeshData& _meshData, aiMesh& mesh, const aiScene& scene, AF_Material* _material);
+void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent, uint32_t& _meshIndex, aiNode& _node, const aiScene& _scene, AF_Material* _material);
 AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const char* _meshPath, aiMaterial& _assimpMat, aiTextureType _assimpType);
 uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char* _vertPath, const char* _fragPath);
 
@@ -58,16 +58,13 @@ af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const c
     snprintf(_meshComponent->shader.fragPath,sizeof(_meshComponent->shader.fragPath),"%s", fragCopy);
 
     _meshComponent->shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(*_assets, _meshComponent->shader.vertPath, _meshComponent->shader.fragPath);
-    
+    // Add material reference back
+    _meshComponent->material.shaderID = _meshComponent->shader.shaderID;
     for(uint32_t i = 0; i < _meshComponent->meshCount; ++i){
         AF_MeshData* meshData = &_meshComponent->meshes[i];
-        
-        // Add material reference back
-        _meshComponent->meshes[i].material.shaderID = _meshComponent->shader.shaderID;
         AF_Renderer_CreateMeshBuffer(&_meshComponent->meshes[i]);
     }
-    // _meshComponent now has the relevent data
-    // load the model into the gpu
+
 
     return AF_TRUE;
 }
@@ -85,8 +82,7 @@ af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const
         AF_Log_Error("Editor_Model_LoadAssimp: No model path provided\n");
         return AF_FALSE;
     }
-    // Add the mesh component first
-    //AF_CMesh returnMesh = AF_CMesh_ADD();
+
     // copy in the mesh path
     snprintf(_meshComponent.meshPath, sizeof(_meshComponent.meshPath), "%s", _modelPath);
     _meshComponent.meshType = AF_MESH_TYPE_MESH;
@@ -113,17 +109,6 @@ af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const
     // Mesh data is cleared when we malloc and then call AF_MeshData_Zero(), meaning all material data is lost that might have been saved
 
 
-    // allocate memory for the mesh component
-    //_meshComponent.meshes = (AF_MeshData*)malloc(sizeof(AF_MeshData) * numMeshes);
-    
-    //if(_meshComponent.meshes == NULL){
-    //    AF_Log_Error("Editor_Model: processNode: FAILED to create mesh component\n");
-    //    return AF_FALSE;
-    //}
-    // initialise the mesh data
-    /*for(uint32_t i = 0; i < numMeshes; i++){
-        _meshComponent.meshes[i] = AF_MeshData_ZERO();
-    }*/
     if(numMeshes > MAX_MESH_COUNT){
         AF_Log_Error("AF_MeshLoad_Assimp: trying to load more meshes than component supports %i Please increase MAX_MESH_COUNT in AF_CMesh componnet\n", MAX_MESH_COUNT);
     }
@@ -132,70 +117,33 @@ af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const
     // process ASSIMP's root node recursively
     // keep track of the mesh index
     uint32_t meshIndex = 0;
-    AF_MeshLoad_Assimp_ProcessNode(_assets, _meshComponent, meshIndex, *scene->mRootNode, *scene);
+    AF_MeshLoad_Assimp_ProcessNode(_assets, _meshComponent, meshIndex, *scene->mRootNode, *scene, &_meshComponent.material);
+
+
+    // Set the material and texture
+    if (_meshComponent.material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
+    {
+        AF_Log("AF_MeshLoad_Assimp_ProcessMesh: Mesh previously had texture loaded: Reload texture\n");
+        // Diffuse
+        _meshComponent.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshComponent.material.diffuseTexture.path);
+        // Normal
+        //_meshData.material.normalTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.normalTexture.path);
+        // Specular
+        //_meshData.material.specularTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.specularTexture.path);
+    }
+
     return AF_TRUE;
 }
 
 
 /*
 ================
-AF_MeshLoad_Component
-
-================
-*/
-/*
-// TODO: this might be a duplicate function. 
-void AF_MeshLoad_Component(AF_CMesh* _meshComponent, AF_Assets* _assets){
-    
-    if(AF_Util_FileExists(_meshComponent->meshPath) == AF_FALSE){
-        AF_Log_Warning("Editor_Component_LoadModel: ERROR: File doesn't exist $s\n", _meshComponent->meshPath);
-        return;
-    }
-
-    AF_Log("Show Model File Browser \n");
-    // delete the existing mesh data
-    // save a copy of the mesh path, and shader as we still want to use that.
-    // copy the mesh path
-    char meshPath[MAX_PATH_CHAR_SIZE];
-    snprintf(meshPath, sizeof(meshPath), "%s", _meshComponent->meshPath);
-
-    // copy the shader to re-use it. 
-    // save a copy of the shaders used
-    char vertCopy[128];
-    char fragCopy[128];
-    snprintf(vertCopy,sizeof(vertCopy),"%s", _meshComponent->shader.vertPath);
-    snprintf(fragCopy,sizeof(fragCopy),"%s", _meshComponent->shader.fragPath);
-
-    // Blat the component. removing all memory
-    AF_Log_Warning("Editor_Component_LoadModel: DISABLED destroying mesh, need to sync AF_Lib from home \n");
-    //AF_Renderer_DestroyMeshBuffers(&_meshComponent);
-
-    //Load the new model from path
-    _meshComponent = Editor_Model_LoadAssimp(_assets, meshPath);
-
-    // copy back the shader paths
-    snprintf(_meshComponent->shader.vertPath,sizeof(_meshComponent->shader.vertPath),"%s", vertCopy);
-    snprintf(_meshComponent->shader.fragPath,sizeof(_meshComponent->shader.fragPath),"%s", fragCopy);
-
-    _meshComponent->shader.shaderID = Editor_Shader_LoadFromAssets(_assets, _meshComponent->shader.vertPath, _meshComponent->shader.fragPath);
-    
-    for(uint32_t i = 0; i < _meshComponent->meshCount; ++i){
-        AF_MeshData* meshData = &_meshComponent->meshes[i];
-        // Add material reference back
-        _meshComponent->meshes[i].material.shaderID = _meshComponent->shader.shaderID;
-        AF_Renderer_CreateMeshBuffer(&_meshComponent->meshes[i]);
-    }
-    
-}*/
-
-/*
-================
 AF_MeshLoad_Assimp_ProcessMesh
 Process an assimp mesh
-
+TODO: make this c11 complient and give a return status code
 ================
 */
-void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, AF_MeshData& _meshData, aiMesh& _mesh, const aiScene& _scene){
+void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, AF_MeshData& _meshData, aiMesh& _mesh, const aiScene& _scene, AF_Material* _material){
     // data to fill
     AF_Vertex* vertices = (AF_Vertex*)malloc(sizeof(AF_Vertex) * _mesh.mNumVertices);
     if(vertices == nullptr){
@@ -203,7 +151,6 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
         return;
     }
 
-    //vector<unsigned int> indices;
     // count the number of indices, which is accessed per face
     uint32_t numVerticies =  _mesh.mNumVertices;
     uint32_t numIndicies = 0;
@@ -221,14 +168,6 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
         return;
     }
 
-    //vector<Texture> textures;
-    // Create space for 4 textures
-    /*
-    uint32_t* textures = (uint32_t*)malloc(sizeof(uint32_t) * 4);
-    if(textures == nullptr){
-        AF_Log_Warning("Editor_Model: processMesh: FAILED to create textures buffer\n");
-        return;
-    }*/
 
     // walk through each of the mesh's vertices
     for(unsigned int i = 0; i < _mesh.mNumVertices; i++)
@@ -296,8 +235,9 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     {
         aiFace face = _mesh.mFaces[k];
         // retrieve all indices of the face and store them in the indices vector
-        for(unsigned int l = 0; l < face.mNumIndices; l++)
+        for (unsigned int l = 0; l < face.mNumIndices; l++) {
             indices[indexCounter++] = face.mIndices[l];
+        }
     }
 
     // update the mesh data indices
@@ -319,42 +259,43 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     
     // Is there already a mesh path.
     
-    if(strcmp(_meshData.material.diffuseTexture.path, "\0") != 0){
+    //if(strcmp(_mesh ->material.diffuseTexture.path, "\0") != 0){
         // path isn't empty, don't load any new textures.
         // this helps to avoid overwriting loaded textures if a mesh is re-loaded or being loaded in from memory. 
         // Only progress if path is empty i.e. its likely this is a new component/mesh being loaded
         //return;
-    }
+    //}
 
     // If there is already a texture that has been loaded previous, then don't load from assimp model, just use the previous texture data/path, and id
     // Call reload texture
     /**/
-    if(_meshData.material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
+    if(_material->diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
     {
         AF_Log("AF_MeshLoad_Assimp_ProcessMesh: Mesh previously had texture loaded: Reload texture\n");
         // Diffuse
-        _meshData.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.diffuseTexture.path);
+        //_meshData.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.diffuseTexture.path);
         // Normal
         //_meshData.material.normalTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.normalTexture.path);
         // Specular
         //_meshData.material.specularTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.specularTexture.path);
         
-        return;
+        //return;
     }
-   
-    // 1. diffuse maps
-    AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: Mesh texture, hasn't been loaded before: Load Assimp Material Texture New\n");
-    //AF_Renderer_SetFlipImage(_meshData.)
-    _meshData.material.diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);   
-    
-    // 2. specular maps
-    //_meshData.material.specularTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_SPECULAR);  
+    else {
+        // 1. diffuse maps
+        AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: Mesh texture, hasn't been loaded before: Load Assimp Material Texture New\n");
+        //AF_Renderer_SetFlipImage(_meshData.)
+        _material->diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);
 
-    // 3. normal maps   
-    //_meshData.material.normalTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_HEIGHT);  
+        // 2. specular maps
+        //_meshData.material.specularTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_SPECULAR);  
 
-    // 4. ambient maps
-    // TODO: implement this
+        // 3. normal maps   
+        //_meshData.material.normalTexture =AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_HEIGHT);  
+
+        // 4. ambient maps
+        // TODO: implement this
+    }
 }
 
 /*
@@ -364,7 +305,7 @@ Process an assimp node
 
 ================
 */
-void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent, uint32_t& _meshIndex, aiNode& _node, const aiScene& _scene){
+void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent, uint32_t& _meshIndex, aiNode& _node, const aiScene& _scene, AF_Material* _material){
      // process each mesh located at the current node
     for(unsigned int i = 0; i < _node.mNumMeshes; i++)
     {
@@ -373,14 +314,14 @@ void AF_MeshLoad_Assimp_ProcessNode(AF_Assets& _assets, AF_CMesh& _meshComponent
         aiMesh* mesh = _scene.mMeshes[_node.mMeshes[i]];
         
         // TODO: support multiple meshes
-        AF_MeshLoad_Assimp_ProcessMesh(_assets, _meshComponent.meshPath, _meshComponent.meshes[_meshIndex], *mesh, _scene);
+        AF_MeshLoad_Assimp_ProcessMesh(_assets, _meshComponent.meshPath, _meshComponent.meshes[_meshIndex], *mesh, _scene, _material);
         // update the mesh index
         _meshIndex++;
     }
     // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
     for(unsigned int i = 0; i < _node.mNumChildren; i++)
     {
-        AF_MeshLoad_Assimp_ProcessNode(_assets, _meshComponent, _meshIndex, *_node.mChildren[i], _scene);
+        AF_MeshLoad_Assimp_ProcessNode(_assets, _meshComponent, _meshIndex, *_node.mChildren[i], _scene, _material);
     }
 }
 

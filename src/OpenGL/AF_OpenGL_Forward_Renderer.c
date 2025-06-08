@@ -567,10 +567,10 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 			
 			if(_shaderOverride == NO_SHARED_SHADER){	
 				// ---- Diffuse Texture ----
-				if (_mesh->meshes[i].material.diffuseTexture.id != 0) { // Assuming type check already done
+				if (_mesh->material.diffuseTexture.id != 0) { // Assuming type check already done
 					uint32_t diffuseTextureUnit = 0;
 					glActiveTexture(GL_TEXTURE0 + diffuseTextureUnit);
-					glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture.id);
+					glBindTexture(GL_TEXTURE_2D, _mesh->material.diffuseTexture.id);
 					AF_Shader_SetInt(shader, "material.diffuse", diffuseTextureUnit); // Set sampler to unit 0
 				}
 			
@@ -1375,9 +1375,7 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 		// Destroy the mesh buffers
 		
 		// Destory the material textures
-		for(uint32_t j = 0; j < meshComponent->meshCount; j++){
-			AF_Renderer_Destroy_Material_Textures(&meshComponent->meshes[j].material);
-		}
+		AF_Renderer_Destroy_Material_Textures(&meshComponent->material);
 		
 		// Destroy mesh shader
 		AF_Shader_Delete(meshComponent->shader.shaderID);

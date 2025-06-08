@@ -42,6 +42,7 @@ typedef struct AF_CMesh {
 	enum AF_MESH_TYPE meshType;
 	char meshPath[MAX_PATH_CHAR_SIZE];
 	AF_Shader shader;
+	AF_Material material;
 	af_bool_t isImageFlipped;		// flip the textures on load
 	// TODO: re-evaluate do we really need the following in the struct. Was put in for rapid n64 dev, but its a bit messy
 	uint8_t meshID;		// only fit 255 mesh types
