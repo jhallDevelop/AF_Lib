@@ -8,6 +8,7 @@
 
 #define DEFAULT_GAME_NAME "template_game"
 #define DEFAULT_ASSETS_DIR "assets"
+#define DEFAULT_DATA_DIR "data"
 #define DEFAULT_LEVELDATA_FILE_NAME "levelData.dat"
 #define DEFAULT_APPDATA_FILE_NAME "appData.dat"
 #define DEFAULT_BIN_DIR "bin"
