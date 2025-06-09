@@ -30,12 +30,12 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     FILE* f = NULL;
     errno_t err = 0;
     #ifdef _WIN32
-    errno_t err = fopen_s(&f, _path, _writeCommands);
+        err = fopen_s(&f, _path, _writeCommands);
     #else
-    f = fopen(_path, _writeCommands);
-    if(f != NULL){
-        err = 1;    // true
-    }
+        f = fopen(_path, _writeCommands);
+        if(f != NULL){
+            err = 1;    // true
+        }
     #endif
 
     // A return value of 0 means success. f is now valid.
