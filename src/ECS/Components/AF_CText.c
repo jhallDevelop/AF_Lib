@@ -21,6 +21,7 @@ AF_CText AF_CText_ZERO(void){
     };
     return returnMesh;
 }
+
 /*
 ====================
 AF_CText_ADD

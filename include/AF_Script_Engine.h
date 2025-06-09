@@ -12,7 +12,7 @@ Definitions for helper functions to load and use scripts
 #include "AF_AppData.h"
 #ifdef _WIN32
 
-#elif
+#else
 #include <dlfcn.h>
 #endif
 #include "ECS/Components/AF_Component.h"
@@ -52,7 +52,7 @@ inline static void* AF_Script_Load(const char* _filePath){
     void* scriptPtr = NULL;
 #ifdef _WIN32
     AF_Log_Error("AF_Script_Load: Windows not defined\n");
-#elif
+#else
     // Check file path 
     if(strncmp(_filePath, "", MAX_PROJECTDATA_FILE_PATH) == 0){
         AF_Log_Error("AF_Script_Load: file path is empty\n");
@@ -94,7 +94,7 @@ inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSh
 
 #ifdef _WIN32
     AF_Log_Error("AF_Script_Bind_Functions: Windows not defined\n");
-#elif
+#else
     // ==== START Func ==== 
     // Get the script name
     char startFuncName[MAX_FUNCTION_NAME];
@@ -196,7 +196,7 @@ inline static void AF_Script_UnLoad(void* _scriptSharedObjPtr){
     // Close the shared objects
 #ifdef _WIN32
     AF_Log_Error("AF_Script_UnLoad: Windows not defined\n");
-#elif
+#else
     eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {
         AF_Log_Error("AF_Script_UnLoad: Failed to close shared object 1: %s\n", dlerror());
@@ -246,8 +246,8 @@ inline static ScriptFuncPtr AF_GetScriptFuncPtr(void* _sharedObjectPtr, const ch
     ScriptFuncPtr scriptFunctPtr1 = NULL;
 #ifdef _WIN32
     AF_Log_Error("AF_GetScriptFuncPtr: Windows not defined\n");
-#elif
-    ScriptFuncPtr scriptFunctPtr1 = (ScriptFuncPtr) dlsym(_sharedObjectPtr, _funcName);
+#else
+    scriptFunctPtr1 = (ScriptFuncPtr) dlsym(_sharedObjectPtr, _funcName);
     char *error = dlerror(); // Check for any error after dlsym
     if (error != NULL) {
         AF_Log_Error("Game_App_Awake: Failed to load %s: %s\n", _funcName, error);

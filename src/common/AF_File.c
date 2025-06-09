@@ -28,7 +28,15 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
         return 0;
     }
     FILE* f = NULL;
+    errno_t err = 0;
+    #ifdef _WIN32
     errno_t err = fopen_s(&f, _path, _writeCommands);
+    #else
+    f = fopen(_path, _writeCommands);
+    if(f != NULL){
+        err = 1;    // true
+    }
+    #endif
 
     // A return value of 0 means success. f is now valid.
     if (err != 0) {
@@ -183,7 +191,12 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
     while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
         filePointers[fileCount++] = token;
         
-        token = strtok_s(NULL, ",", &context);
+        // todo, don't if def
+        #ifdef _WIN32
+            token = strtok_s(NULL, ",", &context);
+        #else
+            token = strtok(NULL, ",");
+        #endif
     }
     qsort(filePointers, fileCount, sizeof(char*), AF_File_CompareItemsByValue);
 

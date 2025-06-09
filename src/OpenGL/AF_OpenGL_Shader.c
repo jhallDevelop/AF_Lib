@@ -8,6 +8,7 @@ This implementation is for OpenGL
 #include "AF_Shader.h"
 #include <string.h>
 #include <GL/glew.h>
+#include "AF_File.h"
 #define GL_SILENCE_DEPRECATION
 
 // set to 0 if ignoring shader errors or 1 if logging them
@@ -86,11 +87,13 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: vertex shader file size is 0, file not found or empty\n");
         return returnShaderID;
 	}
+
 	uint32_t fragShaderFileSize = AF_File_GetFileSize(_fragmentShaderPath);
     if(fragShaderFileSize == 0){
         AF_Log_Error("AF_Shader: fragment shader file size is 0, file not found or empty\n");
         return returnShaderID;
     }
+
 	// Allocate memory for the shader source code   
 	char* vertexShaderSource = malloc(vertShaderFileSize + 1);  
     if(vertexShaderSource == NULL){
@@ -113,6 +116,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Shader_FreeCharBuffer(framgentShaderSource);
         return returnShaderID;
 	}
+
     af_bool_t fragShaderLoadSuccess = AF_File_ReadFile(framgentShaderSource, fragShaderFileSize, _fragmentShaderPath, "r");
     if (fragShaderLoadSuccess == AF_FALSE) {
         AF_Log_Error("AF_Shader: Failed to load fragment shader source from path: %s\n", _fragmentShaderPath);
