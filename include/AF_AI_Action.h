@@ -33,13 +33,13 @@ typedef struct AF_AI_Action {
 } AF_AI_Action;
 
 static inline AF_AI_Action AF_AI_Action_Zero(void){
-	AF_AI_Action zeroAction = {
-		.enabled = AF_FALSE,
-		.actionType = AI_ACTION_DEFAULT,
-		.sourceEntity = NULL,
-		.targetEntity = NULL,
-		.callback = NULL
-	};
+	AF_AI_Action zeroAction;
+	zeroAction.enabled = AF_FALSE;
+	zeroAction.actionType = AI_ACTION_DEFAULT;
+	zeroAction.sourceEntity = NULL;
+	zeroAction.targetEntity = NULL;
+	zeroAction.callback = NULL;
+	
 	return zeroAction;
 }
 #ifdef __cplusplus

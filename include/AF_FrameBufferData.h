@@ -22,23 +22,22 @@ typedef struct AF_FrameBufferData{
 } AF_FrameBufferData;
 
 static inline AF_FrameBufferData AF_FrameBufferData_ZERO(void){
-    AF_FrameBufferData returnBufferData = {
-        .fbo = 0,
-        .rbo = 0,
-        .shaderID = 0,
-        .textureID = 0,
-        .textureWidth = 0,
-        .textureHeight = 0,
-        .vertPath = "\0",
-        .fragPath = "\0",
-        .shaderTextureName = "\0",
-        .internalFormat = 0,
-        .textureAttatchmentType = 0,
-        .drawBufferType = 0,
-        .readBufferType = 0,
-        .minFilter = 0,
-        .magFilter = 0
-    };
+    AF_FrameBufferData returnBufferData;
+    returnBufferData.fbo = 0;
+    returnBufferData.rbo = 0;
+    returnBufferData.shaderID = 0;
+    returnBufferData.textureID = 0;
+    returnBufferData.textureWidth = 0;
+    returnBufferData.textureHeight = 0;
+    returnBufferData.vertPath = "\0";
+    returnBufferData.fragPath = "\0";
+    returnBufferData.shaderTextureName = "\0";
+    returnBufferData.internalFormat = 0;
+    returnBufferData.textureAttatchmentType = 0;
+    returnBufferData.drawBufferType = 0;
+    returnBufferData.readBufferType = 0;
+    returnBufferData.minFilter = 0;
+    returnBufferData.magFilter = 0;
     return returnBufferData;
 }
 

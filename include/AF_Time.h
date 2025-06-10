@@ -40,12 +40,11 @@ pass back a new copy of initialised data in the struct.
 */
 static inline AF_Time AF_Time_ZERO(const float _currentTime){
 
-	AF_Time returnTime = {
-	.currentFrame = 0,
-	.deltaTime = 0,
-	.currentTime = _currentTime,
-	.lastTime = 0.0f,
-	};
+	AF_Time returnTime;
+	returnTime.currentFrame = 0;
+	returnTime.deltaTime = 0;
+	returnTime.currentTime = _currentTime;
+	returnTime.lastTime = 0.0f;
 
 	return returnTime;
 }

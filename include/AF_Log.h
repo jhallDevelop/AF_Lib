@@ -6,9 +6,18 @@ Definition of logging helper functions for the game
 Calls vfprintf but adds some colour to text output
 ===============================================================================
 */
+#ifdef AF_LIB_EXPORTS
+#define AF_LIB_API __declspec(dllexport)
+#else
+#define AF_LIB_API __declspec(dllimport)
+#endif
+
 
 #ifndef AF_LOG_H
 #define AF_LOG_H
+
+
+
 #include <stdio.h>
 
 #include <stdarg.h>
@@ -32,16 +41,16 @@ extern "C" {
 #endif
 
 // Log to console a generic message
-void AF_Log(const char* _message,...);
+AF_LIB_API void AF_Log(const char* _message,...);
 
 // Log to console game specific message
 void AF_Game_Log(const char* _message,...);
 
 // Log to console warning message
-void AF_Log_Warning(const char* _message,...);
+AF_LIB_API void AF_Log_Warning(const char* _message,...);
 
 // Log to console error message
-void AF_Log_Error(const char* _message,...);
+AF_LIB_API void AF_Log_Error(const char* _message,...);
 
 #ifdef __cplusplus
 }

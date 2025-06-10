@@ -27,15 +27,14 @@ typedef struct {
 } AF_MeshData;
 
 static inline AF_MeshData AF_MeshData_ZERO(void){
-    AF_MeshData returnMesh = {
-        .vertices = NULL,
-        .vertexCount = 0,
-        .indices = NULL,
-        .indexCount = 0,
-        .vao = 0,
-        .vbo = 0,
-        .ibo = 0
-    };
+    AF_MeshData returnMesh;
+    returnMesh.vertices = NULL;
+    returnMesh.vertexCount = 0;
+    returnMesh.indices = NULL;
+    returnMesh.indexCount = 0;
+    returnMesh.vao = 0;
+    returnMesh.vbo = 0;
+    returnMesh.ibo = 0;
     return returnMesh;
 }
 

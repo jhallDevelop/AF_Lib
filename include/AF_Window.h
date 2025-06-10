@@ -42,18 +42,17 @@ typedef struct {
 
 
 inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth, uint16_t _windowHeight){
-    AF_Window window ={
-        .window = 0,
-        .input = 0,
-        .title = _title,
-        .windowXPos = 0,
-        .windowYPos = 0,
-        .windowWidth =  _windowWidth,
-        .windowHeight = _windowHeight,
-        .frameBufferWidth = _windowWidth,
-        .frameBufferHeight = _windowHeight,
-        .isFrameUpdated = AF_FALSE
-    };
+    AF_Window window;
+    window.window = 0;
+    window.input = 0;
+    window.title = _title;
+    window.windowXPos = 0;
+    window.windowYPos = 0;
+    window.windowWidth = _windowWidth;
+    window.windowHeight = _windowHeight;
+    window.frameBufferWidth = _windowWidth;
+    window.frameBufferHeight = _windowHeight;
+    window.isFrameUpdated = AF_FALSE;
 
     return window;
 }

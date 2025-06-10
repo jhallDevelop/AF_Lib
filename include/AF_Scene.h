@@ -25,8 +25,8 @@ inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _
     } else {
         // Clean up the render objects first as some data is malloc
         for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-            BOOL hasMesh = AF_Component_GetHas(_ecs->entities[i].mesh->enabled);
-            if(hasMesh == FALSE){
+            af_bool_t hasMesh = AF_Component_GetHas(_ecs->entities[i].mesh->enabled);
+            if(hasMesh == AF_FALSE){
                 continue;
             }
             AF_Renderer_DestroyMeshBuffers(_ecs->entities[i].mesh);
@@ -37,13 +37,13 @@ inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _
         // Load Reload meshes
         // Todo: don't reference editor model this should be an AF function
         for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-            BOOL hasMesh = AF_Component_GetHas(_ecs->entities[i].mesh->enabled);
-            if(hasMesh == FALSE){
+            af_bool_t hasMesh = AF_Component_GetHas(_ecs->entities[i].mesh->enabled);
+            if(hasMesh == AF_FALSE){
                 continue;
             }
             
-            BOOL meshLoadSuccess = AF_MeshLoad_Load(_assets, _ecs->entities[i].mesh, _ecs->entities[i].mesh->meshPath);
-            if(meshLoadSuccess == false){
+            af_bool_t meshLoadSuccess = AF_MeshLoad_Load(_assets, _ecs->entities[i].mesh, _ecs->entities[i].mesh->meshPath);
+            if(meshLoadSuccess == AF_FALSE){
                 AF_Log_Error("Editor_Scene_Load: Failed to load mesh %s\n", _ecs->entities[i].mesh->meshPath);
                 continue;
             }

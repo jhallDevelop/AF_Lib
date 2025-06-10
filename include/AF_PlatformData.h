@@ -54,9 +54,8 @@ AF_PlatformData_ZERO
 ================
 */
 static inline AF_PlatformData AF_PlatformData_ZERO(void){
-	AF_PlatformData returnPlatformData = {
-		.platformType = (AF_Platform_e)0
-	};
+    AF_PlatformData returnPlatformData;
+    returnPlatformData.platformType = (AF_Platform_e)0;
 
 	return returnPlatformData;
 }

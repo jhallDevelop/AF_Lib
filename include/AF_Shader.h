@@ -32,9 +32,9 @@ Init shader struct
 ====================
 */
 inline static AF_Shader AF_Shader_ZERO(void) {
-    AF_Shader zeroShader = {
-        .shaderID = 0
-    };
+    AF_Shader zeroShader;
+    zeroShader.shaderID = 0;
+
     
     zeroShader.fragPath[0] = '\0'; // Proper null-terminated empty string
     zeroShader.vertPath[0] = '\0'; // Proper null-terminated empty string

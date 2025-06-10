@@ -83,20 +83,25 @@ AF_InputAction_ZERO
 Init for an AF_InputAction struct
 ====================
 */
-inline static AF_InputAction AF_InputAction_ZERO(void){
-    AF_InputAction returnIA = {
-        .enabled = AF_FALSE,
-        .key = {0, 0, 0},
-        .actionType = ACTION_TYPE_NONE,
-        .boolBuffer = AF_FALSE,
-        .uintBuffer = 0,
-        .floatBuffer = 0.0f,
-        .vec2Buffer = {0.0f, 0.0f},
-        .vec3Buffer = {0.0f, 0.0f, 0.0f},
-        .actionFuncPtr = AF_InputAction_DefaultFunction,
-        .currentKeyIndex = 0,
-		.currentActionIndex = 0
-    };
+inline static AF_InputAction AF_InputAction_ZERO(void) {
+    AF_InputAction returnIA;
+    returnIA.enabled = AF_FALSE;
+    returnIA.key.code = 0;
+    returnIA.key.held = 0;
+    returnIA.key.pressed = 0;
+    returnIA.actionType = ACTION_TYPE_NONE;
+    returnIA.boolBuffer = AF_FALSE;
+    returnIA.uintBuffer = 0;
+    returnIA.floatBuffer = 0.0f;
+    returnIA.vec2Buffer.x = 0.0f;
+    returnIA.vec2Buffer.y = 0.0f;
+    returnIA.vec3Buffer.x = 0.0f;
+	returnIA.vec3Buffer.y = 0.0f;
+	returnIA.vec3Buffer.z = 0.0f;
+    returnIA.actionFuncPtr = AF_InputAction_DefaultFunction;
+    returnIA.currentKeyIndex = 0;
+    returnIA.currentActionIndex = 0;
+    
     return returnIA;
 }
 

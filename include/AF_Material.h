@@ -35,14 +35,23 @@ typedef struct{
 
 static inline AF_Material AF_Material_ZERO(void){
 	AF_Color color = {0,0,0,255};
-	AF_Material returnMaterial = {
-		.shaderID = 0,
-		.diffuseTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"},	// NULL 
-		.normalTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"},		// NULL
-		.specularTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"},	// NULL
-		.color = color,
-		.shininess = 0.0f
-	};
+	AF_Material returnMaterial;
+	returnMaterial.shaderID = 0;
+	returnMaterial.diffuseTexture.id = 0;
+	returnMaterial.diffuseTexture.type = AF_TEXTURE_TYPE_NONE;
+	returnMaterial.diffuseTexture.path[0] = '\0';	
+
+	returnMaterial.normalTexture.id = 0;
+	returnMaterial.normalTexture.type = AF_TEXTURE_TYPE_NONE;
+	returnMaterial.normalTexture.path[0] = '\0';
+
+	returnMaterial.specularTexture.id = 0;
+	returnMaterial.specularTexture.type = AF_TEXTURE_TYPE_NONE;
+	returnMaterial.specularTexture.path[0] = '\0';
+
+	returnMaterial.color = color;
+	returnMaterial.shininess = 0.0f;
+
 	return returnMaterial;
 }
 

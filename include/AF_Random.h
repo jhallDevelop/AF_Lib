@@ -10,6 +10,7 @@ Implementation of helper functions for generating random numbers
 
 #include <stdlib.h>
 #include <time.h>
+#include "AF_Lib_Define.h"
 
 #ifdef __cplusplus
 extern "C" {

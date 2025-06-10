@@ -127,22 +127,21 @@ AF_AF_RenderingData_ZERO
 ================
 */
 static inline AF_RenderingData AF_RenderingData_ZERO(void){
-	AF_RenderingData returnRenderingData = {
-		.rendererType = (AF_Renderer_e)0,
-        .rendererPipelineType = (AF_RendererPipeline_e)0,
-        .screenFrameBufferData = AF_FrameBufferData_ZERO(),
-        .screenQUAD_VAO = 0,
-        .screenQUAD_VBO = 0,
-        .depthFrameBufferData = AF_FrameBufferData_ZERO(),
-        .depthDebugFrameBufferData = AF_FrameBufferData_ZERO(),
-        .polygonMode = AF_RENDERER_POLYGON_MODE_FILL,
-        .frameResizeFnctPtr = NULL,
-        .windowPtr = NULL,
+    AF_RenderingData returnRenderingData;
+    returnRenderingData.rendererType = (AF_Renderer_e)0;
+    returnRenderingData.rendererPipelineType = (AF_RendererPipeline_e)0;
+    returnRenderingData.screenFrameBufferData = AF_FrameBufferData_ZERO();
+    returnRenderingData.screenQUAD_VAO = 0;
+    returnRenderingData.screenQUAD_VBO = 0;
+    returnRenderingData.depthFrameBufferData = AF_FrameBufferData_ZERO();
+    returnRenderingData.depthDebugFrameBufferData = AF_FrameBufferData_ZERO();
+    returnRenderingData.polygonMode = AF_RENDERER_POLYGON_MODE_FILL;
+    returnRenderingData.frameResizeFnctPtr = NULL;
+    returnRenderingData.windowPtr = NULL;
         // In AF_RenderingData
-        .viewportTextureWidth = 0,  // The width the FBO texture should be / currently is
-        .viewportTextureHeight = 0, // The height the FBO texture should be / currently is
-        .viewportSizeDirty = AF_FALSE    // Flag if it needs to be recreated
-	};
+    returnRenderingData.viewportTextureWidth = 0;  // The width the FBO texture should be / currently is
+    returnRenderingData.viewportTextureHeight = 0; // The height the FBO texture should be / currently is
+    returnRenderingData.viewportSizeDirty = AF_FALSE;    // Flag if it needs to be recreated
 
 	return returnRenderingData;
 }
