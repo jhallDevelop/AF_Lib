@@ -53,3 +53,34 @@ dkms.conf
 build
 bin
 *.swp
+
+# ===================================================================
+# Visual Studio / C++ ignore file
+# ===================================================================
+
+# User-specific Visual Studio files. These store your personal settings,
+# like window layout and breakpoints. NEVER share these.
+*.suo
+*.user
+*.sln.docstates
+.vs/
+
+
+# Build output folders. These contain the results of compilation.
+# They should always be regenerated from source code.
+[Bb]in/
+[Bb]uild/
+[Oo]bj/
+[Oo]bj-$(Configuration)/
+[Rr]elease/
+[Dd]ebug/
+[Xx]64/
+[Aa]rm64/
+x86/
+
+# IntelliSense and code browsing database files.
+# These can be huge and are specific to your machine.
+ipch/
+*.sdf
+*.ncb
+*.opensdf
