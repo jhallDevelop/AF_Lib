@@ -247,9 +247,9 @@ Input struct Initialise to zero
 */
 static inline AF_Input AF_Input_ZERO(void){
     AF_Input input;
-    /*
+    
+    // Initialise the keys
     for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; ++i){
-        
         AF_Key key = {0, 0, 0};
         input.keys[0][i] = key; // Player 1
         input.keys[1][i] = key; // Player 2
@@ -257,9 +257,8 @@ static inline AF_Input AF_Input_ZERO(void){
         input.keys[3][i] = key; // Player 4
         
        // map the keymappings to input keys
-       
     }
-    */
+    
     AF_Input_MapKeyMappings(&input, AF_Input_KeyMappings);
     
     for(int i = 0; i < CONTROLLER_COUNT; ++i){
