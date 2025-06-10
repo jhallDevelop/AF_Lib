@@ -39,7 +39,6 @@ static inline AF_LightingData AF_LightingData_ZERO(void){
     returnLightingData.ambientColor[0] = 255;
     returnLightingData.ambientColor[1] = 255;
     returnLightingData.ambientColor[2] = 255;
-    returnLightingData.ambientColor[3] = 255;
     returnLightingData.ambientLightEntityIndex = 0;
     returnLightingData.spotLightEntityIndex = 0;
     returnLightingData.pointLightIndexArray[0] = 0;
