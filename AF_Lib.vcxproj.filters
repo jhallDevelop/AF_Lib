@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="src\windows\AF_Log_UWP.cpp">
+    <ClCompile Include="src\windows\AF_Log_UWP.c">
       <Filter>Private\Windows</Filter>
     </ClCompile>
   </ItemGroup>
