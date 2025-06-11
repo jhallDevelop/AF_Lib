@@ -12,8 +12,8 @@ This implementation is for OpenGL
 #include "AF_Debug.h"
 #include "ECS/Components/AF_Component.h"
 #include "AF_Log.h"
-#include "AF_Vec3.h"
-#include "AF_Mat4.h"
+#include "AF_Math/AF_Vec3.h"
+#include "AF_Math/AF_Mat4.h"
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
 #include "AF_Util.h"

@@ -13,7 +13,7 @@ Calls vfprintf but adds some colour to text output
 #include "AF_Lib_Define.h"
 #include "AF_Window.h"
 #include "AF_LightingData.h"
-#include "AF_Vec3.h"
+#include "AF_Math/AF_Vec3.h"
 #include "AF_FrameBufferData.h"
 typedef void (*WindowFuncPtr)(void*);
 

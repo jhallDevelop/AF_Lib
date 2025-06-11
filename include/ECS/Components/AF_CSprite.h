@@ -10,7 +10,7 @@ and helper functions
 #define AF_CSPRITE_H
 #include <stdio.h>
 #include "AF_Component.h"
-#include "AF_Vec2.h"
+#include "AF_Math/AF_Vec2.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif

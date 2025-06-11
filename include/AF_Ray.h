@@ -6,7 +6,7 @@ Definition of the ray structure
 */
 #ifndef AF_RAY_H
 #define AF_RAY_H
-#include "AF_Vec3.h"
+#include "AF_Math/AF_Vec3.h"
 
 #ifdef __cplusplus
 extern "C" {    

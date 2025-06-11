@@ -11,7 +11,7 @@ functions to load meshes, creating memory on the heap based on the size of the m
 #define AF_CLIGHT_H
 #include "AF_Lib_Define.h"
 #include "ECS/Components/AF_Component.h"
-#include "AF_Vec3.h"
+#include "AF_Math/AF_Vec3.h"
 
 #ifdef __cplusplus
 extern "C" {

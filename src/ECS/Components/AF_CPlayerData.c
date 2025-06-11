@@ -1,6 +1,6 @@
 #include "ECS/Components/AF_CPlayerData.h"
 #include "ECS/Components/AF_Component.h"
-#include "AF_Vec3.h"
+#include "AF_Math/AF_Vec3.h"
 /*
 ====================
 AF_AF_CPlayerData_ZERO

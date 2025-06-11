@@ -19,8 +19,8 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 #include "AF_CollisionVolume.h"
 #include "AF_Debug.h"
 #include "AF_Ray.h"
-#include "AF_Vec3.h"
-#include "AF_Vec4.h"
+#include "AF_Math/AF_Vec3.h"
+#include "AF_Math/AF_Vec4.h"
 #include "AF_Util.h"
 //#include "AF_QuadTree.h"
 #define FACES_COUNT 6

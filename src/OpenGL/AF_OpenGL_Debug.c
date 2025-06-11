@@ -10,7 +10,7 @@ Implementation file for the AF_Debug, to be used with OpenGL
 #include "AF_Log.h"
 #include "AF_Material.h"
 #include "AF_Vertex.h"
-#include "AF_Mat4.h"
+#include "AF_Math/AF_Mat4.h"
 #include "ECS/Components/AF_CMesh.h"
 
 /*

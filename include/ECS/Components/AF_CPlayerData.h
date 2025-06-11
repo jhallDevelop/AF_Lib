@@ -9,7 +9,7 @@ and helper functions
 #ifndef AF_CPLAYERDATA_H
 #define AF_CPLAYERDATA_H
 #include "AF_Component.h"
-#include "AF_Vec3.h"
+#include "AF_Math/AF_Vec3.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif

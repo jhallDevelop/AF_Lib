@@ -9,8 +9,8 @@
 //#include "AF_Mesh.h"
 //#include "AF_Mat4.h"
 #include "AF_Lib_Define.h"
-#include "AF_Vec3.h"
-#include "AF_Vec2.h"
+#include "AF_Math/AF_Vec3.h"
+#include "AF_Math/AF_Vec2.h"
 
 #ifdef __cplusplus
 extern "C" {

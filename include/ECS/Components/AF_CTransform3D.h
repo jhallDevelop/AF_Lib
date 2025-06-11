@@ -8,11 +8,11 @@ and helper functions
 */
 #ifndef AF_CTRANSFORM3D_H
 #define AF_CTRANSFORM3D_H
-#include "AF_Vec3.h"
-#include "AF_Vec4.h"
+#include "AF_Math/AF_Vec3.h"
+#include "AF_Math/AF_Vec4.h"
 #include "AF_Lib_Define.h"
 #include "AF_Component.h"
-#include "AF_Mat4.h"
+#include "AF_Math/AF_Mat4.h"
 
 #ifdef __cplusplus
 extern "C" {

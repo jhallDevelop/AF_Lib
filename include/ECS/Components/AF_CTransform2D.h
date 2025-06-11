@@ -8,7 +8,7 @@ and helper functions
 */
 #ifndef AF_CTRANSFORM2D_H
 #define AF_CTRANSFORM2D_H
-#include "AF_Vec2.h"
+#include "AF_Math/AF_Vec2.h"
 #include "AF_Lib_Define.h"
 #include "AF_Component.h"
 

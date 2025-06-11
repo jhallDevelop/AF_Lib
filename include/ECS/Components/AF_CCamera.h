@@ -8,9 +8,9 @@ and camera helper functions
 */
 #ifndef AF_CCAMERA_H
 #define AF_CCAMERA_H
-#include "AF_Math.h"
+#include "AF_Math/AF_Math.h"
 #include "ECS/Components/AF_CTransform3D.h"
-#include "AF_Mat4.h"
+#include "AF_Math/AF_Mat4.h"
 #include "AF_Window.h"
 #include "AF_Lib_Define.h"
 

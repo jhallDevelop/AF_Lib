@@ -18,9 +18,9 @@ Implimentation of helper functions for utility functions like,
 #include <stdbool.h>    // bool type
 
 #include "AF_Log.h"
-#include "AF_Vec2.h"
-#include "AF_Vec3.h"
-#include "AF_Mat4.h"
+#include "AF_Math/AF_Vec2.h"
+#include "AF_Math/AF_Vec3.h"
+#include "AF_Math/AF_Mat4.h"
 #include "AF_Lib_Define.h"
 
 #ifdef __cplusplus

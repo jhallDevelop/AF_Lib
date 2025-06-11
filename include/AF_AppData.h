@@ -14,8 +14,8 @@ extern "C" {
 #endif
 
 #include "AF_Lib_Define.h"
-#include "AF_Vec4.h"
 #include "ECS/Entities/AF_ECS.h"
+#include "AF_Lib_API.h"
 #include "AF_Time.h"
 #include "AF_Window.h"
 //#include "AF_ViewportData.h"
@@ -26,10 +26,9 @@ extern "C" {
 #include "AF_RenderingData.h"
 
 #pragma pack(push, 8)  // Set 8-byte alignment
-typedef struct AF_AppData {
+AF_LIB_API typedef struct AF_AppData {
     // Start with Vec4 since it likely contains floating point values
     // that benefit from strict alignment
-    Vec4 backgrounColor;    // Likely 16 bytes (4 floats)
 
     // Place larger structs next
     AF_ECS ecs;            // Struct size depends on definition
@@ -54,8 +53,6 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
 		AF_Log_Error("AF_AppData_ZERO: _appData is NULL");
         return;
     }
-    Vec4 blackColor = {0,0,0,0};
-    _appData->backgrounColor = blackColor;
     _appData->time = AF_Time_ZERO(0);
     _appData->window = AF_Window_ZERO("", 0, 0);
     _appData->input = AF_Input_ZERO();

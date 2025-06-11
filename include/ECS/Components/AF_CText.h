@@ -9,8 +9,8 @@ and helper functions
 #ifndef AF_CTEXT_H
 #define AF_CTEXT_H
 
-#include "AF_Vec2.h"
-#include "AF_Vec4.h"
+#include "AF_Math/AF_Vec2.h"
+#include "AF_Math/AF_Vec4.h"
 #include "AF_Lib_Define.h"
 
 

@@ -11,8 +11,8 @@ Definition for the input action struct
 #include "AF_Lib_Define.h"
 #include "AF_Key.h"
 //#include "AF_Input.h"
-#include "AF_Vec2.h"
-#include "AF_Vec3.h"
+#include "AF_Math/AF_Vec2.h"
+#include "AF_Math/AF_Vec3.h"
 #include <stddef.h> // For NULL
 #include "AF_Log.h"
 

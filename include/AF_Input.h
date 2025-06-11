@@ -9,7 +9,7 @@ and helper functions
 #ifndef AF_INPUT_H
 #define AF_INPUT_H
 #include "AF_Lib_Define.h"
-#include "AF_Vec2.h"
+#include "AF_Math/AF_Vec2.h"
 #include "AF_Log.h"
 #include "AF_Key.h"
 

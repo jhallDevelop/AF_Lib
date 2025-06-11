@@ -10,7 +10,7 @@ and helper functions
 #define AF_C2DRIGIDBODY_H
 #include "AF_Lib_Define.h"
 #include "AF_CCollider.h"
-#include "AF_Vec2.h"
+#include "AF_Math/AF_Vec2.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif
