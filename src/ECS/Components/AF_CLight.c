@@ -29,7 +29,7 @@ AF_CLight AF_CLight_ADD(void){
     AF_CLight returnObject = {
 	//.has = AF_TRUE,
 	.enabled = component,
-    .lightType = AF_LIGHT_TYPE_AMBIENT,
+    .lightType = AF_LIGHT_TYPE_POINT,
     .direction = {0.0f, -1.0f, 0.0f},
     .ambientCol = {0.5f, 0.5f, 0.5f},
     .diffuseCol = {0.4f, 0.4f, 0.4f},
