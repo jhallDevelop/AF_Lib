@@ -39,7 +39,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     #endif
 
     // A return value of 0 means success. f is now valid.
-    if (err == 0) {
+    if (err != 0) {
         AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s (Error code: %d)\n", _path, err);
         return NULL;
     }
