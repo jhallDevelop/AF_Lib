@@ -1,6 +1,6 @@
 #ifndef AF_FILE_H
 #define AF_FILE_H
-
+#include "AF_LIB_API.h"
 #include <stdio.h>
 
 #include "AF_Lib_Define.h"
@@ -13,7 +13,7 @@
 extern "C" {    
 #endif
 
-FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands);
+AF_LIB_API FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands);
 void AF_File_PrintTextBuffer(FILE* _filePtr);
 void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize);
 void AF_File_CloseFile(FILE* _filePtr);

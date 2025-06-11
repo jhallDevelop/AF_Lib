@@ -35,12 +35,87 @@
     <Filter Include="Public\AF_Math">
       <UniqueIdentifier>{7198899b-d89d-4c0f-a5e8-4d7fc3d5dafe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Private\ECS">
+      <UniqueIdentifier>{af8ffa0b-1a12-4dc6-9ce7-0bb6c445f427}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\ECS\Entities">
+      <UniqueIdentifier>{b13af3ef-2aa3-4c8c-b9a1-5da1c85ee9b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\ECS\Components">
+      <UniqueIdentifier>{fba58e1d-f852-42b5-bc04-8f986424d971}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="src\windows\AF_Log_UWP.c">
       <Filter>Private\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Entities\AF_ECS.c">
+      <Filter>Private\ECS\Entities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Entities\AF_Entity.c">
+      <Filter>Private\ECS\Entities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_C2DRigidbody.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_C3DRigidbody.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CAI_Behaviour.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CAnimation.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CAudioSource.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CCamera.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CCollider.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CEditorData.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CInputController.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CLight.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CMesh.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_Component.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CPlayerData.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CScript.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CSkeletalAnimation.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CSprite.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CText.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CTransform2D.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ECS\Components\AF_CTransform3D.c">
+      <Filter>Private\ECS\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_File.c">
+      <Filter>Private\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +233,9 @@
       <Filter>Public\AF_Math</Filter>
     </ClInclude>
     <ClInclude Include="include\AF_Lib_API.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_File.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>

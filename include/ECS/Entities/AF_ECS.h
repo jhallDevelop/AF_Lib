@@ -9,6 +9,7 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 
 #ifndef AF_ECS_H
 #define AF_ECS_H
+#include "AF_LIB_API.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -54,7 +55,7 @@ typedef struct {
 
 
 void AF_ECS_ReSyncComponents(AF_ECS* _ecs);
-void AF_ECS_Init(AF_ECS* _ecs);
+AF_LIB_API void AF_ECS_Init(AF_ECS* _ecs);
 void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity);
 AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs);
 //void AF_RemoveEntity(Entity _entity);
@@ -62,7 +63,7 @@ void AF_ECS_Update(AF_Entity* _entities);
 void AF_ECS_LoadECSFromBinary(FILE* _filePtr, AF_ECS* _ecs);
 void AF_ECS_SaveECS(FILE* _file, AF_ECS* _ecs);
 AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs);
-void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight);
+AF_LIB_API void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight);
 
 #ifdef __cplusplus
 }
