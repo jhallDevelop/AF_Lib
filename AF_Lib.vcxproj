@@ -102,42 +102,48 @@
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <GenerateManifest>false</GenerateManifest>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <GenerateManifest>false</GenerateManifest>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <GenerateManifest>false</GenerateManifest>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <GenerateManifest>false</GenerateManifest>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <GenerateManifest>false</GenerateManifest>
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -150,7 +156,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,7 +169,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -176,7 +182,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -189,7 +195,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -202,7 +208,7 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -212,7 +218,44 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\AF_Math\include\AF_Mat4.h" />
+    <ClInclude Include="..\AF_Math\include\AF_Math.h" />
+    <ClInclude Include="..\AF_Math\include\AF_Math_Define.h" />
+    <ClInclude Include="..\AF_Math\include\AF_Vec2.h" />
+    <ClInclude Include="..\AF_Math\include\AF_Vec3.h" />
+    <ClInclude Include="..\AF_Math\include\AF_Vec4.h" />
+    <ClInclude Include="include\AF_AppData.h" />
+    <ClInclude Include="include\AF_Assets.h" />
+    <ClInclude Include="include\AF_Input.h" />
+    <ClInclude Include="include\AF_Lib_API.h" />
+    <ClInclude Include="include\AF_Lib_Define.h" />
+    <ClInclude Include="include\AF_LightingData.h" />
     <ClInclude Include="include\AF_Log.h" />
+    <ClInclude Include="include\AF_ProjectData.h" />
+    <ClInclude Include="include\AF_RenderingData.h" />
+    <ClInclude Include="include\AF_Time.h" />
+    <ClInclude Include="include\AF_Window.h" />
+    <ClInclude Include="include\ECS\Components\AF_C2DRigidbody.h" />
+    <ClInclude Include="include\ECS\Components\AF_C3DRigidbody.h" />
+    <ClInclude Include="include\ECS\Components\AF_CAI_Behaviour.h" />
+    <ClInclude Include="include\ECS\Components\AF_CAnimation.h" />
+    <ClInclude Include="include\ECS\Components\AF_CAudioSource.h" />
+    <ClInclude Include="include\ECS\Components\AF_CCamera.h" />
+    <ClInclude Include="include\ECS\Components\AF_CCollider.h" />
+    <ClInclude Include="include\ECS\Components\AF_CEditorData.h" />
+    <ClInclude Include="include\ECS\Components\AF_CInputController.h" />
+    <ClInclude Include="include\ECS\Components\AF_CLight.h" />
+    <ClInclude Include="include\ECS\Components\AF_CMesh.h" />
+    <ClInclude Include="include\ECS\Components\AF_Component.h" />
+    <ClInclude Include="include\ECS\Components\AF_CPlayerData.h" />
+    <ClInclude Include="include\ECS\Components\AF_CScript.h" />
+    <ClInclude Include="include\ECS\Components\AF_CSkeletalAnimation.h" />
+    <ClInclude Include="include\ECS\Components\AF_CSprite.h" />
+    <ClInclude Include="include\ECS\Components\AF_CText.h" />
+    <ClInclude Include="include\ECS\Components\AF_CTransform2D.h" />
+    <ClInclude Include="include\ECS\Components\AF_CTransform3D.h" />
+    <ClInclude Include="include\ECS\Entities\AF_ECS.h" />
+    <ClInclude Include="include\ECS\Entities\AF_Entity.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>

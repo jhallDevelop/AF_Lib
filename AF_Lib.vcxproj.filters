@@ -11,11 +11,29 @@
     <Filter Include="Private">
       <UniqueIdentifier>{2d729bc0-7eea-4959-9804-a00e7d1d5bbf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Public\Common">
-      <UniqueIdentifier>{a84cc788-e758-4256-a62b-f84189bab01a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Private\Windows">
       <UniqueIdentifier>{8308c6d5-35a1-425f-bf7b-03cb82046885}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\ECS">
+      <UniqueIdentifier>{cbc474c7-c1d7-491a-a2c2-14d44c5b5d7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\ECS\Entities">
+      <UniqueIdentifier>{4f7f4083-ab64-431b-8837-0374a86a6144}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\ECS\Components">
+      <UniqueIdentifier>{ff6d1a5e-919d-4e1d-91d1-f8e15f1885f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\Common">
+      <UniqueIdentifier>{0178d476-b9ce-4295-9e2f-91ee926e1023}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\OpenGL">
+      <UniqueIdentifier>{f8e1e9f5-626c-4cc6-9c9a-f2c35c73090b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\GLFW">
+      <UniqueIdentifier>{be014fcf-fbae-45c9-8ae4-17c88b35150d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public\AF_Math">
+      <UniqueIdentifier>{7198899b-d89d-4c0f-a5e8-4d7fc3d5dafe}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -29,7 +47,118 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="include\AF_Log.h">
-      <Filter>Public\Common</Filter>
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_AppData.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Entities\AF_ECS.h">
+      <Filter>Public\ECS\Entities</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Entities\AF_Entity.h">
+      <Filter>Public\ECS\Entities</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_C2DRigidbody.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_C3DRigidbody.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CAI_Behaviour.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CAnimation.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CAudioSource.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CCamera.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CCollider.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CEditorData.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CInputController.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CLight.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CMesh.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_Component.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CPlayerData.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CScript.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CSkeletalAnimation.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CSprite.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CText.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CTransform2D.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ECS\Components\AF_CTransform3D.h">
+      <Filter>Public\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Time.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Assets.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Input.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_LightingData.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_ProjectData.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_RenderingData.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Window.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Lib_Define.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AF_Math\include\AF_Mat4.h">
+      <Filter>Public\AF_Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AF_Math\include\AF_Math.h">
+      <Filter>Public\AF_Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AF_Math\include\AF_Math_Define.h">
+      <Filter>Public\AF_Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AF_Math\include\AF_Vec2.h">
+      <Filter>Public\AF_Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AF_Math\include\AF_Vec3.h">
+      <Filter>Public\AF_Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AF_Math\include\AF_Vec4.h">
+      <Filter>Public\AF_Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Lib_API.h">
+      <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
