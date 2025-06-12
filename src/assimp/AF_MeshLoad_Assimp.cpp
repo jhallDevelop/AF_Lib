@@ -20,7 +20,7 @@ AF_MeshLoad_Load
 Generic implementation that will call assimp specific function
 ================
 */
-af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
+af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath) {
     if(AF_File_FileExists(_modelPath) == AF_FALSE){
         AF_Log_Error("AF_MeshLoad_Load: ERROR: File doesn't exist %s\n", _modelPath);
         return AF_FALSE;

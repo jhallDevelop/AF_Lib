@@ -1,5 +1,4 @@
-#ifndef AF_GL_UTIL_H
-#define AF_GL_UTIL_H
+#include "AF_Renderer_Util.h"
 #include "GL/glew.h"
 //#include <GL/gl.h>
 #include <stdio.h>
@@ -41,5 +40,3 @@ void AF_Renderer_CheckError(const char* message) {
         error = glGetError(); // Continue checking for additional errors
     }
 }
-
-#endif

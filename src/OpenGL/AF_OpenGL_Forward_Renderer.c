@@ -62,7 +62,7 @@ uint32_t AF_Renderer_Awake(void){
     //Initialize GLEW
     glewExperimental = GL_TRUE; 
     GLenum glewError = glewInit();
-    AF_GL_CheckError( "Error initializing GLEW! \n");
+	AF_Renderer_CheckError( "Error initializing GLEW! \n");
 
     // -----------------------------
     // Enable transparent blending
@@ -78,8 +78,8 @@ uint32_t AF_Renderer_Awake(void){
 	// TODO: Adjust per model
 	
 	
-    AF_GL_CheckError( "Error initializing OpenGL! \n");
-    //AF_GL_CheckError("SLDGameRenderer::Initialise:: finishing up init: ");
+    AF_Renderer_CheckError( "Error initializing OpenGL! \n");
+    //AF_Renderer_CheckError("SLDGameRenderer::Initialise:: finishing up init: ");
     return success;
 } 
 
@@ -257,7 +257,7 @@ Simple render command to decide how to progress other rendering steps
 */
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
 	// START RENDERING
-	AF_GL_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
+	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
 
 	// Update lighting data
 	AF_Renderer_UpdateLighting(_ecs, _lightingData);
@@ -294,7 +294,7 @@ Simple render command to perform forward rendering steps
 ====================
 */
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
-    AF_GL_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
+    AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
 	AF_CCamera* camera = _cameraEntity->camera;
 
 	AF_Window* window = _renderingData->windowPtr;
@@ -348,7 +348,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	AF_Renderer_UnBindFrameBuffer();
 
 
-	AF_GL_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
+	AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
 }
 
 
@@ -522,7 +522,7 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		
 		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
-	AF_GL_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
+	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
 }
 
 /*
@@ -632,11 +632,11 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		
 
 		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
-		AF_GL_CheckError( "Error bind vao Rendering OpenGL! \n");
+		AF_Renderer_CheckError( "Error bind vao Rendering OpenGL! \n");
 
 		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
 		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
-		AF_GL_CheckError("Error binding VBO for drawing!");
+		AF_Renderer_CheckError("Error binding VBO for drawing!");
 
 
 		//---------------Send command to Graphics API to Draw Triangles------------
@@ -684,10 +684,10 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 			
-		AF_GL_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
+		AF_Renderer_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
 
 		glBindVertexArray(0);
-		AF_GL_CheckError( "Error bindvertexarray(0) Rendering OpenGL! \n");
+		AF_Renderer_CheckError( "Error bindvertexarray(0) Rendering OpenGL! \n");
 		
 	}
 	// Unbind shader
@@ -726,7 +726,7 @@ Render the quad to the screen and swap the frame buffers over.
 ====================
 */
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
-	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
+	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
 	
     //glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
     glUseProgram(_renderingData->depthDebugFrameBufferData.shaderID);
@@ -754,7 +754,7 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
     // Consider re-enabling depth test if needed by subsequent rendering
     // glEnable(GL_DEPTH_TEST);
 	
-	AF_GL_CheckError("AF_Renderer_RenderScreenFBOQuad: Finish Render debug quad\n");
+	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Finish Render debug quad\n");
 }
 
 
@@ -782,7 +782,7 @@ void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){
 			continue;
 	    }
 
-		AF_GL_CheckError( "Mesh has no indices!\n");
+		AF_Renderer_CheckError( "Mesh has no indices!\n");
 
 		// for each sub mesh. setup the mesh buffers
 		for(uint32_t j = 0; j < _mesh->meshCount; j++){
@@ -816,7 +816,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
 	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
 	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	AF_GL_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
+	AF_Renderer_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
 		
 	GLuint gVAO = 0;
 	GLuint gVBO = 0;
@@ -824,22 +824,22 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	glGenVertexArrays(1, &gVAO);
 	glGenBuffers(1, &gVBO);
 	glGenBuffers(1, &gEBO);
-	AF_GL_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
+	AF_Renderer_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
 
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
 	glBindVertexArray(gVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, gVBO);
-	AF_GL_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
+	AF_Renderer_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
 
 	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
 	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, _meshData->vertices, GL_STATIC_DRAW);
-	AF_GL_CheckError( "OpenGL error occurred during glBufferData for the verts.\n");
+	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the verts.\n");
 	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Bind the IBO and set the buffer data
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
-	AF_GL_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
+	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
 	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
 	// Vertex positions
@@ -862,7 +862,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
 	glEnableVertexAttribArray(4);
 
-	AF_GL_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
+	AF_Renderer_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
 
 	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0); 
@@ -886,7 +886,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	_meshData->vertices = NULL;
 	free(_meshData->indices);
 	_meshData->indices = NULL;
-	AF_GL_CheckError("Error InitMesh Buffers for OpenGL! \n");
+	AF_Renderer_CheckError("Error InitMesh Buffers for OpenGL! \n");
 }
 
 
@@ -1412,7 +1412,7 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 	// Delete Shaders
        
         //glDeleteTexture(_meshList->materials[0].textureID);
-    AF_GL_CheckError( "Error Destroying Renderer OpenGL! \n");
+    AF_Renderer_CheckError( "Error Destroying Renderer OpenGL! \n");
 }
 
 

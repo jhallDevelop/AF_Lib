@@ -7,9 +7,8 @@ AF_PROJECT_H
 */
 #ifndef AF_PROJECT_H
 #define AF_PROJECT_H
-#include "AF_Lib_API.h"
 #include "AF_AppData.h"
-
+#include "AF_Lib_API.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
