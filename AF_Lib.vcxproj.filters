@@ -44,6 +44,12 @@
     <Filter Include="Private\ECS\Components">
       <UniqueIdentifier>{fba58e1d-f852-42b5-bc04-8f986424d971}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Private\DX11">
+      <UniqueIdentifier>{daff2ed7-b465-49b3-b353-ae942c4d0f14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Private\assimp">
+      <UniqueIdentifier>{87928653-de5d-4129-b47d-7a8b74ead82f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
@@ -115,6 +121,21 @@
       <Filter>Private\ECS\Components</Filter>
     </ClCompile>
     <ClCompile Include="src\common\AF_File.c">
+      <Filter>Private\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DX11\AF_DX11_Forward_Renderer.c">
+      <Filter>Private\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DX11\AF_DX11_Shader.c">
+      <Filter>Private\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DX11\AF_DX11_Renderer_Util.c">
+      <Filter>Private\DX11</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_Project.c">
+      <Filter>Private\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_MeshLoad.c">
       <Filter>Private\Common</Filter>
     </ClCompile>
   </ItemGroup>
@@ -236,6 +257,18 @@
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="include\AF_File.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Renderer_Util.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Renderer.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Project.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_MeshLoad.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>

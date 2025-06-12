@@ -232,7 +232,11 @@
     <ClInclude Include="include\AF_Lib_Define.h" />
     <ClInclude Include="include\AF_LightingData.h" />
     <ClInclude Include="include\AF_Log.h" />
+    <ClInclude Include="include\AF_MeshLoad.h" />
+    <ClInclude Include="include\AF_Project.h" />
     <ClInclude Include="include\AF_ProjectData.h" />
+    <ClInclude Include="include\AF_Renderer.h" />
+    <ClInclude Include="include\AF_Renderer_Util.h" />
     <ClInclude Include="include\AF_RenderingData.h" />
     <ClInclude Include="include\AF_Time.h" />
     <ClInclude Include="include\AF_Window.h" />
@@ -273,6 +277,26 @@
     <ClCompile Include="src\common\AF_File.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_MeshLoad.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_Project.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="src\DX11\AF_DX11_Forward_Renderer.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\DX11\AF_DX11_Renderer_Util.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\DX11\AF_DX11_Shader.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\ECS\Components\AF_C2DRigidbody.c">
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
