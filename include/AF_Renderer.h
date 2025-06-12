@@ -7,6 +7,7 @@ Definition for functions for rendering
 */
 #ifndef AF_RENDERER_H
 #define AF_RENDERER_H
+#include "AF_Lib_API.h"
 #include "AF_Window.h"
 #include "ECS/Components/AF_CCamera.h"
 #include "AF_MeshData.h"
@@ -27,12 +28,13 @@ extern "C" {
 
 
 // ============================ DEFAULT ================================ 
-uint32_t AF_Renderer_Awake(void);
-void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
-void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
-void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
-void AF_Renderer_Finish(void);
-void AF_Renderer_Shutdown(AF_ECS* _ecs);
+AF_LIB_API uint32_t AF_Renderer_Awake(void);
+AF_LIB_API void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
+AF_LIB_API void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
+AF_LIB_API void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
+AF_LIB_API void AF_Renderer_Finish(void);
+AF_LIB_API void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs);
+AF_LIB_API void AF_Renderer_Shutdown(AF_ECS* _ecs);
 
 
 // ============================ TEXTURES ================================ 
@@ -91,7 +93,6 @@ void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 // Destroy
 void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
 void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
-void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs);
 void AF_Renderer_DeleteFBO(uint32_t* _fboID);
 void AF_Renderer_DeleteRBO(uint32_t* _rboID);
 void AF_Renderer_DeleteTexture(uint32_t* _textureID);
