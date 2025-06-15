@@ -26,7 +26,7 @@ extern "C" {
 #include "AF_RenderingData.h"
 
 #pragma pack(push, 8)  // Set 8-byte alignment
-AF_LIB_API typedef struct AF_AppData {
+typedef struct AF_AppData {
     // Start with Vec4 since it likely contains floating point values
     // that benefit from strict alignment
 

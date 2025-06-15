@@ -35,7 +35,7 @@ extern "C" {
     Defines a 3D vector with x, y, z, w components.
     ====================
     */
-AF_MATH_API typedef struct {
+typedef struct {
         AF_FLOAT x, y, z, w;
     } Vec4;
 

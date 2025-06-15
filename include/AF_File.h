@@ -1,6 +1,6 @@
 #ifndef AF_FILE_H
 #define AF_FILE_H
-#include "AF_LIB_API.h"
+#include "AF_Lib_API.h"
 #include <stdio.h>
 
 #include "AF_Lib_Define.h"

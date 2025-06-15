@@ -9,7 +9,7 @@ New AF_ECS struct objects can be created to hold the entities for each scene.
 
 #ifndef AF_ECS_H
 #define AF_ECS_H
-#include "AF_LIB_API.h"
+#include "AF_Lib_API.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
