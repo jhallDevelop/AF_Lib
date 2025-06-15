@@ -11,11 +11,12 @@ Definition of Mesh Load functions that will be implemented using different mesh 
 #include "ECS/Components/AF_CMesh.h"
 #include "AF_Assets.h"
 #include "AF_Lib_Define.h"
+#include "AF_Lib_API.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 // Publically accessible function to trigger further mesh loading implemented
-af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* path);
+AF_LIB_API af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* path);
 uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets* _assetsLoaded, const char* _vertPath, const char* _fragPath);
 #ifdef __cplusplus
 }
