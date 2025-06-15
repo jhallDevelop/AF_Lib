@@ -91,7 +91,7 @@ void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 
 // ============================  DESTROY / CLEANUP ================================ 
 // Destroy
-void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
+AF_LIB_API void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
 void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
 void AF_Renderer_DeleteFBO(uint32_t* _fboID);
 void AF_Renderer_DeleteRBO(uint32_t* _rboID);
