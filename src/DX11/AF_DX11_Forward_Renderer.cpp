@@ -16,6 +16,8 @@ This implementation is for OpenGL
 #include "AF_Math/AF_Mat4.h"
 //#include <GL/glew.h>
 //#define GL_SILENCE_DEPRECATION
+#include "d3d11_3.h" // DirectX 11.3 header for device context
+
 #include "AF_Util.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -23,6 +25,13 @@ This implementation is for OpenGL
 
 #include "AF_Assets.h"
 #include "AF_Renderer_Util.h"
+
+// Special to DX11
+#include "AF_DX11_RenderData.h"
+#include "DirectXColors.h" // For DirectX color constants
+
+// DirectX includes
+//#include "Common\DeviceResources.h"
 
 #define NO_SHARED_SHADER 0
 
@@ -49,6 +58,9 @@ const char* stackOverflow = "STACK_OVERFLOW";
 const char* stackUnderflow = "STACK_UNDERFLOW";
 const char* outOfMemory = "OUT_OF_MEMORY";
 const char* invalidFrameBufferOperation = "INVALID_FRAMEBUFFER_OPERATION";
+
+
+
 
 /*
 ====================
@@ -239,36 +251,115 @@ Simple render command to decide how to progress other rendering steps
 ====================
 */
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity) {
-	AF_Log_Warning("AF_Renderer_Render: : DX11 not implemented yet\n");
-	/*
-	// START RENDERING
-	AF_Renderer_CheckError("AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
+	//auto context = m_deviceResources->GetD3DDeviceContext();
+	
+	AF_DX11_RenderData* gameRenderData = (AF_DX11_RenderData*)_renderingData->specialRenderData;
 
-	// Update lighting data
-	AF_Renderer_UpdateLighting(_ecs, _lightingData);
-
-
-	// Switch Between Renderer
-	switch (_renderingData->rendererType)
-	{
-		// FORWARD RENDERING
-	case AF_RENDERER_FORWARD:
-		AF_Renderer_StartForwardRendering(_ecs, _renderingData, _lightingData, _cameraEntity);
-		AF_Renderer_EndForwardRendering();
-		break;
-
-		// DEFERRED RENDERING
-	case AF_RENDERER_DEFERRED:
-		AF_Log_Warning("AF_Renderer_Render: Deferred Rendering NOT IMPLEMENTED\n");
-		break;
-
-		// FORWARD PLUS
-	case AF_RENDERER_FORWARD_PLUS:
-		AF_Log_Warning("AF_Renderer_Render: Forward+ Rendering NOT IMPLEMENTED\n");
-		break;
-
+	if (gameRenderData->context == NULL) {
+		AF_Log_Error("AF_Renderer_Render: DX11: device context is null\n");
 	}
-	*/
+
+	// Create a struct to hold this data
+	ID3D11DeviceContext3* context = gameRenderData->context;
+	// Reset the viewport to target the whole screen.
+	context->RSSetViewports(1, gameRenderData->screenViewport);
+
+	// Reset render targets to the screen.
+	//ID3D11RenderTargetView* const targets[1] = { m_deviceResources->GetBackBufferRenderTargetView() };
+	ID3D11RenderTargetView* const targets[1] = { gameRenderData->renderTargetView };
+	//context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
+	context->OMSetRenderTargets(1, targets, gameRenderData->depthStencilView);
+
+	// Clear the back buffer and depth stencil view.
+	//context->ClearRenderTargetView(m_deviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::CornflowerBlue);
+	context->ClearRenderTargetView(gameRenderData->renderTargetView, DirectX::Colors::CornflowerBlue);
+	context->ClearDepthStencilView(gameRenderData->depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	
+	//ModelViewProjectionConstantBuffer m_constantBufferData;
+
+	
+	ID3D11Buffer* m_constantBuffer = gameRenderData->constantBuffer;
+	MVPBuffer* m_constantBufferData = gameRenderData->constantBufferData;
+	ID3D11Buffer* m_vertexBuffer = gameRenderData->vertexBuffer;
+	ID3D11Buffer* m_indexBuffer = gameRenderData->indexBuffer;
+	ID3D11InputLayout* m_inputLayout = gameRenderData->inputLayout;
+	ID3D11VertexShader* m_vertexShader = gameRenderData->vertexShader;
+	ID3D11PixelShader* m_pixelShader = gameRenderData->pixelShader;
+	uint32_t m_indexCount = gameRenderData->indexCount;
+	// TODO:Replace this with your own scene rendering logic.
+	// Prepare the constant buffer to send it to the graphics device
+	context->UpdateSubresource1(
+		m_constantBuffer,
+		0,
+		NULL,
+		m_constantBufferData,
+		0,
+		0,
+		0
+	);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	// Each vertex is one instance of the VertexPositionColor struct.
+	UINT stride = sizeof(DX11Vertex);
+	UINT offset = 0;
+	context->IASetVertexBuffers(
+		0,
+		1,
+		//m_vertexBuffer.GetAddressOf(),
+		&m_vertexBuffer,
+		&stride,
+		&offset
+	);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	context->IASetIndexBuffer(
+		m_indexBuffer,
+		DXGI_FORMAT_R16_UINT, // Each index is one 16-bit unsigned integer (short).
+		0
+	);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	context->IASetInputLayout(m_inputLayout);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	// Attach our vertex shader.
+	context->VSSetShader(
+		m_vertexShader,
+		NULL,
+		0
+	);
+
+	
+	// TODO:Replace this with your own scene rendering logic.
+	// Send the constant buffer to the graphics device.
+	context->VSSetConstantBuffers1(
+		0,
+		1,
+		//m_constantBuffer.GetAddressOf(),
+		&m_constantBuffer,
+		NULL,
+		NULL
+	);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	// Attach our pixel shader.
+	context->PSSetShader(
+		//m_pixelShader.Get(),
+		m_pixelShader,
+		NULL,
+		0
+	);
+	
+	// TODO:Replace this with your own scene rendering logic.
+	// Draw the objects.
+	context->DrawIndexed(
+		m_indexCount,
+		0,
+		0
+	);
 }
 
 
@@ -443,6 +534,7 @@ AF_Renderer_LoadTexture
 Load textures
 ====================
 */
+
 unsigned int AF_Renderer_LoadTexture(char const* path) {
 	AF_Log_Warning("AF_Renderer_LoadTexture: DX11 not implemented yet\n");
 	/*
@@ -492,6 +584,7 @@ unsigned int AF_Renderer_LoadTexture(char const* path) {
 		return 0;
 	}
 	*/
+	return 0;
 }
 
 
@@ -968,6 +1061,7 @@ uint32_t AF_Renderer_CreateFBO(void) {
 	glGenFramebuffers(1, &fBO);
 	return fBO;
 	*/
+	return 0;
 }
 
 /*
@@ -1131,6 +1225,7 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData) {
 	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
 	return fboTextureID;
 	*/
+	return 0;
 }
 
 
