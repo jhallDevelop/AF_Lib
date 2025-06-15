@@ -104,6 +104,7 @@ typedef struct AF_RenderingData{
     uint16_t viewportTextureWidth;  // The width the FBO texture should be / currently is
     uint16_t viewportTextureHeight; // The height the FBO texture should be / currently is
     af_bool_t     viewportSizeDirty;     // Flag if it needs to be recreated
+	void* specialRenderData; // Pointer to the device context (e.g., for DirectX or Vulkan)
 } AF_RenderingData;
 
 // ================ Screen FBO Data ================
@@ -142,6 +143,7 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
     returnRenderingData.viewportTextureWidth = 0;  // The width the FBO texture should be / currently is
     returnRenderingData.viewportTextureHeight = 0; // The height the FBO texture should be / currently is
     returnRenderingData.viewportSizeDirty = AF_FALSE;    // Flag if it needs to be recreated
+    returnRenderingData.specialRenderData = NULL;
 
 	return returnRenderingData;
 }
