@@ -123,7 +123,7 @@
     <ClCompile Include="src\common\AF_File.c">
       <Filter>Private\Common</Filter>
     </ClCompile>
-    <ClCompile Include="src\DX11\AF_DX11_Forward_Renderer.c">
+    <ClCompile Include="src\DX11\AF_DX11_Forward_Renderer.cpp">
       <Filter>Private\DX11</Filter>
     </ClCompile>
     <ClCompile Include="src\DX11\AF_DX11_Shader.c">
@@ -269,6 +269,9 @@
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="include\AF_MeshLoad.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_DX11_RenderData.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>

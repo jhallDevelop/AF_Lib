@@ -226,6 +226,7 @@
     <ClInclude Include="..\AF_Math\include\AF_Vec4.h" />
     <ClInclude Include="include\AF_AppData.h" />
     <ClInclude Include="include\AF_Assets.h" />
+    <ClInclude Include="include\AF_DX11_RenderData.h" />
     <ClInclude Include="include\AF_File.h" />
     <ClInclude Include="include\AF_Input.h" />
     <ClInclude Include="include\AF_Lib_API.h" />
@@ -286,7 +287,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
     </ClCompile>
-    <ClCompile Include="src\DX11\AF_DX11_Forward_Renderer.c">
+    <ClCompile Include="src\DX11\AF_DX11_Forward_Renderer.cpp">
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
