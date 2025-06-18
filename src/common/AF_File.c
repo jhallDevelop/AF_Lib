@@ -31,6 +31,10 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     errno_t err = 0;
     #ifdef _WIN32
         err = fopen_s(&f, _path, _writeCommands);
+        if (err == 0) {
+            // flip the success on windows
+            err = 1;
+        }
     #else
         f = fopen(_path, _writeCommands);
         if(f != NULL){
