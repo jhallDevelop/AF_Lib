@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM64">
@@ -130,7 +130,8 @@
     <IgnoreImportLibrary>false</IgnoreImportLibrary>
     <OutDir>$(ProjectDir)lib\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Projects\AF\AF_Editor\Libs\AF_Math\include;D:\Projects\AF\AF_Editor\Libs\cJSON;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Projects\AF\AF_Editor\Libs\cJSON\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <GenerateManifest>false</GenerateManifest>
@@ -195,13 +196,14 @@
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <CompileAsWinRT>true</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;D:\Projects\AF\AF_Editor\Libs\AF_Math\include;D:\Projects\AF\AF_Editor\Libs\cJSON;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <OutputFile>$(ProjectDir)lib\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>cjson.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -229,6 +231,7 @@
     <ClInclude Include="include\AF_DX11_RenderData.h" />
     <ClInclude Include="include\AF_File.h" />
     <ClInclude Include="include\AF_Input.h" />
+    <ClInclude Include="include\AF_JSON.h" />
     <ClInclude Include="include\AF_Lib_API.h" />
     <ClInclude Include="include\AF_Lib_Define.h" />
     <ClInclude Include="include\AF_LightingData.h" />
@@ -275,13 +278,13 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\cJSON\AF_JSON.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="src\common\AF_File.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
-    </ClCompile>
-    <ClCompile Include="src\common\AF_MeshLoad.c">
-      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\common\AF_Project.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -396,6 +399,10 @@
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="src\windows\AF_MeshLoad.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

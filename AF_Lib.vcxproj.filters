@@ -50,6 +50,9 @@
     <Filter Include="Private\assimp">
       <UniqueIdentifier>{87928653-de5d-4129-b47d-7a8b74ead82f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Private\json">
+      <UniqueIdentifier>{e586df9f-6cb4-4759-9510-19ba8d35e0de}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
@@ -135,8 +138,11 @@
     <ClCompile Include="src\common\AF_Project.c">
       <Filter>Private\Common</Filter>
     </ClCompile>
-    <ClCompile Include="src\common\AF_MeshLoad.c">
-      <Filter>Private\Common</Filter>
+    <ClCompile Include="src\windows\AF_MeshLoad.c">
+      <Filter>Private\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cJSON\AF_JSON.c">
+      <Filter>Private\json</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -272,6 +278,9 @@
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="include\AF_DX11_RenderData.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_JSON.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>
