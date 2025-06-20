@@ -50,6 +50,7 @@ typedef struct AF_Entity {
     flag_t flags;	// Entity has ben enabled
     PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants
     // TODO: get rid of the pointers per component, as we already have the id
+    /*
     AF_CTransform3D* parentTransform;
     AF_CTransform3D* transform;	// 3d transform component
     AF_CSprite* sprite;		// sprite cmponent
@@ -67,6 +68,7 @@ typedef struct AF_Entity {
     AF_CInputController* inputController;
     AF_CScript* scripts[AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY];
     AF_CLight* light;
+    */
 } AF_Entity;
 
 // Little helper struct that can be use

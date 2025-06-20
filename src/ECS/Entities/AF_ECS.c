@@ -6,68 +6,19 @@ Helper function to re-sync pointers loast likely when loading a save
 ====================
 */
 void AF_ECS_ReSyncComponents(AF_ECS* _ecs){
+	return;
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
+		if(entity == NULL){
+			//AF_Log_Error("AF_ECS_ReSyncComponents: entity is NULL at index %u\n", i);
+			continue;
+		}
 
 		// set the name
 		//snprintf(entity->name, sizeof(entity->name), "%s", _ecs->entities[i].name);
 
 		// original data is all living in fixed arrays per component
-		entity->transform = &_ecs->transforms[i];
-		entity->sprite = &_ecs->sprites[i];
-	
-		// Transform Component
-		entity->transform = &_ecs->transforms[i];
-		
-		// Rigidbody3D
-		entity->rigidbody = &_ecs->rigidbodies[i];
 
-		// Colliders
-		entity->collider = &_ecs->colliders[i];
-		
-		// Animation component
-		entity->animation = &_ecs->animations[i];
-
-		// Add Meshes
-		entity->mesh = &_ecs->meshes[i];
-
-		// Add text
-		entity->text = & _ecs->texts[i];
-
-		// Add audio
-		entity->audioSource = &_ecs->audioSources[i];
-
-		// player data
-		entity->playerData = &_ecs->playerDatas[i];
-
-		// skeletal animations
-		entity->skeletalAnimation = &_ecs->skeletalAnimations[i];
-
-		// ai Behaviours
-		entity->aiBehaviour = &_ecs->aiBehaviours[i];
-		
-		// Camera Component
-		entity->camera = &_ecs->cameras[i];
-
-		// Editor Component
-		entity->editorData = &_ecs->editorData[i];
-
-		// Input Controller
-		entity->inputController = &_ecs->inputControllers[i];
-		// null the func pointers for actions as they will get set correctly up by the editor
-		// TODO: ensure the func pointers get updated if in non-editor mode e.g. changing scenes in a game 
-		for(uint32_t x = 0; x < entity->inputController->inputActionCount; x++){
-			entity->inputController->inputActions[x].actionFuncPtr = NULL;
-		}
-
-		// Scripts
-        for(uint32_t z = 0; z < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; z++){
-            // Use 'i' (the current entity index) and 'z' (the script index for this entity)
-            entity->scripts[z] = &_ecs->scripts[(i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + z];
-        }
-		
-		// Lights
-		entity->light = &_ecs->lights[i];
 	}
 }
 
@@ -97,51 +48,7 @@ void AF_ECS_Init(AF_ECS* _ecs){
 		//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
 
 		// ===== Init all the component pointers =====
-		// Transform Component
-		entity->parentTransform = NULL;
-
-		// original data is all living in fixed arrays per component
-		entity->transform = NULL;
-		entity->sprite = NULL;
-	
-		// Transform Component
-		entity->transform = NULL;
 		
-		// Rigidbody3D
-		entity->rigidbody = NULL;
-
-		// Colliders
-		entity->collider = NULL;
-		
-		// Animation component
-		entity->animation = NULL;
-
-		// Add Meshes
-		entity->mesh = NULL;
-
-		// Add text
-		entity->text = NULL;
-
-		// Add audio
-		entity->audioSource = NULL;
-
-		// player data
-		entity->playerData = NULL;
-
-		// skeletal animations
-		entity->skeletalAnimation = NULL;
-
-		// ai Behaviours
-		entity->aiBehaviour = NULL;
-		
-		// Camera Component
-		entity->camera = NULL;
-
-		// Editor Component
-		entity->editorData = NULL;
-		
-		// Input controller
-		entity->inputController = NULL;
 
 		// ===== Init all the component arrays =====
 		// Sprite Components
@@ -208,49 +115,7 @@ void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 	//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
 
 	// ===== Init all the component pointers =====
-	// Transform Component
-	_entity->parentTransform = NULL;
-
-	// original data is all living in fixed arrays per component
-	*_entity->transform = AF_CTransform3D_ZERO();
-	*_entity->sprite = AF_CSprite_ZERO();
 	
-	// Rigidbody3D
-	*_entity->rigidbody = AF_C3DRigidbody_ZERO();
-
-	// Colliders
-	*_entity->collider = AF_CCollider_ZERO();
-	
-	// Animation component
-	*_entity->animation = AF_CAnimation_ZERO();
-
-	// Add Meshes
-	*_entity->mesh = AF_CMesh_ZERO();
-
-	// Add text
-	*_entity->text = AF_CText_ZERO();
-
-	// Add audio
-	*_entity->audioSource = AF_CAudioSource_ZERO();
-
-	// player data
-	*_entity->playerData = AF_CPlayerData_ZERO();
-
-	// skeletal animations
-	*_entity->skeletalAnimation = AF_CSkeletalAnimation_ZERO();
-
-	// ai Behaviours
-	*_entity->aiBehaviour = AF_CAI_Behaviour_ZERO();
-	
-	// Camera Component
-	*_entity->camera = AF_CCamera_ZERO();
-
-	// Editor Component
-	*_entity->editorData = AF_CEditorData_ZERO();
-	
-	// Input controller
-	*_entity->inputController = AF_CInputController_ZERO();
-
 	// Scripts
 	for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
 		uint32_t entityID = AF_ECS_GetID(_entity->id_tag);
@@ -260,8 +125,6 @@ void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 		_ecs->scripts[scriptIndex] = AF_CScript_ZERO();
 	}
 
-	// Lights
-	*_entity->light = AF_CLight_ZERO();
 
 	if(_ecs->entitiesCount != 0){
 		_ecs->currentEntity--;
@@ -292,12 +155,8 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 		return NULL;
 	}
 
-	if(entity->transform == NULL){
-		printf("AF_ECS: AF_ECS_CreateEntity entity->transform failed, and is returining a null entity\n");
-		return NULL;
-	}
-
-	*entity->transform = AF_CTransform3D_ADD();
+	uint32_t entityID = AF_ECS_GetID(entity->id_tag);
+	_ecs->transforms[entityID] = AF_CTransform3D_ZERO();	
 	// increment the entity counter
 	_ecs->currentEntity++;
     return entity;
@@ -387,10 +246,11 @@ AF_ECS_UpdateCameraVectors
 Helper function updates the camera vectors
 ====================
 */
-void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight){
+void AF_ECS_UpdateCameraVectors(AF_ECS* _ecs, uint32_t _cameraID, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight){
 
-    AF_CTransform3D* cameraTransform = _cameraEntityPtr->transform;
-    AF_CCamera* camera = _cameraEntityPtr->camera;
+
+	AF_CTransform3D* cameraTransform = &_ecs->transforms[_cameraID];
+	AF_CCamera* camera = &_ecs->cameras[_cameraID];
     af_bool_t hasCameraComponent = AF_Component_GetHas(camera->enabled);
     if(hasCameraComponent == AF_FALSE){
         AF_Log_Error("AF_Camera_UpdateCameraVectors: Can't update camera vectors, passed entity has no camera component\n");
@@ -420,7 +280,7 @@ void AF_ECS_UpdateCameraVectors(AF_Entity* _cameraEntityPtr, AF_FLOAT _windowWid
     
     //camera->windowWidth = _windowWidth;
     //camera->windowHeight = _windowHeight;
-    camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(_cameraEntityPtr->camera, _windowWidth, _windowHeight);
+    camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(camera, _windowWidth, _windowHeight);
     
 }
 

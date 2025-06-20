@@ -55,18 +55,7 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 	AF_CTransform3D* transform = &_ecs->transforms[i];
 
 	assert(transform != NULL && "Physics: AF_Physics_Update transform is null\n");
-	AF_CTransform3D* parentTransform =_ecs->entities[i].parentTransform;
-	if(parentTransform == NULL){
-		return;
-	}
-	//assert(parentTransform != NULL && "Physics: AF_Physics_Update parent transform is null\n");
-	// make sure the position matches the parent if we have one
-	if(_ecs->entities[i].parentTransform != NULL){
-		transform->pos = Vec3_ADD(parentTransform->pos, transform->localPos);
-		transform->scale = Vec3_MULT(parentTransform->scale, transform->localScale);
-		transform->rot = Vec3_ADD(parentTransform->rot, transform->localRot);
-	}
-    
+	
 	AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
 
 	

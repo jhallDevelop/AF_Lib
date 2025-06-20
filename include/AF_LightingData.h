@@ -10,6 +10,7 @@ Implementation of lighting data struct
 #define AF_LIGHTINGDATA_H
 
 #include "AF_Lib_Define.h"
+#include "AF_Math/AF_Mat4.h"
 
 #ifdef __cplusplus
 extern "C" {

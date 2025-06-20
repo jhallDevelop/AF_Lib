@@ -295,7 +295,9 @@ Simple render command to perform forward rendering steps
 */
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
     AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
-	AF_CCamera* camera = _cameraEntity->camera;
+	uint32_t cameraID = AF_ECS_GetID(_cameraEntity->id_tag);
+	AF_CCamera* camera = &_ecs->cameras[cameraID];//_cameraEntity->camera;
+	AF_CTransform3D* cameraTransform = &_ecs->transforms[cameraID];
 
 	AF_Window* window = _renderingData->windowPtr;
 	if(window == NULL){
@@ -331,7 +333,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         &camera->viewMatrix,
         &camera->projectionMatrix,
         _ecs,
-        &_cameraEntity->transform->pos, // Camera position for lighting calculations
+        &cameraTransform->pos, // Camera position for lighting calculations
         _lightingData,
 		NO_SHARED_SHADER,
 		_renderingData
@@ -1141,8 +1143,10 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 		return;
 	}
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
-	AF_CTransform3D* depthCamTransform = depthCameraEntity->transform;
-	AF_CCamera* depthCamera = depthCameraEntity->camera;//AF_CCamera_ZERO();
+	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
+	AF_CCamera* depthCamera = &_ecs->cameras[depthCameraID];//AF_CCamera_ZERO();
+
+	AF_CTransform3D* depthCamTransform = &_ecs->transforms[depthCameraID];
 	//depthCamera->nearPlane = 1.0f;
 	//depthCamera.farPlane = 7.5f;
 	float outerBounds =  10.0f;
@@ -1214,7 +1218,9 @@ void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_Lig
 	if(_lightingData->spotLightEntityIndex > 0){
 		AF_Entity* spotLightEntity = &_ecs->entities[_lightingData->spotLightEntityIndex];
 		AF_CLight* spotLight = &_ecs->lights[_lightingData->spotLightEntityIndex];
-		Vec3* spotLightPos = &spotLightEntity->transform->pos;
+		uint32_t spotLightEntityID = AF_ECS_GetID(spotLightEntity->id_tag);
+		AF_CTransform3D* spotLightTransform = &_ecs->transforms[spotLightEntityID];	
+		Vec3* spotLightPos = &spotLightTransform->pos;
 		
 		glUniform3f(glGetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
 		glUniform3f(glGetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
@@ -1235,7 +1241,8 @@ void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_Lig
 		AF_CLight* light = &_ecs->lights[pointLightEntityIndex];
 		char posUniformName[MAX_PATH_CHAR_SIZE];
 		snprintf(posUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
-		Vec3* lightPosition = &_ecs->entities[pointLightEntityIndex].transform->pos;
+		uint32_t pointLightEntityID = AF_ECS_GetID(_ecs->entities[pointLightEntityIndex].id_tag);
+		Vec3* lightPosition = &_ecs->transforms[pointLightEntityID].pos;
 		glUniform3f(glGetUniformLocation(_shader, posUniformName), lightPosition->x, lightPosition->y, lightPosition->z);
 		
 		// Ambient

@@ -466,17 +466,16 @@ AF_PHYSICS_RAYINTERSECTION
 Calculate ray intersection hit test
 ====================
 */
-static inline af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_Entity* _entity, AF_Collision* _collision){
+static inline af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision){
 	//const AF_CTransform3D* transform = _entity->transform;
-	const AF_CCollider* collider = _entity->collider;
-	enum CollisionVolumeType type = collider->type;
+	enum CollisionVolumeType type = _collider->type;
 
 	switch(type){
 		case Plane:
-			return AF_Physics_Plane_RayIntersection(_ray, _entity->collider, _collision);
+			return AF_Physics_Plane_RayIntersection(_ray, _collider, _collision);
 		break;
 		case AABB:
-			return AF_Physics_AABB_RayIntersection(_ray, _entity->collider, _collision);
+			return AF_Physics_AABB_RayIntersection(_ray, _collider, _collision);
 		break;
 		
 		case OBB:
@@ -514,15 +513,15 @@ AF_Physics_ImpulseResolveCollision
 Resolve collision between two rigidbodies
 ====================
 */
-static inline void AF_Physics_ResolveCollision(AF_Entity* _entityA, AF_Entity* _entityB, AF_Collision* _collision){
-	AF_C3DRigidbody* rigidbodyA = _entityA->rigidbody;
-	AF_C3DRigidbody* rigidbodyB = _entityB->rigidbody;
+static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _entityBID, AF_Collision* _collision){
+	AF_C3DRigidbody* rigidbodyA = &_ecs->rigidbodies[_entityAID];
+	AF_C3DRigidbody* rigidbodyB = &_ecs->rigidbodies[_entityBID];
 
-	AF_CTransform3D* transformA = _entityA->transform;
-	AF_CTransform3D* transformB = _entityB->transform;
+	AF_CTransform3D* transformA = &_ecs->transforms[_entityAID];
+	AF_CTransform3D* transformB = &_ecs->transforms[_entityBID];
 
-	AF_CCollider* colliderA = _entityA->collider;
-	AF_CCollider* colliderB = _entityB->collider;
+	AF_CCollider* colliderA = &_ecs->colliders[_entityAID];
+	AF_CCollider* colliderB = &_ecs->colliders[_entityBID];
 
 	float totalMass;
 	if (rigidbodyA->inverseMass == 0.0f && rigidbodyB->inverseMass == 0.0f) {
@@ -639,7 +638,8 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 			continue;
 		}
 		AF_Entity* entity1 = &_ecs->entities[i];
-		AF_CCollider* collider1 = entity1->collider;
+		uint32_t entity1ID = AF_ECS_GetID(entity1->id_tag);
+		AF_CCollider* collider1 = &_ecs->colliders[entity1ID];
 		
 		
 		// rayIntersectionTest everything
@@ -654,7 +654,8 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 			}
 
 			AF_Entity* entity2 = &_ecs->entities[x];
-			AF_CCollider* collider2 = entity2->collider;
+			uint32_t entity2ID = AF_ECS_GetID(entity2->id_tag);
+			AF_CCollider* collider2 = &_ecs->colliders[entity2ID];
 		
 
 			Vec3* posA = &_ecs->transforms[i].pos;
@@ -729,10 +730,11 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 					//AF_C3DRigidbody* rigidbody1 = &_ecs->rigidbodies[i];
 					//AF_C3DRigidbody* rigidbody2 = &_ecs->rigidbodies[x];
 					// don't apply force for kinematic objects
-					if(_ecs->entities[i].rigidbody->isKinematic){
+					AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
+					if(rigidbody->isKinematic){
 						continue;
 					}
-					AF_Physics_ResolveCollision(entity1, entity2, &collision1);
+					AF_Physics_ResolveCollision(_ecs, entity1ID, entity2ID, &collision1);
 			}
 		}
 	}

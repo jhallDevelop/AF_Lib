@@ -33,6 +33,10 @@ Check if the entity has a script that is enabled
 */
 inline static af_bool_t AF_HasScriptEnabled(AF_CScript* _script){
  
+    if(_script == NULL){
+        AF_Log_Error("AF_HasScriptEnabled: passed a null reference\n");
+        return AF_FALSE;
+	}
     af_bool_t hasComponent = AF_Component_GetHas(_script->enabled);
     af_bool_t componentIsEnabled = AF_Component_GetEnabled(_script->enabled);
     if(hasComponent == AF_FALSE || componentIsEnabled == AF_FALSE){
@@ -159,9 +163,9 @@ binding the start, update and destroy function ptrs
 */
 inline static void AF_Script_Load_And_Bind_Functions(AF_AppData* _AppData, AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-        AF_Entity* entity = &_ecs->entities[i];
+        //AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = entity->scripts[j];
+            AF_CScript* script = &_ecs->scripts[i]; //entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -215,7 +219,7 @@ inline static void AF_Script_UnloadScripts(AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = entity->scripts[j];
+            AF_CScript* script = &_ecs->scripts[i * j];//entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -264,11 +268,13 @@ Loop through all script components that have valid script func pointers and call
 ===============================================================================
 */
 inline static void AF_Script_Call_Start(AF_AppData* _appData){
+	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         
         AF_Entity* entity = &_appData->ecs.entities[i];
+        
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = entity->scripts[j];
+            AF_CScript* script = &ecs->scripts[i * j];// entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -294,11 +300,12 @@ Loop through all script components that have valid script func pointers and call
 ===============================================================================
 */
 inline static void AF_Script_Call_Update(AF_AppData* _appData){
+	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         AF_Entity* entity = &_appData->ecs.entities[i];
 
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = entity->scripts[j];
+            AF_CScript* script = &ecs->scripts[i * j];//entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -324,10 +331,11 @@ Loop through all script components that have valid script func pointers and call
 ===============================================================================
 */
 inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
+	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         AF_Entity* entity = &_appData->ecs.entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = entity->scripts[j];
+            AF_CScript* script = &ecs->scripts[i * j];//entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }

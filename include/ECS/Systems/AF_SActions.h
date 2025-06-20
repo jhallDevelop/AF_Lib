@@ -43,6 +43,7 @@ Add velocity to the rigidbody
 */
 //Vec3 _velocity, AF_C3DRigidbody* _rigidbody
 inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
+    /*
     va_list args;
     va_start(args, _argsSize);
     AF_Entity* _entity = va_arg(args, AF_Entity*);
@@ -52,6 +53,7 @@ inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
         AF_Log_Warning("AF_SActions_Add_Velocity: _entity ptr is null \n");
         return;
     }
+
     AF_C3DRigidbody* _rigidbody = _entity->rigidbody;
     if(_rigidbody == NULL){
         AF_Log_Warning("AF_SActions_Add_Velocity: _rigidbody ptr is null \n");
@@ -60,6 +62,7 @@ inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
     //AF_Log("AF_SActions_Add_Velocity: Action x: (%f y: %f z: %f) \n", _velocity->x, _velocity->y, _velocity->z);
     _rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, *_velocity);
     //_entity->transform->pos = Vec3_ADD(_entity->transform->pos, *_velocity);
+    */
 }
 
 
@@ -92,6 +95,8 @@ Process key presses and call the associated action function pointer
 */
 // TODO: this function is big an ugly. split it up
 inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
+	// TODO: deprecate this function, use AF_SActions_Update_Entity instead
+    /*
     if(_input == NULL){
         AF_Log_Warning("AF_SAction_Update: _input ptr is null \n");
         return;
@@ -120,7 +125,7 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         // Double check the rigidbody has
 
         AF_Log_Warning("AF_SActions_Update: Update Disabled Input Controller \n");
-        /*
+        
         switch (inputAction->actionType)
         {
         case AF_ActionType::ACTION_TYPE_NONE:
@@ -157,8 +162,9 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
         default:
             break;
         }
-        */
+        
     }
+*/
 }
 
 inline static void AF_SActions_MouseLook(AF_AppData* _appData, AF_CCamera* _camera, AF_FLOAT _mouseLookSensitivity){
