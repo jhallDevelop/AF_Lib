@@ -229,7 +229,7 @@ AF_Entity* AF_ECS_GetCamera(AF_ECS* _ecs){
         af_bool_t hasCamera = AF_Component_GetHas(entityCameraComponent->enabled);
         if(hasCamera == AF_TRUE){
             cameraEntity = &_ecs->entities[i];
-            AF_Log("AF_ECS_GetCamera: GetCamera: Success\n");
+            //AF_Log("AF_ECS_GetCamera: GetCamera: Success\n");
 			break;
         }
     }

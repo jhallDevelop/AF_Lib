@@ -31,7 +31,7 @@ extern "C" {
 AF_LIB_API uint32_t AF_Renderer_Awake(void);
 AF_LIB_API void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
 AF_LIB_API void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
-AF_LIB_API void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
+AF_LIB_API void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID);
 AF_LIB_API void AF_Renderer_Finish(void);
 AF_LIB_API void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs);
 AF_LIB_API void AF_Renderer_Shutdown(AF_ECS* _ecs);
@@ -45,14 +45,14 @@ AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePat
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
 
 // ============================  Forward Rendering ================================ 
-void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity);
+void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID);
 void AF_Renderer_EndForwardRendering(void);
 
 // ============================  DRAW ================================ 
 //void AF_Renderer_StartRendering(Vec4 _backgroundColor);
 void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgroundColor);
-void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
-void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _camera, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
+void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
+void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
 
 
@@ -76,7 +76,7 @@ void AF_Renderer_FrameResized(void* _renderingData);
 
 
 // ============================  DEPTH ================================ 
-void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs);
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, uint32_t _cameraID);
 void AF_Renderer_Start_DepthFrameBuffers(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
 
 

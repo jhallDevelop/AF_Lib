@@ -255,7 +255,7 @@ AF_Renderer_Render
 Simple render command to decide how to progress other rendering steps
 ====================
 */
-void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
+void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
 	// START RENDERING
 	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
 
@@ -268,7 +268,7 @@ void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_Light
 	{
 		// FORWARD RENDERING
 		case AF_RENDERER_FORWARD:
-			AF_Renderer_StartForwardRendering(_ecs, _renderingData, _lightingData, _cameraEntity);
+			AF_Renderer_StartForwardRendering(_ecs, _renderingData, _lightingData, _cameraID);
 			AF_Renderer_EndForwardRendering();
 		break;
 
@@ -293,11 +293,10 @@ AF_Renderer_StartForwardRendering
 Simple render command to perform forward rendering steps
 ====================
 */
-void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity){
-    AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
-	uint32_t cameraID = AF_ECS_GetID(_cameraEntity->id_tag);
-	AF_CCamera* camera = &_ecs->cameras[cameraID];//_cameraEntity->camera;
-	AF_CTransform3D* cameraTransform = &_ecs->transforms[cameraID];
+void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
+	AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
+	AF_CCamera* camera = &_ecs->cameras[_cameraID];//_cameraEntity->camera;
+	AF_CTransform3D* cameraTransform = &_ecs->transforms[_cameraID];
 
 	AF_Window* window = _renderingData->windowPtr;
 	if(window == NULL){
@@ -319,7 +318,10 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // to draw relevant objects.
 	glEnable(GL_CULL_FACE); // Enable culling
 	//glCullFace(GL_FRONT);
-    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs); // Pass main camera for now, StartDepthPass should derive light's camera
+	// Get the depth camera entity from the lighting data
+	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
+	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
+    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID); // Pass main camera for now, StartDepthPass should derive light's camera
 	//glCullFace(GL_BACK);
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
@@ -1133,7 +1135,7 @@ AF_Render_StartDepthPath
 Do the initial setup for rendering a depth pass in opengl
 ====================
 */
-void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs){
+void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, uint32_t _cameraID){
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
 	
@@ -1142,11 +1144,10 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 		//AF_Log_Error("AF_Renderer_StartDepthPass: ambientLightEntityIndex is not set, can't render depth pass\n");
 		return;
 	}
-	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
-	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
-	AF_CCamera* depthCamera = &_ecs->cameras[depthCameraID];//AF_CCamera_ZERO();
+	
+	AF_CCamera* depthCamera = &_ecs->cameras[_cameraID];//AF_CCamera_ZERO();
 
-	AF_CTransform3D* depthCamTransform = &_ecs->transforms[depthCameraID];
+	AF_CTransform3D* depthCamTransform = &_ecs->transforms[_cameraID];
 	//depthCamera->nearPlane = 1.0f;
 	//depthCamera.farPlane = 7.5f;
 	float outerBounds =  10.0f;

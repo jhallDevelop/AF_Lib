@@ -167,9 +167,10 @@ inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
 */
 }
 
-inline static void AF_SActions_MouseLook(AF_AppData* _appData, AF_CCamera* _camera, AF_FLOAT _mouseLookSensitivity){
+inline static void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _mouseLookSensitivity){
     AF_Input* input =  &_appData->input;
-    
+	AF_ECS* ecs = &_appData->ecs;
+	AF_CCamera* _camera = &ecs->cameras[_cameraID];
     // update the camera based on the pitch and yaw of the mouse;
     float xPos = input->mouseX;
     float yPos = input->mouseY;
