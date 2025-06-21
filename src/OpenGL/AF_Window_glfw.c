@@ -155,11 +155,13 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
     window->frameBufferWidth = _width;
     window->frameBufferHeight = _height;
 
-    // update the frame buffer
-    if(afAppData->rendererData.frameResizeFnctPtr != NULL){
+    afAppData->window.windowXPos = window->windowXPos;
+    afAppData->window.windowYPos = window->windowYPos;
+    if (afAppData->rendererData.frameResizeFnctPtr != NULL) {
         WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
         windowFunctPtr(&afAppData->rendererData);
     }
+	window->isWindowResized = AF_TRUE; // Set the window resized flag to true
 }
 
 

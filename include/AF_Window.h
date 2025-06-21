@@ -37,6 +37,7 @@ typedef struct {
     uint16_t frameBufferWidth;  // Offset 32 (2 bytes)
     uint16_t frameBufferHeight; // Offset 34 (2 bytes)
     af_bool_t isFrameUpdated;
+    af_bool_t isWindowResized;
 } AF_Window;
 #pragma pack(pop)   // Restore previous packing
 
@@ -53,7 +54,7 @@ inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth
     window.frameBufferWidth = _windowWidth;
     window.frameBufferHeight = _windowHeight;
     window.isFrameUpdated = AF_FALSE;
-
+    window.isWindowResized = AF_FALSE;
     return window;
 }
 

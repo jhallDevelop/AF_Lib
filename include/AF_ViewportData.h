@@ -23,6 +23,10 @@ typedef struct AF_ViewportData {
     uint32_t gridlineVBO;
     af_bool_t isResized;
     af_bool_t isRefreshed;
+    uint32_t projLocation;
+    uint32_t viewLocation;
+    uint32_t modelLocation;
+    uint32_t cameraWorldPosition;
 } AF_ViewportData;
 
 inline static AF_ViewportData AF_ViewportData_ZERO(void) {
@@ -53,6 +57,10 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void) {
     viewportData.gridlineVBO = 0;
     viewportData.isResized = AF_TRUE;
     viewportData.isRefreshed = AF_FALSE;
+	viewportData.projLocation = 0;
+	viewportData.viewLocation = 0;
+	viewportData.modelLocation = 0;
+	viewportData.cameraWorldPosition = 0;
     return viewportData;
 }
 

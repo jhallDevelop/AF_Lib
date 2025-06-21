@@ -227,8 +227,12 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgroundColor)
 {
 	// Resize the frame buffers
-	AF_Renderer_FrameResized(_renderingData);
-
+	// if framebuffer sizes have changed, resize them
+	if (_renderingData->windowPtr->isWindowResized == AF_TRUE) {
+		AF_Renderer_FrameResized(_renderingData);
+		_renderingData->windowPtr->isWindowResized = AF_FALSE; // Reset the flag after resizing
+	}
+	
 	// Clear Screen and buffers
 	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
@@ -1146,6 +1150,7 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	}
 	
 	AF_CCamera* depthCamera = &_ecs->cameras[_cameraID];//AF_CCamera_ZERO();
+	depthCamera->orthographic = AF_TRUE; // Set to orthographic for depth pass
 
 	AF_CTransform3D* depthCamTransform = &_ecs->transforms[_cameraID];
 	//depthCamera->nearPlane = 1.0f;
@@ -1172,7 +1177,8 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	depthCamera->cameraUp = up;
 
 	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
-	depthCamera->viewMatrix = Mat4_Lookat(centre, depthCamTransform->pos, depthCamera->cameraUp);
+	Mat4 viewMatrix = Mat4_Lookat(centre, depthCamTransform->pos, depthCamera->cameraUp);
+	depthCamera->viewMatrix = viewMatrix;
 
 	// copy the matrix to the lighting data
 	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);

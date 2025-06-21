@@ -42,9 +42,7 @@ typedef struct AF_AppData {
     // Group boolean values together at the end to minimize padding
     bool isRunning;        // 1 byte
     bool isFullscreen;     // 1 byte
-    
     // Add padding to ensure total struct size is multiple of 8
-    uint8_t _padding[6];   // 6 bytes of padding
 } AF_AppData;
 #pragma pack(pop)
 
@@ -61,7 +59,6 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
     _appData->rendererData = AF_RenderingData_ZERO();
     _appData->isRunning = AF_FALSE;
     _appData->isFullscreen = AF_FALSE;
-    
 }
 
 
