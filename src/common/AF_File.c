@@ -3,11 +3,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef _WIN32
+#ifdef _WIN32   // Windows-specific includes
 #include <windows.h> // Main Windows header
-#else
+#include <direct.h>  // For _chdir() on Windows
+#define strdup _strdup
+#define chdir _chdir
+#define mkdir _mkdir
+#else   // Linux/macOS
 #include <dirent.h>
+#include <unistd.h>  // For chdir() on Linux/macOS
 #endif
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -294,10 +300,18 @@ Make a directory, and return if it was successful
 ====================
 */
 af_bool_t AF_File_MakeDirectory(const char* _filePath) {
+#ifdef _WIN32  
+    if (mkdir(_filePath) == -1) {
+        AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n", _filePath);
+        return AF_FALSE;
+    }
+#else
     if (mkdir(_filePath, 0777) == -1) {
         AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n", _filePath);
         return AF_FALSE;
     }
+#endif
+
     // if we succeed then we return true
     AF_Log("AF_Util_MakeFolder: SUCCESS: Directory created: %s\n", _filePath);
     return AF_TRUE;
@@ -352,4 +366,18 @@ af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _fil
 	fclose(_fileOpen);
 	return AF_TRUE; // Return the buffer containing the file contents
     
+}
+
+/*
+================
+Editor_Utils_SetWorkingDirectory
+
+Set the working directory
+================
+*/
+void AF_File_SetWorkingDirectory(const char* projectRoot) {
+    //AF_Log_Error("Editor_Utils_SetWorkingDirectory: Windows not defined\n");
+    if (chdir(projectRoot) != 0) {  // Use _chdir(projectRoot) on Windows
+        AF_Log_Error("Editor_Utils_SetWorkingDirectory: Failed to set working directory\n");
+    }
 }

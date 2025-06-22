@@ -24,6 +24,8 @@ af_bool_t AF_File_FileExists(const char* _filePath);
 af_bool_t AF_File_MakeDirectory(const char* _filePath);
 af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* thisFilePath, const char* _readCommand);
 uint32_t AF_File_GetFileSize(const char* _filePath);
+AF_LIB_API void AF_File_SetWorkingDirectory(const char* projectRoot);
+
 
 #ifdef __cplusplus
 }
