@@ -38,7 +38,7 @@ typedef struct {
 	af_bool_t flipY;
 	Vec2 spriteSheetSize;    // 8 bytes
 	uint8_t spriteColor[4];
-	const char* spritePath;
+	char spritePath[AF_MAX_PATH_CHAR_SIZE];
 	void* spriteData; // special ptr for sprite data to be cast when known
 	af_bool_t isPlaying;
 	af_bool_t filtering;

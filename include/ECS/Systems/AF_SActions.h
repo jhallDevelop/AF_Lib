@@ -43,6 +43,7 @@ Add velocity to the rigidbody
 */
 //Vec3 _velocity, AF_C3DRigidbody* _rigidbody
 inline static void AF_SActions_Add_Velocity(uint32_t _argsSize, ...) {
+    if(_argsSize ==0){}
     /*
     va_list args;
     va_start(args, _argsSize);
@@ -95,6 +96,9 @@ Process key presses and call the associated action function pointer
 */
 // TODO: this function is big an ugly. split it up
 inline static void AF_SActions_Update(AF_Input* _input, AF_Entity* _entity){
+    if(_input == NULL || _entity == NULL){}
+
+    // Clear Velocities
 	// TODO: deprecate this function, use AF_SActions_Update_Entity instead
     /*
     if(_input == NULL){

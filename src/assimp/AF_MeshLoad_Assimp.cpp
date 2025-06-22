@@ -38,7 +38,7 @@ af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const c
     // delete the existing mesh data
     // save a copy of the mesh path, and shader as we still want to use that.
     // copy the mesh path
-    char meshPath[MAX_PATH_CHAR_SIZE];
+    char meshPath[AF_MAX_PATH_CHAR_SIZE];
     snprintf(meshPath, sizeof(meshPath), "%s", _meshComponent->meshPath);
 
     // copy the shader to re-use it. 

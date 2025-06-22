@@ -96,10 +96,10 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	// ==== Setup Screen FBO (for main scene render to ImGui viewport) ====
     if (_screenWidth != NULL && _screenHeight != NULL && *_screenWidth > 0 && *_screenHeight > 0) {
         //AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_ShaderID, &_renderingData->screenFBO_TextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH, "screenTexture");
-		char screenVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-		char screenFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-		snprintf(screenVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
-		snprintf(screenFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
+		char screenVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
+		char screenFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(screenVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
+		snprintf(screenFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
 		AF_FrameBufferData screenBufferData = {
 			.fbo = 0,
 			.rbo = 0,
@@ -129,10 +129,10 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		_renderingData->depthDebugFrameBufferData = screenBufferData;
 
 		// setup depth frame buffer
-		char depthVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-		char depthFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-		snprintf(depthVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
-		snprintf(depthFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
+		char depthVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
+		char depthFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(depthVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
+		snprintf(depthFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
 		/*
 		AF_FrameBufferData depthBufferData = {
 			.fbo = 0,
@@ -176,10 +176,10 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 
 		// Setup depth debug frame buffer
 		// setup depth frame buffer
-		char depthDebugVertShaderFullPath[MAX_PATH_CHAR_SIZE];
-		char depthDebugFragShaderFullPath[MAX_PATH_CHAR_SIZE];
-		snprintf(depthDebugVertShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
-		snprintf(depthDebugFragShaderFullPath, MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
+		char depthDebugVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
+		char depthDebugFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(depthDebugVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
+		snprintf(depthDebugFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
 		AF_FrameBufferData depthDebugBufferData = {
 			.fbo = 0,
 			.rbo = 0,
@@ -402,7 +402,7 @@ AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePat
         AF_Log_Error("AF_Renderer_ReLoadTexture: Null or empty texture path provided.\n");
         return returnTexture;
     }
-    snprintf(returnTexture.path, MAX_PATH_CHAR_SIZE, "%s", _texturePath);
+    snprintf(returnTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", _texturePath);
 
     // Potentially check cache first if you don't want to *always* reload from disk
     AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texturePath);
@@ -1246,41 +1246,41 @@ void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_Lig
 		// Point Light
 		uint16_t pointLightEntityIndex = _lightingData->pointLightIndexArray[i];
 		AF_CLight* light = &_ecs->lights[pointLightEntityIndex];
-		char posUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(posUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
+		char posUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(posUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
 		uint32_t pointLightEntityID = AF_ECS_GetID(_ecs->entities[pointLightEntityIndex].id_tag);
 		Vec3* lightPosition = &_ecs->transforms[pointLightEntityID].pos;
 		glUniform3f(glGetUniformLocation(_shader, posUniformName), lightPosition->x, lightPosition->y, lightPosition->z);
 		
 		// Ambient
-		char ambientUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(ambientUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
+		char ambientUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(ambientUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
 		glUniform3f(glGetUniformLocation(_shader, ambientUniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);
 		
 		// Diffuse
-		char pointUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(pointUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
+		char pointUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(pointUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
 		glUniform3f(glGetUniformLocation(_shader, pointUniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z); 
 		
 		// Specular
-		char specUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(specUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
+		char specUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(specUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
 		glUniform3f(glGetUniformLocation(_shader, specUniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);
 		
 		// Constant
-		char constantUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(constantUniformName, MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
+		char constantUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(constantUniformName, AF_MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
 		GLint unformShaderName = glGetUniformLocation(_shader, constantUniformName);
 		AF_Shader_SetFloat(_shader, constantUniformName, light->constant);
 	
 		// Linear
-		char linearUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(linearUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
+		char linearUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(linearUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
 		glUniform1f(glGetUniformLocation(_shader, linearUniformName), light->linear);//0.09f); //_light->linear);//0.09f); 
 
 		// Quadratic
-		char quadraticUniformName[MAX_PATH_CHAR_SIZE];
-		snprintf(quadraticUniformName, MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
+		char quadraticUniformName[AF_MAX_PATH_CHAR_SIZE];
+		snprintf(quadraticUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
 		glUniform1f(glGetUniformLocation(_shader, quadraticUniformName), light->quadratic);//0.032f); //_light->quadratic);//0.032f); 
 	}
 	

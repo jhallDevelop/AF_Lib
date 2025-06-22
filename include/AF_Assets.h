@@ -116,7 +116,7 @@ static inline AF_Texture AF_Assets_GetTexture(AF_Assets* _assets, const char* _t
     AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"};
     for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
     {
-        if(strncmp(_assets->textures[j].path, _texturePath, MAX_PATH_CHAR_SIZE) == 0)
+        if(strncmp(_assets->textures[j].path, _texturePath, AF_MAX_PATH_CHAR_SIZE) == 0)
         {
             AF_Log("AF_Assets_GetTexture: Found existing texture %s | %s\n", _texturePath, _assets->textures[j].path);
             // if a texture with the same filepath is already loaded, use this texture data

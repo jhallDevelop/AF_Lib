@@ -25,7 +25,7 @@ AF_CSprite AF_CSprite_ZERO(void){
 		.flipY = AF_FALSE,
 		.spriteSheetSize = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
-		.spritePath = NULL,
+		.spritePath = "\0",
 		.spriteData = NULL,
 		.isPlaying = AF_FALSE,
 		.filtering = AF_FALSE
@@ -60,7 +60,7 @@ AF_CSprite AF_CSprite_ADD(void){
 		.flipY = AF_FALSE,
 		.spriteSheetSize = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
-		.spritePath = NULL,
+		.spritePath = "\0",
 		.spriteData = NULL,
 		.isPlaying = AF_FALSE, 
 		.filtering = AF_FALSE

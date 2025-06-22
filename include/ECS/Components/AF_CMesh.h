@@ -22,7 +22,7 @@ functions to load meshes, creating memory on the heap based on the size of the m
 extern "C" {
 #endif  
 
-#define MAX_PATH_CHAR_SIZE 128
+
 #define MAX_MESH_COUNT 32
 
 enum AF_MESH_TYPE{
@@ -40,7 +40,7 @@ typedef struct AF_CMesh {
 	uint32_t meshCount;
     af_bool_t showDebug;
 	enum AF_MESH_TYPE meshType;
-	char meshPath[MAX_PATH_CHAR_SIZE];
+	char meshPath[AF_MAX_PATH_CHAR_SIZE];
 	AF_Shader shader;
 	AF_Material material;
 	af_bool_t isImageFlipped;		// flip the textures on load

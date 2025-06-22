@@ -30,7 +30,7 @@ typedef struct AF_Texture {
 	// TODO pack this
 	uint32_t id;
 	enum AF_TextureType type;
-	char path[256];	// TODO: this looks a little small
+	char path[AF_MAX_PATH_CHAR_SIZE];	// TODO: this looks a little small
 } AF_Texture;
 
 static inline AF_Texture AF_Texture_ZERO(void){

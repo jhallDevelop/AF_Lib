@@ -8,6 +8,10 @@ define extra types e.g. af_bool_t which doesn't exist in c
 #ifndef AF_LIB_DEFINE_H
 #define AF_LIB_DEFINE_H
 #include <stdint.h>
+
+// Define value often used
+#define AF_MAX_PATH_CHAR_SIZE 1024    // Max path size for file paths
+
 // Define Static
 
 // Define Bool

@@ -24,8 +24,9 @@ typedef struct AF_CText {
     af_bool_t isDirty;
     af_bool_t isShowing;
     uint8_t fontID;
-    const char* fontPath;
-    const char* text;
+    // TODO: move strings out to a separate struct or use a string library
+    char fontPath[AF_MAX_PATH_CHAR_SIZE];
+    char text[AF_MAX_PATH_CHAR_SIZE];
     Vec2 screenPos;
     Vec2 textBounds;
     uint8_t textColor[4];

@@ -170,7 +170,7 @@ inline static void AF_Script_Load_And_Bind_Functions(AF_AppData* _AppData, AF_EC
                 continue;
             }
             // set the correct script path as the build location may have changed.
-            snprintf(script->scriptFullPath, MAX_PATH_CHAR_SIZE, "bin/%s/scripts/%s.so", AF_Platform_Mappings[_AppData->projectData.platformData.platformType].name, script->scriptName);
+            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "bin/%s/scripts/%s.so", AF_Platform_Mappings[_AppData->projectData.platformData.platformType].name, script->scriptName);
             // attempt to load the script
             script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
     

@@ -31,12 +31,12 @@ typedef struct {			// 64 or 128 bytes
     void* model; 
     void* skeleton;
     void* skeletonBlend;
-    const char* animIdlePath;
+    char animIdlePath[AF_MAX_PATH_CHAR_SIZE];
     // TODO: make this an array with defined indexs
     void* idleAnimationData;
-    const char* animWalkPath;
+    char animWalkPath[AF_MAX_PATH_CHAR_SIZE];
     void* walkAnimationData;
-    const char* animAttackPath;
+    char animAttackPath[AF_MAX_PATH_CHAR_SIZE]; // 256 bytes
     void* attackAnimationData;
     AF_FLOAT animationSpeed;
     AF_FLOAT animationBlend;

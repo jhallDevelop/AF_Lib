@@ -44,7 +44,6 @@ cJSON* AF_JSON_Mat4ToJson(const char* _name, Mat4* _vec4, cJSON* _rootJSON);
 
 
 
-
 af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 {
 	if (_file == NULL) {
@@ -96,25 +95,25 @@ af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 
 	// Get "name"
 	const cJSON* nameJSON = cJSON_GetObjectItem(rootJSON, "name");
-	snprintf(_projectData->name, MAX_PATH_CHAR_SIZE, "%s", nameJSON->valuestring);
+	snprintf(_projectData->name, AF_MAX_PATH_CHAR_SIZE, "%s", nameJSON->valuestring);
 
 	// Get "assetPath"
 	const cJSON* assetPathJSON = cJSON_GetObjectItem(rootJSON, "assetPath");
-	snprintf(_projectData->assetsPath, MAX_PATH_CHAR_SIZE, "%s", assetPathJSON->valuestring);
+	snprintf(_projectData->assetsPath, AF_MAX_PATH_CHAR_SIZE, "%s", assetPathJSON->valuestring);
 
 	// Get "defaultAppDataPath"
 	const cJSON* defaultAppDataPathJSON = cJSON_GetObjectItem(rootJSON, "defaultAppDataPath");
-	snprintf(_projectData->defaultAppDataPath, MAX_PATH_CHAR_SIZE, "%s", defaultAppDataPathJSON->valuestring);
+	snprintf(_projectData->defaultAppDataPath, AF_MAX_PATH_CHAR_SIZE, "%s", defaultAppDataPathJSON->valuestring);
 
 
 	// Get "defaultScenePath"
 	const cJSON* defaultScenePathJSON = cJSON_GetObjectItem(rootJSON, "defaultScenePath");
-	snprintf(_projectData->defaultScenePath, MAX_PATH_CHAR_SIZE, "%s", defaultScenePathJSON->valuestring);
+	snprintf(_projectData->defaultScenePath, AF_MAX_PATH_CHAR_SIZE, "%s", defaultScenePathJSON->valuestring);
 
 
 	// Get "projectRoot"
 	const cJSON* projectRootPathJSON = cJSON_GetObjectItem(rootJSON, "projectRoot");
-	snprintf(_projectData->projectRoot, MAX_PATH_CHAR_SIZE, "%s", projectRootPathJSON->valuestring);
+	snprintf(_projectData->projectRoot, AF_MAX_PATH_CHAR_SIZE, "%s", projectRootPathJSON->valuestring);
 
 	// Project Data
 	const cJSON* projectDataJSON = cJSON_GetObjectItem(rootJSON, "projectData");
@@ -345,99 +344,99 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 
 		// Transform
 		AF_CTransform3D* transform = &_ecs->transforms[i];	// 3d transform component
-		char transformTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char transformTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* transformJSON = AF_JSON_TransformToJson(&_ecs->transforms[i]);
 		cJSON_AddItemToObject(entityJSON, "transform", transformJSON);
 
 		// Sprite
 		AF_CSprite* sprite = &_ecs->sprites[i];		// sprite cmponent
-		char spriteText[MAX_PATH_CHAR_SIZE] = "\0";
+		char spriteText[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* spriteJSON = AF_JSON_SpriteToJson(&_ecs->sprites[i]);
 		cJSON_AddItemToObject(entityJSON, "sprite", spriteJSON);
 
 		// Rigidbody
 		AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i]; // 3d rigidbody
-		char rigidbodyTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char rigidbodyTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* rigidbodyJSON = AF_JSON_RigidbodyToJson(&_ecs->rigidbodies[i]);
 		cJSON_AddItemToObject(entityJSON, "rigidbody", rigidbodyJSON);
 
 		// Collider
 		AF_CCollider* collider = &_ecs->colliders[i];	// Collider component
-		char colliderTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char colliderTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* colliderJSON = AF_JSON_ColliderToJson(&_ecs->colliders[i]);
 		cJSON_AddItemToObject(entityJSON, "collider", colliderJSON);
 
 		// Animation
 		AF_CAnimation* animation = &_ecs->animations[i];	// animation Component
-		char animationTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char animationTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* animationJSON = AF_JSON_AnimationToJson(&_ecs->animations[i]);
 		cJSON_AddItemToObject(entityJSON, "animation", animationJSON);
 
 		// Cameras
 		AF_CCamera* camera = &_ecs->cameras[i];		// camera component
-		char cameraTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char cameraTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* cameraJSON = AF_JSON_CameraToJson(&_ecs->cameras[i]);
 		cJSON_AddItemToObject(entityJSON, "camera", cameraJSON);
 
 		// Mesh
 		AF_CMesh* mesh = &_ecs->meshes[i];		// mesh component 	
-		char meshTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char meshTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* meshJSON = AF_JSON_MeshToJson(&_ecs->meshes[i]);
 		cJSON_AddItemToObject(entityJSON, "mesh", meshJSON);
 
 		// Text
 		AF_CText* text = &_ecs->texts[i];
-		char textTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char textTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* textJSON = AF_JSON_TextToJson(&_ecs->texts[i]);
 		cJSON_AddItemToObject(entityJSON, "text", textJSON);
 
 		// Audio Source
 		AF_CAudioSource* audioSource = &_ecs->audioSources[i];
-		char audioTextBufferBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char audioTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* audioSourceJSON = AF_JSON_AudioSourceToJson(&_ecs->audioSources[i]);
 		cJSON_AddItemToObject(entityJSON, "audio", audioSourceJSON);
 
 		// Player Data
 		AF_CPlayerData* playerData = &_ecs->playerDatas[i];
-		char playerDataTextBufferBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char playerDataTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* playerDataJSON = AF_JSON_PlayerDataToJson(&_ecs->playerDatas[i]);
 		cJSON_AddItemToObject(entityJSON, "playerData", playerDataJSON);
 
 		// Skeletal Animation
 		AF_CSkeletalAnimation* skeletalAnimation = &_ecs->skeletalAnimations[i];
-		char skeletalTextBufferBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char skeletalTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* skeletalJSON = AF_JSON_SkeletalAnimationToJson(&_ecs->skeletalAnimations[i]);
 		cJSON_AddItemToObject(entityJSON, "skeletal", skeletalJSON);
 
 		// AI Behaviour
 		AF_CAI_Behaviour* aiBehaviour = &_ecs->aiBehaviours[i];
-		char aiTextBufferBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char aiTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* aiBehaviourJSON = AF_JSON_AIBehaviourToJson(&_ecs->aiBehaviours[i]);
 		cJSON_AddItemToObject(entityJSON, "aiBehaviour", aiBehaviourJSON);
 
 
 		// Editor Data
 		AF_CEditorData* editorData = &_ecs->editorData[i];
-		char editorDataTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char editorDataTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* editorDataJSON = AF_JSON_EditorDataToJson(&_ecs->editorData[i]);
 		cJSON_AddItemToObject(entityJSON, "editorData", editorDataJSON);
 
 		// Input Controller
 		AF_CInputController* inputController = &_ecs->inputControllers[i];
-		char inputControllerTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char inputControllerTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* inputControllerJSON = AF_JSON_InputControllerToJson(&_ecs->inputControllers[i]);
 		cJSON_AddItemToObject(entityJSON, "inputController", inputControllerJSON);
 
 
 		// Scripts
 		AF_CScript* scripts = &_ecs->scripts[i];
-		char scriptsTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char scriptsTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* scriptsDataJSON = AF_JSON_ScriptsToJson(&_ecs->scripts[i]);
 		cJSON_AddItemToObject(entityJSON, "scripts", scriptsDataJSON);
 
 		// Lights
 		AF_CLight* light = &_ecs->lights[i];
-		char lightsTextBuffer[MAX_PATH_CHAR_SIZE] = "\0";
+		char lightsTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* lightDataJSON = AF_JSON_LightToJson(&_ecs->lights[i]);
 		cJSON_AddItemToObject(entityJSON, "light", lightDataJSON);
 
@@ -606,10 +605,10 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 	// Sprite Path
 	cJSON* spritePathJSON = cJSON_GetObjectItem(_spriteJSON, "spritePath");
 	if (spritePathJSON != NULL && cJSON_IsString(spritePathJSON)) {
-		snprintf(_sprite->spritePath, MAX_PATH_CHAR_SIZE, "%s", spritePathJSON->valuestring); // Copy the string to the spritePath
+		snprintf(_sprite->spritePath, AF_MAX_PATH_CHAR_SIZE, "%s", spritePathJSON->valuestring); // Copy the string to the spritePath
 	}
 	else {
-		_sprite->spritePath = NULL; // Set to NULL if not found or not a string
+		snprintf(_sprite->spritePath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
 	}
 	// Sprite Data
 	// skip sprite data for now, it will be loaded later when the sprite is used
@@ -880,28 +879,28 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
 	cJSON* shaderVertPathJSON = cJSON_GetObjectItem(shaderJSON, "vertexShader");
 
 	// save the shader paths
-	snprintf(_mesh->shader.fragPath, MAX_PATH_CHAR_SIZE, "%s", shaderFragPathJSON->valuestring);
-	snprintf(_mesh->shader.vertPath, MAX_PATH_CHAR_SIZE, "%s", shaderVertPathJSON->valuestring);
+	snprintf(_mesh->shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", shaderFragPathJSON->valuestring);
+	snprintf(_mesh->shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", shaderVertPathJSON->valuestring);
 
 	// Material
 	cJSON* materialJson = cJSON_GetObjectItem(_meshJSON, "material");
 
 	//diffuse texture
 	cJSON* diffuseTexturePathJson = cJSON_GetObjectItem(materialJson, "diffuseTexture");
-	snprintf(_mesh->material.diffuseTexture.path, MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
+	snprintf(_mesh->material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
 	_mesh->material.diffuseTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
 
 	//specular texture
 	cJSON* specularTexturePathJson = cJSON_GetObjectItem(materialJson, "specularTexture");
-	snprintf(_mesh->material.specularTexture.path, MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
+	snprintf(_mesh->material.specularTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
 	_mesh->material.specularTexture.type = AF_TEXTURE_TYPE_SPECULAR;
 
 	//normal texture
 	cJSON* normalTexturePathJson = cJSON_GetObjectItem(materialJson, "normalTexture");
-	snprintf(_mesh->material.normalTexture.path, MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
+	snprintf(_mesh->material.normalTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
 	_mesh->material.normalTexture.type = AF_TEXTURE_TYPE_NORMALS;
 
-	//snprintf(_mesh->material.normalTexture.path, MAX_PATH_CHAR_SIZE, "%s", normalTexturePathJson->valuestring);
+	//snprintf(_mesh->material.normalTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", normalTexturePathJson->valuestring);
 
 	// Color
 	cJSON* colorJson = cJSON_GetObjectItem(materialJson, "color");
@@ -952,19 +951,15 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 	cJSON* fontPathJSON = cJSON_GetObjectItem(_textJSON, "fontPath");
 	if (fontPathJSON != NULL && cJSON_IsString(fontPathJSON)) {
 
-		snprintf(_text->fontPath, MAX_PATH_CHAR_SIZE, "%s", fontPathJSON->valuestring); // Copy the string to the fontPath
+		snprintf(_text->fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", fontPathJSON->valuestring); // Copy the string to the fontPath
 	}
-	else {
-		_text->fontPath = NULL; // Set to NULL if not found or not a string
-	}
+
 	// text
 	cJSON* textJSON = cJSON_GetObjectItem(_textJSON, "text");
 	if (textJSON != NULL && cJSON_IsString(textJSON)) {
-		snprintf(_text->text, MAX_PATH_CHAR_SIZE, "%s", textJSON->valuestring); // Copy the string to the text field
+		snprintf(_text->text, AF_MAX_PATH_CHAR_SIZE, "%s", textJSON->valuestring); // Copy the string to the text field
 	}
-	else {
-		_text->text = NULL; // Set to NULL if not found or not a string
-	}
+
 	// screenPos
 	cJSON* screenPosJSON = cJSON_GetObjectItem(_textJSON, "screenPos");
 	if (screenPosJSON != NULL) {
@@ -1083,26 +1078,17 @@ void AF_JSON_JsonToSkeletalAnimation(cJSON* _skeletalAnimationJSON, AF_CSkeletal
 	cJSON* animIdlePathJSON = cJSON_GetObjectItem(_skeletalAnimationJSON, "animIdlePath");
 	if (animIdlePathJSON != NULL && cJSON_IsString(animIdlePathJSON)) {
 
-		snprintf(_skeletalAnimation->animIdlePath, MAX_PATH_CHAR_SIZE, "%s", animIdlePathJSON->valuestring); // Copy the string to the animIdlePath
-	}
-	else {
-		_skeletalAnimation->animIdlePath = NULL; // Set to NULL if not found or not a string
+		snprintf(_skeletalAnimation->animIdlePath, AF_MAX_PATH_CHAR_SIZE, "%s", animIdlePathJSON->valuestring); // Copy the string to the animIdlePath
 	}
 
 	cJSON* animWalkPathJSON = cJSON_GetObjectItem(_skeletalAnimationJSON, "animWalkPath");
 	if (animWalkPathJSON != NULL && cJSON_IsString(animWalkPathJSON)) {
-		snprintf(_skeletalAnimation->animWalkPath, MAX_PATH_CHAR_SIZE, "%s", animWalkPathJSON->valuestring); // Copy the string to the animWalkPath
-	}
-	else {
-		_skeletalAnimation->animWalkPath = NULL; // Set to NULL if not found or not a string
+		snprintf(_skeletalAnimation->animWalkPath, AF_MAX_PATH_CHAR_SIZE, "%s", animWalkPathJSON->valuestring); // Copy the string to the animWalkPath
 	}
 
 	cJSON* animAttackPathJSON = cJSON_GetObjectItem(_skeletalAnimationJSON, "animAttackPath");
 	if (animAttackPathJSON != NULL && cJSON_IsString(animAttackPathJSON)) {
-		snprintf(_skeletalAnimation->animAttackPath, MAX_PATH_CHAR_SIZE, "%s", animAttackPathJSON->valuestring); // Copy the string to the animAttackPath
-	}
-	else {
-		_skeletalAnimation->animAttackPath = NULL; // Set to NULL if not found or not a string
+		snprintf(_skeletalAnimation->animAttackPath, AF_MAX_PATH_CHAR_SIZE, "%s", animAttackPathJSON->valuestring); // Copy the string to the animAttackPath
 	}
 
 	// animationSpeed
