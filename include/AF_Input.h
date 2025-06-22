@@ -9,6 +9,7 @@ and helper functions
 #ifndef AF_INPUT_H
 #define AF_INPUT_H
 #include "AF_Lib_Define.h"
+#include "AF_Lib_API.h"
 #include "AF_Math/AF_Vec2.h"
 #include "AF_Log.h"
 #include "AF_Key.h"
@@ -290,7 +291,7 @@ AF_Input_Update
 Update definition
 ====================
 */
-void AF_Input_Update(AF_Input* _input);
+AF_LIB_API void AF_Input_Update(AF_Input* _input);
 
 
 /*

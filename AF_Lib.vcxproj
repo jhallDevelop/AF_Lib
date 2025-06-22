@@ -237,6 +237,7 @@
     <ClInclude Include="include\AF_LightingData.h" />
     <ClInclude Include="include\AF_Log.h" />
     <ClInclude Include="include\AF_MeshLoad.h" />
+    <ClInclude Include="include\AF_Physics.h" />
     <ClInclude Include="include\AF_Project.h" />
     <ClInclude Include="include\AF_ProjectData.h" />
     <ClInclude Include="include\AF_Renderer.h" />
@@ -285,6 +286,10 @@
     <ClCompile Include="src\common\AF_File.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_Physics.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\common\AF_Project.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -383,6 +388,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\ECS\Entities\AF_Entity.c">
+      <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\windows\AF_Input_UWP.c">
       <CompileAsWinRT Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsWinRT>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>

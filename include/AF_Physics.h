@@ -10,6 +10,7 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 */
 #ifndef AF_PHYSICS_H
 #define AF_PHYSICS_H
+#include "AF_Lib_API.h"
 #include "AF_Lib_Define.h"
 #include "ECS/Entities/AF_Entity.h"
 #include "ECS/Components/AF_CCollider.h"
@@ -55,7 +56,7 @@ AF_PHYSICS_UPDATE
 Definition for Physics update
 ====================
 */
-void AF_Physics_Update(AF_ECS* _ecs, const float _dt);
+AF_LIB_API void AF_Physics_Update(AF_ECS* _ecs, const float _dt);
 
 
 /*

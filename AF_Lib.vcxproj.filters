@@ -144,6 +144,12 @@
     <ClCompile Include="src\cJSON\AF_JSON.c">
       <Filter>Private\json</Filter>
     </ClCompile>
+    <ClCompile Include="src\windows\AF_Input_UWP.c">
+      <Filter>Private\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\AF_Physics.c">
+      <Filter>Private\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -281,6 +287,9 @@
       <Filter>Public</Filter>
     </ClInclude>
     <ClInclude Include="include\AF_JSON.h">
+      <Filter>Public</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AF_Physics.h">
       <Filter>Public</Filter>
     </ClInclude>
   </ItemGroup>
