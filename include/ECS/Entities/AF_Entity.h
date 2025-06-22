@@ -7,7 +7,7 @@ The entity struct and helper functions
 
 #ifndef AF_Entity_H
 #define AF_Entity_H
-//#include "AF_ECS.h"
+#include "AF_Lib_API.h"
 #include "AF_Lib_Define.h"
 #include "ECS/Components/AF_CSprite.h"
 #include "ECS/Components/AF_CCollider.h"
@@ -78,7 +78,7 @@ typedef struct AF_EntityPair {
 } EntityPair;
 
 PACKED_UINT32 AF_ECS_GetTag(PACKED_UINT32 _id_tag);
-PACKED_UINT32 AF_ECS_GetID(PACKED_UINT32 _id_tag);
+AF_LIB_API PACKED_UINT32 AF_ECS_GetID(PACKED_UINT32 _id_tag);
 PACKED_UINT32 AF_ECS_AssignTag(PACKED_UINT32 _id_tag, PACKED_UINT32 _tagValue);
 PACKED_UINT32 AF_ECS_AssignID(PACKED_UINT32 _id_tag, PACKED_UINT32 _idValue);
 

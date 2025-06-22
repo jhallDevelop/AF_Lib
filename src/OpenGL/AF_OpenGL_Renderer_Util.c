@@ -3,7 +3,7 @@
 //#include <GL/gl.h>
 #include <stdio.h>
 #define GL_SILENCE_DEPRECATION
-#define RENDERER_CHECK_ERROR_FLAG 0 // Set to 1 to enable error checking, 0 to disable
+#define RENDERER_CHECK_ERROR_FLAG 1 // Set to 1 to enable error checking, 0 to disable
 
 void AF_Renderer_CheckError(const char* message) {
     if (RENDERER_CHECK_ERROR_FLAG == 0) {

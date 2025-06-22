@@ -17,6 +17,10 @@ extern "C" {
 #endif
 
 inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _filePath){
+	AF_Log("AF_Scene_Load: Depricated \n");
+    return AF_FALSE;
+
+    /*
     // Open a file for binary reading
     FILE* file = AF_File_OpenFile(_filePath, "rb");
     if (file == NULL) {
@@ -51,6 +55,7 @@ inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _
         }
         return true;
     }
+    */
 }
 
 #ifdef __cplusplus

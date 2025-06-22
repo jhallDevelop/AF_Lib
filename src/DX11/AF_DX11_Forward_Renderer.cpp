@@ -250,7 +250,7 @@ AF_Renderer_Render
 Simple render command to decide how to progress other rendering steps
 ====================
 */
-void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_Entity* _cameraEntity) {
+void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID) {
 	//auto context = m_deviceResources->GetD3DDeviceContext();
 	
 	AF_DX11_RenderData* gameRenderData = (AF_DX11_RenderData*)_renderingData->specialRenderData;
