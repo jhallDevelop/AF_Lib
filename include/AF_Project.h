@@ -29,7 +29,7 @@ AF_Project_Load
 Take a file path and open the game.proj file if it can be found.
 ================
 */
-AF_LIB_API bool AF_Project_Load(AF_AppData* _appData, const char* _filePath);
+AF_LIB_API af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _filePath);
 
 #ifdef __cplusplus
 }

@@ -72,24 +72,41 @@ AF_Project_Load
 Take a file path and open the game.proj file if it can be found.
 ================
 */
-bool AF_Project_Load(AF_AppData* _appData, const char* _filePath) {
+af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
     // Open a file for binary reading
-    FILE* file = AF_File_OpenFile(_filePath, "rb");
-    if (file == NULL) {
-        AF_Log_Error("AF_Project_Load: FAILED to open file %s\n", _filePath);
-        return false;
+	af_bool_t returnBool = AF_FALSE;
+    // Load scene stored as default scene in the project data
+    FILE* appDataFile = AF_File_OpenFile(_appDataPath, "rb");// switch to binary read mode as cause// "r");
+    if (appDataFile == NULL) {
+        AF_Log_Error("Editor_Utils_OpenProject: Failed to open project data file %s\n", _appData->projectData.defaultScenePath);
+        return returnBool;
+    }
+    AF_JSON_LoadProjectDataJson(&_appData->projectData, appDataFile);
+    AF_File_CloseFile(appDataFile);
+
+    // Load the project json data
+
+
+    // for now, clear ECS data as we will load the default scene
+    AF_ECS_Init(&_appData->ecs); // Reset the ECS data
+
+    // Load scene stored as default scene in the project data
+    FILE* sceneFile = AF_File_OpenFile(_appData->projectData.defaultScenePath, "rb");// switch to binary read mode as cause// "r");
+    if (sceneFile == NULL) {
+        AF_Log_Error("Editor_Utils_OpenProject: Failed to open default scene file %s\n", _appData->projectData.defaultScenePath);
+        return returnBool;
     }
 
+    // Load the JSON data from the file
+    AF_Log("Editor_Utils_OpenProject: Loading default scene from %s\n", _appData->projectData.defaultScenePath);
+    // Load the JSON data into the ECS
+    AF_JSON_LoadSceneJson(_appData, sceneFile);
+    AF_File_CloseFile(sceneFile);
 
-    fread(_appData, sizeof(AF_AppData), 1, file); // Read the struct
-    if (ferror(file)) {
-        printf("AF_Project_Load: Error while reading appData file %s \n", _filePath);
-        return false;
-    }
-
+    returnBool = AF_TRUE;
     // Clean up the render objects first as some data is malloc
 
     // Return true only if the platform string was successfully found and extracted
-    return true;
+    return AF_TRUE;
 }
 
