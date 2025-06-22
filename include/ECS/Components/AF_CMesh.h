@@ -40,6 +40,7 @@ typedef struct AF_CMesh {
 	uint32_t meshCount;
     af_bool_t showDebug;
 	enum AF_MESH_TYPE meshType;
+	// TODO: move strings out to a separate struct or use a string library
 	char meshPath[AF_MAX_PATH_CHAR_SIZE];
 	AF_Shader shader;
 	AF_Material material;

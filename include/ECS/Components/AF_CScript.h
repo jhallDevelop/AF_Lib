@@ -30,6 +30,7 @@ Script struct
 typedef struct AF_CScript {
     // TODO pack this
 	PACKED_CHAR enabled;
+	// TODO: move strings out to a separate struct or use a string library
 	char scriptName[MAX_CSCRIPT_PATH];
 	char scriptFullPath[MAX_CSCRIPT_PATH];
 	ScriptFuncPtr startFuncPtr;

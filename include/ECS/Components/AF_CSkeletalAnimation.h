@@ -31,6 +31,7 @@ typedef struct {			// 64 or 128 bytes
     void* model; 
     void* skeleton;
     void* skeletonBlend;
+    // TODO: move strings out to a separate struct or use a string library
     char animIdlePath[AF_MAX_PATH_CHAR_SIZE];
     // TODO: make this an array with defined indexs
     void* idleAnimationData;

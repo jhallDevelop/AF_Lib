@@ -25,6 +25,7 @@ AF_CEDITOR_DATA
 // size is 64 bytes
 typedef struct AF_CEditorData{
 	PACKED_CHAR enabled;
+	// TODO: move strings out to a separate struct or use a string library
     char name[MAX_EDITORDATA_NAME_CHAR_LENGTH];	    
 	bool isSelected;		    
 } AF_CEditorData;
