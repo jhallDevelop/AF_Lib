@@ -325,7 +325,9 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// Get the depth camera entity from the lighting data
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
 	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
-    AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID); // Pass main camera for now, StartDepthPass should derive light's camera
+    glFrontFace(GL_CCW); 
+	AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID); // Pass main camera for now, StartDepthPass should derive light's camera
+	glFrontFace(GL_CW); 
 	//glCullFace(GL_BACK);
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
@@ -1142,7 +1144,6 @@ Do the initial setup for rendering a depth pass in opengl
 void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, uint32_t _cameraID){
 	// 1. render depth of scene to texture (from light's perspective)
 	// --------------------------------------------------------------
-	
 	// if ambientLightEntityIndex is not set, then we can't render the depth pass
 	if(_lightingData->ambientLightEntityIndex <= 0){
 		//AF_Log_Error("AF_Renderer_StartDepthPass: ambientLightEntityIndex is not set, can't render depth pass\n");
@@ -1152,9 +1153,9 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	AF_CCamera* depthCamera = &_ecs->cameras[_cameraID];//AF_CCamera_ZERO();
 	depthCamera->orthographic = AF_TRUE; // Set to orthographic for depth pass
 
-	AF_CTransform3D* depthCamTransform = &_ecs->transforms[_cameraID];
-	//depthCamera->nearPlane = 1.0f;
-	//depthCamera.farPlane = 7.5f;
+	AF_CTransform3D* depthCamTransform = &_ecs->transforms[_lightingData->ambientLightEntityIndex];//&_ecs->transforms[_cameraID];
+	depthCamera->nearPlane = 1.0f;
+	depthCamera->farPlane = 7.5f;
 	float outerBounds =  10.0f;
 	if(depthCamera->orthographic){
 		depthCamera->projectionMatrix = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, depthCamera->nearPlane, depthCamera->farPlane);
@@ -1167,18 +1168,33 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	//AF_Util_Mat4_Log(shadowLightProjection);
 
     // calculate Right
-	Vec3 centre = {0.0f, 0.0f, 0.0f};
+	Vec3 lightPos = depthCamTransform->pos;
+	Vec3 lightTarget = {0.0f, 0.0f, 0.0f};
+	Vec3 worldUp = {0.0f, 1.0f, 0.0f}; // Assuming Y is up in your world
 	//depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
     //Vec3 right = Vec3_NORMALIZE(Vec3_CROSS( depthCamera->cameraFront, depthCamera->cameraWorldUp));
 	//depthCamera->cameraRight = right;
 
     // calculate up
-    Vec3 up = {0,1,0};//Vec3_NORMALIZE(Vec3_CROSS(depthCamera->cameraRight,  depthCamera->cameraFront));
-	depthCamera->cameraUp = up;
+    //Vec3 up = {0,1,0};//Vec3_NORMALIZE(Vec3_CROSS(depthCamera->cameraRight,  depthCamera->cameraFront));
+	depthCamera->cameraUp = worldUp;
 
 	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
-	Mat4 viewMatrix = Mat4_Lookat(centre, depthCamTransform->pos, depthCamera->cameraUp);
-	depthCamera->viewMatrix = viewMatrix;
+	//Mat4 viewMatrix = Mat4_Lookat(centre, depthCamTransform->pos, depthCamera->cameraUp);
+	//depthCamera->viewMatrix = viewMatrix;
+	Vec3 lightForward = Vec3_NORMALIZE(Vec3_MINUS(lightTarget, lightPos));
+	Vec3 lightRight   = Vec3_NORMALIZE(Vec3_CROSS(lightForward, worldUp));
+	Vec3 lightUp      = Vec3_CROSS(lightRight, lightForward);
+	
+	Mat4 lightViewMatrix = {{
+		{lightRight.x,   lightRight.y,   lightRight.z,   -Vec3_DOT(lightRight, lightPos)},
+		{lightUp.x,      lightUp.y,      lightUp.z,      -Vec3_DOT(lightUp, lightPos)},
+		{-lightForward.x,-lightForward.y, -lightForward.z, Vec3_DOT(lightForward, lightPos)},
+		{0.0f,           0.0f,           0.0f,           1.0f}
+	}};
+
+	depthCamera->viewMatrix = lightViewMatrix;
+
 
 	// copy the matrix to the lighting data
 	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);
