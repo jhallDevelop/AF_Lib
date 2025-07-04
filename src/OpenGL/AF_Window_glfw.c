@@ -100,7 +100,8 @@ Move window callback
 void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
     if(_xpos || _ypos){}
     // if the window is moved, update the glviewport
-    int width, height;
+    int width = 0;
+    int height = 0;
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
 
@@ -111,10 +112,13 @@ void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
     }
     afAppData->window.windowXPos = _xpos;
     afAppData->window.windowYPos = _ypos;
-    if(afAppData->rendererData.frameResizeFnctPtr != NULL){
-        WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
-        windowFunctPtr(&afAppData->rendererData);
-    }
+    //if(afAppData->rendererData.frameResizeFnctPtr != NULL){
+        //WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
+        //windowFunctPtr(&afAppData->rendererData);
+    //}
+    // update the window resized flag
+    afAppData->window.isWindowResized = AF_TRUE; // Set the window resized flag to true
+    //AF_Log("window_pos_callback: Window moved to position (%d, %d)\n", _xpos, _ypos);
 }
 
 /*
@@ -137,7 +141,8 @@ when the window  size changes, update the glViewport
 void window_size_callback(GLFWwindow* _window, int _width, int _height)
 {
     if(_width || _height){}
-    int width, height;
+    int width = 0;
+    int height = 0;
     glfwGetFramebufferSize((GLFWwindow*)_window, &width, &height);
     glViewport(0, 0, width, height);
 
@@ -152,16 +157,17 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
     window->windowWidth = _width;
     window->windowHeight = _height;
     // Changing this will force a re-size to the correct value if in editor mode
-    window->frameBufferWidth = _width;
-    window->frameBufferHeight = _height;
+    //window->frameBufferWidth = _width;
+    //window->frameBufferHeight = _height;
 
-    afAppData->window.windowXPos = window->windowXPos;
-    afAppData->window.windowYPos = window->windowYPos;
-    if (afAppData->rendererData.frameResizeFnctPtr != NULL) {
-        WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
-        windowFunctPtr(&afAppData->rendererData);
-    }
+    //afAppData->window.windowXPos = window->windowXPos;
+    //afAppData->window.windowYPos = window->windowYPos;
+    //if (afAppData->rendererData.frameResizeFnctPtr != NULL) {
+    //    WindowFuncPtr windowFunctPtr = (WindowFuncPtr)afAppData->rendererData.frameResizeFnctPtr;
+    //    windowFunctPtr(&afAppData->rendererData);
+    //}
 	window->isWindowResized = AF_TRUE; // Set the window resized flag to true
+    //AF_Log("window_size_callback: Window resized to %d x %d\n", _width, _height);
 }
 
 
