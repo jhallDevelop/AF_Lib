@@ -11,6 +11,7 @@ define extra types e.g. af_bool_t which doesn't exist in c
 #include <stdint.h>
 
 #define PI 3.141592653589793
+#define AF_NULL ((void*)0)
 // Switch to fixed point math if set at compile time
 #if USE_FIXED
     #define AF_FLOAT int8_t //uint16_t
