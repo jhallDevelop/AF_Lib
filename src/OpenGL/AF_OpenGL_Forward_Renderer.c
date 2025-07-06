@@ -321,12 +321,11 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 
 	// Clear ONLY the depth buffer bit
 	glClear(GL_DEPTH_BUFFER_BIT);
-
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
     // to draw relevant objects.
 	glEnable(GL_CULL_FACE); // Enable culling
-	//glCullFace(GL_FRONT);
+
 	// Get the depth camera entity from the lighting data
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
 	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
@@ -337,6 +336,10 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
     // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
+	//camera->viewMatrix = _ecs->cameras[depthCameraID].viewMatrix;
+	//camera->projectionMatrix = _ecs->cameras[depthCameraID].projectionMatrix;
+
+
     AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
@@ -570,6 +573,8 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		
 	}
 	glUseProgram(shader); 
+	
+	
 	
 	AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowLightSpaceMatrix);
 
@@ -1167,7 +1172,7 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	if(depthCamera->orthographic){
 		depthCamera->projectionMatrix = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, depthCamera->nearPlane, depthCamera->farPlane);
 	}else{
-		depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
+		//depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
 	}
 	// flip the y axis
 		// For a row-major matrix, you negate the middle element of the second row.
@@ -1180,6 +1185,8 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
     // calculate Right
 
 	Vec3 lightPos = depthCamTransform->pos; //{ -2.0f, 4.0f, -1.0f };//
+	//Vec3 lightPos = Vec3_MULT_SCALAR(Vec3_NORMALIZE(lightDir), -20.0f); // Move 20 units back
+	//Vec3 lightPos = { -2.0f, 4.0f, -1.0f };
 	Vec3 lightTarget = {0.0f, 0.0f, 0.0f};
 	Vec3 worldUp = {0.0f, 1.0f, 0.0f}; // Assuming Y is up in your world
 	//depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
@@ -1199,6 +1206,12 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 
 	// copy the matrix to the lighting data
 	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);
+	// Transpose it
+	_lightingData->shadowLightSpaceMatrix = Mat4_Transpose(&_lightingData->shadowLightSpaceMatrix);
+	// flip the y
+	//_lightingData->shadowLightSpaceMatrix.rows[1].y *= -1.0f;
+
+
 	//AF_Util_Mat4_Log(_lightingData->shadowLightSpaceMatrix);
 	//AF_Log("=========shadowLightSpaceMatrix========\n");
 	//AF_Util_Mat4_Log(shadowLightSpaceMatrix);
