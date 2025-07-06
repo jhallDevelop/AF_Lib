@@ -17,7 +17,7 @@ typedef struct AF_ViewportData {
     //uint32_t rbo;
     float backgroundColor[3];
     float mouseLookSensitivity;
-    AF_Entity* cameraEntityPtr;
+    uint32_t cameraEntityIndex;
     AF_Material gridlineMaterial;
     uint32_t gridlineVAO;
     uint32_t gridlineVBO;
@@ -51,7 +51,7 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void) {
     viewportData.backgroundColor[1] = 0.0f;
     viewportData.backgroundColor[0] = 0.0f;
     viewportData.mouseLookSensitivity = 0.25f;
-    viewportData.cameraEntityPtr = NULL;
+    viewportData.cameraEntityIndex = 0;
     viewportData.gridlineMaterial = returnMaterial;
     viewportData.gridlineVAO = 0;
     viewportData.gridlineVBO = 0;

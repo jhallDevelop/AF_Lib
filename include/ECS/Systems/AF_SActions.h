@@ -196,8 +196,8 @@ inline static void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraI
     xoffset *= _mouseLookSensitivity;
     yoffset *= _mouseLookSensitivity;
 
-    _camera->yaw -= xoffset;
-    _camera->pitch -= yoffset;
+    _camera->yaw += xoffset;
+    _camera->pitch += yoffset;
 
     // stop look flip
     if(_camera->pitch > 89.0f){

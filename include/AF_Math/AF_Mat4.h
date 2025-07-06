@@ -121,33 +121,40 @@ extern "C" {
     ====================
     */
     static inline Mat4 Mat4_MULT_M4(Mat4 _leftM4, Mat4 _rightM4) {
-    Mat4 result = Mat4_ZERO();  // Initialize result matrix to zero
+        Mat4 result = { 0 }; // Zero-initialize the result matrix
 
-    // Matrix multiplication: Multiply rows of _leftM4 with columns of _rightM4
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            // Calculate the (i, j) element of the result matrix
-            result.rows[i].x = _leftM4.rows[i].x * _rightM4.rows[0].x + 
-                               _leftM4.rows[i].y * _rightM4.rows[1].x + 
-                               _leftM4.rows[i].z * _rightM4.rows[2].x + 
-                               _leftM4.rows[i].w * _rightM4.rows[3].x;
-            result.rows[i].y = _leftM4.rows[i].x * _rightM4.rows[0].y + 
-                               _leftM4.rows[i].y * _rightM4.rows[1].y + 
-                               _leftM4.rows[i].z * _rightM4.rows[2].y + 
-                               _leftM4.rows[i].w * _rightM4.rows[3].y;
-            result.rows[i].z = _leftM4.rows[i].x * _rightM4.rows[0].z + 
-                               _leftM4.rows[i].y * _rightM4.rows[1].z + 
-                               _leftM4.rows[i].z * _rightM4.rows[2].z + 
-                               _leftM4.rows[i].w * _rightM4.rows[3].z;
-            result.rows[i].w = _leftM4.rows[i].x * _rightM4.rows[0].w + 
-                               _leftM4.rows[i].y * _rightM4.rows[1].w + 
-                               _leftM4.rows[i].z * _rightM4.rows[2].w + 
-                               _leftM4.rows[i].w * _rightM4.rows[3].w;
+        // This implementation calculates Result[i][j] = dot(Left.row[i], Right.column[j])
+        // where Right.column[j] is assembled from the j-th component of each row vector.
+        for (int i = 0; i < 4; ++i) {
+            // Calculate the result for row `i`
+            float x = _leftM4.rows[i].x * _rightM4.rows[0].x +
+                _leftM4.rows[i].y * _rightM4.rows[1].x +
+                _leftM4.rows[i].z * _rightM4.rows[2].x +
+                _leftM4.rows[i].w * _rightM4.rows[3].x;
+
+            float y = _leftM4.rows[i].x * _rightM4.rows[0].y +
+                _leftM4.rows[i].y * _rightM4.rows[1].y +
+                _leftM4.rows[i].z * _rightM4.rows[2].y +
+                _leftM4.rows[i].w * _rightM4.rows[3].y;
+
+            float z = _leftM4.rows[i].x * _rightM4.rows[0].z +
+                _leftM4.rows[i].y * _rightM4.rows[1].z +
+                _leftM4.rows[i].z * _rightM4.rows[2].z +
+                _leftM4.rows[i].w * _rightM4.rows[3].z;
+
+            float w = _leftM4.rows[i].x * _rightM4.rows[0].w +
+                _leftM4.rows[i].y * _rightM4.rows[1].w +
+                _leftM4.rows[i].z * _rightM4.rows[2].w +
+                _leftM4.rows[i].w * _rightM4.rows[3].w;
+
+            result.rows[i].x = x;
+            result.rows[i].y = y;
+            result.rows[i].z = z;
+            result.rows[i].w = w;
         }
-    }
 
-    return result;
-}
+        return result;
+    }
 
 
     /*
@@ -355,12 +362,13 @@ extern "C" {
         A 4x4 view matrix.
     =========================
     */
-    static inline Mat4 Mat4_Lookat(Vec3 _targetPosition, Vec3 _viewPosition, Vec3 _up){
+    static inline Mat4 Mat4_Lookat(Vec3 _viewPosition, Vec3 _targetPosition, Vec3 _up){
 
 
         Vec3 forward = Vec3_NORMALIZE(Vec3_MINUS(_targetPosition, _viewPosition));
-        Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(_up, forward));
-        //Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(forward, _up));
+        //Vec3 forward = Vec3_NORMALIZE(Vec3_MINUS(_viewPosition, _targetPosition));    // incorrect
+        //Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(_up, forward));                        // incorrect
+        Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(forward, _up));
         Vec3 up = Vec3_CROSS(forward, right);
 
         // Row Major variant
@@ -368,6 +376,7 @@ extern "C" {
         Mat4 returnMatrix = {{
             {right.x,       right.y,    right.z,    -Vec3_DOT(right, _viewPosition)},
             {up.x,          up.y,       up.z,       -Vec3_DOT(up, _viewPosition)},
+            //{-forward.x,    -forward.y, -forward.z,  Vec3_DOT(forward, _viewPosition)},
             {-forward.x,    -forward.y, -forward.z,  Vec3_DOT(forward, _viewPosition)},
             {0,             0,          0,           1}
         }};
@@ -415,6 +424,8 @@ Create a model matrix from a position, rotation and scale
 ====================
 */
 static inline Mat4 Mat4_ToModelMat4(Vec3 _pos, Vec3 _rot, Vec3 _scale) {
+
+    /**/
     // Identity matrix (column-major initialization)
     Mat4 returnMatrix = {{
         {1, 0, 0, 0},  // Column 0: X-axis

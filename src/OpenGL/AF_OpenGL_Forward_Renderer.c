@@ -161,12 +161,12 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.vertPath = depthVertShaderFullPath, 
 			.fragPath = depthFragShaderFullPath, 
 			.shaderTextureName = "",
-			.internalFormat = GL_RGB,
-			.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
-			.drawBufferType = GL_TRUE,
-			.readBufferType = GL_TRUE,
-			.minFilter = GL_LINEAR,
-			.magFilter = GL_LINEAR
+			.internalFormat = GL_DEPTH_COMPONENT,//GL_RGB,
+			.textureAttatchmentType = GL_DEPTH_ATTACHMENT, //GL_COLOR_ATTACHMENT0,
+			.drawBufferType = GL_FALSE, //GL_TRUE,
+			.readBufferType = GL_FALSE, //GL_TRUE,
+			.minFilter = GL_NEAREST, //GL_LINEAR,
+			.magFilter = GL_NEAREST //GL_LINEAR
 		};
 		
 		
@@ -241,10 +241,11 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 
 	// Clear the depth buffers
 	
-	AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-		glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
-	AF_Renderer_UnBindFrameBuffer();
+	//AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	//glClear(GL_DEPTH_BUFFER_BIT);
+	//	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	//AF_Renderer_UnBindFrameBuffer();
 
 	// Clear the Debug buffers
 	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
@@ -317,6 +318,10 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // This pass renders scene geometry from the light's perspective to a depth texture.
     AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
 	glViewport(0, 0, _renderingData->depthFrameBufferData.textureWidth, _renderingData->depthFrameBufferData.textureHeight); // Viewport for the main scene render
+
+	// Clear ONLY the depth buffer bit
+	glClear(GL_DEPTH_BUFFER_BIT);
+
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
     // to draw relevant objects.
@@ -325,9 +330,9 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// Get the depth camera entity from the lighting data
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
 	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
-    glFrontFace(GL_CCW); 
+    //glFrontFace(GL_CCW); 
 	AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID); // Pass main camera for now, StartDepthPass should derive light's camera
-	glFrontFace(GL_CW); 
+	//glFrontFace(GL_CW); 
 	//glCullFace(GL_BACK);
 	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
@@ -567,6 +572,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	glUseProgram(shader); 
 	
 	AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowLightSpaceMatrix);
+
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
@@ -585,7 +591,8 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 				}
 			
 				// ---- Shadow Map ----
-				if (_lightingData->shadowsEnabled == AF_TRUE && _renderingData->depthFrameBufferData.textureID != 0) {
+				//if (_lightingData->shadowsEnabled == AF_TRUE && _renderingData->depthFrameBufferData.textureID != 0) {
+				if (_renderingData->depthFrameBufferData.textureID != 0) {
 					
 					uint32_t shadowMapTextureUnit = 1; // Define texture unit for shadow map (e.g., unit 1)
 					glActiveTexture(GL_TEXTURE0 + shadowMapTextureUnit);
@@ -1168,7 +1175,8 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	//AF_Util_Mat4_Log(shadowLightProjection);
 
     // calculate Right
-	Vec3 lightPos = depthCamTransform->pos;
+
+	Vec3 lightPos = { -2.0f, 4.0f, -1.0f };//depthCamTransform->pos;
 	Vec3 lightTarget = {0.0f, 0.0f, 0.0f};
 	Vec3 worldUp = {0.0f, 1.0f, 0.0f}; // Assuming Y is up in your world
 	//depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
@@ -1180,24 +1188,15 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	depthCamera->cameraUp = worldUp;
 
 	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
-	//Mat4 viewMatrix = Mat4_Lookat(centre, depthCamTransform->pos, depthCamera->cameraUp);
-	//depthCamera->viewMatrix = viewMatrix;
-	Vec3 lightForward = Vec3_NORMALIZE(Vec3_MINUS(lightTarget, lightPos));
-	Vec3 lightRight   = Vec3_NORMALIZE(Vec3_CROSS(lightForward, worldUp));
-	Vec3 lightUp      = Vec3_CROSS(lightRight, lightForward);
+	Mat4 viewMatrix = Mat4_Lookat(lightPos, lightTarget, depthCamera->cameraUp);
+	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, lightTarget, depthCamera->cameraUp);
+	depthCamera->viewMatrix = viewMatrix;
 	
-	Mat4 lightViewMatrix = {{
-		{lightRight.x,   lightRight.y,   lightRight.z,   -Vec3_DOT(lightRight, lightPos)},
-		{lightUp.x,      lightUp.y,      lightUp.z,      -Vec3_DOT(lightUp, lightPos)},
-		{-lightForward.x,-lightForward.y, -lightForward.z, Vec3_DOT(lightForward, lightPos)},
-		{0.0f,           0.0f,           0.0f,           1.0f}
-	}};
-
-	depthCamera->viewMatrix = lightViewMatrix;
 
 
 	// copy the matrix to the lighting data
 	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);
+	//AF_Util_Mat4_Log(_lightingData->shadowLightSpaceMatrix);
 	//AF_Log("=========shadowLightSpaceMatrix========\n");
 	//AF_Util_Mat4_Log(shadowLightSpaceMatrix);
 	// render scene from light's point of view
