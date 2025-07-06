@@ -311,7 +311,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 
 	// 0. ===== General Rendering
 	//glCullFace(GL_BACK);  // Cull the back faces (this is the default)
-	glFrontFace(GL_CW);  // Counter-clockwise winding order (default)CCW
+	glFrontFace(GL_CCW);  // Counter-clockwise winding order (default)CCW
 	//glEnable(GL_CULL_FACE); // Enable culling 
 
     // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
@@ -1169,6 +1169,9 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	}else{
 		depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
 	}
+	// flip the y axis
+		// For a row-major matrix, you negate the middle element of the second row.
+	depthCamera->projectionMatrix.rows[1].y *= -1.0f;
 	
 	//depthCamTransform->modelMat = Mat4_ToModelMat4(depthCamTransform->pos, depthCamTransform->rot, depthCamTransform->scale);
 	//AF_Log("=========shadowLightProjection========\n");
@@ -1176,7 +1179,7 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 
     // calculate Right
 
-	Vec3 lightPos = { -2.0f, 4.0f, -1.0f };//depthCamTransform->pos;
+	Vec3 lightPos = depthCamTransform->pos; //{ -2.0f, 4.0f, -1.0f };//
 	Vec3 lightTarget = {0.0f, 0.0f, 0.0f};
 	Vec3 worldUp = {0.0f, 1.0f, 0.0f}; // Assuming Y is up in your world
 	//depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
