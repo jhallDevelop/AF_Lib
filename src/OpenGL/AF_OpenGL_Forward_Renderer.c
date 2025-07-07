@@ -28,7 +28,7 @@ This implementation is for OpenGL
 
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
-
+void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData);
 
 float QUAD_VERTICES[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 	// positions   // texCoords
@@ -325,6 +325,19 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
     // to draw relevant objects.
 	glEnable(GL_CULL_FACE); // Enable culling
+	
+	// ============= DrawBuffer turn off
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		// Log an error: Framebuffer is not complete!
+		AF_Log_Error("AF_Renderer_StartForwardRendering: Framebuffer is not complete! Check depth pass framebuffer\n");
+	}
+	
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+
+
 
 	// Get the depth camera entity from the lighting data
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
@@ -971,7 +984,8 @@ void AF_Renderer_FrameResized(void* _renderingData){
 
 	renderingDataPtr->depthFrameBufferData.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;//window->frameBufferWidth;
 	renderingDataPtr->depthFrameBufferData.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;//window->frameBufferHeight;
-	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthFrameBufferData);
+	//AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthFrameBufferData);
+	AF_Renderer_CreateDepthFrameBuffer(&renderingDataPtr->depthFrameBufferData);
 
 	// resize the debug frame buffer
 	renderingDataPtr->depthDebugFrameBufferData.textureWidth = window->frameBufferWidth;
@@ -992,6 +1006,39 @@ uint32_t AF_Renderer_CreateFBO(void){
 	unsigned int fBO;
 	glGenFramebuffers(1, &fBO);
 	return fBO;
+}
+
+void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
+	if (_frameBufferData->drawBufferType == 0) {}
+	// Delete the existing framebuffer, texture, and renderbuffer if they exist
+	AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
+	AF_Renderer_DeleteRBO(&_frameBufferData->rbo);
+	AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
+
+	// Generate the framebuffer id
+	_frameBufferData->fbo = AF_Renderer_CreateFBO();
+	AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
+
+	// Create the texture
+	unsigned int depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	// attach depth texture as FBO's depth buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, _frameBufferData->fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	_frameBufferData->textureID = depthMap;
+
+
 }
 
 /*
@@ -1129,17 +1176,18 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_frameBufferData->minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)_frameBufferData->magFilter);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // Add wrap parameters if needed (often GL_CLAMP_TO_EDGE for FBO textures)
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	// Depth Settings
+	if ((GLenum)_frameBufferData->internalFormat == GL_DEPTH_COMPONENT) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+	// Normal Settings
+	else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+		float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	}
 
     glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
     return fboTextureID;
