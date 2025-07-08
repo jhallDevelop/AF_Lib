@@ -80,6 +80,9 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
 	AF_Log_Warning("AF_Shader_Load: DX11 not implemented yet \n");
     return returnShaderID;
 
+	// TODO: Implement DX11 shader loading
+	// Need a shader object tholds the vertex and fragment shader paths, and object id's for each vertex and fragment shader for DX11
+
     /*
     // Check if shader paths are empty
     if (AF_STRING_IS_EMPTY(_vertexShaderPath) || AF_STRING_IS_EMPTY(_fragmentShaderPath)) {

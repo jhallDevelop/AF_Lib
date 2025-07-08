@@ -198,6 +198,14 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
 
     char* token = strtok(tempBuffer, ",");
     char* context = NULL;
+
+    // 3. Make the FIRST call to strtok_s using the COPY of the string.
+    #ifdef _WIN32
+        token = strtok_s(tempBuffer, ",", &context);
+    #else
+        token = strtok(tempBuffer, ",");
+    #endif
+
     while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
         filePointers[fileCount++] = token;
         
@@ -238,8 +246,51 @@ Return a char list of files in the path
 void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAlphabetical)
 {
 #ifdef _WIN32
-	// Windows implementation using FindFirstFile and FindNextFile
-	AF_Log_Error("AF_File_ListFiles: Windows not implemented\n");
+    // 1. Initialize the buffer to be a valid empty string.
+    if (MAX_FILELIST_BUFFER_SIZE > 0) {
+        _fileList->stringBuffer[0] = '\0';
+    }
+    _fileList->numberOfFiles = 0;
+
+    WIN32_FIND_DATAA findFileData;
+    HANDLE hFind = INVALID_HANDLE_VALUE;
+
+    char searchPath[MAX_PATH];
+    snprintf(searchPath, sizeof(searchPath), "%s\\*", path);
+
+    hFind = FindFirstFileA(searchPath, &findFileData);
+
+    if (hFind == INVALID_HANDLE_VALUE) {
+        return; // Early exit, but buffer is now safely empty.
+    }
+
+    size_t bufferPosition = 0;
+
+    do {
+        if (!(findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            size_t nameLength = strlen(findFileData.cFileName);
+
+            if (bufferPosition + nameLength + 2 > MAX_FILELIST_BUFFER_SIZE) {
+                AF_Log_Error("Buffer overflow. Stopping file accumulation.\n");
+                break;
+            }
+
+            snprintf(_fileList->stringBuffer + bufferPosition, MAX_FILELIST_BUFFER_SIZE - bufferPosition, "%s,", findFileData.cFileName);
+            bufferPosition += nameLength + 1; // Update position (+1 for the comma)
+            _fileList->numberOfFiles++;
+        }
+    } while (FindNextFileA(hFind, &findFileData) != 0);
+
+    FindClose(hFind);
+
+    // 2. If we added files, remove the final trailing comma.
+    if (_fileList->numberOfFiles > 0) {
+        _fileList->stringBuffer[bufferPosition - 1] = '\0';
+    }
+
+    if (_isAlphabetical == AF_TRUE) {
+        AF_File_OrderAlphabetically(_fileList);
+    }
 #else
     struct dirent *dp;
     DIR *dir = opendir(path);
