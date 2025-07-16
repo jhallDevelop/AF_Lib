@@ -121,7 +121,7 @@ extern "C" {
     ====================
     */
     static inline Mat4 Mat4_MULT_M4(Mat4 _leftM4, Mat4 _rightM4) {
-        Mat4 result = { 0 }; // Zero-initialize the result matrix
+        Mat4 result = Mat4_ZERO(); // Zero-initialize the result matrix
 
         // This implementation calculates Result[i][j] = dot(Left.row[i], Right.column[j])
         // where Right.column[j] is assembled from the j-th component of each row vector.
