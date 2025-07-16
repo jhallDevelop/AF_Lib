@@ -42,7 +42,7 @@ cJSON* AF_JSON_Vec3ToJson(const char* _name, Vec3* _vec3, cJSON* _rootJSON);
 cJSON* AF_JSON_Vec4ToJson(const char* _name, Vec4* _vec4, cJSON* _rootJSON);
 cJSON* AF_JSON_Mat4ToJson(const char* _name, Mat4* _vec4, cJSON* _rootJSON);
 
-
+#define AF_JSON_SCRIPT_JSON_NAME_PREFIX "script_"
 
 af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 {
@@ -263,8 +263,16 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		AF_JSON_JsonToEditorData(editorDataJSON, &ecs->editorData[ecs->currentEntity]);
 
 		// Scripts Component
-		cJSON* scriptsJSON = cJSON_GetObjectItem(entityJSON, "scripts");
-		//AF_JSON_JsonToScripts(scriptsJSON, &ecs->scripts[entityIndex * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY]);
+		
+		for(uint32_t i = 0; i < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; i++) {
+			char scriptJSONName[AF_MAX_PATH_CHAR_SIZE];
+			snprintf(scriptJSONName, AF_MAX_PATH_CHAR_SIZE, "%s%i", AF_JSON_SCRIPT_JSON_NAME_PREFIX, i);
+			cJSON* scriptsJSON = cJSON_GetObjectItem(entityJSON, scriptJSONName);
+			// We use a flat array so need to stride through to get an index
+			uint32_t scriptID = (ecs->currentEntity * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + i;
+			AF_JSON_JsonToScripts(scriptsJSON, &ecs->scripts[scriptID]);
+		}
+		
 
 		// Light Component
 		cJSON* lightJSON = cJSON_GetObjectItem(entityJSON, "light");
@@ -429,10 +437,16 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 
 
 		// Scripts
-		AF_CScript* scripts = &_ecs->scripts[i];
-		char scriptsTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* scriptsDataJSON = AF_JSON_ScriptsToJson(&_ecs->scripts[i]);
-		cJSON_AddItemToObject(entityJSON, "scripts", scriptsDataJSON);
+
+		for(uint32_t x = 0; x < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; x++) {
+			// We use a flat array so need to stride through to get an index
+			uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + x;
+			cJSON* scriptsDataJSON = AF_JSON_ScriptsToJson(&_ecs->scripts[scriptID]);
+			char scriptsJSONName[AF_MAX_PATH_CHAR_SIZE] = "\0";
+			snprintf(scriptsJSONName, AF_MAX_PATH_CHAR_SIZE, "%s%i", AF_JSON_SCRIPT_JSON_NAME_PREFIX, x);
+
+			cJSON_AddItemToObject(entityJSON, scriptsJSONName, scriptsDataJSON);
+		}
 
 		// Lights
 		AF_CLight* light = &_ecs->lights[i];
@@ -879,8 +893,8 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
 	cJSON* shaderVertPathJSON = cJSON_GetObjectItem(shaderJSON, "vertexShader");
 
 	// save the shader paths
-	snprintf(_mesh->shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", shaderFragPathJSON->valuestring);
-	snprintf(_mesh->shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", shaderVertPathJSON->valuestring);
+	snprintf(_mesh->shader.fragPath, sizeof(_mesh->shader.vertPath), "%s", shaderFragPathJSON->valuestring);
+	snprintf(_mesh->shader.vertPath, sizeof(_mesh->shader.vertPath), "%s", shaderVertPathJSON->valuestring);
 
 	// Material
 	cJSON* materialJson = cJSON_GetObjectItem(_meshJSON, "material");
@@ -1137,20 +1151,33 @@ void AF_JSON_JsonToInputController(cJSON* _inputControllerJSON, AF_CInputControl
 
 // scripts
 void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
-
 	if (_scriptsJSON == NULL || _scripts == NULL) {
 		AF_Log_Error("AF_JSON_JsonToScripts: Invalid JSON or script pointer.\n");
 		return;
 	}
 	// Has
-	_scripts->enabled = AF_Component_SetHas(_scripts->enabled, cJSON_GetObjectItem(_scriptsJSON, "has")->valueint);
+	uint32_t jsonHasValue = cJSON_GetObjectItem(_scriptsJSON, "has")->valueint;
+	if(jsonHasValue == 1){
+		_scripts->enabled = AF_Component_SetHas(_scripts->enabled, AF_TRUE);
+	}
+	
 	// Enabled
-	_scripts->enabled = AF_Component_SetEnabled(_scripts->enabled, cJSON_GetObjectItem(_scriptsJSON, "enabled")->valueint);
+	uint32_t jsonEnabledValue = cJSON_GetObjectItem(_scriptsJSON, "enabled")->valueint;
+	if(jsonEnabledValue == 1){
+		_scripts->enabled = AF_Component_SetEnabled(_scripts->enabled, AF_TRUE);
+	}
+
+	if(AF_Component_GetHasEnabled(_scripts->enabled) == AF_FALSE) {
+		//AF_Log_Warn("AF_JSON_JsonToScripts: Script component is not enabled, skipping further processing.\n");
+		return; // If the script is not enabled, skip further processing
+	}
+
+	// for each script in the array
 
 	// Script Name
 	cJSON* scriptNameJSON = cJSON_GetObjectItem(_scriptsJSON, "scriptName");
 	if (scriptNameJSON != NULL && cJSON_IsString(scriptNameJSON)) {
-		snprintf(_scripts->scriptName, sizeof(_scripts->scriptName) - 1, "%s,", scriptNameJSON->valuestring);
+		snprintf(_scripts->scriptName, sizeof(_scripts->scriptName) - 1, "%s", scriptNameJSON->valuestring);
 		//strncpy(_scripts->scriptName, scriptNameJSON->valuestring, sizeof(_scripts->scriptName) - 1);
 		_scripts->scriptName[sizeof(_scripts->scriptName) - 1] = '\0'; // Ensure null termination
 	}
@@ -1161,7 +1188,7 @@ void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
 	// Script Full Path
 	cJSON* scriptFullPathJSON = cJSON_GetObjectItem(_scriptsJSON, "scriptFullPath");
 	if (scriptFullPathJSON != NULL && cJSON_IsString(scriptFullPathJSON)) {
-		snprintf(_scripts->scriptFullPath, sizeof(_scripts->scriptName) - 1, "%s,", scriptFullPathJSON->valuestring);
+		snprintf(_scripts->scriptFullPath, sizeof(_scripts->scriptName) - 1, "%s", scriptFullPathJSON->valuestring);
 		//strncpy(_scripts->scriptFullPath, scriptFullPathJSON->valuestring, sizeof(_scripts->scriptFullPath) - 1);
 		_scripts->scriptFullPath[sizeof(_scripts->scriptFullPath) - 1] = '\0'; // Ensure null termination
 	}
@@ -1940,29 +1967,37 @@ cJSON* AF_JSON_ScriptsToJson(AF_CScript* _component) {
 
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
-	cJSON_AddNumberToObject(returnJSON, "has", has);
+	if(has == AF_TRUE){
+		cJSON_AddNumberToObject(returnJSON, "has", 1);
+	} else{
+		cJSON_AddNumberToObject(returnJSON, "has", 0);
+	}
+	
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
-	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
-
-	//char scriptName[MAX_CSCRIPT_PATH];
+	if(enabled == AF_TRUE){
+		cJSON_AddNumberToObject(returnJSON, "enabled", 1);
+	} else{
+		cJSON_AddNumberToObject(returnJSON, "enabled", 0);
+	}
+	
 	cJSON_AddStringToObject(returnJSON, "scriptName", _component->scriptName);
 
 	//char scriptFullPath[MAX_CSCRIPT_PATH];
 	cJSON_AddStringToObject(returnJSON, "scriptFullPath", _component->scriptFullPath);
 
 	//ScriptFuncPtr startFuncPtr;
-	cJSON_AddNullToObject(returnJSON, "startFuncPtr");
+	//cJSON_AddNullToObject(returnJSON, "startFuncPtr");
 
 	//ScriptFuncPtr updateFuncPtr;
-	cJSON_AddNullToObject(returnJSON, "updateFuncPtr");
+	//cJSON_AddNullToObject(returnJSON, "updateFuncPtr");
 
 	//ScriptFuncPtr destroyFuncPtr;
-	cJSON_AddNullToObject(returnJSON, "destroyFuncPtr");
+	//cJSON_AddNullToObject(returnJSON, "destroyFuncPtr");
 
 	//void* loadedScriptPtr;
-	cJSON_AddNullToObject(returnJSON, "loadedScriptPtr");
+	//cJSON_AddNullToObject(returnJSON, "loadedScriptPtr");
 
 	return returnJSON;
 }
