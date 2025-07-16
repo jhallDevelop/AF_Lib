@@ -54,7 +54,7 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
-
+void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData);
 
 // ============================  MESH BUFFERS ================================ 
 void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData);

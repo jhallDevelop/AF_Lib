@@ -124,7 +124,6 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		// copy to the render data to use
 		_renderingData->screenFrameBufferData = screenBufferData;
 	
-		//AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFrameBufferData);
 		// ==== Setup Depth Map and Texture ====
 		_renderingData->depthDebugFrameBufferData = screenBufferData;
 
@@ -133,24 +132,7 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		char depthFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		snprintf(depthVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
 		snprintf(depthFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
-		/*
-		AF_FrameBufferData depthBufferData = {
-			.fbo = 0,
-			.rbo = 0,
-			.shaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath),
-			.textureID = 0,
-			.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH,
-			.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT,
-			.vertPath = depthVertShaderFullPath, 
-			.fragPath = depthFragShaderFullPath, 
-			.shaderTextureName = "",
-			.internalFormat = GL_DEPTH_COMPONENT,
-			.textureAttatchmentType = GL_DEPTH_ATTACHMENT,
-			.drawBufferType = GL_NONE,
-			.readBufferType = GL_NONE,
-			.minFilter = GL_NEAREST,
-			.magFilter = GL_NEAREST
-		};*/
+		
 		AF_FrameBufferData depthBufferData = {
 			.fbo = 0,
 			.rbo = 0,
@@ -336,9 +318,6 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	
 	glClear(GL_DEPTH_BUFFER_BIT);
 
-
-
-
 	// Get the depth camera entity from the lighting data
 	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
 	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
@@ -374,7 +353,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE); // Disable culling
-	AF_Renderer_RenderScreenFBOQuad(_renderingData);
+	//AF_Renderer_RenderScreenFBOQuad(_renderingData);
+	//AF_Renderer_RenderScreenDebugFBOQuad(_renderingData);
 	glEnable(GL_CULL_FACE); // Enable culling
 	AF_Renderer_UnBindFrameBuffer();
 
@@ -756,22 +736,16 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 /*
 ====================
-AF_Renderer_CreateScreenFBOQuadMeshBuffer
-Render the quad to the screen and swap the frame buffers over.
+AF_Renderer_RenderScreenDebugFBOQuad
+Render the quad to the screen and swap the debug frame buffers over.
 ====================
 */
-void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
-	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
+void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData){
+	AF_Renderer_CheckError("AF_Renderer_RenderScreenDebugFBOQuad: Start Render debug quad\n");
 	
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0); // Ensure drawing to default screen
     glUseProgram(_renderingData->depthDebugFrameBufferData.shaderID);
 	
     // Uniforms for linearization (optional, shader dependent)
-    
-	//float near_plane = 1.0f, far_plane = 7.5f; // These should match the projection used for the depth pass
-    //AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "near_plane", near_plane);
-    //AF_Shader_SetFloat(_renderingData->depthDebugFrameBufferData.shaderID, "far_plane", far_plane);
-	
     glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
     glBindTexture(GL_TEXTURE_2D, _renderingData->depthFrameBufferData.textureID); // Bind your actual depth map texture
 
@@ -785,9 +759,39 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
     glBindVertexArray(0);
     glUseProgram(0);
 	
+	AF_Renderer_CheckError("AF_Renderer_RenderScreenDebugFBOQuad: Finish Render debug quad\n");
+}
+
+/*
+====================
+AF_Renderer_CreateScreenFBOQuadMeshBuffer
+Render the quad to the screen and swap the frame buffers over.
+====================
+*/
+void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
+	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
+	AF_Renderer_BindFrameBuffer(0);
+    glViewport(0, 0, _renderingData->windowPtr->frameBufferWidth, _renderingData->windowPtr->frameBufferHeight);
+    
+    // Clear the screen and disable depth testing for the final 2D quad draw
+    glClear(GL_COLOR_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
 	
-    // Consider re-enabling depth test if needed by subsequent rendering
-    // glEnable(GL_DEPTH_TEST);
+    glUseProgram(_renderingData->screenFrameBufferData.shaderID);
+	
+    // Uniforms for linearization (optional, shader dependent)
+    glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
+    glBindTexture(GL_TEXTURE_2D, _renderingData->screenFrameBufferData.textureID); // Bind your actual depth map texture
+
+    if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
+        AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
+    }
+	
+    glBindVertexArray(_renderingData->screenQUAD_VAO);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	
+    glBindVertexArray(0);
+    glUseProgram(0);
 	
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Finish Render debug quad\n");
 }
