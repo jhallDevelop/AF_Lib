@@ -17,7 +17,11 @@ extern "C" {
 #endif
 
 inline static bool AF_Scene_Load(AF_ECS* _ecs, AF_Assets* _assets, const char* _filePath){
-	AF_Log("AF_Scene_Load: Depricated \n");
+	if(_ecs == NULL || _assets == NULL || _filePath == NULL){
+        AF_Log_Error("AF_Scene_Load: Invalid parameters passed to function\n");
+        return AF_FALSE;
+    }
+    AF_Log("AF_Scene_Load: Depricated \n");
     return AF_FALSE;
 
     /*
