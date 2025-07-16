@@ -165,7 +165,9 @@ inline static void AF_Script_Load_And_Bind_Functions(AF_AppData* _AppData, AF_EC
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         //AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = &_ecs->scripts[i]; //entity->scripts[j];
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
+            AF_CScript* script = &_ecs->scripts[scriptID];// entity->scripts[j];
+            
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -219,7 +221,8 @@ inline static void AF_Script_UnloadScripts(AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = &_ecs->scripts[i * j];//entity->scripts[j];
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
+            AF_CScript* script = &_ecs->scripts[scriptID];// entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -271,10 +274,10 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         
-        AF_Entity* entity = &_appData->ecs.entities[i];
         
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = &ecs->scripts[i * j];// entity->scripts[j];
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
+            AF_CScript* script = &ecs->scripts[scriptID];// entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -288,7 +291,7 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
             // Call it
-            scriptFunctPtr(entity, _appData);
+            scriptFunctPtr(j, _appData);
         }
     }
 }
@@ -302,10 +305,10 @@ Loop through all script components that have valid script func pointers and call
 inline static void AF_Script_Call_Update(AF_AppData* _appData){
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
-        AF_Entity* entity = &_appData->ecs.entities[i];
 
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = &ecs->scripts[i * j];//entity->scripts[j];
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
+            AF_CScript* script = &ecs->scripts[scriptID];// entity->scripts[j];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -319,7 +322,7 @@ inline static void AF_Script_Call_Update(AF_AppData* _appData){
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
             // Call it
-            scriptFunctPtr(entity, _appData);
+            scriptFunctPtr(j, _appData);
         }
     }
 }
@@ -333,9 +336,9 @@ Loop through all script components that have valid script func pointers and call
 inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
-        AF_Entity* entity = &_appData->ecs.entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            AF_CScript* script = &ecs->scripts[i * j];//entity->scripts[j];
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
+            AF_CScript* script = &ecs->scripts[scriptID];
             if(AF_HasScriptEnabled(script) == AF_FALSE){
                 continue;
             }
@@ -349,7 +352,7 @@ inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
             // Call it
-            scriptFunctPtr(entity, _appData);
+            scriptFunctPtr(j, _appData);
         }
     }
 }
