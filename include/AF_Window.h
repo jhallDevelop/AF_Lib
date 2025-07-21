@@ -10,7 +10,7 @@ Definition of Window helper functions
 #define AF_WINDOW_H
 #include <stdint.h>
 #include "AF_Lib_Define.h"
-
+#include "AF_Vec2.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,6 +96,8 @@ Platform/library dependent. Likely using glfw
 ====================
 */
 void AF_Window_Terminate(AF_Window* _window);
+
+Vec2 AF_Window_GetFramebufferSize(AF_Window* _window);
 
 
 #ifdef __cplusplus

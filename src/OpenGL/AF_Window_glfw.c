@@ -7,6 +7,7 @@ Calls GLFW library to handling window creation and input handling
 ===============================================================================
 */
 #include "AF_Window.h"
+
 #include <stdio.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -358,6 +359,23 @@ void AF_Window_Render(AF_Window* _window){
 
     /* Poll for and process events */
     glfwPollEvents();
+}
+
+/*====================
+AF_Window_GetFramebufferSize
+Window size callback
+Get the framebuffer size of the window
+Returns a Vec2 with the width and height of the framebuffer
+====================
+*/
+Vec2 AF_Window_GetFramebufferSize(AF_Window* _window) {
+    if (_window == NULL || _window->window == NULL) {
+        AF_Log_Error("%s GetFramebufferSize: _window or _window->window is NULL\n", glfwWindowFileTitle);
+    }
+    uint32_t width = 0, height = 0;
+    glfwGetFramebufferSize((GLFWwindow*)_window->window, &width, &height);
+    Vec2 size  = {width, height};
+    return size;
 }
 
 /*====================
