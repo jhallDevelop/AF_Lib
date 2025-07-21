@@ -137,7 +137,7 @@ Mat4 Mat4_Ortho(float _left, float _right, float _bottom, float _top, float _nea
         {0.0f,      0.0f,    0.0f,      1.0f}     // Row 3
     }};
    
-
+    orthMatrix.rows[1].y *= -1.0f;
     return orthMatrix;
 }
 
@@ -177,6 +177,8 @@ Mat4 AF_Camera_GetPerspectiveProjectionMatrix(AF_CCamera* _camera, AF_FLOAT _win
         {0.0f,         0.0f,          -(f+n)/(f-n),              -2*f*n/(f-n)},           // Row 2
         {0.0f,         0.0f,          -1.0f,                     0.0f}             // Row 3
     }};
+
+    perspectiveMatrix.rows[1].y *= -1.0f;
     return perspectiveMatrix;
 }
 

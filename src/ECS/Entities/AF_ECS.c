@@ -261,7 +261,6 @@ void AF_ECS_UpdateCameraVectors(AF_ECS* _ecs, uint32_t _cameraID, AF_FLOAT _wind
 	
     // calculate up
     Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(right, front));
-	
     // Calculate view matrix:vs
     Mat4 viewMatrix = Mat4_Lookat(cameraTransform->pos, Vec3_ADD(cameraTransform->pos,front), up);
     camera->viewMatrix = viewMatrix;
