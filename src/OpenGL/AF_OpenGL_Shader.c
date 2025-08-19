@@ -183,7 +183,7 @@ void AF_Shader_Delete(uint32_t programID) {
     if (programID != 0) { // 0 is not a valid shader program
         glUseProgram(0);  // Unbind the program if it is currently in use
         glDeleteProgram(programID);
-        AF_Log("AF_Shader: Shader program with ID %u deleted\n", programID);
+        //AF_Log("AF_Shader: Shader program with ID %u deleted\n", programID);
     } else {
         AF_Log_Error("AF_Shader_Delete: Invalid shader program ID (0)\n");
     }

@@ -410,12 +410,12 @@ AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePat
     // Potentially check cache first if you don't want to *always* reload from disk
     AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texturePath);
     if (cachedTexture.type != AF_TEXTURE_TYPE_NONE) {
-		AF_Log("AF_Renderer_ReLoadTexture: Loading Cached texture id: %i from assets for path: %s\n", returnTexture.id, _texturePath);
+		//AF_Log("AF_Renderer_ReLoadTexture: Loading Cached texture id: %i from assets for path: %s\n", returnTexture.id, _texturePath);
     //     // Optional: Could check glIsTexture(cachedTexture.id) here if paranoid
          return cachedTexture;
     }
 
-	AF_Log("AF_Renderer_ReLoadTexture: Cached texture not found. Loading texture for first time: %s\n", _texturePath);
+	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture not found. Loading texture for first time: %s\n", _texturePath);
     returnTexture.id = AF_Renderer_LoadTexture(_texturePath);
 
     if (returnTexture.id == 0) { // Now this check is meaningful
@@ -425,7 +425,7 @@ AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePat
     }
 
     returnTexture.type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
-	AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n",returnTexture.id,  _texturePath);
+	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n",returnTexture.id,  _texturePath);
     AF_Assets_AddTexture(_assets, returnTexture); // Add/update in asset manager
 
     return returnTexture;
