@@ -34,7 +34,7 @@ af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const c
         return AF_FALSE;
     }
 
-    AF_Log("Show Model File Browser \n");
+    //AF_Log("AF_MeshLoad_Load: Show Model File Browser \n");
     // delete the existing mesh data
     // save a copy of the mesh path, and shader as we still want to use that.
     // copy the mesh path
@@ -49,7 +49,7 @@ af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const c
     snprintf(fragCopy,sizeof(fragCopy),"%s", _meshComponent->shader.fragPath);
 
     // Blat the component. removing all memory
-    AF_Log_Warning("Editor_Component_LoadModel: DISABLED destroying mesh, need to sync AF_Lib from home \n");
+    //AF_Log_Warning("AF_MeshLoad_Load: DISABLED destroying mesh, need to sync AF_Lib from home \n");
 
     //Load the new model from path
 
@@ -77,9 +77,9 @@ Unpack the model into an assimp format then process mesh nodes
 ================
 */
 af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* _modelPath){
-    AF_Log("Editor_Model_LoadAssimp: Loading model from path: %s\n", _modelPath);
+    //AF_Log("AF_MeshLoad_Assimp: Loading model from path: %s\n", _modelPath);
     if(std::strcmp(_modelPath, "") == 0){
-        AF_Log_Error("Editor_Model_LoadAssimp: No model path provided\n");
+        AF_Log_Error("AF_MeshLoad_Assimp: No model path provided\n");
         return AF_FALSE;
     }
 
@@ -95,14 +95,14 @@ af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const
     // check for errors
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
     {
-        AF_Log_Error("Editor_Model: ERROR::ASSIMP:: %s" , importer.GetErrorString());
+        AF_Log_Error("AF_MeshLoad_Assimp: ERROR::ASSIMP:: %s" , importer.GetErrorString());
         return AF_FALSE;
     }
 
     // Figure out how many sub modules there are and allocate memory for them
     uint32_t numMeshes = scene->mNumMeshes;
     if(numMeshes == 0){
-        AF_Log_Error("Editor_Model: processNode: No meshes found in model\n");
+        AF_Log_Error("AF_MeshLoad_Assimp: processNode: No meshes found in model\n");
         return AF_FALSE;
     }
     
@@ -123,7 +123,7 @@ af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const
     // Set the material and texture
     if (_meshComponent.material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
     {
-        AF_Log("AF_MeshLoad_Assimp_ProcessMesh: Mesh previously had texture loaded: Reload texture\n");
+        // Reload texture\n");
         // Diffuse
         _meshComponent.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshComponent.material.diffuseTexture.path);
         // Normal
@@ -147,7 +147,7 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     // data to fill
     AF_Vertex* vertices = (AF_Vertex*)malloc(sizeof(AF_Vertex) * _mesh.mNumVertices);
     if(vertices == nullptr){
-        AF_Log_Warning("Editor_Model: processMesh: FAILED to create vertices buffer\n");
+        AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: processMesh: FAILED to create vertices buffer\n");
         return;
     }
 
@@ -164,7 +164,7 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     }
     uint32_t* indices = (uint32_t*)malloc(sizeof(uint32_t) * numIndicies);
     if(indices == nullptr){
-        AF_Log_Warning("Editor_Model: processMesh: FAILED to create indices buffer\n");
+        AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: processMesh: FAILED to create indices buffer\n");
         return;
     }
 
@@ -271,7 +271,7 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     /**/
     if(_material->diffuseTexture.type != AF_TEXTURE_TYPE_NONE)
     {
-        AF_Log("AF_MeshLoad_Assimp_ProcessMesh: Mesh previously had texture loaded: Reload texture\n");
+        //AF_Log("AF_MeshLoad_Assimp_ProcessMesh: Mesh previously had texture loaded: Reload texture\n");
         // Diffuse
         //_meshData.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.diffuseTexture.path);
         // Normal
@@ -283,7 +283,7 @@ void AF_MeshLoad_Assimp_ProcessMesh(AF_Assets& _assets, const char* _meshPath, A
     }
     else {
         // 1. diffuse maps
-        AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: Mesh texture, hasn't been loaded before: Load Assimp Material Texture New\n");
+        //AF_Log_Warning("AF_MeshLoad_Assimp_ProcessMesh: Mesh texture, hasn't been loaded before: Load Assimp Material Texture New\n");
         //AF_Renderer_SetFlipImage(_meshData.)
         _material->diffuseTexture = AF_MeshLoad_Assimp_LoadMaterialTextures(_assets, _meshPath, *assimpMaterial, aiTextureType_DIFFUSE);
 
@@ -420,7 +420,7 @@ uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char*
                 continue;
             }
 
-            AF_Log("AF_MeshLoad_Shader_LoadFromAssets: SUCCESS: Loaded existing shader: %i with path %s\n", _assetsLoaded.shaders[j].shaderID, _vertPath);
+            //AF_Log("AF_MeshLoad_Shader_LoadFromAssets: SUCCESS: Loaded existing shader: %i with path %s\n", _assetsLoaded.shaders[j].shaderID, _vertPath);
             returnShaderID = _assetsLoaded.shaders[j].shaderID;
             break;
         }
@@ -452,7 +452,7 @@ uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets& _assetsLoaded, const char*
             AF_Log_Error("AF_MeshLoad_Shader_LoadFromAssets: Failed to add shader, something went wrong\n");
             return SHADER_FAILED_TO_LOAD;
         }
-        AF_Log("AF_MeshLoad_Shader_LoadFromAssets: SUCCESS: Loaded new shader from path %s \n",_vertPath);
+        //AF_Log("AF_MeshLoad_Shader_LoadFromAssets: SUCCESS: Loaded new shader from path %s \n",_vertPath);
     }
     
     return returnShaderID;
