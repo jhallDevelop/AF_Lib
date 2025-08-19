@@ -27,7 +27,7 @@ Sync the entities loaded
 void AF_Project_SyncEntities(AF_AppData* _appData) {
 
     // TODO: maybe put this back in
-    AF_Log_Warning("AF_Project_SyncEntities: disabled destroying mesh buffers before ecs sync. may need to re-implement. Currently cause\n");
+    //AF_Log_Warning("AF_Project_SyncEntities: disabled destroying mesh buffers before ecs sync. may need to re-implement. Currently cause\n");
     /*
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
         af_bool_t hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
