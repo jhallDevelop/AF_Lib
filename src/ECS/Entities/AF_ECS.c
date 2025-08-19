@@ -271,12 +271,30 @@ void AF_ECS_UpdateCameraVectors(AF_ECS* _ecs, uint32_t _cameraID, AF_FLOAT _wind
 
     // update the cameras model matrix to be used in shaders later
     cameraTransform->modelMat = Mat4_ToModelMat4(cameraTransform->pos, cameraTransform->rot, cameraTransform->scale);
-
-
-    
-    //camera->windowWidth = _windowWidth;
-    //camera->windowHeight = _windowHeight;
     camera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(camera, _windowWidth, _windowHeight);
-    
 }
 
+// AF_Entity_FindEntityOfTag
+// This function searches for an entity with a specific tag in the ECS and returns its ID.
+// If no entity with the specified tag is found, it returns 0.
+uint32_t AF_ECS_FindEntityOfTag(AF_ECS* _ecs, AF_Entity_Tag_e _tag) {
+    if (_ecs == NULL) {
+        AF_Log_Error("GetEntityOfTag: ecs is NULL\n");
+        return 0; // Return an invalid ID
+    }
+    
+    uint32_t entityID = 0; // Default to 0 if no entity found
+    // Get the entity ID from the ECS
+    for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+        if(AF_ECS_GetTag(_ecs->entities[i].id_tag) == _tag){
+            entityID = i; // Return the ID of the entity with the specified tag
+            return entityID;
+        }
+    }   
+    
+    if (entityID == 0) {
+        AF_Log_Error("GetEntityOfTag: No entity with tag %i found\n", _tag);
+    }
+    
+    return entityID;
+}

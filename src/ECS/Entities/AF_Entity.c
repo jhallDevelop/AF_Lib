@@ -35,5 +35,23 @@ PACKED_UINT32 AF_ECS_AssignTag(PACKED_UINT32 _id_tag, PACKED_UINT32 _tagValue){
 	return returnTag;
 }
 
+/*
+================
+AF_Entity_Tagmappings_ConvertToCharArray
+// Construct and return the keys as an array of chars
+================
+*/
+void AF_Entity_Tagmappings_ConvertToCharArray(const AF_Entity_Tag* _tagMappings, const char** _charArray, uint32_t _size) {
+    if (!_tagMappings || !_charArray) return;  // Null pointer check
+
+    for (uint32_t i = 0; i < _size; i++) {
+        _charArray[i] = _tagMappings[i].name;
+    }
+
+    _charArray[_size] = NULL;  // Null-terminate the array
+}
+
+
+
 
 
