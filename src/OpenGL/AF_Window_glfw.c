@@ -262,7 +262,7 @@ af_bool_t AF_Window_Create(void* _appData) {
 
     AF_AppData* appData = (AF_AppData*)_appData;
     AF_Window* _window = &appData->window;
-    AF_Log("AF_Window_Create: appData %p, window %p width: %i height: %i \n",appData, &appData->window, _window->windowWidth, _window->windowHeight);
+    //AF_Log("AF_Window_Create: appData %p, window %p width: %i height: %i \n",appData, &appData->window, _window->windowWidth, _window->windowHeight);
    
     GLFWwindow* glfwWindow = glfwCreateWindow(_window->windowWidth, _window->windowHeight, _window->title, NULL, NULL);
    
@@ -372,7 +372,7 @@ Vec2 AF_Window_GetFramebufferSize(AF_Window* _window) {
     if (_window == NULL || _window->window == NULL) {
         AF_Log_Error("%s GetFramebufferSize: _window or _window->window is NULL\n", glfwWindowFileTitle);
     }
-    uint32_t width = 0, height = 0;
+    int width = 0, height = 0;
     glfwGetFramebufferSize((GLFWwindow*)_window->window, &width, &height);
     Vec2 size  = {width, height};
     return size;
