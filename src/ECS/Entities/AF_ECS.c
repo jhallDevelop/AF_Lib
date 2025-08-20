@@ -157,6 +157,11 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 
 	uint32_t entityID = AF_ECS_GetID(entity->id_tag);
 	_ecs->transforms[entityID] = AF_CTransform3D_ZERO();	
+
+	// Set the transform to be enabled
+	_ecs->transforms[entityID].enabled = AF_Component_SetHas(_ecs->transforms[entityID].enabled, AF_TRUE);
+	_ecs->transforms[entityID].enabled = AF_Component_SetEnabled(_ecs->transforms[entityID].enabled, AF_TRUE);
+	
 	// increment the entity counter
 	_ecs->currentEntity++;
     return entity;
