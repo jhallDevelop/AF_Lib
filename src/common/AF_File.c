@@ -426,9 +426,9 @@ Editor_Utils_SetWorkingDirectory
 Set the working directory
 ================
 */
-void AF_File_SetWorkingDirectory(const char* projectRoot) {
+void AF_File_SetWorkingDirectory(const char* _projectRoot) {
     //AF_Log_Error("Editor_Utils_SetWorkingDirectory: Windows not defined\n");
-    if (chdir(projectRoot) != 0) {  // Use _chdir(projectRoot) on Windows
-        AF_Log_Error("Editor_Utils_SetWorkingDirectory: Failed to set working directory\n");
+    if (chdir(_projectRoot) != 0) {  // Use _chdir(projectRoot) on Windows
+        AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
     }
 }
