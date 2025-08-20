@@ -60,9 +60,8 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 
 	
 
-	if((AF_Component_GetHas(rigidbody->enabled) == AF_TRUE) && (AF_Component_GetEnabled(rigidbody->enabled) == AF_TRUE)){
+	if((AF_Component_GetHasEnabled(rigidbody->enabled) == AF_TRUE)) {
 	
-		
 		//debgf("Physics: upate: velocity x: %f y: %f z: %f\n", rigidbody->velocity.x, rigidbody->velocity.y, rigidbody->velocity.z);
 		// if the object isn't static
 		if(rigidbody->inverseMass > 0 || rigidbody->isKinematic == AF_TRUE){
