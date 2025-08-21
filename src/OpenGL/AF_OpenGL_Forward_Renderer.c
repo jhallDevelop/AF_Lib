@@ -1221,12 +1221,9 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 
 	AF_CTransform3D* depthCamTransform = &_ecs->transforms[_lightingData->ambientLightEntityIndex];//&_ecs->transforms[_cameraID];
 
-	depthCamera->nearPlane = 1.0f;
-	depthCamera->farPlane = 7.5f;
-	float outerBounds =  10.0f;
 	if(depthCamera->orthographic){
-		depthCamera->projectionMatrix = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, depthCamera->nearPlane, depthCamera->farPlane);
-		//depthCamera->projectionMatrix = Mat4_Ortho(-shadowData->outerBounds, shadowData->outerBounds, -shadowData->outerBounds, shadowData->outerBounds, shadowData->nearPlane, shadowData->farPlane);
+		//depthCamera->projectionMatrix = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, depthCamera->nearPlane, depthCamera->farPlane);
+		depthCamera->projectionMatrix = Mat4_Ortho(-shadowData->outerBounds, shadowData->outerBounds, -shadowData->outerBounds, shadowData->outerBounds, shadowData->nearPlane, shadowData->farPlane);
 	}else{
 		//depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
 	}
@@ -1237,7 +1234,6 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	//AF_Log("=========shadowLightProjection========\n");
 	_lightingData->shadowData.lightPos = depthCamTransform->pos;
 	Vec3 worldUp = {0.0f, 1.0f, 0.0f}; // Assuming Y is up in your world
-	_lightingData->shadowData.worldUp = worldUp;
 	
     // calculate up
 	depthCamera->cameraUp = worldUp;

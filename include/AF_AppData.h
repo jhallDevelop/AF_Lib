@@ -57,6 +57,7 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
     _appData->assets = AF_Assets_ZERO();
     _appData->projectData = Editor_Project_Data_ZERO();
     _appData->rendererData = AF_RenderingData_ZERO();
+    _appData->lightingData = AF_LightingData_ZERO();
     _appData->isRunning = AF_FALSE;
     _appData->isFullscreen = AF_FALSE;
 }
