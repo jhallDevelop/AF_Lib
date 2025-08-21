@@ -569,7 +569,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	
 	
 	
-	AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowLightSpaceMatrix);
+	AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 
@@ -1215,14 +1215,18 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	}
 	
 	AF_CCamera* depthCamera = &_ecs->cameras[_cameraID];//AF_CCamera_ZERO();
+	AF_ShadowData* shadowData = &_lightingData->shadowData;
+	shadowData->shadowCameraID = _cameraID;
 	depthCamera->orthographic = AF_TRUE; // Set to orthographic for depth pass
 
 	AF_CTransform3D* depthCamTransform = &_ecs->transforms[_lightingData->ambientLightEntityIndex];//&_ecs->transforms[_cameraID];
+
 	depthCamera->nearPlane = 1.0f;
 	depthCamera->farPlane = 7.5f;
 	float outerBounds =  10.0f;
 	if(depthCamera->orthographic){
 		depthCamera->projectionMatrix = Mat4_Ortho(-outerBounds, outerBounds, -outerBounds, outerBounds, depthCamera->nearPlane, depthCamera->farPlane);
+		//depthCamera->projectionMatrix = Mat4_Ortho(-shadowData->outerBounds, shadowData->outerBounds, -shadowData->outerBounds, shadowData->outerBounds, shadowData->nearPlane, shadowData->farPlane);
 	}else{
 		//depthCamera->projectionMatrix = AF_Camera_GetPerspectiveProjectionMatrix(depthCamera, _renderingData->depthFrameBufferData.textureWidth,  _renderingData->depthFrameBufferData.textureHeight);
 	}
@@ -1230,36 +1234,22 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 		// For a row-major matrix, you negate the middle element of the second row.
 	depthCamera->projectionMatrix.rows[1].y *= -1.0f;
 	
-	//depthCamTransform->modelMat = Mat4_ToModelMat4(depthCamTransform->pos, depthCamTransform->rot, depthCamTransform->scale);
 	//AF_Log("=========shadowLightProjection========\n");
-	//AF_Util_Mat4_Log(shadowLightProjection);
-
-    // calculate Right
-
-	Vec3 lightPos = depthCamTransform->pos; //{ -2.0f, 4.0f, -1.0f };//
-	//Vec3 lightPos = Vec3_MULT_SCALAR(Vec3_NORMALIZE(lightDir), -20.0f); // Move 20 units back
-	//Vec3 lightPos = { -2.0f, 4.0f, -1.0f };
-	Vec3 lightTarget = {0.0f, 0.0f, 0.0f};
+	_lightingData->shadowData.lightPos = depthCamTransform->pos;
 	Vec3 worldUp = {0.0f, 1.0f, 0.0f}; // Assuming Y is up in your world
-	//depthCamera->cameraFront = AF_Camera_CalculateFront(depthCamera->yaw, depthCamera->pitch);
-    //Vec3 right = Vec3_NORMALIZE(Vec3_CROSS( depthCamera->cameraFront, depthCamera->cameraWorldUp));
-	//depthCamera->cameraRight = right;
-
+	_lightingData->shadowData.worldUp = worldUp;
+	
     // calculate up
-    //Vec3 up = {0,1,0};//Vec3_NORMALIZE(Vec3_CROSS(depthCamera->cameraRight,  depthCamera->cameraFront));
 	depthCamera->cameraUp = worldUp;
-
-	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, Vec3_ADD(depthCamTransform->pos, depthCamera->cameraFront), depthCamera->cameraUp);
-	Mat4 viewMatrix = Mat4_Lookat(lightPos, lightTarget, depthCamera->cameraUp);
-	//Mat4 viewMatrix = Mat4_Lookat(depthCamTransform->pos, lightTarget, depthCamera->cameraUp);
+	Mat4 viewMatrix = Mat4_Lookat(_lightingData->shadowData.lightPos, _lightingData->shadowData.lightTarget, _lightingData->shadowData.worldUp);//, , );
 	depthCamera->viewMatrix = viewMatrix;
 	
 
 
 	// copy the matrix to the lighting data
-	_lightingData->shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);
+	_lightingData->shadowData.shadowLightSpaceMatrix = Mat4_MULT_M4(depthCamera->projectionMatrix, depthCamera->viewMatrix);
 	// Transpose it
-	_lightingData->shadowLightSpaceMatrix = Mat4_Transpose(&_lightingData->shadowLightSpaceMatrix);
+	_lightingData->shadowData.shadowLightSpaceMatrix = Mat4_Transpose(&_lightingData->shadowData.shadowLightSpaceMatrix);
 	// flip the y
 	//_lightingData->shadowLightSpaceMatrix.rows[1].y *= -1.0f;
 

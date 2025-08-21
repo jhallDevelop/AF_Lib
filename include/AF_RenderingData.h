@@ -69,6 +69,9 @@ typedef enum AF_Renderer_PolygonMode_e {
     AF_RENDERER_POLYGON_MODE_LINE = 2
 } AF_Renderer_PolygonMode_e;
 
+
+
+
 // Define the renderer mappings
 extern const AF_RendererPipeline_t AF_RendererPipeline_Mappings[];
 
@@ -105,6 +108,7 @@ typedef struct AF_RenderingData{
     uint16_t viewportTextureHeight; // The height the FBO texture should be / currently is
     af_bool_t     viewportSizeDirty;     // Flag if it needs to be recreated
 	void* specialRenderData; // Pointer to the device context (e.g., for DirectX or Vulkan)
+    // Add any other rendering specific data here
 } AF_RenderingData;
 
 // ================ Screen FBO Data ================
@@ -144,7 +148,6 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
     returnRenderingData.viewportTextureHeight = 0; // The height the FBO texture should be / currently is
     returnRenderingData.viewportSizeDirty = AF_FALSE;    // Flag if it needs to be recreated
     returnRenderingData.specialRenderData = NULL;
-
 	return returnRenderingData;
 }
 
