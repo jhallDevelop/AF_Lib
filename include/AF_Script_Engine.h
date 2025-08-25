@@ -24,26 +24,7 @@ Definitions for helper functions to load and use scripts
 extern "C" {    
 #endif
 
-/*
-===============================================================================
-AF_HasScriptEnabled
-Check if the entity is enabled
-Check if the entity has a script that is enabled
-===============================================================================
-*/
-inline static af_bool_t AF_HasScriptEnabled(AF_CScript* _script){
- 
-    if(_script == NULL){
-        AF_Log_Error("AF_HasScriptEnabled: passed a null reference\n");
-        return AF_FALSE;
-	}
-    af_bool_t hasComponent = AF_Component_GetHas(_script->enabled);
-    af_bool_t componentIsEnabled = AF_Component_GetEnabled(_script->enabled);
-    if(hasComponent == AF_FALSE || componentIsEnabled == AF_FALSE){
-        return AF_FALSE;
-    }
-    return AF_TRUE;
-}
+
 
 /*
 ===============================================================================
@@ -168,11 +149,12 @@ inline static void AF_Script_Load_And_Bind_Functions(AF_AppData* _AppData, AF_EC
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
             AF_CScript* script = &_ecs->scripts[scriptID];// entity->scripts[j];
             
-            if(AF_HasScriptEnabled(script) == AF_FALSE){
+            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
             // set the correct script path as the build location may have changed.
-            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "bin/%s/scripts/%s.so", AF_Platform_Mappings[_AppData->projectData.platformData.platformType].name, script->scriptName);
+            //snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "bin/%s/scripts/%s.so", AF_Platform_Mappings[_AppData->projectData.platformData.platformType].name, script->scriptName);
+            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.so", script->scriptName);
             // attempt to load the script
             script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
     
@@ -223,7 +205,7 @@ inline static void AF_Script_UnloadScripts(AF_ECS* _ecs){
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
             AF_CScript* script = &_ecs->scripts[scriptID];// entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == AF_FALSE){
+            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
     
@@ -278,7 +260,7 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
             AF_CScript* script = &ecs->scripts[scriptID];// entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == AF_FALSE){
+            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
             
@@ -305,11 +287,11 @@ Loop through all script components that have valid script func pointers and call
 inline static void AF_Script_Call_Update(AF_AppData* _appData){
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
-
+        // Run all the scripts
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
-            AF_CScript* script = &ecs->scripts[scriptID];// entity->scripts[j];
-            if(AF_HasScriptEnabled(script) == AF_FALSE){
+            AF_CScript* script = &ecs->scripts[scriptID];
+            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
         
@@ -321,8 +303,8 @@ inline static void AF_Script_Call_Update(AF_AppData* _appData){
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
-            // Call it
-            scriptFunctPtr(j, _appData);
+            // Call it passing the entity ID and reference to the game data
+            scriptFunctPtr(i, _appData);
         }
     }
 }
@@ -339,7 +321,7 @@ inline static void AF_Script_Call_Destroy(AF_AppData* _appData){
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
             AF_CScript* script = &ecs->scripts[scriptID];
-            if(AF_HasScriptEnabled(script) == AF_FALSE){
+            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
     
