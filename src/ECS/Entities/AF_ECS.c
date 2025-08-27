@@ -105,6 +105,12 @@ void AF_ECS_Init(AF_ECS* _ecs){
 	AF_ECS_ReSyncComponents(_ecs);
 }
 
+/*
+====================
+AF_ECS_DeleteEntity
+Helper function to delete the entity and reset all the components to zero
+====================
+*/
 void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 	AF_Log("AF_ECS_DeleteEntity\n");
 	//entity->enabled = AF_TRUE;
@@ -129,7 +135,85 @@ void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 	if(_ecs->entitiesCount != 0){
 		_ecs->currentEntity--;
 	}
+}
+
+/*
+====================
+AF_ECS_DuplicateEntity
+Helper function to delete the entity and reset all the components to zero
+====================
+*/
+void AF_ECS_DuplicateEntity(AF_ECS* _ecs, AF_Entity* _entity){
+	if(_ecs->currentEntity+1 >= AF_ECS_TOTAL_ENTITIES){
+		AF_Log_Warning("AF_ECS_DuplicateEntity: Run out of entities, can't duplicate\n");
+		return;
+	}
+
+	// Create the entity
+	AF_Entity* newEntity = AF_ECS_CreateEntity(_ecs);
+    uint32_t srcID = AF_ECS_GetID(_entity->id_tag);
+    uint32_t dstID = AF_ECS_GetID(newEntity->id_tag);
+
+
+	// copy the name
 	
+
+	// copy all the components across
+	// Transform
+	_ecs->transforms[dstID] = _ecs->transforms[srcID];
+
+	// Sprite
+	_ecs->sprites[dstID] = _ecs->sprites[srcID];
+
+	// Rigidbody
+	_ecs->rigidbodies[dstID] = _ecs->rigidbodies[srcID];
+
+	// Collider
+	_ecs->colliders[dstID] = _ecs->colliders[srcID];
+
+	// Camera
+	_ecs->cameras[dstID] = _ecs->cameras[srcID];
+
+	// Animation
+	_ecs->animations[dstID] = _ecs->animations[srcID];
+
+	// Mesh
+	_ecs->meshes[dstID] = _ecs->meshes[srcID];
+
+	// Text
+	_ecs->texts[dstID] = _ecs->texts[srcID];
+
+	// Audio Source
+	_ecs->audioSources[dstID] = _ecs->audioSources[srcID];
+
+	// Player data
+	_ecs->playerDatas[dstID] = _ecs->playerDatas[srcID];
+
+	// Skeletal Animation
+	_ecs->skeletalAnimations[dstID] = _ecs->skeletalAnimations[srcID];
+
+	// ai behaviours
+	_ecs->aiBehaviours[dstID] = _ecs->aiBehaviours[srcID];
+
+	// Editor Data
+	_ecs->editorData[dstID] = _ecs->editorData[srcID];
+	// give it a unique name
+	snprintf(_ecs->editorData[srcID].name, AF_MAX_PATH_CHAR_SIZE, "%s_copy", _ecs->editorData[srcID].name);
+
+	// Input controller
+	_ecs->inputControllers[dstID] = _ecs->inputControllers[srcID];
+
+	// Scripts
+	for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+		uint32_t entityID = AF_ECS_GetID(_entity->id_tag);
+		uint32_t scriptIndex = (entityID * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j;
+		
+		// check range of id
+		_ecs->scripts[scriptIndex] = AF_CScript_ZERO();
+	}
+
+	// lights
+	_ecs->lights[dstID] = _ecs->lights[srcID];
 }
 
 /*

@@ -23,9 +23,18 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 #include "AF_Math/AF_Vec3.h"
 #include "AF_Math/AF_Vec4.h"
 #include "AF_Util.h"
+#include "AF_Log.h"
 //#include "AF_QuadTree.h"
 #define FACES_COUNT 6
 #define BOX_VERTEX_COUNT 24
+
+#ifndef AF_MAX
+#define AF_MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef AF_MIN
+#define AF_MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -267,53 +276,63 @@ AF_PHYSICS_Box_RAYINTERSECTION
 Calculate ray intersection hit test against a box
 ====================
 */
-static inline af_bool_t AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _boxPos, const Vec3 _boxSize, AF_Collision* _collision){
-	Vec3 boxMin = Vec3_MINUS(_boxPos, _boxSize);
-	Vec3 boxMax = Vec3_ADD(_boxPos, _boxSize);
-	af_bool_t returnResult = AF_TRUE;
-	AF_FLOAT rayPos[3] = {_ray->position.x, _ray->position.y, _ray->position.z};
-	AF_FLOAT rayDir[3] = {_ray->direction.x, _ray->direction.y, _ray->direction.z};
-	
-	AF_FLOAT tVals[3] = {-1, -1, -1};
-	// convert to float array so we can use a forloop on the values
-	AF_FLOAT boxMinArray[3] = {boxMin.x, boxMin.y, boxMin.z};
-	AF_FLOAT boxMaxArray[3] = {boxMax.x, boxMax.y, boxMax.z};
-	
+static inline af_bool_t AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _boxPos, const Vec3 _boxSize, AF_Collision* _collision) {
+    Vec3 boxMin = Vec3_MINUS(_boxPos, _boxSize);
+    Vec3 boxMax = Vec3_ADD(_boxPos, _boxSize);
 
-	// Get the x, y, z values if the collision is infront or behind the box edge
-	for(int i = 0; i < 3; ++i){
-		if(rayDir[i] > 0){
-			tVals[i] = (boxMinArray[i] - rayPos[i]) / rayDir[i];
-		}else if(rayDir[i] < 0){
-			tVals[i] = (boxMaxArray[i] - rayPos[i]) / rayDir[i];
-		}
-	}
+    // Initial ray intersection times (t_min and t_max)
+    AF_FLOAT t_min = -1.0f;
+    AF_FLOAT t_max = -1.0f;
+    
+    // Check for each dimension (x, y, z)
+    for (int i = 0; i < 3; ++i) {
+        // Use a temporary array for cleaner access
+        AF_FLOAT rayOrigin_i = (i == 0) ? _ray->position.x : ((i == 1) ? _ray->position.y : _ray->position.z);
+        AF_FLOAT rayDir_i = (i == 0) ? _ray->direction.x : ((i == 1) ? _ray->direction.y : _ray->direction.z);
+        AF_FLOAT boxMin_i = (i == 0) ? boxMin.x : ((i == 1) ? boxMin.y : boxMin.z);
+        AF_FLOAT boxMax_i = (i == 0) ? boxMax.x : ((i == 1) ? boxMax.y : boxMax.z);
 
-	// Figure out if the x, y, or z is the largest value
-	AF_FLOAT bestT = AF_GetMaxElement(tVals, 3);
-	if(bestT < 0.0f){
-		printf("AF_Physics_Box_RayIntersection: no backwards ray\n");
-		returnResult = AF_FALSE; // no backwards rays 
-		return returnResult;
-	}
+        // Calculate t1 and t2 for the current slab
+        AF_FLOAT t1 = (boxMin_i - rayOrigin_i) / rayDir_i;
+        AF_FLOAT t2 = (boxMax_i - rayOrigin_i) / rayDir_i;
 
-	Vec3 intersection = Vec3_ADD(_ray->position, Vec3_MULT_SCALAR(_ray->direction, bestT));
-	float intersectionFloatArray[3] = {intersection.x, intersection.y, intersection.z};
-	const AF_FLOAT epsilon = 0.0001f;
-	for(int i = 0; i < 3; ++i){
-		if(	intersectionFloatArray[i] + epsilon < boxMinArray[i] ||
-			intersectionFloatArray[i] - epsilon > boxMaxArray[i]) {
-				printf("AF_Physics_Box_RayIntersection: best intersection doesn't touch box \n");
-				returnResult = AF_FALSE; // best intersection doesn't touch the box
-				return returnResult;
-			}
-	}
-	_collision->collisionPoint = intersection;
-	_collision->rayDistance = bestT;
-	returnResult = AF_TRUE; 
-	printf("AF_Physics_Box_RayIntersection: result %i \n", returnResult);
-	return returnResult;
-} 
+        // Ensure t1 is the entry time and t2 is the exit time
+        if (t1 > t2) {
+            AF_FLOAT temp = t1;
+            t1 = t2;
+            t2 = temp;
+        }
+
+        // Update the overall t_min and t_max
+        // t_min is the maximum of all entry times
+        // t_max is the minimum of all exit times
+        if (i == 0) { // First iteration
+            t_min = t1;
+            t_max = t2;
+        } else {
+            t_min = AF_MAX(t_min, t1);
+            t_max = AF_MIN(t_max, t2);
+        }
+    }
+
+    // Check if there is a valid intersection
+    // The intersection exists if t_min <= t_max and a part of the intersection is in front of the ray origin (t_max > 0)
+    if (t_min > t_max || t_max < 0.0f) {
+        //AF_Log("AF_Physics_Box_RayIntersection: no intersection found\n");
+        return AF_FALSE;
+    }
+
+    // A collision has occurred. The distance is t_min because that's the first time we hit a box face.
+    // Calculate the collision point
+    _collision->rayDistance = t_min;
+    _collision->collisionPoint = Vec3_ADD(_ray->position, Vec3_MULT_SCALAR(_ray->direction, _collision->rayDistance));
+
+    //AF_Log("AF_Physics_Box_RayIntersection: result TRUE, distance: %f\n", _collision->rayDistance);
+    return AF_TRUE;
+}
+
+
+
 
 /*
 ====================
@@ -712,9 +731,9 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 					}
 
 					// create a new collision struct
-					AF_Collision collision1 = {returnValue, entity1, entity2, collider1->collision.callback, {0,0,0}, 0.0f, bestAxis, penetration}; 
+					AF_Collision collision1 = {returnValue, entity1ID, entity2ID, collider1->collision.callback, {0,0,0}, 0.0f, bestAxis, penetration}; 
 					// TODO: i think the bestAxis should be inverted for the second object
-					AF_Collision collision2 = {returnValue, entity2, entity1, collider2->collision.callback, {0,0,0}, 0.0f, Vec3_MULT_SCALAR(bestAxis, -1), penetration}; 
+					AF_Collision collision2 = {returnValue, entity2ID, entity1ID, collider2->collision.callback, {0,0,0}, 0.0f, Vec3_MULT_SCALAR(bestAxis, -1), penetration}; 
 					
 					// copy the new struct values to each collider
 					collider1->collision = collision1;
@@ -801,9 +820,9 @@ static void AF_Physics_BroadPhase(AF_ECS* _ecs){
 // Function to compare two CollisionInfo objects based on their hashes
 static inline af_bool_t AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_Collision* info2) {
     // Calculate hash for the first CollisionInfo
-    size_t hash1 = (size_t)info1->entity1 + ((size_t)info1->entity2 << 8);
+    size_t hash1 = (size_t)info1->entity1ID + ((size_t)info1->entity2ID << 8);
     // Calculate hash for the second CollisionInfo
-    size_t hash2 = (size_t)info2->entity1 + ((size_t)info2->entity2 << 8);
+    size_t hash2 = (size_t)info2->entity1ID + ((size_t)info2->entity2ID << 8);
 
     // Return true if the hash of info1 is less than that of info2
     return (hash1 < hash2);
@@ -838,7 +857,56 @@ static inline void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, si
     //printf("Total collisions: %zu\n", allCollisionsCount);
 }
 
+/*
+====================
+AF_PHYSICS_Raycast
+Calculate ray intersection hit test against an Axis Aligned Bounding Box on all colliders in the ecs that are enabled
+Returns AF_TRUE if a collision occured, and fills out the collision structure with the closest hit
+====================
+*/
+static inline af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Collision* _collision){
+	// only search up to the current entity count as all other entities are not in use
+	for(int32_t i = 0; i < _ecs->currentEntity; ++i){
+		AF_CCollider* collider = &_ecs->colliders[i];
+		af_bool_t hasCollider = AF_Component_GetHas(collider->enabled);
+		if(hasCollider == AF_FALSE){
+			continue;
+		}
+		AF_CTransform3D* transform = &_ecs->transforms[i];
+		af_bool_t collided = AF_FALSE;
+		switch(collider->type){
+			case AABB:
+				collided = AF_Physics_AABB_RayIntersection(_ray, collider, _collision);
+				break;
+			case OBB:
+				collided = AF_Physics_OBB_RayIntersection(_ray, transform, &collider->boundingVolume, _collision);
+				break;
+			case Plane:
+				collided = AF_Physics_Plane_RayIntersection(_ray, collider, _collision);
+				break;
+			case Sphere:
+				collided = AF_Physics_Sphere_RayIntersection(_ray, transform, collider, _collision);
+				break;
+			case Mesh:
+		}
 
+		if(collided == AF_TRUE){
+			_collision->entity1ID = i;
+			_collision->entity2ID = 9999;
+			//_collision->collisionPoint = 
+			//_collision->rayDistance = 
+			Vec3 distance = Vec3_MINUS(_collision->collisionPoint, _ray->position);
+			_collision->rayDistance = Vec3_MAGNITUDE(distance);
+			//_collision->normal = 
+			//_collision->penetration = 
+			//_collision->callback =
+			_collision->collided = AF_TRUE;
+			return AF_TRUE;
+		}else{
+			_collision->collided = AF_FALSE;
+		}
+	}
+}
 
 
 

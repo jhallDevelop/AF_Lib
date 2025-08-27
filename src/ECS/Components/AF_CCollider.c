@@ -26,8 +26,8 @@ AF_CCollider AF_CCollider_ZERO(void){
 		.broadphaseAABB = {0,0,0}
 	};
     collider.collision.collided  = AF_FALSE;
-	collider.collision.entity1 = NULL;
-	collider.collision.entity2 = NULL;
+	collider.collision.entity1ID = 99999;
+	collider.collision.entity2ID = 99999;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
@@ -56,8 +56,8 @@ AF_CCollider AF_CCollider_ADD(void){
 		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = AF_FALSE;
-	collider.collision.entity1 = NULL;
-	collider.collision.entity2 = NULL;
+	collider.collision.entity1ID = 9999;
+	collider.collision.entity2ID = 9999;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
@@ -87,8 +87,8 @@ AF_CCollider AF_CCollider_Sphere_ADD(void){
 		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = AF_FALSE;
-	collider.collision.entity1 = NULL;
-	collider.collision.entity2 = NULL;
+	collider.collision.entity1ID = 9999;
+	collider.collision.entity2ID = 9999;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
@@ -116,8 +116,8 @@ AF_CCollider AF_CCollider_Box_ADD(void){
 		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = AF_FALSE;
-	collider.collision.entity1 = NULL;
-	collider.collision.entity2 = NULL;
+	collider.collision.entity1ID = 9999;
+	collider.collision.entity2ID = 9999;
 	collider.collision.callback = AF_Collision_DummyCallback;//(void (*)(AF_Collision))0;
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
@@ -145,8 +145,8 @@ AF_CCollider AF_CCollider_Plane_ADD(void){
 		.broadphaseAABB = {0,0,0}
 	};
         collider.collision.collided  = AF_FALSE;
-	collider.collision.entity1 = NULL;
-	collider.collision.entity2 = NULL;
+	collider.collision.entity1ID = 9999;
+	collider.collision.entity2ID = 9999;
 	collider.collision.callback = AF_Collision_DummyCallback;
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;

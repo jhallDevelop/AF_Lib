@@ -75,7 +75,7 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 		// update the bounds position
 		collider->pos = _ecs->transforms[i].pos;
 		// clear all collsision except keep the callback
-		AF_Collision clearedCollision = {AF_FALSE, NULL, NULL, collider->collision.callback, {0,0,0}, 0.0f, {0,0,0}, 0};
+		AF_Collision clearedCollision = AF_Collision_ZERO();
 		collider->collision = clearedCollision;
 	}
 }

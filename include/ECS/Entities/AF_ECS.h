@@ -57,6 +57,7 @@ typedef struct {
 void AF_ECS_ReSyncComponents(AF_ECS* _ecs);
 AF_LIB_API void AF_ECS_Init(AF_ECS* _ecs);
 void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity);
+void AF_ECS_DuplicateEntity(AF_ECS* _ecs, AF_Entity* _entity);
 AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs);
 //void AF_RemoveEntity(Entity _entity);
 void AF_ECS_Update(AF_Entity* _entities);
