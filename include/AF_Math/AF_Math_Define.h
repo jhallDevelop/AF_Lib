@@ -19,6 +19,7 @@ define extra types e.g. af_bool_t which doesn't exist in c
 #else
     #define AF_FLOAT float
     #define AF_EPSILON 1e-6
+    #define AF_FLOAT_MAX 3.402823466e+38F
 #endif	
 
 #endif

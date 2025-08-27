@@ -864,48 +864,80 @@ Calculate ray intersection hit test against an Axis Aligned Bounding Box on all 
 Returns AF_TRUE if a collision occured, and fills out the collision structure with the closest hit
 ====================
 */
-static inline af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Collision* _collision){
-	// only search up to the current entity count as all other entities are not in use
-	for(int32_t i = 0; i < _ecs->currentEntity; ++i){
-		AF_CCollider* collider = &_ecs->colliders[i];
-		af_bool_t hasCollider = AF_Component_GetHas(collider->enabled);
-		if(hasCollider == AF_FALSE){
-			continue;
-		}
-		AF_CTransform3D* transform = &_ecs->transforms[i];
-		af_bool_t collided = AF_FALSE;
-		switch(collider->type){
-			case AABB:
-				collided = AF_Physics_AABB_RayIntersection(_ray, collider, _collision);
-				break;
-			case OBB:
-				collided = AF_Physics_OBB_RayIntersection(_ray, transform, &collider->boundingVolume, _collision);
-				break;
-			case Plane:
-				collided = AF_Physics_Plane_RayIntersection(_ray, collider, _collision);
-				break;
-			case Sphere:
-				collided = AF_Physics_Sphere_RayIntersection(_ray, transform, collider, _collision);
-				break;
-			case Mesh:
-		}
+static inline af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Collision* _collision) {
+    af_bool_t foundCollision = AF_FALSE;
+    AF_FLOAT closestDistance = AF_FLOAT_MAX; // Use a very large number
+    AF_Collision tempCollision = {0}; // Temporary storage for a potential hit
 
-		if(collided == AF_TRUE){
-			_collision->entity1ID = i;
-			_collision->entity2ID = 9999;
-			//_collision->collisionPoint = 
-			//_collision->rayDistance = 
-			Vec3 distance = Vec3_MINUS(_collision->collisionPoint, _ray->position);
-			_collision->rayDistance = Vec3_MAGNITUDE(distance);
-			//_collision->normal = 
-			//_collision->penetration = 
-			//_collision->callback =
-			_collision->collided = AF_TRUE;
-			return AF_TRUE;
-		}else{
-			_collision->collided = AF_FALSE;
-		}
-	}
+    // Set initial state of the collision struct to no hit
+    _collision->collided = AF_FALSE;
+    _collision->entity1ID = -1;
+
+    // only search up to the current entity count
+    for (int32_t i = 0; i < _ecs->currentEntity; ++i) {
+        AF_CCollider* collider = &_ecs->colliders[i];
+        af_bool_t hasCollider = AF_Component_GetHas(collider->enabled);
+        
+        if (hasCollider == AF_FALSE) {
+            continue;
+        }
+        
+        AF_CTransform3D* transform = &_ecs->transforms[i];
+        
+        // This is a temporary struct to hold collision data for this specific entity
+        AF_Collision currentCollision;
+        currentCollision.collided = AF_FALSE;
+
+        switch (collider->type) {
+            case AABB:
+                currentCollision.collided = AF_Physics_AABB_RayIntersection(_ray, collider, &currentCollision);
+                break;
+            case OBB:
+                currentCollision.collided = AF_Physics_OBB_RayIntersection(_ray, transform, &collider->boundingVolume, &currentCollision);
+                break;
+            case Plane:
+                currentCollision.collided = AF_Physics_Plane_RayIntersection(_ray, collider, &currentCollision);
+                break;
+            case Sphere:
+                currentCollision.collided = AF_Physics_Sphere_RayIntersection(_ray, transform, collider, &currentCollision);
+                break;
+            case Mesh:
+                // TODO: Implement Mesh intersection
+                break;
+        }
+
+        // Check if we hit something and if it's closer than the previous closest hit
+        if (currentCollision.collided == AF_TRUE) {
+            // Note: Your ray-box intersection function now correctly sets rayDistance
+            if (currentCollision.rayDistance < closestDistance) {
+                closestDistance = currentCollision.rayDistance;
+                // Store all the information from the current hit
+                _collision->collided = AF_TRUE;
+                _collision->entity1ID = i;
+                _collision->entity2ID = 9999;
+                _collision->rayDistance = currentCollision.rayDistance;
+                _collision->collisionPoint = currentCollision.collisionPoint;
+                
+                // You can fill out the rest of the collision struct here as needed
+                //_collision->normal = currentCollision.normal;
+                //_collision->penetration = currentCollision.penetration;
+                //_collision->callback = currentCollision.callback;
+            }
+        }
+    }
+    
+    // After the loop, return whether a collision was found at all.
+    // The _collision struct now holds the details of the closest hit.
+    if (_collision->collided == AF_TRUE) {
+        AF_Log("AF_Physics_Raycast: Found a collision with closest entity ID: %i at distance: %f\n", _collision->entity1ID, _collision->rayDistance);
+        AF_Log("ray position x: %f y: %f z: %f \n", _ray->position.x, _ray->position.y, _ray->position.z);
+        AF_Log("ray direction x: %f y: %f z: %f \n", _ray->direction.x, _ray->direction.y, _ray->direction.z);
+        AF_Log("collision point x: %f y: %f z: %f \n", _collision->collisionPoint.x, _collision->collisionPoint.y, _collision->collisionPoint.z);
+    } else {
+        AF_Log("AF_Physics_Raycast: No collision found.\n");
+    }
+    
+    return _collision->collided;
 }
 
 
