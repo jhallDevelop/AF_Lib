@@ -867,14 +867,14 @@ Returns AF_TRUE if a collision occured, and fills out the collision structure wi
 static inline af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Collision* _collision) {
     af_bool_t foundCollision = AF_FALSE;
     AF_FLOAT closestDistance = AF_FLOAT_MAX; // Use a very large number
-    AF_Collision tempCollision = {0}; // Temporary storage for a potential hit
+    AF_Collision tempCollision = AF_Collision_ZERO(); // Temporary storage for a potential hit
 
     // Set initial state of the collision struct to no hit
     _collision->collided = AF_FALSE;
     _collision->entity1ID = -1;
 
     // only search up to the current entity count
-    for (int32_t i = 0; i < _ecs->currentEntity; ++i) {
+    for (uint32_t i = 0; i < _ecs->currentEntity; ++i) {
         AF_CCollider* collider = &_ecs->colliders[i];
         af_bool_t hasCollider = AF_Component_GetHas(collider->enabled);
         
@@ -904,6 +904,12 @@ static inline af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Col
             case Mesh:
                 // TODO: Implement Mesh intersection
                 break;
+			case Compound:
+				// TODO: Implement Compound intersection
+			break;
+			case Invalid:
+				AF_Log("AF_Physics_Raycast: Invalid collider type for entity ID: %i\n", i);
+				break;
         }
 
         // Check if we hit something and if it's closer than the previous closest hit

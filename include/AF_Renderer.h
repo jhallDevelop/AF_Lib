@@ -51,6 +51,7 @@ void AF_Renderer_EndForwardRendering(void);
 // ============================  DRAW ================================ 
 //void AF_Renderer_StartRendering(Vec4 _backgroundColor);
 void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgroundColor);
+void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
@@ -60,12 +61,15 @@ void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData);
 void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData);
 void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount);
 void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);  
+void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs);
+void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider);
 
 
 // ============================  FRAME BUFFERS ================================ 
 
 uint32_t AF_Renderer_CreateFBO(void);
 void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _framebufferData);
+void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData);
 uint32_t AF_Renderer_CreateRBO(void);
 uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _framebufferData);
 void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);

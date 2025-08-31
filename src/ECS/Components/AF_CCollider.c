@@ -23,6 +23,7 @@ AF_CCollider AF_CCollider_ZERO(void){
 		.boundingVolume = {0,0,0},
 		.pos = {0,0,0},
 		.showDebug = AF_FALSE,
+		.collisionMeshData = AF_MeshData_ZERO(),
 		.broadphaseAABB = {0,0,0}
 	};
     collider.collision.collided  = AF_FALSE;

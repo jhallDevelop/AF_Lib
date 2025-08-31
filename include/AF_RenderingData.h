@@ -96,6 +96,8 @@ typedef struct AF_RenderingData{
     //uint32_t depthRenderShaderID;
     // Debug depth
     AF_FrameBufferData depthDebugFrameBufferData;
+
+    uint32_t guizmoDebugShaderID;
     //uint32_t depthDebugFBO_ID;
     //uint32_t depthDebugRBO_ID;
     //uint32_t depthDebugTextureID;
@@ -120,6 +122,8 @@ typedef struct AF_RenderingData{
 #define DEPTH_FRAG_SHADER_PATH "depth.frag"
 #define DEPTH_DEBUG_VERT_SHADER_PATH "debugDepth.vert"
 #define DEPTH_DEBUG_FRAG_SHADER_PATH "debugDepth.frag"
+#define DEBUG_GEOMETRY_VERT_SHADER_PATH "shaders/debugGeometry.vert"
+#define DEBUG_GEOMETRY_FRAG_SHADER_PATH "shaders/debugGeometry.frag"
 
 
 #define AF_RENDERINGDATA_SHADOW_WIDTH 1024
@@ -140,6 +144,7 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
     returnRenderingData.screenQUAD_VBO = 0;
     returnRenderingData.depthFrameBufferData = AF_FrameBufferData_ZERO();
     returnRenderingData.depthDebugFrameBufferData = AF_FrameBufferData_ZERO();
+    returnRenderingData.guizmoDebugShaderID = 0;
     returnRenderingData.polygonMode = AF_RENDERER_POLYGON_MODE_FILL;
     returnRenderingData.frameResizeFnctPtr = NULL;
     returnRenderingData.windowPtr = NULL;

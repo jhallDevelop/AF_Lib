@@ -142,7 +142,7 @@ If an entity has a script component with a valid path, then load the script, and
 binding the start, update and destroy function ptrs
 ===============================================================================
 */
-inline static void AF_Script_Load_And_Bind_Functions(AF_AppData* _AppData, AF_ECS* _ecs){
+inline static void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         //AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){

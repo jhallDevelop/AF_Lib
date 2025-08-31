@@ -13,6 +13,7 @@ and helper functions
 #include "AF_Rect.h"
 #include "AF_Collision.h"
 #include "AF_CollisionVolume.h"
+#include "AF_MeshData.h"
 #include "ECS/Components/AF_Component.h"
 #ifdef __cplusplus
 extern "C" {    
@@ -31,6 +32,7 @@ typedef struct {
     //AF_Rect bounds;
     AF_Collision collision; //TODO: why do we need this?
     af_bool_t showDebug;
+    AF_MeshData collisionMeshData;
 	Vec3 broadphaseAABB;
 } AF_CCollider;
 

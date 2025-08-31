@@ -14,6 +14,7 @@ This implementation is for OpenGL
 #include "AF_Log.h"
 #include "AF_Math/AF_Vec3.h"
 #include "AF_Math/AF_Mat4.h"
+#include "AF_MeshLoad.h"
 #include <GL/glew.h>
 #define GL_SILENCE_DEPRECATION
 #include "AF_Util.h"
@@ -28,7 +29,6 @@ This implementation is for OpenGL
 
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
-void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData);
 
 float QUAD_VERTICES[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
 	// positions   // texCoords
@@ -192,6 +192,18 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	// Recreate the quad mesh buffers
 	AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
 
+
+	// Create the collision Geometry debug shader stuff for rendering debug lines ect.
+	char guizmoDebugFragShaderPath[AF_MAX_PATH_CHAR_SIZE];
+	char guizmoDebugVertShaderPath[AF_MAX_PATH_CHAR_SIZE];
+
+	snprintf(guizmoDebugFragShaderPath, AF_MAX_PATH_CHAR_SIZE, "assets/%s", DEBUG_GEOMETRY_FRAG_SHADER_PATH);
+	snprintf(guizmoDebugVertShaderPath, AF_MAX_PATH_CHAR_SIZE, "assets/%s", DEBUG_GEOMETRY_VERT_SHADER_PATH);	
+	
+	_renderingData->guizmoDebugShaderID = AF_Shader_Load(guizmoDebugVertShaderPath, guizmoDebugFragShaderPath);
+	
+	// Create collision geometry verts and send to the GPU
+	
 	/*
     // ==== Setup Screen Quad VAO/VBO (used by RenderScreenFBOQuad) ====
     // This is already called inside AF_Renderer_Start_ScreenFrameBuffers.
@@ -204,6 +216,91 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
     AF_Log("  screenFBO_ID: %u, screenFBO_TextureID: %u\n", _renderingData->screenFBO_ID, _renderingData->screenFBO_TextureID);
 	*/
 }
+
+void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider){
+	if(_collider == NULL){
+		AF_Log_Error("AF_Renderer_CreateCollisionGeometryMeshBuffer: Collider is NULL\n");
+		return;
+	}
+
+	// for now, everything is a box
+	_collider->collisionMeshData.vertexCount = 8;
+	_collider->collisionMeshData.indexCount = 36;
+	
+	
+	_collider->collisionMeshData.vertices = (AF_Vertex*)malloc(sizeof(AF_Vertex) * _collider->collisionMeshData.vertexCount);
+	_collider->collisionMeshData.indices = (uint32_t*)malloc(sizeof(uint32_t) * _collider->collisionMeshData.indexCount);
+	if(!_collider->collisionMeshData.vertices || !_collider->collisionMeshData.indices){
+        AF_Log_Error("AF_Renderer_CreateCollisionGeometryMeshBuffer: malloc failed\n");
+        free(_collider->collisionMeshData.vertices);
+        free(_collider->collisionMeshData.indices);
+        return;
+    }
+
+	
+	// Initialize vertices (zero all fields first, then set positions)
+    AF_Vertex vertices[8] = {0};
+  
+    
+    // Set positions for unit cube vertices
+    Vec3 positions[8] = {
+        {-1.0f, -1.0f,  1.0f}, // 0
+        {-1.0f,  1.0f,  1.0f}, // 1
+        {-1.0f, -1.0f, -1.0f}, // 2
+        {-1.0f,  1.0f, -1.0f}, // 3
+        { 1.0f, -1.0f,  1.0f}, // 4
+        { 1.0f,  1.0f,  1.0f}, // 5
+        { 1.0f, -1.0f, -1.0f}, // 6
+        { 1.0f,  1.0f, -1.0f}  // 7
+    };
+    
+    for(int i = 0; i < 8; i++) {
+        vertices[i].position = positions[i];
+        // normal, tangent, bitangent, and texCoord are already zero-initialized
+        _collider->collisionMeshData.vertices[i] = vertices[i];
+    }
+
+    // Indices for cube faces (from OBJ conversion)
+    uint32_t indices[36] = {
+        0,1,3,  0,3,2,  // Face 1
+        2,3,7,  2,7,6,  // Face 2
+        6,7,5,  6,5,4,  // Face 3
+        4,5,1,  4,1,0,  // Face 4
+        2,6,4,  2,4,0,  // Face 5
+        7,3,1,  7,1,5   // Face 6
+    };
+
+    // Copy indices to allocated memory
+    memcpy(_collider->collisionMeshData.indices, indices, sizeof(indices));
+
+	// load the mesh data to the GPU, the Create meshbuffer function handles 
+	// The delete of the mesh data vert, and indicies memory, however double check it
+	AF_Renderer_CreateMeshBuffer(&_collider->collisionMeshData);
+	if(_collider->collisionMeshData.vertices != NULL){
+		free(_collider->collisionMeshData.vertices);
+		_collider->collisionMeshData.vertices = NULL;
+	}
+
+	if(_collider->collisionMeshData.indices != NULL){
+		free(_collider->collisionMeshData.indices);
+		_collider->collisionMeshData.indices = NULL;
+	}
+}
+
+void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs){
+	// for each entity
+	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+		// if the entity has a collider component
+		AF_Entity* entity = &_ecs->entities[i];
+		AF_CCollider* collider = &_ecs->colliders[i];
+		if(AF_Component_GetHasEnabled(collider->enabled) == AF_TRUE){
+			// create the collision geometry
+			AF_Renderer_CreateCollisionGeometryMeshBuffer(collider);
+		}
+	}
+}
+
+
 
 
 void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgroundColor)
@@ -337,7 +434,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
     glDepthMask(GL_TRUE);    // Ensure depth writing is on
 	glCullFace(GL_BACK);
-    AF_Renderer_DrawMeshes(
+    
+	AF_Renderer_DrawMeshes(
         &camera->viewMatrix,
         &camera->projectionMatrix,
         _ecs,
@@ -346,6 +444,30 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 		NO_SHARED_SHADER,
 		_renderingData
     );
+    // After this, _renderingData->screenFBO_TextureID contains the final rendered scene.
+    AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
+
+	// 2.5 ==== DEBUG COLOR PASS
+	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
+	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
+    glDepthMask(GL_TRUE);    // Ensure depth writing is on
+	glCullFace(GL_BACK);
+	// Draw Collision Hulls
+	// Switch to line mode
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	AF_Renderer_DrawCollisionMeshes(
+		&camera->viewMatrix,
+        &camera->projectionMatrix,
+        _ecs,
+        &cameraTransform->pos, // Camera position for lighting calculations
+        _lightingData,
+		_renderingData->guizmoDebugShaderID,
+		_renderingData
+	);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	
+   
     // After this, _renderingData->screenFBO_TextureID contains the final rendered scene.
     AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 	
@@ -538,6 +660,72 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 
 /*
 ====================
+AF_Renderer_DrawCollisionMeshes
+Loop through the entities and draw the meshes that have components attached
+====================
+*/
+void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_Entity* entity = &_ecs->entities[i];
+		if(!AF_Component_GetHas(entity->flags)){
+			continue;
+		}
+
+		/*
+		AF_CMesh* mesh = &_ecs->meshes[i];
+		// Skip if there is no rendering component
+		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == AF_FALSE){
+			continue;
+		}
+		*/
+
+		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
+
+		AF_CCollider* collider = &_ecs->colliders[i];
+		// Skip if there is no rendering component
+		if(!AF_Component_GetHas(collider->enabled)){
+			continue;
+		}
+
+		if(collider->showDebug == AF_FALSE){
+			continue;
+		}
+
+		// Get the collider mesh
+		AF_CMesh colliderMesh = AF_CMesh_ZERO();
+		colliderMesh.enabled = AF_Component_SetHas(colliderMesh.enabled, AF_TRUE);
+		colliderMesh.enabled = AF_Component_SetEnabled(colliderMesh.enabled, AF_TRUE);
+		colliderMesh.meshCount = 1;
+
+		// construct a mesh from the collider
+		// need to either send verts direct to the geometry shader or construct a mesh, then send that mesh data.
+		// Update the 
+		// store the newly created mesh data
+		colliderMesh.meshes[0] = collider->collisionMeshData;
+		colliderMesh.shader.shaderID = _shaderOverride;
+		/**/
+		//AF_CMesh* colliderMesh = &_ecs->meshes[i];
+		// Skip if there is no rendering component
+		if(!AF_Component_GetHas(colliderMesh.enabled)){// || hasEnabled == AF_FALSE){
+			continue;
+		}
+
+		
+		// construct debug mesh from the collider bounds
+		AF_CTransform3D* trans = &_ecs->transforms[i];
+
+		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
+		Vec3 rotationToRadians = {AF_Math_Radians(trans->rot.x),AF_Math_Radians(trans->rot.y), AF_Math_Radians(trans->rot.z)};
+		// Update the model matrix
+		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
+		
+		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, &colliderMesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
+	}
+	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
+}
+
+/*
+====================
 AF_Renderer_DrawMesh
 Loop through the meshes in a component and draw using opengl
 ====================
@@ -563,11 +751,8 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	}else{
 		// otherwise use a shared shader
 		shader = _shaderOverride;
-		
 	}
 	glUseProgram(shader); 
-	
-	
 	
 	AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
 
@@ -833,6 +1018,8 @@ void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){
 			AF_Renderer_CreateMeshBuffer(&_mesh->meshes[j]);
 		}
     }
+
+	
 }
 
 /*
