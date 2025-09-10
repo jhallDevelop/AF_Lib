@@ -53,7 +53,10 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         }
 
         // init the mesh
-        af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
+        AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
+        af_bool_t meshLoadSuccess = AF_MeshLoad_Init(&_appData->assets, meshComponent, meshComponent->meshPath);
+        meshComponent->material.diffuseTexture = AF_Renderer_ReLoadTexture(&_appData->assets, meshComponent->material.diffuseTexture.path);
+        //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
         if (meshLoadSuccess == false) {
             AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
             continue;
@@ -68,19 +71,34 @@ Take a file path and open the game.proj file if it can be found.
 ================
 */
 af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
-    // Open a file for binary reading
-	af_bool_t returnBool = AF_FALSE;
+
+
+    if(_appData == NULL || _appDataPath == NULL){
+        AF_Log_Error("AF_Project_Load: Invalid _appData or _appDataPath, is NULL!\n");
+        return AF_FALSE;
+    }
+    
     // Load scene stored as default scene in the project data
     FILE* appDataFile = AF_File_OpenFile(_appDataPath, "rb");// switch to binary read mode as cause// "r");
     if (appDataFile == NULL) {
         AF_Log_Error("Editor_Utils_OpenProject: Failed to open project data file %s\n", _appData->projectData.defaultScenePath);
-        return returnBool;
+        return AF_FALSE;
     }
-    AF_JSON_LoadProjectDataJson(&_appData->projectData, appDataFile);
-    AF_File_CloseFile(appDataFile);
 
-    // Load the project json data
+    af_bool_t result = AF_JSON_LoadProjectDataJson(&_appData->projectData, appDataFile);
+    if(result == AF_FALSE){
+        AF_Log_Error("AF_Project_Load: Failed to load project data from %s\n", _appDataPath);
+        return AF_FALSE;
+    }
 
+    if(appDataFile != NULL){
+        AF_File_CloseFile(appDataFile);
+        appDataFile = NULL;
+    }else{
+        AF_Log_Warning("AF_Project_Load: Failed to close project data file %s\n", _appDataPath);
+        return AF_FALSE;
+    }
+    
 
     // for now, clear ECS data as we will load the default scene
     AF_ECS_Init(&_appData->ecs); // Reset the ECS data
@@ -89,18 +107,21 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
     FILE* sceneFile = AF_File_OpenFile(_appData->projectData.defaultScenePath, "rb");// switch to binary read mode as cause// "r");
     if (sceneFile == NULL) {
         AF_Log_Error("Editor_Utils_OpenProject: Failed to open default scene file %s\n", _appData->projectData.defaultScenePath);
-        return returnBool;
+        return AF_FALSE;
     }
 
     // Load the JSON data from the file
     AF_Log("Editor_Utils_OpenProject: Loading default scene from %s\n", _appData->projectData.defaultScenePath);
     // Load the JSON data into the ECS
-    AF_JSON_LoadSceneJson(_appData, sceneFile);
+    af_bool_t sceneResult = AF_JSON_LoadSceneJson(_appData, sceneFile);
+    if(sceneResult == AF_FALSE){
+       AF_Log_Error("Editor_Utils_OpenProject: Failed to load default scene from %s\n", _appData->projectData.defaultScenePath);
+       return AF_FALSE;
+    }
     AF_File_CloseFile(sceneFile);
 
-    returnBool = AF_TRUE;
     // Clean up the render objects first as some data is malloc
-
+   AF_Log("AF_Project_Load: Finished Loading\n");
     // Return true only if the platform string was successfully found and extracted
     return AF_TRUE;
 }

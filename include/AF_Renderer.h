@@ -28,8 +28,8 @@ extern "C" {
 
 
 // ============================ DEFAULT ================================ 
-AF_LIB_API uint32_t AF_Renderer_Awake(void);
-AF_LIB_API void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight);
+AF_LIB_API af_bool_t AF_Renderer_Awake(void);
+AF_LIB_API af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight);
 AF_LIB_API void AF_Renderer_Update(AF_ECS* _ecs, AF_Time* _time);
 AF_LIB_API void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID);
 AF_LIB_API void AF_Renderer_Finish(void);

@@ -12,7 +12,6 @@ and helper functions
 #include "AF_Lib_Define.h"
 #include <stdbool.h>
 
-#define MAX_EDITORDATA_NAME_CHAR_LENGTH 256
 
 #ifdef __cplusplus
 extern "C" {    
@@ -26,7 +25,7 @@ AF_CEDITOR_DATA
 typedef struct AF_CEditorData{
 	PACKED_CHAR enabled;
 	// TODO: move strings out to a separate struct or use a string library
-    char name[MAX_EDITORDATA_NAME_CHAR_LENGTH];	    
+    char name[AF_MAX_PATH_CHAR_SIZE];	    
 	bool isSelected;		    
 } AF_CEditorData;
 

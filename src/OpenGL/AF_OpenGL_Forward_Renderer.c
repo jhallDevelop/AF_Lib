@@ -49,6 +49,7 @@ const char* stackOverflow = "STACK_OVERFLOW";
 const char* stackUnderflow = "STACK_UNDERFLOW";
 const char* outOfMemory = "OUT_OF_MEMORY";
 const char* invalidFrameBufferOperation = "INVALID_FRAMEBUFFER_OPERATION";
+const char* SHADER_ASSET_PATH = "assets/shaders";
 
 /*
 ====================
@@ -56,13 +57,16 @@ AF_Renderer_Awake
 Init OpenGL
 ====================
 */
-uint32_t AF_Renderer_Awake(void){
-    uint32_t success = 1;
+af_bool_t AF_Renderer_Awake(void){
+    af_bool_t success = AF_TRUE;
     AF_Log("AF_Renderer_Awake\n");
     //Initialize GLEW
-    glewExperimental = GL_TRUE; 
-    GLenum glewError = glewInit();
-	AF_Renderer_CheckError( "Error initializing GLEW! \n");
+    #ifndef AF_WEB_BUILD
+		//Initialize GLEW
+		glewExperimental = GL_TRUE; 
+		GLenum glewError = glewInit();
+		AF_Renderer_CheckError( "Error initializing GLEW! \n");
+	#endif
 
     // -----------------------------
     // Enable transparent blending
@@ -89,7 +93,7 @@ AF_Renderer_Start
 Start function which occurs after everything is loaded in.
 ====================
 */
-void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth, uint16_t* _screenHeight){
+af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight){
 	AF_Log("AF_Renderer_Start\n");
 	if(_renderingData == NULL || _screenWidth == NULL || _screenHeight == NULL){}
 	
@@ -98,12 +102,17 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
         //AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_ShaderID, &_renderingData->screenFBO_TextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH, "screenTexture");
 		char screenVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		char screenFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(screenVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_VERT_SHADER_PATH);
-		snprintf(screenFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", SCREEN_FRAG_SHADER_PATH);
+		snprintf(screenVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform,  SCREEN_VERT_SHADER_PATH);
+		snprintf(screenFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, SCREEN_FRAG_SHADER_PATH);
+		int32_t screenBufferShaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath);
+		if(screenBufferShaderID < 0){
+			AF_Log_Error("AF_Renderer_Start: Failed to loadscreenVertShader\n");
+			return AF_FALSE;
+		}
 		AF_FrameBufferData screenBufferData = {
 			.fbo = 0,
 			.rbo = 0,
-			.shaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath),
+			.shaderID = screenBufferShaderID,
 			.textureID = 0,
 			.textureWidth = *_screenWidth,
 			.textureHeight = *_screenHeight,
@@ -117,6 +126,7 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.minFilter = GL_LINEAR,
 			.magFilter = GL_LINEAR
 		};
+		
 		// Set the screen Frame buffer texture
 		AF_Shader_Use(screenBufferData.shaderID);
 		AF_Shader_SetInt(screenBufferData.shaderID, screenBufferData.shaderTextureName, 0);
@@ -130,13 +140,18 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		// setup depth frame buffer
 		char depthVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		char depthFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(depthVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_VERT_SHADER_PATH);
-		snprintf(depthFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_FRAG_SHADER_PATH);
+		snprintf(depthVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_VERT_SHADER_PATH);
+		snprintf(depthFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_FRAG_SHADER_PATH);
 		
+		int32_t depthBufferShaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath);
+		if(depthBufferShaderID < 0){
+			AF_Log_Error("AF_Renderer_Start: Failed to load depth buffer shader ID\n");
+			return AF_FALSE;
+		}
 		AF_FrameBufferData depthBufferData = {
 			.fbo = 0,
 			.rbo = 0,
-			.shaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath),
+			.shaderID = depthBufferShaderID,
 			.textureID = 0,
 			.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH,
 			.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT,
@@ -150,7 +165,7 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.minFilter = GL_NEAREST, //GL_LINEAR,
 			.magFilter = GL_NEAREST //GL_LINEAR
 		};
-		
+
 		
 		// Set the screen Frame buffer texture
 		_renderingData->depthFrameBufferData = depthBufferData;
@@ -160,12 +175,18 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		// setup depth frame buffer
 		char depthDebugVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		char depthDebugFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(depthDebugVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_VERT_SHADER_PATH);
-		snprintf(depthDebugFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "assets/shaders/%s", DEPTH_DEBUG_FRAG_SHADER_PATH);
+		snprintf(depthDebugVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_DEBUG_VERT_SHADER_PATH);
+		snprintf(depthDebugFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_DEBUG_FRAG_SHADER_PATH);
+		
+		int32_t depthDebugShaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath);
+		if(depthDebugShaderID < 0){
+			AF_Log_Error("AF_Renderer_Start: Failed to load depth debug shader ID\n");
+			return AF_FALSE;
+		}
 		AF_FrameBufferData depthDebugBufferData = {
 			.fbo = 0,
 			.rbo = 0,
-			.shaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath),
+			.shaderID = depthDebugShaderID,
 			.textureID = 0,
 			.textureWidth = *_screenWidth,
 			.textureHeight = *_screenHeight,
@@ -180,6 +201,8 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 			.magFilter = GL_LINEAR
 		};
 
+		
+
 		AF_Shader_Use(depthDebugBufferData.shaderID);
 		AF_Shader_SetInt(depthDebugBufferData.shaderID, depthDebugBufferData.shaderTextureName, 0);
 		AF_Shader_Use(0);
@@ -187,6 +210,7 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 		_renderingData->depthDebugFrameBufferData = depthDebugBufferData;
     } else {
         AF_Log_Error("AF_Renderer_Start: Screen dimensions not valid for initial screen FBO setup. Attempting with default or expect Editor_Viewport_Render to create.\n"); 
+		return AF_FALSE;
     }
 	
 	// Recreate the quad mesh buffers
@@ -197,24 +221,18 @@ void AF_Renderer_Start(AF_RenderingData* _renderingData, uint16_t* _screenWidth,
 	char guizmoDebugFragShaderPath[AF_MAX_PATH_CHAR_SIZE];
 	char guizmoDebugVertShaderPath[AF_MAX_PATH_CHAR_SIZE];
 
-	snprintf(guizmoDebugFragShaderPath, AF_MAX_PATH_CHAR_SIZE, "assets/%s", DEBUG_GEOMETRY_FRAG_SHADER_PATH);
-	snprintf(guizmoDebugVertShaderPath, AF_MAX_PATH_CHAR_SIZE, "assets/%s", DEBUG_GEOMETRY_VERT_SHADER_PATH);	
+	snprintf(guizmoDebugFragShaderPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEBUG_GEOMETRY_FRAG_SHADER_PATH);
+	snprintf(guizmoDebugVertShaderPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEBUG_GEOMETRY_VERT_SHADER_PATH);	
 	
-	_renderingData->guizmoDebugShaderID = AF_Shader_Load(guizmoDebugVertShaderPath, guizmoDebugFragShaderPath);
-	
-	// Create collision geometry verts and send to the GPU
-	
-	/*
-    // ==== Setup Screen Quad VAO/VBO (used by RenderScreenFBOQuad) ====
-    // This is already called inside AF_Renderer_Start_ScreenFrameBuffers.
-    // If AF_Renderer_Start_ScreenFrameBuffers might not run (e.g., due to screenWidth being 0),
-    AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData); //should be called here separately or ensured.
+	int32_t guizmoShaderID = AF_Shader_Load(guizmoDebugVertShaderPath, guizmoDebugFragShaderPath);
+	_renderingData->guizmoDebugShaderID = guizmoShaderID;
+	if(guizmoShaderID < 0){
+		AF_Log_Error("AF_Renderer_Start: Failed to load guizmoDebugShader\n");
+		return AF_FALSE;
+	}
 
-    AF_Log("AF_Renderer_Start: Initial FBOs and resources setup attempted.\n");
-    AF_Log("  depthFBO_ID: %u, depthMapTextureID: %u\n", _renderingData->depthFBO_ID, _renderingData->depthMapTextureID);
-    AF_Log("  depthDebugFBO_ID: %u, depthDebugTextureID: %u\n", _renderingData->depthDebugFBO_ID, _renderingData->depthDebugTextureID);
-    AF_Log("  screenFBO_ID: %u, screenFBO_TextureID: %u\n", _renderingData->screenFBO_ID, _renderingData->screenFBO_TextureID);
-	*/
+	return AF_TRUE;
+	
 }
 
 void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider){
@@ -234,6 +252,7 @@ void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider){
         AF_Log_Error("AF_Renderer_CreateCollisionGeometryMeshBuffer: malloc failed\n");
         free(_collider->collisionMeshData.vertices);
         free(_collider->collisionMeshData.indices);
+		
         return;
     }
 
@@ -314,8 +333,8 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	
 	// Clear Screen and buffers
 	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-		glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
 	AF_Renderer_UnBindFrameBuffer();
 
 	// Clear the depth buffers
@@ -328,10 +347,9 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 
 	// Clear the Debug buffers
 	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-		glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
 	AF_Renderer_UnBindFrameBuffer();
-
 }
 /*
 ====================
@@ -378,110 +396,96 @@ Simple render command to perform forward rendering steps
 ====================
 */
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
-	AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
-	AF_CCamera* camera = &_ecs->cameras[_cameraID];//_cameraEntity->camera;
-	AF_CTransform3D* cameraTransform = &_ecs->transforms[_cameraID];
+    AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
+    AF_CCamera* camera = &_ecs->cameras[_cameraID];
+    AF_CTransform3D* cameraTransform = &_ecs->transforms[_cameraID];
 
-	AF_Window* window = _renderingData->windowPtr;
-	if(window == NULL){
-		AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
-		return;
-	}
+    AF_Window* window = _renderingData->windowPtr;
+    if(window == NULL){
+        AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
+        return;
+    }
 
-	// 0. ===== General Rendering
-	//glCullFace(GL_BACK);  // Cull the back faces (this is the default)
-	glFrontFace(GL_CCW);  // Counter-clockwise winding order (default)CCW
-	//glEnable(GL_CULL_FACE); // Enable culling 
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
 
-    // 1. ==== DEPTH PASS (Populates _renderingData->depthMapTextureID) ====
-    // This pass renders scene geometry from the light's perspective to a depth texture.
+    // 1. ==== DEPTH PASS (For Shadow Mapping) ====
     AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
-	glViewport(0, 0, _renderingData->depthFrameBufferData.textureWidth, _renderingData->depthFrameBufferData.textureHeight); // Viewport for the main scene render
-
-	// Clear ONLY the depth buffer bit
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    glDepthMask(GL_TRUE);    // Ensure depth writing is on
-    // to draw relevant objects.
-	glEnable(GL_CULL_FACE); // Enable culling
-	
-	// ============= DrawBuffer turn off
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		// Log an error: Framebuffer is not complete!
-		AF_Log_Error("AF_Renderer_StartForwardRendering: Framebuffer is not complete! Check depth pass framebuffer\n");
-	}
-	
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	// Get the depth camera entity from the lighting data
-	AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
-	uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
-    //glFrontFace(GL_CCW); 
-	AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID); // Pass main camera for now, StartDepthPass should derive light's camera
-	//glFrontFace(GL_CW); 
-	//glCullFace(GL_BACK);
-	AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
-
-    // 2. ==== MAIN COLOR PASS (Populates _renderingData->screenFBO_TextureID) ====
-	//camera->viewMatrix = _ecs->cameras[depthCameraID].viewMatrix;
-	//camera->projectionMatrix = _ecs->cameras[depthCameraID].projectionMatrix;
-
-
-    AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
-	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    glDepthMask(GL_TRUE);    // Ensure depth writing is on
-	glCullFace(GL_BACK);
+    glViewport(0, 0, _renderingData->depthFrameBufferData.textureWidth, _renderingData->depthFrameBufferData.textureHeight);
     
-	AF_Renderer_DrawMeshes(
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDepthMask(GL_TRUE);
+
+    // For a depth-only FBO, we must tell it not to write to any color buffer.
+    // This is required for the FBO to be complete.
+    #ifndef AF_WEB_BUILD
+        glDrawBuffer(GL_NONE);
+    #endif
+    // glReadBuffer(GL_NONE) is not available in WebGL 1 and is not needed for a depth-only pass.
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        AF_Log_Error("AF_Renderer_StartForwardRendering: Depth pass framebuffer is not complete!\n");
+    } else {
+        AF_Entity* depthCameraEntity = &_ecs->entities[_lightingData->ambientLightEntityIndex];
+        uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
+        AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID);
+    }
+    
+    // 2. ==== MAIN COLOR & DEBUG PASS ====
+    AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+    glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
+    
+    // Clear color and depth of the main framebuffer before drawing the scene.
+    //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    glCullFace(GL_BACK);
+    
+    // --- Main Mesh Drawing ---
+    AF_Renderer_DrawMeshes(
         &camera->viewMatrix,
         &camera->projectionMatrix,
         _ecs,
-        &cameraTransform->pos, // Camera position for lighting calculations
+        &cameraTransform->pos,
         _lightingData,
-		NO_SHARED_SHADER,
-		_renderingData
+        NO_SHARED_SHADER,
+        _renderingData
     );
-    // After this, _renderingData->screenFBO_TextureID contains the final rendered scene.
-    AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
 
-	// 2.5 ==== DEBUG COLOR PASS
-	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-	glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight); // Viewport for the main scene render
-	glEnable(GL_DEPTH_TEST); // Ensure depth testing is on
-    glDepthMask(GL_TRUE);    // Ensure depth writing is on
-	glCullFace(GL_BACK);
-	// Draw Collision Hulls
-	// Switch to line mode
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	AF_Renderer_DrawCollisionMeshes(
-		&camera->viewMatrix,
-        &camera->projectionMatrix,
-        _ecs,
-        &cameraTransform->pos, // Camera position for lighting calculations
-        _lightingData,
-		_renderingData->guizmoDebugShaderID,
-		_renderingData
-	);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	
-   
-    // After this, _renderingData->screenFBO_TextureID contains the final rendered scene.
-    AF_Renderer_UnBindFrameBuffer(); // Unbind, back to default framebuffer (0)
-	
-    // 3. ==== VISUALIZE DEPTH TO TEXTURE (Populates _renderingData->depthDebugTextureID) ====
-	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE); // Disable culling
-	//AF_Renderer_RenderScreenFBOQuad(_renderingData);
-	//AF_Renderer_RenderScreenDebugFBOQuad(_renderingData);
-	glEnable(GL_CULL_FACE); // Enable culling
-	AF_Renderer_UnBindFrameBuffer();
+    // --- Debug Collision Hull Drawing (Desktop Only) ---
+    #ifndef AF_WEB_BUILD
+        // glPolygonMode is not available in WebGL. This block will only compile for desktop.
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+        AF_Renderer_DrawCollisionMeshes(
+            &camera->viewMatrix,
+            &camera->projectionMatrix,
+            _ecs,
+            &cameraTransform->pos,
+            _lightingData,
+            _renderingData->guizmoDebugShaderID,
+            _renderingData
+        );
 
-	AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
+        // Switch back to fill mode for subsequent rendering (like ImGui).
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    #endif
+    
+    // 3. ==== VISUALIZE DEPTH TO TEXTURE (Optional Debug View) ====
+    AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+    glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+
+    // AF_Renderer_RenderScreenDebugFBOQuad(_renderingData); // This would draw the depth map visualization
+    
+    // Unbind everything to return to the default state
+    AF_Renderer_UnBindFrameBuffer();
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
+    AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
 }
 
 
@@ -599,11 +603,18 @@ unsigned int AF_Renderer_LoadTexture(char const * path) {
         GLenum internalFormat = GL_RGB;
         GLenum dataFormat = GL_RGB;
         if (nrComponents == 1) {
-            internalFormat = GL_RED; dataFormat = GL_RED;
+            internalFormat = GL_RED; 
+			dataFormat = GL_RED;
         } else if (nrComponents == 3) {
-            internalFormat = GL_RGB8; dataFormat = GL_RGB; // Use sized internal format
+            internalFormat = GL_RGB8; 
+			dataFormat = GL_RGB; // Use sized internal format
         } else if (nrComponents == 4) {
-            internalFormat = GL_RGBA8; dataFormat = GL_RGBA; // Use sized internal format
+            #ifdef AF_WEB_BUILD
+						internalFormat = GL_RGBA;
+			#else
+						internalFormat = GL_RGBA8; // Use sized internal format on desktop
+			#endif
+			dataFormat = GL_RGBA;
         }
 
         glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
@@ -760,7 +771,22 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
 		if(_mesh->textured == AF_TRUE){
-			
+			if(_mesh->meshes[i].vao == 0) {
+				AF_Log_Error("AF_Renderer_DrawMesh: VAO is 0 for mesh %u\n", i);
+				continue;
+			}
+
+			if(_mesh->meshes[i].indexCount == 0) {
+				AF_Log_Error("AF_Renderer_DrawMesh: indexCount is 0 for mesh %u\n", i);
+				continue;
+			}
+
+			// Check if VAO is valid
+			if(!glIsVertexArray(_mesh->meshes[i].vao)) {
+				AF_Log_Error("AF_Renderer_DrawMesh: Invalid VAO %u for mesh %u\n", _mesh->meshes[i].vao, i);
+				continue;
+			}
+
 			// ---- Diffuse Texture ----
 			//if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
 			
@@ -956,12 +982,15 @@ Render the quad to the screen and swap the frame buffers over.
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
 	AF_Renderer_BindFrameBuffer(0);
+
     glViewport(0, 0, _renderingData->windowPtr->frameBufferWidth, _renderingData->windowPtr->frameBufferHeight);
     
+	
     // Clear the screen and disable depth testing for the final 2D quad draw
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 	
+
     glUseProgram(_renderingData->screenFrameBufferData.shaderID);
 	
     // Uniforms for linearization (optional, shader dependent)
@@ -971,12 +1000,12 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
     if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
         AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
     }
-	
     glBindVertexArray(_renderingData->screenQUAD_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	
+	// set background
     glBindVertexArray(0);
     glUseProgram(0);
+	
 	
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Finish Render debug quad\n");
 }
@@ -1107,11 +1136,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
 
-	// Now that the mesh is loaded, we can delete the memory created for the verts and indices
-	free(_meshData->vertices);
-	_meshData->vertices = NULL;
-	free(_meshData->indices);
-	_meshData->indices = NULL;
+	
 	AF_Renderer_CheckError("Error InitMesh Buffers for OpenGL! \n");
 }
 
@@ -1200,36 +1225,70 @@ uint32_t AF_Renderer_CreateFBO(void){
 }
 
 void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
-	if (_frameBufferData->drawBufferType == 0) {}
-	// Delete the existing framebuffer, texture, and renderbuffer if they exist
-	AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
-	AF_Renderer_DeleteRBO(&_frameBufferData->rbo);
-	AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
+    if (_frameBufferData == NULL) {
+        AF_Log_Error("AF_Renderer_CreateDepthFrameBuffer: _frameBufferData is NULL.\n");
+        return;
+    }
+    // Delete the existing framebuffer, texture, and renderbuffer if they exist
+    AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
+    AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
 
-	// Generate the framebuffer id
-	_frameBufferData->fbo = AF_Renderer_CreateFBO();
-	AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
+    // Generate the framebuffer id
+    _frameBufferData->fbo = AF_Renderer_CreateFBO();
+    AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
 
-	// Create the texture
-	unsigned int depthMap;
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	// attach depth texture as FBO's depth buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, _frameBufferData->fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	_frameBufferData->textureID = depthMap;
+    // Create the texture
+    unsigned int depthMap;
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    
+    #ifdef AF_WEB_BUILD
+        AF_Log("AF_Renderer_CreateDepthFrameBuffer: WEB\n");
+        // WebGL depth texture requirements. GL_DEPTH_COMPONENT16 is a good default for WebGL 2.
+        // For WebGL 1, you might need to check for the WEBGL_depth_texture extension.
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
+            _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, 
+            GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, NULL);
+        
+        // WebGL-compatible texture parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    #else
+        AF_Log("AF_Renderer_CreateDepthFrameBuffer: Desktop\n");
+        // Desktop OpenGL depth texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 
+            _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, 
+            GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        
+        // Desktop OpenGL texture parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    #endif
 
+    // Attach depth texture as FBO's depth buffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+    
+    // On desktop, you must explicitly tell OpenGL not to draw to any color buffer.
+    // On WebGL, this is implicit if no color attachment is present.
+    #ifndef AF_WEB_BUILD
+        glDrawBuffer(GL_NONE);
+    #endif
 
+    // FIX: Remove glReadBuffer. It is not available in WebGL 1 and is not needed.
+    // glReadBuffer(GL_NONE);
+
+    // Check framebuffer completeness
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        AF_Log_Error("AF_Renderer_CreateDepthFrameBuffer: Framebuffer not complete!\n");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    _frameBufferData->textureID = depthMap;
 }
 
 /*
@@ -1240,34 +1299,44 @@ Create FBO, RBO, and Texture to use in frame buffer rendering for color
 */
 void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _frameBufferData)
 {
-	if(_frameBufferData->drawBufferType == 0){}
-	// Delete the existing framebuffer, texture, and renderbuffer if they exist
+    if (_frameBufferData == NULL) {
+        AF_Log_Error("AF_Renderer_CreateFramebuffer: _frameBufferData is NULL.\n");
+        return;
+    }
+
+    // Delete the existing framebuffer, texture, and renderbuffer if they exist
     AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
     AF_Renderer_DeleteRBO(&_frameBufferData->rbo);
-	AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
-
+    AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
     
-    // Generate the framebuffer id
+    // 1. Generate and bind the framebuffer
     _frameBufferData->fbo = AF_Renderer_CreateFBO();
     AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
-	//AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer: FBO\n");
-    // Generate texture to render to
-	_frameBufferData->textureID = AF_Renderer_CreateFBOTexture(_frameBufferData);
 
-	AF_Renderer_BindFrameBufferToTexture(_frameBufferData->fbo, _frameBufferData->textureID, _frameBufferData->textureAttatchmentType);
+    // 2. Generate and attach the color texture
+    _frameBufferData->textureID = AF_Renderer_CreateFBOTexture(_frameBufferData);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _frameBufferData->textureID, 0);
 
-    // Generate renderbuffer for depth and stencil
+    // 3. Generate and attach the depth/stencil renderbuffer
     _frameBufferData->rbo = AF_Renderer_CreateRBO();
-    AF_Renderer_BindRenderBuffer(_frameBufferData->rbo, _frameBufferData->textureWidth, _frameBufferData->textureHeight);
-    AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer: RBO\n");
-	
-	// TODO: take in as args as some buffers e.g. depth buffer need this
-	if((GLint)_frameBufferData->drawBufferType == GL_NONE){
-		glDrawBuffer(GL_NONE);
-    	glReadBuffer(GL_NONE);
-	}
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindRenderbuffer(GL_RENDERBUFFER, _frameBufferData->rbo);
+    
+    // Use GL_DEPTH_STENCIL for WebGL 1 compatibility, which is a safe default.
+    // WebGL 2 and Desktop GL also support GL_DEPTH24_STENCIL8.
+    #ifdef AF_WEB_BUILD
+		AF_Log("AF_Renderer_CreateFramebuffer: WEB glRenderbufferStorage GL_DEPTH_STENCIL\n");
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, _frameBufferData->textureWidth, _frameBufferData->textureHeight);
+    #else
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, _frameBufferData->textureWidth, _frameBufferData->textureHeight);
+    #endif
+    
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _frameBufferData->rbo);
+
+    // 4. Check for completeness
+    AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer");
+    
+    // 5. Unbind the framebuffer to return to the default state
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /*
@@ -1344,41 +1413,72 @@ Create Depth map texture and return the texture id
 */
 // Modified Texture Creation Function
 uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
-//uint32_t _textureWidth, uint32_t _textureHeight, uint32_t _internalFormat, uint32_t _pixelDataType, uint32_t _minFilter, uint32_t _magFilter){ // Added params
-
     unsigned int fboTextureID = 0;
-	glBindTexture(GL_TEXTURE_2D,0);
     glGenTextures(1, &fboTextureID);
     glBindTexture(GL_TEXTURE_2D, fboTextureID);
 
-    // Determine format based on internalFormat (simplified example)
-    GLenum format = GL_RGB; // Default
+    GLenum internalFormat;
+    GLenum format;
+    GLenum type;
+
+    // Determine the correct formats and type based on the requested internal format
     if ((GLenum)_frameBufferData->internalFormat == GL_DEPTH_COMPONENT) {
         format = GL_DEPTH_COMPONENT;
-    } else if ((GLenum)_frameBufferData->internalFormat == GL_RGBA || (GLenum)_frameBufferData->internalFormat == GL_RGBA16F || (GLenum)_frameBufferData->internalFormat == GL_RGBA32F) {
-         format = GL_RGBA;
-    } // Add more cases if needed
+        #ifdef AF_WEB_BUILD
+            // WebGL 1 requires unsized internal format and a specific type for depth.
+            // GL_DEPTH_COMPONENT16 is available in WebGL 2 for better precision.
+            internalFormat = GL_DEPTH_COMPONENT;
+            type = GL_UNSIGNED_SHORT;
+        #else
+            // Desktop can use a more precise sized format.
+            internalFormat = GL_DEPTH_COMPONENT24;
+            type = GL_FLOAT;
+        #endif
+    } else if ((GLenum)_frameBufferData->internalFormat == GL_RGBA || (GLenum)_frameBufferData->internalFormat == GL_RGBA16F) {
+        format = GL_RGBA;
+        type = GL_UNSIGNED_BYTE; // Standard for 8-bit per channel color
+        #ifdef AF_WEB_BUILD
+            // WebGL 1 requires the internal format to match the base format.
+            // WebGL 2 supports sized formats like GL_RGBA16F.
+            internalFormat = GL_RGBA;
+        #else
+            internalFormat = _frameBufferData->internalFormat; // Use GL_RGBA or GL_RGBA16F on desktop
+        #endif
+    } else { // Default to RGB
+        format = GL_RGB;
+        type = GL_UNSIGNED_BYTE;
+        #ifdef AF_WEB_BUILD
+            internalFormat = GL_RGB;
+        #else
+            internalFormat = GL_RGB8;
+        #endif
+    }
     
-    glTexImage2D(GL_TEXTURE_2D, 0, format, // Use the specific internal format
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat,
         _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0,
-        format, // Use the determined format
-        (GLenum)GL_UNSIGNED_BYTE, //->pixelDataType, // Use the specified data type
-        NULL);
+        format, type, NULL);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_frameBufferData->minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_frameBufferData->minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)_frameBufferData->magFilter);
-	// Depth Settings
-	if ((GLenum)_frameBufferData->internalFormat == GL_DEPTH_COMPONENT) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	}
-	// Normal Settings
-	else {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	}
+
+    // Set texture wrapping parameters
+    #ifdef AF_WEB_BUILD
+        // WebGL requires GL_CLAMP_TO_EDGE for non-power-of-two textures and for depth textures.
+        AF_Log("AF_Renderer_CreateFBOTexture: WEB GL_CLAMP_TO_EDGE\n");
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    #else
+        // Desktop can use GL_CLAMP_TO_BORDER for depth maps to avoid sampling outside the map.
+        if (format == GL_DEPTH_COMPONENT) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        }
+    #endif
 
     glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
     return fboTextureID;
@@ -1727,9 +1827,15 @@ void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 			}
 
 		
-			glDeleteVertexArrays(1, &mesh->ibo);
+			glDeleteVertexArrays(1, &mesh->vao); // ✅ Correct: Delete VAO
 			glDeleteBuffers(1, &mesh->vbo);
 			glDeleteBuffers(1, &mesh->ibo);
+
+			// Now that the mesh is loaded, we can delete the memory created for the verts and indices
+			free(mesh->vertices);
+			mesh->vertices = NULL;
+			free(mesh->indices);
+			mesh->indices = NULL;
 		}
 }
 
@@ -1806,13 +1912,22 @@ Set the polygon mode used
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
 	switch(_polygonMode){
 		case AF_RENDERER_POLYGON_MODE_FILL:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			#ifndef AF_WEB_BUILD
+				AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			#endif
 		break;
 		case AF_RENDERER_POLYGON_MODE_POINT:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+			#ifndef AF_WEB_BUILD
+				AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+			#endif
 		break;
 		case AF_RENDERER_POLYGON_MODE_LINE:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			#ifndef AF_WEB_BUILD
+				AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			#endif
 		break;
 
 	}

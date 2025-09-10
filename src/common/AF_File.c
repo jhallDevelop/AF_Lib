@@ -34,7 +34,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
         return 0;
     }
     FILE* f = NULL;
-    errno_t err = 0;
+    uint32_t err = 0;
     #ifdef _WIN32
         err = fopen_s(&f, _path, _writeCommands);
         if (err == 0) {
@@ -121,22 +121,18 @@ Return the pointer to the char buffer
 void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize){
     //printf("==== Write data to binary ====\n");
     if(_filePtr == NULL){
-        printf("AF_File_WriteFile: FAILED to open file. _filePtr is NULL\n");
+        AF_Log_Error("AF_File_WriteFile: FAILED to open file. _filePtr is NULL\n");
         return;
     }
     
     // Write the struct data to the file
     size_t num_written = fwrite(_data, dataSize, 1, _filePtr);
     if (num_written != 1) {
-        printf("AF_File_WriteFile: Error writing to file");
+        AF_Log_Error("AF_File_WriteFile: Error writing to file");
     }
     if (ferror(_filePtr)) {
-        printf("AF_File_WriteFile: Error while writing \n");
+        AF_Log_Error("AF_File_WriteFile: Error while writing \n");
 		return;
-    }
-    fclose(_filePtr);
-    if (ferror(_filePtr)) {
-        printf("AF_File_WriteFile: Error while closing \n");
     }
 }
 
@@ -150,17 +146,23 @@ Return the pointer to the char buffer
 ================================
 */
 void AF_File_CloseFile(FILE* _filePtr){
-     if(_filePtr == NULL){
-        printf("AF_File_CloseFile: FAILED to close buffer. _charBuffer is NULL\n");
+    if(_filePtr == NULL){
+        AF_Log_Error("AF_File_CloseFile: FAILED to close buffer. _filePtr is NULL\n");
         return;
     }
     
-    fclose(_filePtr);
+    // Check for errors BEFORE closing
     if (ferror(_filePtr)) {
-        printf("AF_File_CloseFile: Error while closing \n");
+        AF_Log_Warning("AF_File_CloseFile: File had errors before closing\n");
     }
-    _filePtr = NULL;
     
+    // fclose() returns 0 on success, EOF on error
+    if (fclose(_filePtr) != 0) {
+        AF_Log_Error("AF_File_CloseFile: Error while closing file\n");
+    }
+    
+    // Note: Setting _filePtr = NULL here doesn't affect the caller's pointer
+    // The caller should set their pointer to NULL after calling this function
 }
 
 /*
@@ -314,7 +316,7 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAl
 
         // Ensure there is space for the file name and a separating character
         if (bufferPosition + nameLength + 2 > MAX_FILELIST_BUFFER_SIZE) {
-            printf("Buffer overflow. Stopping file accumulation.\n"); 
+            AF_Log_Error("Buffer overflow. Stopping file accumulation.\n");
             break;
         }
 

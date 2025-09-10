@@ -15,9 +15,13 @@ Definition of Mesh Load functions that will be implemented using different mesh 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 // Publically accessible function to trigger further mesh loading implemented
 AF_LIB_API af_bool_t AF_MeshLoad_Load(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* path);
-uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets* _assetsLoaded, const char* _vertPath, const char* _fragPath);
+AF_LIB_API af_bool_t AF_MeshLoad_Init(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath);
+AF_LIB_API uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets* _assetsLoaded, const char* _vertPath, const char* _fragPath);
+AF_LIB_API af_bool_t AF_MeshLoad_FromFile(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath);
+
 #ifdef __cplusplus
 }
 #endif

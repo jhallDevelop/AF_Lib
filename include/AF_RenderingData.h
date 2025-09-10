@@ -122,8 +122,8 @@ typedef struct AF_RenderingData{
 #define DEPTH_FRAG_SHADER_PATH "depth.frag"
 #define DEPTH_DEBUG_VERT_SHADER_PATH "debugDepth.vert"
 #define DEPTH_DEBUG_FRAG_SHADER_PATH "debugDepth.frag"
-#define DEBUG_GEOMETRY_VERT_SHADER_PATH "shaders/debugGeometry.vert"
-#define DEBUG_GEOMETRY_FRAG_SHADER_PATH "shaders/debugGeometry.frag"
+#define DEBUG_GEOMETRY_VERT_SHADER_PATH "debugGeometry.vert"
+#define DEBUG_GEOMETRY_FRAG_SHADER_PATH "debugGeometry.frag"
 
 
 #define AF_RENDERINGDATA_SHADOW_WIDTH 1024

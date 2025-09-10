@@ -23,7 +23,7 @@ extern "C" {
 #endif  
 
 
-#define MAX_MESH_COUNT 32
+#define AF_MAX_MESH_COUNT 32
 
 enum AF_MESH_TYPE{
 	AF_MESH_TYPE_PLANE, 
@@ -36,7 +36,7 @@ enum AF_MESH_TYPE{
 // Mesh Struct
 typedef struct AF_CMesh {
     PACKED_CHAR enabled;
-    AF_MeshData meshes[MAX_MESH_COUNT];
+    AF_MeshData meshes[AF_MAX_MESH_COUNT];
 	uint32_t meshCount;
     af_bool_t showDebug;
 	enum AF_MESH_TYPE meshType;

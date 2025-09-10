@@ -21,8 +21,9 @@ extern "C" {
 
 typedef struct AF_Shader {
     uint32_t shaderID;
-    char fragPath[MAX_SHADER_CHAR_PATH];
-    char vertPath[MAX_SHADER_CHAR_PATH];
+    char name[AF_MAX_PATH_CHAR_SIZE];
+    char fragPath[AF_MAX_PATH_CHAR_SIZE];
+    char vertPath[AF_MAX_PATH_CHAR_SIZE];
 } AF_Shader;
 
 /*
@@ -35,7 +36,7 @@ inline static AF_Shader AF_Shader_ZERO(void) {
     AF_Shader zeroShader;
     zeroShader.shaderID = 0;
 
-    
+    zeroShader.name[0] = '\0'; // Proper null-terminated empty string
     zeroShader.fragPath[0] = '\0'; // Proper null-terminated empty string
     zeroShader.vertPath[0] = '\0'; // Proper null-terminated empty string
 

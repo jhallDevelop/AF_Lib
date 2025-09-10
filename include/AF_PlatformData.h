@@ -18,10 +18,11 @@ extern "C" {
 
 // ===============  Platform Data =============== 
 typedef enum AF_Platform_e {
-    AF_PLATFORM_LINUX = 0,
-    AF_BUILD_TYPE_OSX = 1,
-    AF_BUILD_TYPE_Win64 = 2,
-    AF_BUILD_TYPE_N64  = 3 
+    AF_PLATFORM_TYPE_LINUX = 0,
+    AF_PLATFORM_TYPE_OSX = 1,
+    AF_PLATFORM_TYPE_Win64 = 2,
+    AF_PLATFORM_TYPE_N64  = 3,
+    AF_PLATFORM_TYPE_WEB = 4 
 } AF_Platform_e;
 
 typedef struct AF_Platform_t{ 
@@ -29,12 +30,13 @@ typedef struct AF_Platform_t{
     const char* name;
 } AF_Platform_t;
 
-#define AF_PLATFORM_COUNT 4
+#define AF_PLATFORM_COUNT 5
 static const AF_Platform_t AF_Platform_Mappings[AF_PLATFORM_COUNT] = {
-    {AF_PLATFORM_LINUX, "LINUX"},
-    {AF_BUILD_TYPE_OSX, "OSX"},
-    {AF_BUILD_TYPE_Win64, "Win64"},
-    {AF_BUILD_TYPE_N64, "N64"}
+    {AF_PLATFORM_TYPE_LINUX, "LINUX"},
+    {AF_PLATFORM_TYPE_OSX, "OSX"},
+    {AF_PLATFORM_TYPE_Win64, "Win64"},
+    {AF_PLATFORM_TYPE_N64, "N64"},
+    {AF_PLATFORM_TYPE_WEB, "WEB"}
 };
 
 // Define the platform mappings
@@ -74,7 +76,6 @@ inline static void AF_Platforms_ConvertToCharArray(const AF_Platform_t* _mapping
     for (uint32_t i = 0; i < _size; i++) {
         _charArray[i] = _mappings[i].name;
     }
-
     _charArray[_size] = NULL;  // Null-terminate the array
 }
 

@@ -255,10 +255,26 @@ af_bool_t AF_Window_Create(void* _appData) {
         return AF_FALSE;
     }
  
-    // If using openGL 3.3
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+     // --- Set Platform-Specific Window Hints ---
+    #ifdef AF_WEB_BUILD
+        // We are on the web, so we must request an OpenGL ES context for WebGL 2.0
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    #else
+        // We are on desktop, request a standard OpenGL 3.3 Core context
+        // This is your original code
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    #endif
+
+    // ===================================================================
+    // THIS IS THE FIX FOR THE BLACK SCREEN
+    // Request an 8-bit alpha channel for the main canvas.
+    // This solves strange clearing and transparency behavior in browsers.
+    //glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    // ===================================================================
 
     AF_AppData* appData = (AF_AppData*)_appData;
     AF_Window* _window = &appData->window;

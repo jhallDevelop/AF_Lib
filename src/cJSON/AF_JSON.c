@@ -41,6 +41,7 @@ cJSON* AF_JSON_Vec2ToJson(const char* _name, Vec2* _vec2, cJSON* _rootJSON);
 cJSON* AF_JSON_Vec3ToJson(const char* _name, Vec3* _vec3, cJSON* _rootJSON);
 cJSON* AF_JSON_Vec4ToJson(const char* _name, Vec4* _vec4, cJSON* _rootJSON);
 cJSON* AF_JSON_Mat4ToJson(const char* _name, Mat4* _vec4, cJSON* _rootJSON);
+cJSON* AF_JSON_VertexToJson(const char* _name, AF_Vertex* _vertex, cJSON* _rootJSON);
 
 #define AF_JSON_SCRIPT_JSON_NAME_PREFIX "script_"
 
@@ -60,7 +61,7 @@ af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 	fileContent = (char*)malloc(fileSize + 1);
 	if (fileContent == NULL) {
 		AF_Log_Error("AF_JSON_LoadProjectDataJson: Failed to allocate memory for file content.\n");
-		fclose(_file);
+		//fclose(_file);
 		return AF_FALSE;
 	}
 
@@ -69,12 +70,12 @@ af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 	if (bytesRead != fileSize) {
 		AF_Log_Error("AF_JSON_LoadProjectDataJson: Failed to read the entire file content.\n");
 		free(fileContent);
-		fclose(_file);
+		//fclose(_file);
 		return AF_FALSE;
 	}
 
 	fileContent[fileSize] = '\0'; //
-	fclose(_file); // Close the file after reading
+	//fclose(_file); // Close the file after reading
 	AF_Log("AF_JSON_LoadProjectDataJson: File content read successfully.\n");
 	// Parse the JSON content
 	cJSON* rootJSON = cJSON_Parse(fileContent);
@@ -87,7 +88,7 @@ af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 		return AF_FALSE;
 	}
 
-	AF_Log("AF_JSON_LoadProjectDataJson: JSON content parsed successfully.\n");
+	
 
 
 	// Now you can access the JSON data and populate the ECS components
@@ -127,6 +128,7 @@ af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file)
 
 	// 4. IMPORTANT: Clean up the cJSON object to prevent memory leaks.
 	cJSON_Delete(rootJSON);
+	AF_Log("AF_JSON_LoadProjectDataJson: JSON content parsed successfully.\n");
 
 	return AF_TRUE;
 }
@@ -154,7 +156,7 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 	fileContent = (char*)malloc(fileSize + 1);
 	if (fileContent == NULL) {
 		AF_Log_Error("AF_JSON_LoadJson: Failed to allocate memory for file content.\n");
-		fclose(_file);
+		//fclose(_file);
 		return AF_FALSE;
 	}
 
@@ -163,12 +165,12 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 	if (bytesRead != fileSize) {
 		AF_Log_Error("AF_JSON_LoadJson: Failed to read the entire file content.\n");
 		free(fileContent);
-		fclose(_file);
+		//fclose(_file);
 		return AF_FALSE;
 	}
 
 	fileContent[fileSize] = '\0'; //
-	fclose(_file); // Close the file after reading
+	//fclose(_file); // Close the file after reading
 	AF_Log("AF_JSON_LoadJson: File content read successfully.\n");
 	// Parse the JSON content
 	cJSON* rootJSON = cJSON_Parse(fileContent);
@@ -851,98 +853,202 @@ void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera) {
 
 // mesh
 void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
-	if (_meshJSON == NULL || _mesh == NULL) {
-		AF_Log_Error("AF_JSON_JsonToMesh: Invalid JSON or mesh pointer.\n");
-		return;
-	}
+    if (_meshJSON == NULL || _mesh == NULL) {
+        AF_Log_Error("AF_JSON_JsonToMesh: Invalid JSON or mesh pointer.\n");
+        return;
+    }
 
-	// Has
-	_mesh->enabled = AF_Component_SetHas(_mesh->enabled, cJSON_GetObjectItem(_meshJSON, "has")->valueint);
+    cJSON *item = NULL; // Re-usable pointer for getting items
 
-	// Enabled
-	_mesh->enabled = AF_Component_SetEnabled(_mesh->enabled, cJSON_GetObjectItem(_meshJSON, "enabled")->valueint);
+    // Has
+    item = cJSON_GetObjectItem(_meshJSON, "has");
+    if (item && cJSON_IsNumber(item)) {
+        _mesh->enabled = AF_Component_SetHas(_mesh->enabled, item->valueint);
+    }
 
+    // Enabled
+    item = cJSON_GetObjectItem(_meshJSON, "enabled");
+    if (item && cJSON_IsNumber(item)) {
+        _mesh->enabled = AF_Component_SetEnabled(_mesh->enabled, item->valueint);
+    }
 
-	// meshCount
-	_mesh->meshCount = (uint32_t)cJSON_GetObjectItem(_meshJSON, "meshCount")->valueint;
-	// showDebug
-	_mesh->showDebug = cJSON_GetObjectItem(_meshJSON, "showDebug")->valueint;
-	// meshType
-	_mesh->meshType = (enum AF_MESH_TYPE)cJSON_GetObjectItem(_meshJSON, "meshType")->valueint;
-	// meshPath
-	cJSON* meshPathJSON = cJSON_GetObjectItem(_meshJSON, "meshPath");
-	if (meshPathJSON != NULL && cJSON_IsString(meshPathJSON)) {
-		snprintf(_mesh->meshPath, sizeof(_mesh->meshPath) - 1, "%s", meshPathJSON->valuestring);
-		//strncpy(_mesh->meshPath, meshPathJSON->valuestring, sizeof(_mesh->meshPath) - 1);
-		_mesh->meshPath[sizeof(_mesh->meshPath) - 1] = '\0'; // Ensure null termination
-	}
-	else {
-		_mesh->meshPath[0] = '\0'; // Set to empty string if not found or not a string
-	}
+    // meshCount
+    item = cJSON_GetObjectItem(_meshJSON, "meshCount");
+    if (item && cJSON_IsNumber(item)) {
+        _mesh->meshCount = (uint32_t)item->valueint;
+    }
 
-	// shader skipp for now, it will be loaded later when the mesh is used
+    // Load mesh data
+    cJSON* meshesArray = cJSON_GetObjectItem(_meshJSON, "meshes");
+    
+    if (meshesArray && cJSON_IsArray(meshesArray)) {
+        cJSON *mesh_iterator = NULL;
+        uint32_t i = 0;
+        
+        // FIX: The parsing logic must be INSIDE the loop.
+        cJSON_ArrayForEach(mesh_iterator, meshesArray) {
+            
+			if (i >= AF_MAX_MESH_COUNT) {
+                AF_Log_Error("AF_JSON_JsonToMesh: Exceeded max meshes per entity.\n");
+                break;
+            }
 
-	// isImageFlipped
-	_mesh->isImageFlipped = cJSON_GetObjectItem(_meshJSON, "isImageFlipped")->valueint;
+            AF_MeshData* meshData = &_mesh->meshes[i];
 
-	// mesh id skipp for now
-	cJSON* shaderJSON = cJSON_GetObjectItem(_meshJSON, "shader");
+            // Get vertex count
+            item = cJSON_GetObjectItem(mesh_iterator, "vertexCount");
+            if (item && cJSON_IsNumber(item)) {
+                meshData->vertexCount = item->valueint;
+                // Allocate memory only if vertexCount > 0
+                if (meshData->vertexCount > 0) {
+                    meshData->vertices = (AF_Vertex*)malloc(sizeof(AF_Vertex) * meshData->vertexCount);
+                } else {
+                    meshData->vertices = NULL;
+                }
 
-	cJSON* shaderFragPathJSON = cJSON_GetObjectItem(shaderJSON, "fragmentShader");
+                // Load vertices
+                cJSON* verticesArray = cJSON_GetObjectItem(mesh_iterator, "vertices");
+                if (verticesArray && cJSON_IsArray(verticesArray) && meshData->vertices) {
+                    cJSON* vertexObj_iterator = NULL;
+                    uint32_t x = 0;
+                    cJSON_ArrayForEach(vertexObj_iterator, verticesArray) {
+                        if (x >= meshData->vertexCount) break;
 
-	cJSON* shaderVertPathJSON = cJSON_GetObjectItem(shaderJSON, "vertexShader");
+                        cJSON* posArr = cJSON_GetObjectItem(vertexObj_iterator, "position");
+                        if (posArr && cJSON_IsArray(posArr) && cJSON_GetArraySize(posArr) == 3) {
+                            meshData->vertices[x].position.x = cJSON_GetArrayItem(posArr, 0)->valuedouble;
+                            meshData->vertices[x].position.y = cJSON_GetArrayItem(posArr, 1)->valuedouble;
+                            meshData->vertices[x].position.z = cJSON_GetArrayItem(posArr, 2)->valuedouble;
+                        }
 
-	// save the shader paths
-	snprintf(_mesh->shader.fragPath, sizeof(_mesh->shader.vertPath), "%s", shaderFragPathJSON->valuestring);
-	snprintf(_mesh->shader.vertPath, sizeof(_mesh->shader.vertPath), "%s", shaderVertPathJSON->valuestring);
+                        cJSON* normArr = cJSON_GetObjectItem(vertexObj_iterator, "normal");
+                        if (normArr && cJSON_IsArray(normArr) && cJSON_GetArraySize(normArr) == 3) {
+                            meshData->vertices[x].normal.x = cJSON_GetArrayItem(normArr, 0)->valuedouble;
+                            meshData->vertices[x].normal.y = cJSON_GetArrayItem(normArr, 1)->valuedouble;
+                            meshData->vertices[x].normal.z = cJSON_GetArrayItem(normArr, 2)->valuedouble;
+                        }
 
-	// Material
-	cJSON* materialJson = cJSON_GetObjectItem(_meshJSON, "material");
+                        cJSON* texArr = cJSON_GetObjectItem(vertexObj_iterator, "texCoord");
+                        if (texArr && cJSON_IsArray(texArr) && cJSON_GetArraySize(texArr) == 2) {
+                            meshData->vertices[x].texCoord.x = cJSON_GetArrayItem(texArr, 0)->valuedouble;
+                            meshData->vertices[x].texCoord.y = cJSON_GetArrayItem(texArr, 1)->valuedouble;
+                        }
+                        x++;
+                    }
+                }
+            }
 
-	//diffuse texture
-	cJSON* diffuseTexturePathJson = cJSON_GetObjectItem(materialJson, "diffuseTexture");
-	snprintf(_mesh->material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
-	_mesh->material.diffuseTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
+            // Get index count
+            item = cJSON_GetObjectItem(mesh_iterator, "indexCount");
+            if (item && cJSON_IsNumber(item)) {
+                meshData->indexCount = item->valueint;
+                if (meshData->indexCount > 0) {
+                    meshData->indices = (uint32_t*)malloc(sizeof(uint32_t) * meshData->indexCount);
+                } else {
+                    meshData->indices = NULL;
+                }
+                
+                cJSON* indicesArray = cJSON_GetObjectItem(mesh_iterator, "indices");
+                if (indicesArray && cJSON_IsArray(indicesArray) && meshData->indices) {
+                    for (uint32_t y = 0; y < meshData->indexCount; y++) {
+                        cJSON* index_item = cJSON_GetArrayItem(indicesArray, y);
+                        if(index_item && cJSON_IsNumber(index_item)) {
+                            meshData->indices[y] = (uint32_t)index_item->valueint;
+                        }
+                    }
+                }
+            }
+            i++; // Increment the mesh index for the next loop
+        }
+    }
+    
+    // --- Other Properties ---
+    item = cJSON_GetObjectItem(_meshJSON, "showDebug");
+    if (item) _mesh->showDebug = item->valueint;
+    
+    item = cJSON_GetObjectItem(_meshJSON, "meshType");
+    if (item) _mesh->meshType = (enum AF_MESH_TYPE)item->valueint;
+    
+    item = cJSON_GetObjectItem(_meshJSON, "meshPath");
+    if (item && cJSON_IsString(item)) {
+        snprintf(_mesh->meshPath, sizeof(_mesh->meshPath), "%s", item->valuestring);
+    } else {
+        _mesh->meshPath[0] = '\0';
+    }
 
-	//specular texture
-	cJSON* specularTexturePathJson = cJSON_GetObjectItem(materialJson, "specularTexture");
-	snprintf(_mesh->material.specularTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
-	_mesh->material.specularTexture.type = AF_TEXTURE_TYPE_SPECULAR;
+    item = cJSON_GetObjectItem(_meshJSON, "isImageFlipped");
+    if (item) _mesh->isImageFlipped = item->valueint;
 
-	//normal texture
-	cJSON* normalTexturePathJson = cJSON_GetObjectItem(materialJson, "normalTexture");
-	snprintf(_mesh->material.normalTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", diffuseTexturePathJson->valuestring);
-	_mesh->material.normalTexture.type = AF_TEXTURE_TYPE_NORMALS;
+    // --- Shader ---
+    cJSON* shaderJSON = cJSON_GetObjectItem(_meshJSON, "shader");
+    if (shaderJSON) {
+		cJSON* shaderName = cJSON_GetObjectItem(shaderJSON, "name");	
+		if (shaderName && cJSON_IsString(shaderName)) {
+			snprintf(_mesh->shader.name, sizeof(_mesh->shader.name), "%s", shaderName->valuestring);
+		}
 
-	//snprintf(_mesh->material.normalTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", normalTexturePathJson->valuestring);
+        cJSON* vertShader = cJSON_GetObjectItem(shaderJSON, "vertexShader");
+        if (vertShader && cJSON_IsString(vertShader)) {
+            snprintf(_mesh->shader.vertPath, sizeof(_mesh->shader.vertPath), "%s", vertShader->valuestring);
+        }
+        cJSON* fragShader = cJSON_GetObjectItem(shaderJSON, "fragmentShader");
+        if (fragShader && cJSON_IsString(fragShader)) {
+            // FIX: Use the correct size for the destination buffer
+            snprintf(_mesh->shader.fragPath, sizeof(_mesh->shader.fragPath), "%s", fragShader->valuestring);
+        }
+    }
 
-	// Color
-	cJSON* colorJson = cJSON_GetObjectItem(materialJson, "color");
-	_mesh->material.color.r = (uint8_t)cJSON_GetArrayItem(colorJson, 0)->valueint;
-	_mesh->material.color.g = (uint8_t)cJSON_GetArrayItem(colorJson, 1)->valueint;
-	_mesh->material.color.b = (uint8_t)cJSON_GetArrayItem(colorJson, 2)->valueint;
-	_mesh->material.color.a = (uint8_t)cJSON_GetArrayItem(colorJson, 3)->valueint;
+    // --- Material ---
+    cJSON* materialJson = cJSON_GetObjectItem(_meshJSON, "material");
+    if (materialJson) {
+        item = cJSON_GetObjectItem(materialJson, "diffuseTexture");
+        if (item && cJSON_IsString(item)) {
+            snprintf(_mesh->material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", item->valuestring);
+            _mesh->material.diffuseTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
+        }
 
+        item = cJSON_GetObjectItem(materialJson, "specularTexture");
+        if (item && cJSON_IsString(item)) {
+            snprintf(_mesh->material.specularTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", item->valuestring);
+            _mesh->material.specularTexture.type = AF_TEXTURE_TYPE_SPECULAR;
+        }
+        
+        item = cJSON_GetObjectItem(materialJson, "normalTexture");
+        if (item && cJSON_IsString(item)) {
+            snprintf(_mesh->material.normalTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", item->valuestring);
+            _mesh->material.normalTexture.type = AF_TEXTURE_TYPE_NORMALS;
+        }
 
-	//shininess
-	cJSON* shininessJson = cJSON_GetObjectItem(materialJson, "shininess");
-	_mesh->material.shininess = shininessJson->valuedouble;
+        cJSON* colorJson = cJSON_GetObjectItem(materialJson, "color");
+        if (colorJson && cJSON_GetArraySize(colorJson) == 4) {
+            _mesh->material.color.r = (uint8_t)cJSON_GetArrayItem(colorJson, 0)->valueint;
+            _mesh->material.color.g = (uint8_t)cJSON_GetArrayItem(colorJson, 1)->valueint;
+            _mesh->material.color.b = (uint8_t)cJSON_GetArrayItem(colorJson, 2)->valueint;
+            _mesh->material.color.a = (uint8_t)cJSON_GetArrayItem(colorJson, 3)->valueint;
+        }
 
+        item = cJSON_GetObjectItem(materialJson, "shininess");
+        if (item) _mesh->material.shininess = item->valuedouble;
+    }
+    
+    // --- Flags ---
+    item = cJSON_GetObjectItem(_meshJSON, "isAnimating");
+    if (item) _mesh->isAnimating = item->valueint;
 
-	// isAnimating
-	_mesh->isAnimating = cJSON_GetObjectItem(_meshJSON, "isAnimating")->valueint;
+    item = cJSON_GetObjectItem(_meshJSON, "textured");
+    if (item) _mesh->textured = item->valueint;
 
-	// textured
-	_mesh->textured = cJSON_GetObjectItem(_meshJSON, "textured")->valueint;
+    item = cJSON_GetObjectItem(_meshJSON, "transparent");
+    if (item) _mesh->transparent = item->valueint;
 
-	// transparent
-	_mesh->transparent = cJSON_GetObjectItem(_meshJSON, "transparent")->valueint;
-	// recieveLights
-	_mesh->recieveLights = cJSON_GetObjectItem(_meshJSON, "recieveLights")->valueint;
-	// recieveShadows
-	_mesh->recieveShadows = cJSON_GetObjectItem(_meshJSON, "recieveShadows")->valueint;
-	// castShadows
-	_mesh->castShadows = cJSON_GetObjectItem(_meshJSON, "castShadows")->valueint;
+    item = cJSON_GetObjectItem(_meshJSON, "recieveLights");
+    if (item) _mesh->recieveLights = item->valueint;
+    
+    item = cJSON_GetObjectItem(_meshJSON, "recieveShadows");
+    if (item) _mesh->recieveShadows = item->valueint;
+
+    item = cJSON_GetObjectItem(_meshJSON, "castShadows");
+    if (item) _mesh->castShadows = item->valueint;
 }
 
 // text
@@ -1430,7 +1536,7 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 
 	// sprite path
 	const char* spritePath = _sprite->spritePath;
-	cJSON_AddStringToObject(spriteJSON, "animationSpeed", spritePath);
+	cJSON_AddStringToObject(spriteJSON, "spritePath", spritePath);
 
 	// sprite data
 	void* spriteData = _sprite->spriteData; // special ptr for sprite data to be cast when known
@@ -1612,97 +1718,123 @@ cJSON* AF_JSON_CameraToJson(AF_CCamera* _component) {
 }
 
 cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
-	cJSON* returnJSON = cJSON_CreateObject();
+    cJSON* returnJSON = cJSON_CreateObject();
 
-	// has
-	af_bool_t has = AF_Component_GetHas(_component->enabled);
-	cJSON_AddNumberToObject(returnJSON, "has", has);
+    // has
+    af_bool_t has = AF_Component_GetHas(_component->enabled);
+    cJSON_AddNumberToObject(returnJSON, "has", has);
 
-	// enabled
-	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
-	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
+    // enabled
+    af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
+    cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
 
-	// mesh
-	AF_MeshData meshes[MAX_MESH_COUNT];
-	// Assuming meshes is an array of AF_MeshData, we will add a placeholder for now
-	cJSON_AddNullToObject(returnJSON, "meshes");
+    // meshCount
+    cJSON_AddNumberToObject(returnJSON, "meshCount", _component->meshCount);
 
-	// meshCount
-	cJSON_AddNumberToObject(returnJSON, "meshCount", _component->meshCount);
+    // mesh
+    cJSON* meshesArray = cJSON_AddArrayToObject(returnJSON, "meshes");
+    
+    for (uint32_t x = 0; x < _component->meshCount; x++) {
+        AF_MeshData* meshData = &_component->meshes[x];
 
-	// showDebug
-	cJSON_AddNumberToObject(returnJSON, "showDebug", _component->showDebug);
+        if (meshData->vertices == NULL || meshData->indices == NULL) {
+            AF_Log_Warning("AF_JSON_MeshToJson: Mesh %u has no vertex data (already freed), skipping serialization\n", x);
+            continue;
+        }
 
-	// meshType
-	enum AF_MESH_TYPE meshType;
-	cJSON_AddNumberToObject(returnJSON, "meshType", _component->meshType);
+        cJSON* meshObj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(meshObj, "vertexCount", meshData->vertexCount);
+        cJSON_AddNumberToObject(meshObj, "indexCount", meshData->indexCount);
 
-	// meshPath
-	cJSON_AddStringToObject(returnJSON, "meshPath", _component->meshPath);
+        cJSON* verticesArray = cJSON_AddArrayToObject(meshObj, "vertices");
 
-	// Shader
-	cJSON* shaderJSON = cJSON_AddObjectToObject(returnJSON, "shader");
-	cJSON_AddStringToObject(shaderJSON, "vertexShader", _component->shader.vertPath);
-	cJSON_AddStringToObject(shaderJSON, "fragmentShader", _component->shader.fragPath);
+        for (uint32_t y = 0; y < meshData->vertexCount; y++) {
+            cJSON* vertexObj = cJSON_CreateObject();
+            // This part is correct, assuming your Vec*ToJson functions are fixed.
+            AF_JSON_Vec3ToJson("position", &meshData->vertices[y].position, vertexObj);
+            AF_JSON_Vec3ToJson("normal", &meshData->vertices[y].normal, vertexObj);
+            AF_JSON_Vec2ToJson("texCoord", &meshData->vertices[y].texCoord, vertexObj);
 
-	// Material
-	cJSON* materialJson = cJSON_AddObjectToObject(returnJSON, "material");
+            cJSON_AddItemToArray(verticesArray, vertexObj);
+        }
 
-	//diffuse texture
-	cJSON* diffuseTexturePathJson = cJSON_AddStringToObject(materialJson, "diffuseTexture", _component->material.diffuseTexture.path);
+        cJSON* indicesArray = cJSON_CreateArray();
+        for (uint32_t y = 0; y < meshData->indexCount; y++) {
+            cJSON_AddItemToArray(indicesArray, cJSON_CreateNumber(meshData->indices[y]));
+        }
+        cJSON_AddItemToObject(meshObj, "indices", indicesArray);
 
-	//specular texture
-	cJSON* specularTexturePathJson = cJSON_AddStringToObject(materialJson, "specularTexture", _component->material.specularTexture.path);
+        // FIX: Add the mesh object to the array without a key.
+        cJSON_AddItemToArray(meshesArray, meshObj);
+    }
 
-	//normal texture
-	cJSON* normalTexturePathJson = cJSON_AddStringToObject(materialJson, "normalTexture", _component->material.normalTexture.path);
+    // showDebug
+    cJSON_AddNumberToObject(returnJSON, "showDebug", _component->showDebug);
 
-	// Color
-	uint8_t color[4];
-	cJSON* colorJSONArray = cJSON_AddArrayToObject(materialJson, "color");
-	cJSON* rObject = cJSON_AddNumberToObject(colorJSONArray, "r", _component->material.color.r);
-	cJSON* gObject = cJSON_AddNumberToObject(colorJSONArray, "g", _component->material.color.g);
-	cJSON* bObject = cJSON_AddNumberToObject(colorJSONArray, "b", _component->material.color.b);
-	cJSON* aObject = cJSON_AddNumberToObject(colorJSONArray, "a", _component->material.color.a);
+    // meshType
+    cJSON_AddNumberToObject(returnJSON, "meshType", _component->meshType);
 
-	// shininess
-	cJSON* shininessJson = cJSON_AddNumberToObject(materialJson, "shininess", _component->material.shininess);
+    // meshPath
+    cJSON_AddStringToObject(returnJSON, "meshPath", _component->meshPath);
+
+    // Shader
+    cJSON* shaderJSON = cJSON_AddObjectToObject(returnJSON, "shader");
+    cJSON_AddStringToObject(shaderJSON, "name", _component->shader.name);
+    cJSON_AddStringToObject(shaderJSON, "vertexShader", _component->shader.vertPath);
+    cJSON_AddStringToObject(shaderJSON, "fragmentShader", _component->shader.fragPath);
+
+    // Material
+    cJSON* materialJson = cJSON_AddObjectToObject(returnJSON, "material");
+
+    //diffuse texture
+    cJSON_AddStringToObject(materialJson, "diffuseTexture", _component->material.diffuseTexture.path);
+
+    //specular texture
+    cJSON_AddStringToObject(materialJson, "specularTexture", _component->material.specularTexture.path);
+
+    //normal texture
+    cJSON_AddStringToObject(materialJson, "normalTexture", _component->material.normalTexture.path);
+
+    // Color
+    // FIX: Add numbers to the array directly, without keys.
+    cJSON* colorJSONArray = cJSON_AddArrayToObject(materialJson, "color");
+    cJSON_AddItemToArray(colorJSONArray, cJSON_CreateNumber(_component->material.color.r));
+    cJSON_AddItemToArray(colorJSONArray, cJSON_CreateNumber(_component->material.color.g));
+    cJSON_AddItemToArray(colorJSONArray, cJSON_CreateNumber(_component->material.color.b));
+    cJSON_AddItemToArray(colorJSONArray, cJSON_CreateNumber(_component->material.color.a));
+
+    // shininess
+    cJSON_AddNumberToObject(materialJson, "shininess", _component->material.shininess);
+
+    // isImageFlipped
+    cJSON_AddNumberToObject(returnJSON, "isImageFlipped", _component->isImageFlipped);
+
+    // meshID
+    cJSON_AddNumberToObject(returnJSON, "meshID", _component->meshID);
+
+    // isAnimating
+    cJSON_AddNumberToObject(returnJSON, "isAnimating", _component->isAnimating);
+
+    // textured
+    cJSON_AddNumberToObject(returnJSON, "textured", _component->textured);
+
+    // transparent
+    cJSON_AddNumberToObject(returnJSON, "transparent", _component->transparent);
+
+    // recieveLights
+    cJSON_AddNumberToObject(returnJSON, "recieveLights", _component->recieveLights);
+
+    // recieveShadows
+    cJSON_AddNumberToObject(returnJSON, "recieveShadows", _component->recieveShadows);
+
+    // castShadows
+    cJSON_AddNumberToObject(returnJSON, "castShadows", _component->castShadows);
+
+    // modelMatrix
+    cJSON_AddNullToObject(returnJSON, "modelMatrix");
 
 
-
-
-	// isImageFlipped
-	cJSON_AddNumberToObject(returnJSON, "isImageFlipped", _component->isImageFlipped);
-
-	// meshID
-	cJSON_AddNumberToObject(returnJSON, "meshID", _component->meshID);
-
-	// isAnimating
-	cJSON_AddNumberToObject(returnJSON, "isAnimating", _component->isAnimating);
-
-	// textured
-	cJSON_AddNumberToObject(returnJSON, "textured", _component->textured);
-
-	// transparent
-	cJSON_AddNumberToObject(returnJSON, "transparent", _component->transparent);
-
-	// recieveLights
-	cJSON_AddNumberToObject(returnJSON, "recieveLights", _component->recieveLights);
-
-	// recieveShadows
-	cJSON_AddNumberToObject(returnJSON, "recieveShadows", _component->recieveShadows);
-
-	// castShadows
-	cJSON_AddNumberToObject(returnJSON, "castShadows", _component->castShadows);
-
-	// modelMatrix
-	cJSON_AddNullToObject(returnJSON, "modelMatrix");
-
-	// displayListBuffer
-	void* displayListBuffer;
-	cJSON_AddNullToObject(returnJSON, "modelMatrix");
-
-	return returnJSON;
+    return returnJSON;
 }
 
 cJSON* AF_JSON_TextToJson(AF_CText* _component) {
@@ -1732,11 +1864,11 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
 	cJSON_AddStringToObject(returnJSON, "text", _component->text);
 
 	// screenPos
-	AF_JSON_Vec2ToJson("screenPos", &_component->screenPos, returnJSON);
+	//AF_JSON_Vec2ToJson("screenPos", &_component->screenPos, returnJSON);
 
 	// textBounds
 	Vec2 textBounds;
-	AF_JSON_Vec2ToJson("screenPos", &_component->screenPos, returnJSON);
+	AF_JSON_Vec2ToJson("textBounds", &textBounds, returnJSON);
 
 	// textColor
 	uint8_t textColor[4];
@@ -1771,7 +1903,7 @@ cJSON* AF_JSON_AudioSourceToJson(AF_CAudioSource* _component) {
 	cJSON_AddNumberToObject(returnJSON, "channel", _component->channel);
 
 	// loop
-	cJSON_AddNumberToObject(returnJSON, "channel", _component->channel);
+	cJSON_AddNumberToObject(returnJSON, "loop", _component->loop);
 
 	// isPlaying
 	cJSON_AddNumberToObject(returnJSON, "isPlaying", _component->isPlaying);
@@ -2049,54 +2181,102 @@ cJSON* AF_JSON_LightToJson(AF_CLight* _component) {
 // VECTOR TO JSON CONVERTERS
 
 cJSON* AF_JSON_Vec2ToJson(const char* _name, Vec2* _vec2, cJSON* _rootJSON) {
-	cJSON* vec2 = cJSON_AddArrayToObject(_rootJSON, _name);
-	cJSON* xObject = cJSON_AddNumberToObject(vec2, "x", _vec2->x);
-	cJSON* yObject = cJSON_AddNumberToObject(vec2, "y", _vec2->y);
-	return vec2;
+    cJSON* vec2Array = cJSON_AddArrayToObject(_rootJSON, _name);
+    if (vec2Array) {
+        cJSON_AddItemToArray(vec2Array, cJSON_CreateNumber(_vec2->x));
+        cJSON_AddItemToArray(vec2Array, cJSON_CreateNumber(_vec2->y));
+    }
+    return vec2Array;
 }
 
 cJSON* AF_JSON_Vec3ToJson(const char* _name, Vec3* _vec3, cJSON* _rootJSON) {
-	cJSON* vec3 = cJSON_AddArrayToObject(_rootJSON, _name);
-	cJSON* xObject = cJSON_AddNumberToObject(vec3, "x", _vec3->x);
-	cJSON* yObject = cJSON_AddNumberToObject(vec3, "y", _vec3->y);
-	cJSON* zObject = cJSON_AddNumberToObject(vec3, "z", _vec3->z);
-	return vec3;
+    cJSON* vec3Array = cJSON_AddArrayToObject(_rootJSON, _name);
+    if (vec3Array) {
+        cJSON_AddItemToArray(vec3Array, cJSON_CreateNumber(_vec3->x));
+        cJSON_AddItemToArray(vec3Array, cJSON_CreateNumber(_vec3->y));
+        cJSON_AddItemToArray(vec3Array, cJSON_CreateNumber(_vec3->z));
+    }
+    return vec3Array;
+}
+
+cJSON* AF_JSON_VertexToJson(const char* _name, AF_Vertex* _vertex, cJSON* _rootJSON) {
+    if (_name == NULL || _vertex == NULL || _rootJSON == NULL) {
+        AF_Log_Error("AF_JSON_VertexToJson: Invalid parameters.\n");
+        return NULL;
+    }
+    
+    // Create OBJECTS, not arrays
+    cJSON* position = cJSON_AddObjectToObject(_rootJSON, "position");
+    cJSON_AddNumberToObject(position, "x", _vertex->position.x);
+    cJSON_AddNumberToObject(position, "y", _vertex->position.y);
+    cJSON_AddNumberToObject(position, "z", _vertex->position.z);
+
+    cJSON* normal = cJSON_AddObjectToObject(_rootJSON, "normal");
+    cJSON_AddNumberToObject(normal, "x", _vertex->normal.x);
+    cJSON_AddNumberToObject(normal, "y", _vertex->normal.y);
+    cJSON_AddNumberToObject(normal, "z", _vertex->normal.z);
+
+    cJSON* texCoord = cJSON_AddObjectToObject(_rootJSON, "texCoord");
+    cJSON_AddNumberToObject(texCoord, "u", _vertex->texCoord.x);
+    cJSON_AddNumberToObject(texCoord, "v", _vertex->texCoord.y);
+
+    return _rootJSON;
 }
 
 cJSON* AF_JSON_Vec4ToJson(const char* _name, Vec4* _vec4, cJSON* _rootJSON) {
-	if (_vec4 == NULL || _rootJSON == NULL || _name == NULL) {
-		AF_Log_Error("AF_JSON_Vec4ToJson: Invalid parameters.\n");
-		return NULL;
-	}
-	if (strlen(_name) == 0) {
-		AF_Log_Error("AF_JSON_Vec4ToJson: Name cannot be empty.\n");
-		return NULL;
-	}
-	cJSON* vec4 = cJSON_AddArrayToObject(_rootJSON, _name);
-	cJSON* xObject = cJSON_AddNumberToObject(vec4, "x", _vec4->x);
-	cJSON* yObject = cJSON_AddNumberToObject(vec4, "y", _vec4->y);
-	cJSON* zObject = cJSON_AddNumberToObject(vec4, "z", _vec4->z);
-	cJSON* wObject = cJSON_AddNumberToObject(vec4, "w", _vec4->w);
-	return vec4;
+    if (_vec4 == NULL || _rootJSON == NULL || _name == NULL) {
+        AF_Log_Error("AF_JSON_Vec4ToJson: Invalid parameters.\n");
+        return NULL;
+    }
+    if (strlen(_name) == 0) {
+        AF_Log_Error("AF_JSON_Vec4ToJson: Name cannot be empty.\n");
+        return NULL;
+    }
+    cJSON* vec4Array = cJSON_AddArrayToObject(_rootJSON, _name);
+    if (vec4Array) {
+        cJSON_AddItemToArray(vec4Array, cJSON_CreateNumber(_vec4->x));
+        cJSON_AddItemToArray(vec4Array, cJSON_CreateNumber(_vec4->y));
+        cJSON_AddItemToArray(vec4Array, cJSON_CreateNumber(_vec4->z));
+        cJSON_AddItemToArray(vec4Array, cJSON_CreateNumber(_vec4->w));
+    }
+    return vec4Array;
 }
 
 cJSON* AF_JSON_Mat4ToJson(const char* _name, Mat4* _mat4, cJSON* _rootJSON) {
-	if (_mat4 == NULL || _rootJSON == NULL || _name == NULL) {
-		AF_Log_Error("AF_JSON_Mat4ToJson: Invalid parameters.\n");
-		return NULL;
-	}
-	cJSON* mat4 = cJSON_AddArrayToObject(_rootJSON, "modelMatrix");
-	for (uint32_t x = 0; x < 4; x++) {
-		cJSON* vec4_row1 = cJSON_AddArrayToObject(mat4, "vec4");
-		// x is potentially NAN. and will cause cJSON to fail to create the object
-		if (isnan(_mat4->rows[x].x) || isnan(_mat4->rows[x].y) || isnan(_mat4->rows[x].z) || isnan(_mat4->rows[x].w)) {
-			AF_Log_Error("AF_JSON_Mat4ToJson: Mat4 contains NAN values at row %d.\n", x);
-			return NULL;
-		}
-		cJSON* xObject = cJSON_AddNumberToObject(vec4_row1, "x", _mat4->rows[x].x);
-		cJSON* yObject = cJSON_AddNumberToObject(vec4_row1, "y", _mat4->rows[x].y);
-		cJSON* zObject = cJSON_AddNumberToObject(vec4_row1, "z", _mat4->rows[x].z);
-		cJSON* wObject = cJSON_AddNumberToObject(vec4_row1, "w", _mat4->rows[x].w);
-	}
-	return mat4;
+    if (_mat4 == NULL || _rootJSON == NULL || _name == NULL) {
+        AF_Log_Error("AF_JSON_Mat4ToJson: Invalid parameters.\n");
+        return NULL;
+    }
+
+    // Create the main matrix array using the provided _name
+    cJSON* mat4Array = cJSON_AddArrayToObject(_rootJSON, _name);
+    if (mat4Array == NULL) {
+        return NULL;
+    }
+
+    for (uint32_t x = 0; x < 4; x++) {
+        // Create a new sub-array for each row
+        cJSON* rowArray = cJSON_CreateArray();
+        if (rowArray == NULL) {
+            continue; // Skip if memory allocation fails
+        }
+
+        // Check for NAN values before creating numbers
+        if (isnan(_mat4->rows[x].x) || isnan(_mat4->rows[x].y) || isnan(_mat4->rows[x].z) || isnan(_mat4->rows[x].w)) {
+            AF_Log_Error("AF_JSON_Mat4ToJson: Mat4 contains NAN values at row %d. Skipping row.\n", x);
+            // Add an empty array to maintain structure
+            cJSON_AddItemToArray(mat4Array, rowArray);
+            continue;
+        }
+
+        // Add the four numbers of the row to the sub-array
+        cJSON_AddItemToArray(rowArray, cJSON_CreateNumber(_mat4->rows[x].x));
+        cJSON_AddItemToArray(rowArray, cJSON_CreateNumber(_mat4->rows[x].y));
+        cJSON_AddItemToArray(rowArray, cJSON_CreateNumber(_mat4->rows[x].z));
+        cJSON_AddItemToArray(rowArray, cJSON_CreateNumber(_mat4->rows[x].w));
+
+        // Add the completed row array to the main matrix array
+        cJSON_AddItemToArray(mat4Array, rowArray);
+    }
+    return mat4Array;
 }

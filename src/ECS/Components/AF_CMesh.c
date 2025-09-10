@@ -32,7 +32,7 @@ AF_CMesh AF_CMesh_ZERO(void){
 	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
 
 	// init the meshes
-	for(uint32_t i = 0; i < MAX_MESH_COUNT; i++){
+	for(uint32_t i = 0; i < AF_MAX_MESH_COUNT; i++){
 		returnMesh.meshes[i] = AF_MeshData_ZERO();
 	}
     return returnMesh;
@@ -72,7 +72,7 @@ AF_CMesh AF_CMesh_ADD(void){
 	};
 
 	// init the meshes
-	for(uint32_t i = 0; i < MAX_MESH_COUNT; i++){
+	for(uint32_t i = 0; i < AF_MAX_MESH_COUNT; i++){
 		returnMesh.meshes[i] = AF_MeshData_ZERO();
 	}
     return returnMesh;

@@ -78,20 +78,20 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     // Check if shader paths are empty
     if(AF_STRING_IS_EMPTY(_vertexShaderPath) || AF_STRING_IS_EMPTY(_fragmentShaderPath)){
         AF_Log_Error("AF_Shader: vertex or fragment shader path is empty\n");
-        return returnShaderID;
+        return -1;
     }
 
     // Check if shader is already loaded from the assets
 	uint32_t vertShaderFileSize = AF_File_GetFileSize(_vertexShaderPath);
     if(vertShaderFileSize == 0){
         AF_Log_Error("AF_Shader: vertex shader file size is 0, file not found or empty\n");
-        return returnShaderID;
+        return -1;
 	}
 
 	uint32_t fragShaderFileSize = AF_File_GetFileSize(_fragmentShaderPath);
     if(fragShaderFileSize == 0){
         AF_Log_Error("AF_Shader: fragment shader file size is 0, file not found or empty\n");
-        return returnShaderID;
+        return -1;
     }
 
 	// Allocate memory for the shader source code   
@@ -99,13 +99,13 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     if(vertexShaderSource == NULL){
         AF_Log_Error("AF_Shader: Failed to allocate memory for vertex shader source\n");
 		AF_Shader_FreeCharBuffer(vertexShaderSource);
-        return returnShaderID;
+        return -1;
 	}
 	char* framgentShaderSource = malloc(fragShaderFileSize + 1);
     if (framgentShaderSource == NULL) {
         AF_Log_Error("AF_Shader: Failed to allocate memory for fragment shader source\n");
         AF_Shader_FreeCharBuffer(framgentShaderSource);
-        return returnShaderID;
+        return -1;
     }
 
 	// Read the shader source code from the files
@@ -114,7 +114,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: Failed to load vertex shader source from path: %s\n", _vertexShaderPath);
         AF_Shader_FreeCharBuffer(vertexShaderSource);
         AF_Shader_FreeCharBuffer(framgentShaderSource);
-        return returnShaderID;
+        return -1;
 	}
 
     af_bool_t fragShaderLoadSuccess = AF_File_ReadFile(framgentShaderSource, fragShaderFileSize, _fragmentShaderPath, "r");
@@ -122,7 +122,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: Failed to load fragment shader source from path: %s\n", _fragmentShaderPath);
         AF_Shader_FreeCharBuffer(vertexShaderSource);
         AF_Shader_FreeCharBuffer(framgentShaderSource);
-        return returnShaderID;
+        return -1;
     }
 
     // Check for empty shader code
@@ -130,7 +130,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: vertex or fragment shader source is empty \n");
         AF_Shader_FreeCharBuffer(vertexShaderSource);
         AF_Shader_FreeCharBuffer(framgentShaderSource);
-        return returnShaderID;
+        return -1;
     }
     
     // 2. compile shaders
@@ -145,20 +145,29 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     glShaderSource(vertex, 1, _vertexShaderSourceGL, NULL);
     
     glCompileShader(vertex);
-    AF_Shader_CheckCompileErrors((uint32_t)vertex, "VERTEX");
+    uint32_t compileResult = 0;
+    compileResult = AF_Shader_CheckCompileErrors((uint32_t)vertex, "VERTEX");
+    if(compileResult == SHADER_FAILED_TO_LOAD || compileResult == 0){
+        AF_Log_Error("AF_Shader: Loading vertex shader failed %s\n", _vertexShaderPath);
+        return -1;
+    }
     
     // fragment Shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, _fragmentShaderSourceGL, NULL);
     glCompileShader(fragment);
-    AF_Shader_CheckCompileErrors((uint32_t)fragment, "FRAGMENT");
+    compileResult = AF_Shader_CheckCompileErrors((uint32_t)fragment, "FRAGMENT");
+    if(compileResult == SHADER_FAILED_TO_LOAD || compileResult == 0){
+        AF_Log_Error("AF_Shader: Loading fragment shader failed %s\n", _fragmentShaderPath);
+        return -1;
+    }
 
     // shader Program
     returnShaderID = glCreateProgram();
     glAttachShader(returnShaderID, vertex);
     glAttachShader(returnShaderID, fragment);
     glLinkProgram(returnShaderID);
-    AF_Shader_CheckCompileErrors((uint32_t)returnShaderID, "PROGRAM");
+    compileResult = AF_Shader_CheckCompileErrors((uint32_t)returnShaderID, "PROGRAM");
 
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
@@ -168,7 +177,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         AF_Log_Error("AF_Shader: Loading shader failed\n");
         AF_Shader_FreeCharBuffer(vertexShaderSource);
         AF_Shader_FreeCharBuffer(framgentShaderSource);
-        return returnShaderID;
+        return -1;
     }
     
     // Free the allocated shader source code from the file as it lives on the graphics card now

@@ -176,7 +176,7 @@ Return the pointer to the shared object
 inline static void AF_Script_UnLoad(void* _scriptSharedObjPtr){
     
     if(_scriptSharedObjPtr == NULL){
-        AF_Log_Error("AF_Script_UnLoad: Failed to unload scriptSharedObjPtr due to passing null reference\n");
+        //AF_Log_Error("AF_Script_UnLoad: Failed to unload scriptSharedObjPtr due to passing null reference\n");
         return;
     }
 
