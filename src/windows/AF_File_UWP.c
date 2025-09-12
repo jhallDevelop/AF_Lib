@@ -140,17 +140,20 @@ Return the pointer to the char buffer
 ================================
 */
 void AF_File_CloseFile(FILE* _filePtr){
-     if(_filePtr == NULL){
-        printf("AF_File_CloseFile: FAILED to close buffer. _charBuffer is NULL\n");
+    if(_filePtr == NULL){
+        AF_Log_Error("AF_File_CloseFile: FAILED to close buffer. _filePtr is NULL\n");
         return;
     }
     
-    fclose(_filePtr);
+    // Check for errors BEFORE closing
     if (ferror(_filePtr)) {
-        printf("AF_File_CloseFile: Error while closing \n");
+        AF_Log_Warning("AF_File_CloseFile: File had errors before closing\n");
     }
-    _filePtr = NULL;
     
+    // fclose() returns 0 on success, EOF on error
+    if (fclose(_filePtr) != 0) {
+        AF_Log_Error("AF_File_CloseFile: Error while closing file\n");
+    }
 }
 
 /*

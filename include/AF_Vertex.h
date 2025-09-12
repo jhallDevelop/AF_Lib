@@ -21,13 +21,13 @@ AF_Vertex
 vertex struct
 ====================
 */
-typedef struct {
-    Vec3 position;
-    Vec3 normal;
-    Vec3 tangent;
-    Vec3 bitangent;
-    Vec2 texCoord;
-} AF_Vertex;
+typedef struct AF_Vertex {
+    Vec3 position;    // 12 bytes
+    Vec3 normal;      // 12 bytes
+    Vec2 texCoord;    // 8 bytes
+    Vec3 tangent;     // 12 bytes
+    Vec3 bitangent;   // 12 bytes
+ } AF_Vertex;
 
 
 /*
@@ -40,9 +40,9 @@ inline static AF_Vertex AF_Vertex_ZERO(void){
     AF_Vertex zeroVertex = {
         {0.0f, 0.0f, 0.0f}, // Position
         {0.0f, 0.0f, 0.0f}, // Normal
-        {0.0f, 0.0f, 0.0f}, // Tangent
-        {0.0f, 0.0f, 0.0f}, // BiTangent
         {0.0f, 0.0f}, // TexCoord
+        {0.0f, 0.0f, 0.0f}, // Tangent
+        {0.0f, 0.0f, 0.0f} // BiTangent
     };
     return zeroVertex;
 }

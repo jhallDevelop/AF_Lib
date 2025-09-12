@@ -119,7 +119,11 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, const char* _platf
 			.vertPath = screenVertShaderFullPath, 
 			.fragPath = screenFragShaderFullPath, 
 			.shaderTextureName = "screenTexture",
-			.internalFormat = GL_RGB,
+			#ifdef AF_WEB_BUILD
+                .internalFormat = GL_SRGB8_ALPHA8, // Use sRGB format for WebGL for correct gamma
+            #else
+                .internalFormat = GL_RGB,
+            #endif
 			.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
 			.drawBufferType = GL_TRUE,
 			.readBufferType = GL_TRUE,
@@ -1073,17 +1077,14 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
 	AF_Renderer_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
 		
-	GLuint gVAO = 0;
-	GLuint gVBO = 0;
-	GLuint gEBO = 0;
-	glGenVertexArrays(1, &gVAO);
-	glGenBuffers(1, &gVBO);
-	glGenBuffers(1, &gEBO);
+	glGenVertexArrays(1, &_meshData->vao);
+	glGenBuffers(1, &_meshData->vbo);
+	glGenBuffers(1, &_meshData->ibo);
 	AF_Renderer_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
 
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
-	glBindVertexArray(gVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, gVBO);
+	glBindVertexArray(_meshData->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, _meshData->vbo);
 	AF_Renderer_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
 
 	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
@@ -1092,31 +1093,41 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Bind the IBO and set the buffer data
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _meshData->ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
 	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
 
 	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
 	// Vertex positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
 	glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, position));
+	
 
 	// Vertex normals
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, normal));
+	
+	// Vertex texture coords
+	//glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, texCoord));
+
 
 	// Vertex tangent attributes
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, tangent));
+	
 
 	// Vertex bi tangent attributes
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
-	glEnableVertexAttribArray(3);
-
-	// Vertex texture coords
-	glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
 	glEnableVertexAttribArray(4);
+	//glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, bitangent));
+	
 
+	
 	AF_Renderer_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
 
 	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
@@ -1129,9 +1140,9 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	glBindVertexArray(0); 
 
-	_meshData->vao = gVAO;
-	_meshData->vbo = gVBO;
-	_meshData->ibo = gEBO;
+	_meshData->vao = _meshData->vao;
+	_meshData->vbo = _meshData->vbo;
+	_meshData->ibo = _meshData->ibo;
 	// Bind the IBO and set the buffer data
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
@@ -1440,7 +1451,13 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
         #ifdef AF_WEB_BUILD
             // WebGL 1 requires the internal format to match the base format.
             // WebGL 2 supports sized formats like GL_RGBA16F.
-            internalFormat = GL_RGBA;
+            // WebGL 2 supports sized sRGB formats.
+            // If the request is for sRGB, use it. Otherwise, default to linear RGBA.
+            if ((GLenum)_frameBufferData->internalFormat == GL_SRGB8_ALPHA8) {
+                internalFormat = GL_SRGB8_ALPHA8;
+            } else {
+                internalFormat = GL_RGBA;
+            }
         #else
             internalFormat = _frameBufferData->internalFormat; // Use GL_RGBA or GL_RGBA16F on desktop
         #endif
