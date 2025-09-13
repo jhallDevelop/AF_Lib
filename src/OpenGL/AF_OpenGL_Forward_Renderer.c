@@ -336,10 +336,10 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	}
 	
 	// Clear Screen and buffers
-	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
-	AF_Renderer_UnBindFrameBuffer();
+	//AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	//glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	//AF_Renderer_UnBindFrameBuffer();
 
 	// Clear the depth buffers
 	
@@ -351,6 +351,11 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 
 	// Clear the Debug buffers
 	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	AF_Renderer_UnBindFrameBuffer();
+
+	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
 	AF_Renderer_UnBindFrameBuffer();
@@ -435,6 +440,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
         AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID);
     }
+	AF_Renderer_UnBindFrameBuffer();
     
     // 2. ==== MAIN COLOR & DEBUG PASS ====
     AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
@@ -442,7 +448,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     
     // Clear color and depth of the main framebuffer before drawing the scene.
     //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glCullFace(GL_BACK);
     
@@ -475,7 +481,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         // Switch back to fill mode for subsequent rendering (like ImGui).
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     #endif
-    
+    AF_Renderer_UnBindFrameBuffer();
+
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Optional Debug View) ====
     AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
     glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
