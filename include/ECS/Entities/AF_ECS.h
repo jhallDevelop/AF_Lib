@@ -64,6 +64,7 @@ void AF_ECS_Update(AF_Entity* _entities);
 AF_LIB_API void AF_ECS_LoadECSFromBinary(FILE* _filePtr, AF_ECS* _ecs);
 void AF_ECS_SaveECS(FILE* _file, AF_ECS* _ecs);
 AF_LIB_API uint32_t AF_ECS_GetCamera(AF_ECS* _ecs);
+AF_LIB_API void AF_ECS_CreateCamera(AF_ECS* _ecs, Vec3 _pos);
 AF_LIB_API void AF_ECS_UpdateCameraVectors(AF_ECS* _ecs, uint32_t _cameraID, AF_FLOAT _windowWidth, AF_FLOAT _windowHeight);
 
 AF_LIB_API uint32_t AF_ECS_FindEntityOfTag(AF_ECS* _ecs, AF_Entity_Tag_e _tag);

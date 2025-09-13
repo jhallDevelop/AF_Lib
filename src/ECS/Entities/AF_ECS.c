@@ -40,7 +40,7 @@ void AF_ECS_Init(AF_ECS* _ecs){
 		AF_Entity* entity = &_ecs->entities[i];
 		flag_t* componentState = &entity->flags;
  		//entity->enabled = AF_TRUE;
-		entity->flags = AF_Component_SetEnabled(*componentState, AF_TRUE);
+		entity->flags = AF_Component_SetEnabled(*componentState, AF_FALSE);
 		entity->id_tag = AF_ECS_AssignID(entity->id_tag, i);
 		entity->id_tag = AF_ECS_AssignTag(entity->id_tag, 0);
 		
@@ -326,6 +326,26 @@ uint32_t AF_ECS_GetCamera(AF_ECS* _ecs){
     return cameraEntityID;
 }
 
+void AF_ECS_CreateCamera(AF_ECS* _ecs, Vec3 _pos){
+    AF_Log_Warning("Editor_App_Start: Can't find a scene camera: creating new camera\n");
+	// Setup camera
+	// Create a new camera
+	AF_Entity* cameraEntity = AF_ECS_CreateEntity(_ecs);//_editorAppData->viewport.cameraEntityPtr;
+	uint32_t cameraEntityID = AF_ECS_GetID(cameraEntity->id_tag);
+	AF_CCamera* camera = &_ecs->cameras[cameraEntityID];
+	AF_CTransform3D* cameraTransform = &_ecs->transforms[cameraEntityID];
+	AF_CEditorData* cameraEditorData = &_ecs->editorData[cameraEntityID];
+	// let the editor viewport know about the camera
+	
+	// start the camera looking down the negative z
+	camera->yaw = 90.0f;
+
+	cameraTransform->pos = _pos;
+	*camera = AF_CCamera_ADD(AF_FALSE);
+	*cameraEditorData = AF_CEditorData_ADD();
+    
+}
+
 /*
 ====================
 AF_ECS_UpdateCameraVectors
@@ -387,3 +407,6 @@ uint32_t AF_ECS_FindEntityOfTag(AF_ECS* _ecs, AF_Entity_Tag_e _tag) {
     
     return entityID;
 }
+
+
+
