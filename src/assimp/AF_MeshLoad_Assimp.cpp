@@ -103,7 +103,7 @@ af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const
     {
         // Reload texture\n");
         // Diffuse
-        _meshComponent.material.diffuseTexture = AF_Renderer_ReLoadTexture(&_assets, _meshComponent.material.diffuseTexture.path);
+        AF_Renderer_ReLoadTexture(&_assets, &_meshComponent.material.diffuseTexture);
         // Normal
         //_meshData.material.normalTexture = AF_Renderer_ReLoadTexture(&_assets, _meshData.material.normalTexture.path);
         // Specular
@@ -318,7 +318,7 @@ AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const cha
     }   
 
     // prep the return texture pointer
-    AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"};
+    AF_Texture returnTexture = AF_Texture_ZERO();
     
     for(unsigned int i = 0; i < assimpMaterialTextureCount; i++)
     {

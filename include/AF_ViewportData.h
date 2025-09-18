@@ -33,9 +33,9 @@ inline static AF_ViewportData AF_ViewportData_ZERO(void) {
     AF_Color color = { 0,0,0,0 };
     AF_Material returnMaterial;
     returnMaterial.shaderID = 0;
-    returnMaterial.diffuseTexture = { 0, AF_TEXTURE_TYPE_DIFFUSE, "\0" };
-    returnMaterial.normalTexture = { 0, AF_TEXTURE_TYPE_NORMALS, "\0" };
-    returnMaterial.specularTexture = { 0, AF_TEXTURE_TYPE_SPECULAR, "\0" };
+    returnMaterial.diffuseTexture = { 0, AF_TEXTURE_TYPE_DIFFUSE, "\0", 0.0f, 0.0f, 1.0f, 1.0f};
+    returnMaterial.normalTexture = { 0, AF_TEXTURE_TYPE_NORMALS, "\0", 0.0f, 0.0f, 1.0f, 1.0f};
+    returnMaterial.specularTexture = { 0, AF_TEXTURE_TYPE_SPECULAR, "\0", 0.0f, 0.0f, 1.0f, 1.0f};
     returnMaterial.color = color;
 
     AF_ViewportData viewportData;

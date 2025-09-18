@@ -196,8 +196,10 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		// Create a new entity in the ECS
 		AF_ECS* ecs = &_appData->ecs;
 		AF_Entity* newEntity = &_appData->ecs.entities[ecs->currentEntity];
-		newEntity->id_tag = AF_ECS_AssignID(newEntity->id_tag, cJSON_GetObjectItem(entityJSON, "id")->valueint); // Get ID tag from JSON
-		newEntity->id_tag = AF_ECS_AssignTag(newEntity->id_tag, cJSON_GetObjectItem(entityJSON, "tag")->valueint); // Get tag from JSON
+		uint32_t id = cJSON_GetObjectItem(entityJSON, "id")->valueint;
+		uint32_t tagID = cJSON_GetObjectItem(entityJSON, "tag")->valueint;
+		newEntity->id_tag = AF_ECS_AssignID(newEntity->id_tag, id); // Get ID tag from JSON
+		newEntity->id_tag = AF_ECS_AssignTag(newEntity->id_tag, tagID); // Get tag from JSON
 
 		newEntity->flags = AF_Component_SetEnabled(newEntity->flags, cJSON_GetObjectItem(entityJSON, "enabled")->valueint); // Get enabled flag from JSON
 		newEntity->flags = AF_Component_SetHas(newEntity->flags, cJSON_GetObjectItem(entityJSON, "has")->valueint); // Get has flag from JSON
@@ -341,100 +343,102 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 
 		// Entity json
 		cJSON* entityJSON = cJSON_AddObjectToObject(rootJSON, "entity");
-		cJSON_AddNumberToObject(entityJSON, "id", AF_ECS_GetID(entity->id_tag)); // Add ID
-		cJSON_AddNumberToObject(entityJSON, "tag", AF_ECS_GetTag(entity->id_tag)); // Add tag
+		uint32_t entityID = AF_ECS_GetID(entity->id_tag);
+		uint32_t tagID =  AF_ECS_GetTag(entity->id_tag);
+		cJSON_AddNumberToObject(entityJSON, "id", entityID); // Add ID
+		cJSON_AddNumberToObject(entityJSON, "tag", tagID); // Add tag
 		cJSON_AddBoolToObject(entityJSON, "enabled", AF_Component_GetEnabled(entity->flags)); // Add enabled flag
 		cJSON_AddBoolToObject(entityJSON, "has", AF_Component_GetHas(entity->flags)); // Add has flag
 
 		// for each component
 		af_bool_t flags = (af_bool_t)entity->flags; // TODO: extract the flags
-		af_bool_t id = AF_ECS_GetID(entity->id_tag);	// ID
-		af_bool_t tag = AF_ECS_GetTag(entity->id_tag);
+		//uint32_t id = AF_ECS_GetID(entity->id_tag);	// ID
+		//uint32_t tag = AF_ECS_GetTag(entity->id_tag);
 
 
 		// Transform
-		AF_CTransform3D* transform = &_ecs->transforms[i];	// 3d transform component
+		AF_CTransform3D* transform = &_ecs->transforms[entityID];	// 3d transform component
 		char transformTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* transformJSON = AF_JSON_TransformToJson(&_ecs->transforms[i]);
+		cJSON* transformJSON = AF_JSON_TransformToJson(&_ecs->transforms[entityID]);
 		cJSON_AddItemToObject(entityJSON, "transform", transformJSON);
 
 		// Sprite
-		AF_CSprite* sprite = &_ecs->sprites[i];		// sprite cmponent
+		AF_CSprite* sprite = &_ecs->sprites[entityID];		// sprite cmponent
 		char spriteText[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* spriteJSON = AF_JSON_SpriteToJson(&_ecs->sprites[i]);
+		cJSON* spriteJSON = AF_JSON_SpriteToJson(&_ecs->sprites[entityID]);
 		cJSON_AddItemToObject(entityJSON, "sprite", spriteJSON);
 
 		// Rigidbody
-		AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i]; // 3d rigidbody
+		AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[entityID]; // 3d rigidbody
 		char rigidbodyTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* rigidbodyJSON = AF_JSON_RigidbodyToJson(&_ecs->rigidbodies[i]);
+		cJSON* rigidbodyJSON = AF_JSON_RigidbodyToJson(&_ecs->rigidbodies[entityID]);
 		cJSON_AddItemToObject(entityJSON, "rigidbody", rigidbodyJSON);
 
 		// Collider
-		AF_CCollider* collider = &_ecs->colliders[i];	// Collider component
+		AF_CCollider* collider = &_ecs->colliders[entityID];	// Collider component
 		char colliderTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* colliderJSON = AF_JSON_ColliderToJson(&_ecs->colliders[i]);
+		cJSON* colliderJSON = AF_JSON_ColliderToJson(&_ecs->colliders[entityID]);
 		cJSON_AddItemToObject(entityJSON, "collider", colliderJSON);
 
 		// Animation
-		AF_CAnimation* animation = &_ecs->animations[i];	// animation Component
+		AF_CAnimation* animation = &_ecs->animations[entityID];	// animation Component
 		char animationTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* animationJSON = AF_JSON_AnimationToJson(&_ecs->animations[i]);
+		cJSON* animationJSON = AF_JSON_AnimationToJson(&_ecs->animations[entityID]);
 		cJSON_AddItemToObject(entityJSON, "animation", animationJSON);
 
 		// Cameras
-		AF_CCamera* camera = &_ecs->cameras[i];		// camera component
+		AF_CCamera* camera = &_ecs->cameras[entityID];		// camera component
 		char cameraTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* cameraJSON = AF_JSON_CameraToJson(&_ecs->cameras[i]);
+		cJSON* cameraJSON = AF_JSON_CameraToJson(&_ecs->cameras[entityID]);
 		cJSON_AddItemToObject(entityJSON, "camera", cameraJSON);
 
 		// Mesh
-		AF_CMesh* mesh = &_ecs->meshes[i];		// mesh component 	
+		AF_CMesh* mesh = &_ecs->meshes[entityID];		// mesh component 	
 		char meshTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* meshJSON = AF_JSON_MeshToJson(&_ecs->meshes[i]);
+		cJSON* meshJSON = AF_JSON_MeshToJson(&_ecs->meshes[entityID]);
 		cJSON_AddItemToObject(entityJSON, "mesh", meshJSON);
 
 		// Text
-		AF_CText* text = &_ecs->texts[i];
+		AF_CText* text = &_ecs->texts[entityID];
 		char textTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* textJSON = AF_JSON_TextToJson(&_ecs->texts[i]);
+		cJSON* textJSON = AF_JSON_TextToJson(&_ecs->texts[entityID]);
 		cJSON_AddItemToObject(entityJSON, "text", textJSON);
 
 		// Audio Source
-		AF_CAudioSource* audioSource = &_ecs->audioSources[i];
+		AF_CAudioSource* audioSource = &_ecs->audioSources[entityID];
 		char audioTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* audioSourceJSON = AF_JSON_AudioSourceToJson(&_ecs->audioSources[i]);
+		cJSON* audioSourceJSON = AF_JSON_AudioSourceToJson(&_ecs->audioSources[entityID]);
 		cJSON_AddItemToObject(entityJSON, "audio", audioSourceJSON);
 
 		// Player Data
-		AF_CPlayerData* playerData = &_ecs->playerDatas[i];
+		AF_CPlayerData* playerData = &_ecs->playerDatas[entityID];
 		char playerDataTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* playerDataJSON = AF_JSON_PlayerDataToJson(&_ecs->playerDatas[i]);
+		cJSON* playerDataJSON = AF_JSON_PlayerDataToJson(&_ecs->playerDatas[entityID]);
 		cJSON_AddItemToObject(entityJSON, "playerData", playerDataJSON);
 
 		// Skeletal Animation
-		AF_CSkeletalAnimation* skeletalAnimation = &_ecs->skeletalAnimations[i];
+		AF_CSkeletalAnimation* skeletalAnimation = &_ecs->skeletalAnimations[entityID];
 		char skeletalTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* skeletalJSON = AF_JSON_SkeletalAnimationToJson(&_ecs->skeletalAnimations[i]);
+		cJSON* skeletalJSON = AF_JSON_SkeletalAnimationToJson(&_ecs->skeletalAnimations[entityID]);
 		cJSON_AddItemToObject(entityJSON, "skeletal", skeletalJSON);
 
 		// AI Behaviour
-		AF_CAI_Behaviour* aiBehaviour = &_ecs->aiBehaviours[i];
+		AF_CAI_Behaviour* aiBehaviour = &_ecs->aiBehaviours[entityID];
 		char aiTextBufferBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* aiBehaviourJSON = AF_JSON_AIBehaviourToJson(&_ecs->aiBehaviours[i]);
+		cJSON* aiBehaviourJSON = AF_JSON_AIBehaviourToJson(&_ecs->aiBehaviours[entityID]);
 		cJSON_AddItemToObject(entityJSON, "aiBehaviour", aiBehaviourJSON);
 
 
 		// Editor Data
-		AF_CEditorData* editorData = &_ecs->editorData[i];
+		AF_CEditorData* editorData = &_ecs->editorData[entityID];
 		char editorDataTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* editorDataJSON = AF_JSON_EditorDataToJson(&_ecs->editorData[i]);
+		cJSON* editorDataJSON = AF_JSON_EditorDataToJson(&_ecs->editorData[entityID]);
 		cJSON_AddItemToObject(entityJSON, "editorData", editorDataJSON);
 
 		// Input Controller
-		AF_CInputController* inputController = &_ecs->inputControllers[i];
+		AF_CInputController* inputController = &_ecs->inputControllers[entityID];
 		char inputControllerTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* inputControllerJSON = AF_JSON_InputControllerToJson(&_ecs->inputControllers[i]);
+		cJSON* inputControllerJSON = AF_JSON_InputControllerToJson(&_ecs->inputControllers[entityID]);
 		cJSON_AddItemToObject(entityJSON, "inputController", inputControllerJSON);
 
 
@@ -442,7 +446,7 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 
 		for(uint32_t x = 0; x < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; x++) {
 			// We use a flat array so need to stride through to get an index
-			uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + x;
+			uint32_t scriptID = (entityID * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + x;
 			cJSON* scriptsDataJSON = AF_JSON_ScriptsToJson(&_ecs->scripts[scriptID]);
 			char scriptsJSONName[AF_MAX_PATH_CHAR_SIZE] = "\0";
 			snprintf(scriptsJSONName, AF_MAX_PATH_CHAR_SIZE, "%s%i", AF_JSON_SCRIPT_JSON_NAME_PREFIX, x);
@@ -451,9 +455,9 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		}
 
 		// Lights
-		AF_CLight* light = &_ecs->lights[i];
+		AF_CLight* light = &_ecs->lights[entityID];
 		char lightsTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* lightDataJSON = AF_JSON_LightToJson(&_ecs->lights[i]);
+		cJSON* lightDataJSON = AF_JSON_LightToJson(&_ecs->lights[entityID]);
 		cJSON_AddItemToObject(entityJSON, "light", lightDataJSON);
 
 	}
@@ -880,7 +884,7 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
 
     // Load mesh data
     cJSON* meshesArray = cJSON_GetObjectItem(_meshJSON, "meshes");
-    
+    // Debugging information
     if (meshesArray && cJSON_IsArray(meshesArray)) {
         cJSON *mesh_iterator = NULL;
         uint32_t i = 0;
@@ -1005,6 +1009,16 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
         if (item && cJSON_IsString(item)) {
             snprintf(_mesh->material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", item->valuestring);
             _mesh->material.diffuseTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
+			cJSON* uvOffsetXJSON = cJSON_GetObjectItem(materialJson, "uvOffsetX");
+			cJSON* uvOffsetYJSON = cJSON_GetObjectItem(materialJson, "uvOffsetY");
+
+			if(uvOffsetXJSON == NULL || uvOffsetYJSON == NULL){
+				_mesh->material.diffuseTexture.uvOffsetX = 0.0;
+				_mesh->material.diffuseTexture.uvOffsetY = 0.0;
+			}else{
+				_mesh->material.diffuseTexture.uvOffsetX = uvOffsetXJSON->valuedouble;
+				_mesh->material.diffuseTexture.uvOffsetY = uvOffsetYJSON->valuedouble;
+			}
         }
 
         item = cJSON_GetObjectItem(materialJson, "specularTexture");
@@ -1788,7 +1802,8 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
 
     //diffuse texture
     cJSON_AddStringToObject(materialJson, "diffuseTexture", _component->material.diffuseTexture.path);
-
+	cJSON_AddNumberToObject(materialJson, "uvOffsetX", _component->material.diffuseTexture.uvOffsetX);
+	cJSON_AddNumberToObject(materialJson, "uvOffsetY", _component->material.diffuseTexture.uvOffsetY);
     //specular texture
     cJSON_AddStringToObject(materialJson, "specularTexture", _component->material.specularTexture.path);
 

@@ -41,7 +41,7 @@ AF_LIB_API void AF_Renderer_Shutdown(AF_ECS* _ecs);
 // Textures
 void AF_Renderer_SetFlipImage(af_bool_t _flipImage);
 uint32_t AF_Renderer_LoadTexture(char const * path);
-AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath);
+void AF_Renderer_ReLoadTexture(AF_Assets* _assets, AF_Texture* _texture);
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
 
 // ============================  Forward Rendering ================================ 

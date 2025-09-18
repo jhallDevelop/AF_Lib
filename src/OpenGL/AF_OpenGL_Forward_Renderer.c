@@ -535,37 +535,38 @@ AF_Renderer_ReLoadTexture
 Reload textures
 ====================
 */
-AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath) {
-    AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, ""}; // Initialize to invalid
+void AF_Renderer_ReLoadTexture(AF_Assets* _assets, AF_Texture* _texture) {
 
-    if (!_texturePath || _texturePath[0] == '\0') {
+    if (!_texture || _texture->path[0] == '\0') {
         AF_Log_Error("AF_Renderer_ReLoadTexture: Null or empty texture path provided.\n");
-        return returnTexture;
+        
     }
-    snprintf(returnTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", _texturePath);
+    //snprintf(returnTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", _texture->path);
 
     // Potentially check cache first if you don't want to *always* reload from disk
-    AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texturePath);
+    AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texture->path);
     if (cachedTexture.type != AF_TEXTURE_TYPE_NONE) {
 		//AF_Log("AF_Renderer_ReLoadTexture: Loading Cached texture id: %i from assets for path: %s\n", returnTexture.id, _texturePath);
     //     // Optional: Could check glIsTexture(cachedTexture.id) here if paranoid
-         return cachedTexture;
+         //return cachedTexture;
+		 // copy the texture data from the chached version
+		 *_texture = cachedTexture;
     }
 
 	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture not found. Loading texture for first time: %s\n", _texturePath);
-    returnTexture.id = AF_Renderer_LoadTexture(_texturePath);
+    _texture->id = AF_Renderer_LoadTexture(_texture->path);
 
-    if (returnTexture.id == 0) { // Now this check is meaningful
-        AF_Log_Error("AF_Renderer_ReLoadTexture: Call to AF_Renderer_LoadTexture failed for path: %s\n", _texturePath);
+    if (_texture->id == 0) { // Now this check is meaningful
+        AF_Log_Error("AF_Renderer_ReLoadTexture: Call to AF_Renderer_LoadTexture failed for path: %s\n", _texture->path);
         // returnTexture.type is already AF_TEXTURE_TYPE_NONE
-        return returnTexture;
+        //return returnTexture;
     }
 
-    returnTexture.type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
+    _texture->type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
 	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n",returnTexture.id,  _texturePath);
-    AF_Assets_AddTexture(_assets, returnTexture); // Add/update in asset manager
+    AF_Assets_AddTexture(_assets, *_texture); // Add/update in asset manager
 
-    return returnTexture;
+    //return returnTexture;
 }
 
 
@@ -850,7 +851,8 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
         //if(_mesh->recieveLights == AF_TRUE){
 		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
 		
-		glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
+		//glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
+		AF_Shader_SetVec3(shader, "viewPos", _cameraPos->x, _cameraPos->y, _cameraPos->z);
 		// ideally shininess is set to 32.0f
 		/*
 		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
@@ -918,6 +920,13 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		// TODO: sort transparent objects before rendering
 		//https://learnopengl.com/Advanced-OpenGL/Blending
 
+		// Update the UV coords if animated texture, or scaling
+		// Update UVs if needed here
+		// update the uv data
+
+		AF_Shader_SetVec2(shader, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);
+		AF_Shader_SetVec2(shader, "uvScale", _mesh->material.diffuseTexture.uvScaleX, _mesh->material.diffuseTexture.uvScaleY);
+		
 		
 		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 			

@@ -55,7 +55,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         // init the mesh
         AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
         af_bool_t meshLoadSuccess = AF_MeshLoad_Init(&_appData->assets, meshComponent, meshComponent->meshPath);
-        meshComponent->material.diffuseTexture = AF_Renderer_ReLoadTexture(&_appData->assets, meshComponent->material.diffuseTexture.path);
+        AF_Renderer_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
         //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
         if (meshLoadSuccess == false) {
             AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);

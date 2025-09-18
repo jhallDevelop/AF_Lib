@@ -31,13 +31,21 @@ typedef struct AF_Texture {
 	uint32_t id;
 	enum AF_TextureType type;
 	char path[AF_MAX_PATH_CHAR_SIZE];	// TODO: this looks a little small
+	AF_FLOAT uvOffsetX; // offset for texture coordinates
+	AF_FLOAT uvOffsetY;
+	AF_FLOAT uvScaleX;  // scale for texture coordinates
+	AF_FLOAT uvScaleY;	
 } AF_Texture;
 
 static inline AF_Texture AF_Texture_ZERO(void){
 	AF_Texture returnTexture = {
 		0,	//.id 
 		AF_TEXTURE_TYPE_NONE, //.type = 
-		"\0"	// .path =
+		"\0",	// .path =
+		0.0f,
+		0.0f,
+		1.0f,
+		1.0f
 	};
 
 	return returnTexture;

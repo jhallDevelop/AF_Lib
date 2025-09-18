@@ -113,7 +113,7 @@ static inline AF_Texture AF_Assets_GetTexture(AF_Assets* _assets, const char* _t
         AF_Log_Error("AF_Assets_AddTexture: passed null assets\n");
     }
     
-    AF_Texture returnTexture = {0, AF_TEXTURE_TYPE_NONE, "\0"};
+    AF_Texture returnTexture = AF_Texture_ZERO();
     for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
     {
         if(strncmp(_assets->textures[j].path, _texturePath, AF_MAX_PATH_CHAR_SIZE) == 0)

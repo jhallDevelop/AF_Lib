@@ -522,37 +522,39 @@ AF_Renderer_ReLoadTexture
 Reload textures
 ====================
 */
-AF_Texture AF_Renderer_ReLoadTexture(AF_Assets* _assets, const char* _texturePath) {
-	AF_Texture returnTexture = { 0, AF_TEXTURE_TYPE_NONE, "" }; // Initialize to invalid
+void AF_Renderer_ReLoadTexture(AF_Assets* _assets, AF_Texture* _texture){//const char* _texturePath) {
+	//AF_Texture returnTexture = AF_Texture_ZERO(); // Initialize to invalid
 
-	if (!_texturePath || _texturePath[0] == '\0') {
+	if (!_texturePath || _texture->path[0] == '\0') {
 		AF_Log_Error("AF_Renderer_ReLoadTexture: Null or empty texture path provided.\n");
-		return returnTexture;
+		//return returnTexture;
 	}
-	snprintf(returnTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", _texturePath);
+	snprintf(_texture->path, AF_MAX_PATH_CHAR_SIZE, "%s", _texture->path);
 
 	// Potentially check cache first if you don't want to *always* reload from disk
-	AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texturePath);
+	AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texture->path);
 	if (cachedTexture.type != AF_TEXTURE_TYPE_NONE) {
-		AF_Log("AF_Renderer_ReLoadTexture: Loading Cached texture id: %i from assets for path: %s\n", returnTexture.id, _texturePath);
+		AF_Log("AF_Renderer_ReLoadTexture: Loading Cached texture id: %i from assets for path: %s\n", returnTexture.id, _texture->path);
 		//     // Optional: Could check glIsTexture(cachedTexture.id) here if paranoid
-		return cachedTexture;
+		*_texture = cachedTexture;
+		//return cachedTexture;
 	}
 
-	AF_Log("AF_Renderer_ReLoadTexture: Cached texture not found. Loading texture for first time: %s\n", _texturePath);
-	returnTexture.id = AF_Renderer_LoadTexture(_texturePath);
+	AF_Log("AF_Renderer_ReLoadTexture: Cached texture not found. Loading texture for first time: %s\n", _texture->path);
+	_texture->id = AF_Renderer_LoadTexture(_texture->path);
 
-	if (returnTexture.id == 0) { // Now this check is meaningful
-		AF_Log_Error("AF_Renderer_ReLoadTexture: Call to AF_Renderer_LoadTexture failed for path: %s\n", _texturePath);
+	if (_texture->id == 0) { // Now this check is meaningful
+		AF_Log_Error("AF_Renderer_ReLoadTexture: Call to AF_Renderer_LoadTexture failed for path: %s\n", _texture->path);
 		// returnTexture.type is already AF_TEXTURE_TYPE_NONE
-		return returnTexture;
+
+		//return returnTexture;
 	}
 
-	returnTexture.type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
-	AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n", returnTexture.id, _texturePath);
-	AF_Assets_AddTexture(_assets, returnTexture); // Add/update in asset manager
+	_texture->type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
+	AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n", _texture->id, _texture->path);
+	AF_Assets_AddTexture(_assets, *_texture); // Add/update in asset manager
 
-	return returnTexture;
+	//return returnTexture;
 }
 
 
