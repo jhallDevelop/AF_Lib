@@ -853,6 +853,27 @@ void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera) {
 		Vec4 backgroundColor = { 0.0f, 0.0f, 0.0f, 0.0f}; // Assuming black
 		_camera->backgroundColor = backgroundColor; // Assuming black with full opacity
 	}
+
+	// enable render target data
+	cJSON* enableRendertoTextureJSON = cJSON_GetObjectItem(_cameraJSON, "enableRenderToTexture");
+	if (enableRendertoTextureJSON != NULL) {
+		_camera->enableRenderToTexture = enableRendertoTextureJSON->valueint;
+	}
+
+	// render texture width
+	cJSON* renderTextureWidthJSON = cJSON_GetObjectItem(_cameraJSON, "renderTextureWidth");
+	if (renderTextureWidthJSON != NULL) {
+		_camera->renderTextureWidth = renderTextureWidthJSON->valueint;
+	}
+
+	// render texture height
+	cJSON* renderTextureHeightJSON = cJSON_GetObjectItem(_cameraJSON, "renderTextureHeight");
+	if (renderTextureHeightJSON != NULL) {
+		_camera->renderTextureHeight = renderTextureHeightJSON->valueint;
+	}
+
+	
+	// skip the actual render target texture, it will be created later when needed	
 }
 
 // mesh
@@ -968,10 +989,14 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
     
     // --- Other Properties ---
     item = cJSON_GetObjectItem(_meshJSON, "showDebug");
-    if (item) _mesh->showDebug = item->valueint;
+    if (item) {
+		_mesh->showDebug = item->valueint;
+	}
     
     item = cJSON_GetObjectItem(_meshJSON, "meshType");
-    if (item) _mesh->meshType = (enum AF_MESH_TYPE)item->valueint;
+    if (item) {
+		_mesh->meshType = (enum AF_MESH_TYPE)item->valueint;
+	}
     
     item = cJSON_GetObjectItem(_meshJSON, "meshPath");
     if (item && cJSON_IsString(item)) {
@@ -981,7 +1006,9 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
     }
 
     item = cJSON_GetObjectItem(_meshJSON, "isImageFlipped");
-    if (item) _mesh->isImageFlipped = item->valueint;
+    if (item) {
+		_mesh->isImageFlipped = item->valueint;
+	}
 
     // --- Shader ---
     cJSON* shaderJSON = cJSON_GetObjectItem(_meshJSON, "shader");
@@ -1005,10 +1032,25 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
     // --- Material ---
     cJSON* materialJson = cJSON_GetObjectItem(_meshJSON, "material");
     if (materialJson) {
+
+		// For each texture
+		// Texture Diffuse
         item = cJSON_GetObjectItem(materialJson, "diffuseTexture");
+		cJSON* textureTypeJson = cJSON_GetObjectItem(materialJson, "textureType");
+		if(textureTypeJson != NULL){
+			_mesh->material.diffuseTexture.type = textureTypeJson->valueint;
+		}
+
+		cJSON* renderTextureCameraEntityIndexJSON = cJSON_GetObjectItem(materialJson, "renderTextureCameraEntityIndex");
+		if (renderTextureCameraEntityIndexJSON != NULL && cJSON_IsNumber(renderTextureCameraEntityIndexJSON)) {
+			_mesh->material.renderTextureCameraEntityIndex = (uint32_t)renderTextureCameraEntityIndexJSON->valueint;
+		}
+
+		// 
+
         if (item && cJSON_IsString(item)) {
             snprintf(_mesh->material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", item->valuestring);
-            _mesh->material.diffuseTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
+            //_mesh->material.diffuseTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
 			cJSON* uvOffsetXJSON = cJSON_GetObjectItem(materialJson, "uvOffsetX");
 			cJSON* uvOffsetYJSON = cJSON_GetObjectItem(materialJson, "uvOffsetY");
 
@@ -1018,6 +1060,16 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
 			}else{
 				_mesh->material.diffuseTexture.uvOffsetX = uvOffsetXJSON->valuedouble;
 				_mesh->material.diffuseTexture.uvOffsetY = uvOffsetYJSON->valuedouble;
+			}
+
+			cJSON* uvScaleXJSON = cJSON_GetObjectItem(materialJson, "uvScaleX");
+			cJSON* uvScaleYJSON = cJSON_GetObjectItem(materialJson, "uvScaleY");
+			if(uvScaleXJSON == NULL || uvScaleYJSON == NULL){
+				_mesh->material.diffuseTexture.uvScaleX = 1.0;
+				_mesh->material.diffuseTexture.uvScaleY = 1.0;
+			}else{
+				_mesh->material.diffuseTexture.uvScaleX = uvScaleXJSON->valuedouble;
+				_mesh->material.diffuseTexture.uvScaleY = uvScaleYJSON->valuedouble;
 			}
         }
 
@@ -1728,6 +1780,19 @@ cJSON* AF_JSON_CameraToJson(AF_CCamera* _component) {
 	// background color
 	AF_JSON_Vec4ToJson("backgroundColor", &_component->backgroundColor, returnJSON);
 
+	// EnablerRenderToTexture
+	cJSON_AddNumberToObject(returnJSON, "enableRenderToTexture", _component->enableRenderToTexture);
+
+	// RenderTextureData
+	//AF_JSON_FrameBufferDataToJson("renderTextureData", &_component->renderTextureData, returnJSON);
+
+	// renderTextureWidth
+	cJSON_AddNumberToObject(returnJSON, "renderTextureWidth", _component->renderTextureWidth);
+
+	// renderTextureHeight
+	cJSON_AddNumberToObject(returnJSON, "renderTextureHeight", _component->renderTextureHeight);
+
+
 	return returnJSON;
 }
 
@@ -1802,9 +1867,13 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
 
     //diffuse texture
     cJSON_AddStringToObject(materialJson, "diffuseTexture", _component->material.diffuseTexture.path);
+	cJSON_AddNumberToObject(materialJson, "textureType", _component->material.diffuseTexture.type);
+	cJSON_AddNumberToObject(materialJson, "renderTextureCameraEntityIndex", _component->material.renderTextureCameraEntityIndex);
 	cJSON_AddNumberToObject(materialJson, "uvOffsetX", _component->material.diffuseTexture.uvOffsetX);
 	cJSON_AddNumberToObject(materialJson, "uvOffsetY", _component->material.diffuseTexture.uvOffsetY);
-    //specular texture
+    cJSON_AddNumberToObject(materialJson, "uvScaleX", _component->material.diffuseTexture.uvScaleX);
+	cJSON_AddNumberToObject(materialJson, "uvScaleY", _component->material.diffuseTexture.uvScaleY);
+	//specular texture
     cJSON_AddStringToObject(materialJson, "specularTexture", _component->material.specularTexture.path);
 
     //normal texture

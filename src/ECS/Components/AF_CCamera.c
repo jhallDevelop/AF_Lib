@@ -11,35 +11,46 @@ AF_CCamera AF_CCamera_ZERO(void){
 	component = AF_Component_SetHas(component, AF_FALSE);
 	component = AF_Component_SetEnabled(component, AF_FALSE);
 	AF_CCamera returnCamera = {
-		.enabled = component,
-		.cameraFront = {0,0,0},
-		.cameraUp = {0,0,0},
-		.cameraRight = {0,0,0},
-		.cameraWorldUp = {0,1,0},
-		.yaw = 0,
-		.pitch = 0,
-		.fov = 0,
-		.nearPlane = 0,
-		.aspectRatio = 0,
-		//.windowWidth = 0,
-		//.windowHeight = 0,
-		.tanHalfFov = 0,
-		.rangeInv = 0,
-		.orthographic = AF_FALSE,
-		.projectionMatrix =  {{
-			{1,0,0,0},
-			{0,1,0,0},
-			{0,0,1,0},
-			{0,0,0,1}
-	}},
-		.viewMatrix = {{
-			{1,0,0,0},
-			{0,1,0,0},
-			{0,0,1,0},
-			{0,0,0,1}
-	}},
-		.backgroundColor = {0,0,0,0} 
-	};
+        // Largest members first
+        .projectionMatrix =  {{
+            {1,0,0,0},
+            {0,1,0,0},
+            {0,0,1,0},
+            {0,0,0,1}
+        }},
+        .viewMatrix = {{
+            {1,0,0,0},
+            {0,1,0,0},
+            {0,0,1,0},
+            {0,0,0,1}
+        }},
+        .cameraFront = {0,0,0},
+        .cameraUp = {0,0,0},
+        .cameraRight = {0,0,0},
+        .cameraWorldUp = {0,1,0},
+        .backgroundColor = {0,0,0,0},
+        .renderTextureData = AF_FrameBufferData_ZERO(),
+
+        // Floats
+        .yaw = 0,
+        .pitch = 0,
+        .fov = 0,
+        .nearPlane = 0,
+        .farPlane = 0,
+        .aspectRatio = 0,
+        .tanHalfFov = 0,
+        .rangeInv = 0,
+
+        // Shorts
+        .renderTextureWidth = 0,
+        .renderTextureHeight = 0,
+
+        // Chars/Bools last
+        .enabled = component,
+        .orthographic = AF_FALSE,
+        .enableRenderToTexture = AF_FALSE,
+        .renderToTextureID = 0
+    };
 
 	return returnCamera;
 }
@@ -56,36 +67,47 @@ AF_CCamera AF_CCamera_ADD(af_bool_t _isOrthographic){
 	component = AF_Component_SetHas(component, AF_TRUE);
 	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCamera returnCamera = {
-		.enabled = component,
-		.cameraFront = {0, 0, -1},
-		.cameraUp = {0, 1, 0},
-		.cameraRight =  {0,0,0},
-		.cameraWorldUp = {0,1,0},
-		.yaw = 90,
-		.pitch = 0,
-		.fov = 45,
-		.nearPlane = 0.1f,
-		.farPlane = 100.0f,
-		.aspectRatio = 0,
-		//.windowWidth = 0,
-		//.windowHeight = 0,
-		.tanHalfFov = AF_Math_Tan(45 / 2), //AF_Math_Tan(halfFov)
-		.rangeInv = 1 / 100 - 0, // 1/farPlane - nearPlane
-		.orthographic = _isOrthographic,
-		.projectionMatrix = {{
-			{1,0,0,0},
-			{0,1,0,0},
-			{0,0,1,0},
-			{0,0,0,1}
-		}},
-		.viewMatrix = {{
-			{1,0,0,0},
-			{0,1,0,0},
-			{0,0,1,0},
-			{0,0,0,1}
-		}},
-		.backgroundColor = {0,0,0,0} 
-	};
+        // Largest members first
+        .projectionMatrix = {{
+            {1,0,0,0},
+            {0,1,0,0},
+            {0,0,1,0},
+            {0,0,0,1}
+        }},
+        .viewMatrix = {{
+            {1,0,0,0},
+            {0,1,0,0},
+            {0,0,1,0},
+            {0,0,0,1}
+        }},
+        .cameraFront = {0, 0, -1},
+        .cameraUp = {0, 1, 0},
+        .cameraRight =  {0,0,0},
+        .cameraWorldUp = {0,1,0},
+        .backgroundColor = {0,0,0,0},
+        .renderTextureData = AF_FrameBufferData_ZERO(),
+
+        // Floats
+        .yaw = 90,
+        .pitch = 0,
+        .fov = 45,
+        .nearPlane = 0.1f,
+        .farPlane = 100.0f,
+        .aspectRatio = 0,
+        .tanHalfFov = AF_Math_Tan(45 / 2), //AF_Math_Tan(halfFov)
+        .rangeInv = 1 / (100.0f - 0.1f), // 1/(far-near)
+
+        // Shorts
+        .renderTextureWidth = 0,
+        .renderTextureHeight = 0,
+
+        // Chars/Bools last
+        .enabled = component,
+        .orthographic = _isOrthographic,
+        .enableRenderToTexture = AF_FALSE,
+        .renderToTextureID = 0
+
+    };
 	return returnCamera;
 }
 

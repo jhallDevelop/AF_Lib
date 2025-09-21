@@ -31,6 +31,7 @@ typedef struct{
 	AF_Texture specularTexture;
 	AF_Color color;
 	AF_FLOAT shininess;
+	uint32_t renderTextureCameraEntityIndex; // if using a camera to render to texture, store the entity index here
 } AF_Material;
 
 static inline AF_Material AF_Material_ZERO(void){
@@ -51,6 +52,7 @@ static inline AF_Material AF_Material_ZERO(void){
 
 	returnMaterial.color = color;
 	returnMaterial.shininess = 0.0f;
+	returnMaterial.renderTextureCameraEntityIndex = 0;
 
 	return returnMaterial;
 }

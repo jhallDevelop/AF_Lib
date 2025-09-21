@@ -93,7 +93,7 @@ AF_Renderer_Start
 Start function which occurs after everything is loaded in.
 ====================
 */
-af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight){
+af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight){
 	AF_Log("AF_Renderer_Start\n");
 	if(_renderingData == NULL || _screenWidth == NULL || _screenHeight == NULL){}
 	
@@ -205,7 +205,53 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, const char* _platf
 			.magFilter = GL_LINEAR
 		};
 
-		
+		// For each render texture in the scene, if there is a camera attatched to it
+		// Then create a frame buffer for it
+		for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+			AF_CCamera* cameraComponent = &_ecs->cameras[i];
+			if(AF_Component_GetHasEnabled(cameraComponent->enabled) == AF_TRUE){
+				if(cameraComponent->enableRenderToTexture == AF_FALSE){
+					//AF_Log_Error("AF_Renderer_Start: Camera already has a render texture ID, skipping creation\n");
+					continue;
+				}
+				if(cameraComponent->renderTextureWidth > 0 && cameraComponent->renderTextureHeight > 0){
+					AF_FrameBufferData renderTextureBufferData = {
+						.fbo = 0,
+						.rbo = 0,
+						.shaderID = screenBufferShaderID,
+						.textureID = 0,
+						.textureWidth = cameraComponent->renderTextureWidth,
+						.textureHeight = cameraComponent->renderTextureHeight,
+						.vertPath = screenVertShaderFullPath, 
+						.fragPath = screenFragShaderFullPath, 
+						.shaderTextureName = "screenTexture",
+						#ifdef AF_WEB_BUILD
+							.internalFormat = GL_SRGB8_ALPHA8, // Use sRGB format for WebGL for correct gamma
+						#else
+							.internalFormat = GL_RGB,
+						#endif
+						.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
+						.drawBufferType = GL_TRUE,
+						.readBufferType = GL_TRUE,
+						.minFilter = GL_LINEAR,
+						.magFilter = GL_LINEAR
+					};
+					
+					// Set the screen Frame buffer texture
+					AF_Shader_Use(renderTextureBufferData.shaderID);
+					AF_Shader_SetInt(renderTextureBufferData.shaderID, renderTextureBufferData.shaderTextureName, 0);
+					AF_Shader_Use(0);
+					// copy to the render data to use
+					cameraComponent->renderTextureData = renderTextureBufferData;
+
+					// create the frame buffer for the camera
+					AF_Renderer_CreateFramebuffer(&cameraComponent->renderTextureData);
+				} else {
+					AF_Log_Error("AF_Renderer_Start: Camera Render Texture has invalid width or height\n");
+				}
+			}
+		}	
+	
 
 		AF_Shader_Use(depthDebugBufferData.shaderID);
 		AF_Shader_SetInt(depthDebugBufferData.shaderID, depthDebugBufferData.shaderTextureName, 0);
@@ -441,6 +487,33 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID);
     }
 	AF_Renderer_UnBindFrameBuffer();
+
+	// 1.5 Update the render texture cameras
+	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+		AF_CCamera* renderTextureCamera = &_ecs->cameras[i];
+		if(AF_Component_GetHasEnabled(renderTextureCamera->enabled) == AF_TRUE){
+			if(renderTextureCamera->enableRenderToTexture == AF_TRUE){
+				AF_Renderer_BindFrameBuffer(renderTextureCamera->renderTextureData.fbo);
+				glViewport(0, 0, renderTextureCamera->renderTextureData.textureWidth, renderTextureCamera->renderTextureData.textureHeight);
+				// update the forward rendering for this camera
+				AF_ECS_UpdateCameraVectors(_ecs, i, renderTextureCamera->renderTextureWidth, renderTextureCamera->renderTextureHeight);
+				renderTextureCamera->cameraFront = AF_Camera_CalculateFront(renderTextureCamera->yaw, renderTextureCamera->pitch);
+				// flip the z axis for the texture camera
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+				AF_Renderer_DrawMeshes(
+					&renderTextureCamera->viewMatrix,
+					&renderTextureCamera->projectionMatrix,
+					_ecs,
+					&cameraTransform->pos,
+					_lightingData,
+					NO_SHARED_SHADER,
+					_renderingData
+				);
+				AF_Renderer_UnBindFrameBuffer();
+			}
+		}
+	}
     
     // 2. ==== MAIN COLOR & DEBUG PASS ====
     AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
@@ -449,6 +522,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // Clear color and depth of the main framebuffer before drawing the scene.
     //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// if texture type is renderTexture, make the texture id the same as the screen frame buffer
+	
     
     glCullFace(GL_BACK);
     
@@ -562,7 +637,7 @@ void AF_Renderer_ReLoadTexture(AF_Assets* _assets, AF_Texture* _texture) {
         //return returnTexture;
     }
 
-    _texture->type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
+    //_texture->type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
 	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n",returnTexture.id,  _texturePath);
     AF_Assets_AddTexture(_assets, *_texture); // Add/update in asset manager
 
@@ -669,6 +744,23 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == AF_FALSE){
 			continue;
 		}
+
+		// TODO this is gross, fix it
+		// If this entity is a camera, skip rendering its mesh (if any)
+		if(mesh->material.diffuseTexture.type == AF_Texture_TypeMappings[AF_TEXTURE_TYPE_RENDER_TEXTURE].type){
+			// the camera we use is is stored in a special entity index in the material reserved for render to texture
+			if(mesh->material.renderTextureCameraEntityIndex < _ecs->entitiesCount){
+				AF_CCamera* camera = &_ecs->cameras[mesh->material.renderTextureCameraEntityIndex];
+				if(AF_Component_GetHasEnabled(camera->enabled) == AF_TRUE){
+					if(camera->enableRenderToTexture == AF_TRUE){
+						// if texture type is renderTexture, make the texture id the same as the screen frame buffer
+						mesh->material.diffuseTexture.id = camera->renderTextureData.textureID;
+					}
+				}
+			}
+		}
+
+		
 		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
@@ -1224,6 +1316,9 @@ void AF_Renderer_FrameResized(void* _renderingData){
 	renderingDataPtr->screenFrameBufferData.textureWidth = window->frameBufferWidth;
 	renderingDataPtr->screenFrameBufferData.textureHeight = window->frameBufferHeight;
 	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFrameBufferData);
+
+	// resize the render to texture frame buffer for shadows
+	
 
 	renderingDataPtr->depthFrameBufferData.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;//window->frameBufferWidth;
 	renderingDataPtr->depthFrameBufferData.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;//window->frameBufferHeight;

@@ -348,16 +348,16 @@ AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const cha
 
             // Map the assimp texture type to our texture type
             if(_assimpType == aiTextureType_DIFFUSE){
-                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_DIFFUSE;
+                returnTexture.type = AF_TextureType_e::AF_TEXTURE_TYPE_DIFFUSE;
                 AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is DIFFUSE\n");
             } else if (_assimpType == aiTextureType_SPECULAR){
-                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_SPECULAR;
+                returnTexture.type = AF_TextureType_e::AF_TEXTURE_TYPE_SPECULAR;
                 AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is SPECULAR\n");
             } else if (_assimpType == aiTextureType_NORMALS){
-                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_NORMALS;
+                returnTexture.type = AF_TextureType_e::AF_TEXTURE_TYPE_NORMALS;
                 AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is NORMALS\n");
             } else {
-                returnTexture.type = AF_TextureType::AF_TEXTURE_TYPE_NONE;
+                returnTexture.type = AF_TextureType_e::AF_TEXTURE_TYPE_NONE;
                 AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture type is NONE\n");
             }
             

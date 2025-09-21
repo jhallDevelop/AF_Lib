@@ -13,10 +13,14 @@ and camera helper functions
 #include "AF_Math/AF_Mat4.h"
 #include "AF_Window.h"
 #include "AF_Lib_Define.h"
+#include "AF_FrameBufferData.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define AF_CCAMERA_DEFAULT_RENDER_TEXTURE_WIDTH 128
+#define AF_CCAMERA_DEFAULT_RENDER_TEXTURE_HEIGHT 128
 
 /*
 ====================
@@ -26,25 +30,35 @@ Camera struct
 */
 typedef struct  {
     // TODO pack this
-	PACKED_CHAR enabled;
+	// Largest members first (matrices, vectors)
+    Mat4 projectionMatrix;
+    Mat4 viewMatrix;
     Vec3 cameraFront;
     Vec3 cameraUp;
     Vec3 cameraRight;
     Vec3 cameraWorldUp;
+    Vec4 backgroundColor;
+    AF_FrameBufferData renderTextureData;
+
+    // Floats next
     AF_FLOAT yaw;
     AF_FLOAT pitch;
     AF_FLOAT fov;
     AF_FLOAT nearPlane;
     AF_FLOAT farPlane;
     AF_FLOAT aspectRatio;
-    //AF_FLOAT windowWidth;
-    //AF_FLOAT windowHeight;
     AF_FLOAT tanHalfFov;
     AF_FLOAT rangeInv;
+
+    // Shorts
+    uint16_t renderTextureWidth;
+    uint16_t renderTextureHeight;
+
+    // Smallest members last (chars/bools)
+    PACKED_CHAR enabled;
     af_bool_t orthographic;
-    Mat4 projectionMatrix;
-    Mat4 viewMatrix;
-    Vec4 backgroundColor;
+    af_bool_t enableRenderToTexture;
+    uint32_t renderToTextureID;
 } AF_CCamera;
 
 AF_CCamera AF_CCamera_ZERO(void);
