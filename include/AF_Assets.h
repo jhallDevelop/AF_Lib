@@ -123,7 +123,7 @@ static inline AF_Texture AF_Assets_GetTexture(AF_Assets* _assets, const char* _t
             //AF_Log("AF_Assets_GetTexture: Found texture %s in assets: path: %s ID: %i\n", _texturePath, _assets->textures[j].path, returnTexturePtr->id);
             returnTexture = _assets->textures[j];
             // TODO: set correct type of texture
-            returnTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
+            //returnTexture.type = AF_TEXTURE_TYPE_DIFFUSE;
             break;
         }
     }
