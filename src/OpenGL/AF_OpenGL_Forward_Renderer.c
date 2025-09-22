@@ -824,7 +824,6 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 		if(!AF_Component_GetHas(colliderMesh.enabled)){// || hasEnabled == AF_FALSE){
 			continue;
 		}
-
 		
 		// construct debug mesh from the collider bounds
 		AF_CTransform3D* trans = &_ecs->transforms[i];
@@ -832,7 +831,7 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
 		Vec3 rotationToRadians = {AF_Math_Radians(trans->rot.x),AF_Math_Radians(trans->rot.y), AF_Math_Radians(trans->rot.z)};
 		// Update the model matrix
-		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
+		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, collider->boundingVolume);//_ecs->transforms[i].scale);
 		
 		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, &colliderMesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
@@ -869,7 +868,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	}
 	glUseProgram(shader); 
 	
-	AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
+	//AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// TODO: Render based on shader type 

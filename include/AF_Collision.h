@@ -50,6 +50,25 @@ static inline AF_Collision AF_Collision_ZERO(void){
 	return collision;
 }
 
+/*
+====================
+AF_Collision special initialization used for registering collisions but skipps reseting the callback
+====================
+*/
+static inline void AF_Collision_Reset(AF_Collision* _collision){
+	if(_collision == NULL){
+		return;
+	}
+	_collision->collided = AF_FALSE;
+	_collision->entity1ID = 0;
+	_collision->entity2ID = 0;
+	//_collision->callback = NULL;
+	_collision->collisionPoint = Vec3_ZERO();
+	_collision->rayDistance = 0.0f;
+	_collision->normal = Vec3_ZERO();
+	_collision->penetration = 0.0f;
+}
+
 
 #ifdef __cplusplus
 }

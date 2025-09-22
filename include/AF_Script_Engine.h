@@ -273,7 +273,7 @@ inline static void AF_Script_Call_Start(AF_AppData* _appData){
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
             // Call it
-            scriptFunctPtr(j, _appData);
+            scriptFunctPtr(i, _appData);
         }
     }
 }

@@ -654,7 +654,7 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 	af_bool_t returnValue = AF_FALSE;
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 
-		if(AF_Component_GetEnabled(_ecs->colliders[i].enabled == AF_FALSE)){
+		if(AF_Component_GetHasEnabled(_ecs->colliders[i].enabled) == AF_FALSE){
 			continue;
 		}
 		AF_Entity* entity1 = &_ecs->entities[i];
@@ -663,8 +663,8 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 		
 		
 		// rayIntersectionTest everything
-		for(uint32_t x = 0; x < _ecs->entitiesCount; ++x){
-			if(AF_Component_GetEnabled(_ecs->colliders[x].enabled == AF_FALSE)){
+		for(uint32_t x = i + 1; x < _ecs->entitiesCount; ++x){
+			if(AF_Component_GetHasEnabled(_ecs->colliders[x].enabled) == AF_FALSE){
 				continue;
 			}
 
@@ -677,11 +677,19 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 			uint32_t entity2ID = AF_ECS_GetID(entity2->id_tag);
 			AF_CCollider* collider2 = &_ecs->colliders[entity2ID];
 		
+			// only check colliders that can collide i.e. have a bounding volume
+			if(collider1->boundingVolume.x == 0 && collider1->boundingVolume.y == 0 && collider1->boundingVolume.z == 0){
+				continue;
+			}
+
+			if(collider2->boundingVolume.x == 0 && collider2->boundingVolume.y == 0 && collider2->boundingVolume.z == 0){
+				continue;
+			}
 
 			Vec3* posA = &_ecs->transforms[i].pos;
 			Vec3* posB = &_ecs->transforms[x].pos;
-			Vec3 halfSizeA = Vec3_MULT_SCALAR(collider1->boundingVolume, .5f);
-			Vec3 halfSizeB = Vec3_MULT_SCALAR(collider2->boundingVolume, .5f);
+			Vec3 halfSizeA = Vec3_MULT_SCALAR(collider1->boundingVolume, 0.5f);
+			Vec3 halfSizeB = Vec3_MULT_SCALAR(collider2->boundingVolume, 0.5f);
 			//Vec3 halfSizeA = Vec3_DIV_SCALAR(collider1->boundingVolume, 2);
 			//Vec3 halfSizeB = Vec3_DIV_SCALAR(collider2->boundingVolume, 2);
 
@@ -704,11 +712,12 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 					// Resolve collision
 					//AF_PHYSICS_CUBE_COLLISION_FACES
 					// Get the min and max of each cube
-					Vec3 maxA = Vec3_ADD(collider1->pos, collider1->boundingVolume);
-					Vec3 minA = Vec3_MINUS(collider1->pos, collider1->boundingVolume);
+					// Correct way to find min/max corners
+					Vec3 minA = Vec3_MINUS(*posA, halfSizeA);
+					Vec3 maxA = Vec3_ADD(*posA, halfSizeA);
 
-					Vec3 maxB = Vec3_ADD(collider2->pos, collider2->boundingVolume);
-					Vec3 minB = Vec3_MINUS(collider2->pos, collider2->boundingVolume);
+					Vec3 minB = Vec3_MINUS(*posB, halfSizeB);
+					Vec3 maxB = Vec3_ADD(*posB, halfSizeB);
 
 					
 					float distances [FACES_COUNT];
@@ -731,17 +740,38 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 					}
 
 					// create a new collision struct
-					AF_Collision collision1 = {returnValue, entity1ID, entity2ID, collider1->collision.callback, {0,0,0}, 0.0f, bestAxis, penetration}; 
+					//AF_Collision collision1 = {returnValue, entity1ID, entity2ID, collider1->collision.callback, {0,0,0}, 0.0f, bestAxis, penetration}; 
 					// TODO: i think the bestAxis should be inverted for the second object
-					AF_Collision collision2 = {returnValue, entity2ID, entity1ID, collider2->collision.callback, {0,0,0}, 0.0f, Vec3_MULT_SCALAR(bestAxis, -1), penetration}; 
+					//AF_Collision collision2 = {returnValue, entity2ID, entity1ID, collider2->collision.callback, {0,0,0}, 0.0f, Vec3_MULT_SCALAR(bestAxis, -1), penetration}; 
 					
 					// copy the new struct values to each collider
-					collider1->collision = collision1;
-					collider2->collision = collision2;
+					// Collision 1
+					collider1->collision.collided = AF_TRUE;
+					collider1->collision.entity1ID = entity1ID;
+					collider1->collision.entity2ID = entity2ID;
+					collider1->collision.penetration = penetration;
+					collider1->collision.normal = bestAxis;
+					
+					collider2->collision.collided = AF_TRUE;
+					collider2->collision.entity1ID = entity1ID;
+					collider2->collision.entity2ID = entity2ID;
+					collider2->collision.penetration = penetration;
+					collider2->collision.normal = Vec3_MULT_SCALAR(bestAxis, -1);
 
-					// TODO: move this outside the core rendering loop
-					collider1->collision.callback(&collider1->collision);
-					collider2->collision.callback(&collider2->collision);
+					//AF_Log("AF_Physics_AABB_Test: collision detected between entity id_tags: %i and %i\n", i, x);
+					if(collider1->collision.callback != NULL){
+						collider1->collision.callback(&collider1->collision);
+					}else{
+						AF_Log_Warning("AF_Physics_AABB_Test: collision detected but no callback set on entity id_tag: %i\n", i);
+					}
+
+					if(collider2->collision.callback != NULL){
+						collider2->collision.callback(&collider2->collision);
+					}else{
+						AF_Log_Warning("AF_Physics_AABB_Test: collision detected but no callback set on entity id_tag: %i\n", x);
+					}
+
+					
 
 					// Apply collision resolution
 					//AF_CTransform3D* transform1 = &_ecs->transforms[i];
@@ -751,10 +781,10 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 					//AF_C3DRigidbody* rigidbody2 = &_ecs->rigidbodies[x];
 					// don't apply force for kinematic objects
 					AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
-					if(rigidbody->isKinematic){
+					if(rigidbody->isKinematic == AF_TRUE){
 						continue;
 					}
-					AF_Physics_ResolveCollision(_ecs, entity1ID, entity2ID, &collision1);
+					AF_Physics_ResolveCollision(_ecs, entity1ID, entity2ID, &collider1->collision);
 			}
 		}
 	}

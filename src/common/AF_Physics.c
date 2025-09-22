@@ -75,8 +75,7 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 		// update the bounds position
 		collider->pos = _ecs->transforms[i].pos;
 		// clear all collsision except keep the callback
-		AF_Collision clearedCollision = AF_Collision_ZERO();
-		collider->collision = clearedCollision;
+		AF_Collision_Reset(&collider->collision);
 	}
 }
 
@@ -103,22 +102,25 @@ AF_Physics_LateRenderUpdate
 Implementation of late render update
 ====================
 */
+// TODO: figure out if this is still needed or a waste of time
 void AF_Physics_LateRenderUpdate(AF_ECS* _ecs){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateRenderUpdate pass in a null reference\n");
+	/*
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_CCollider* collider = &_ecs->colliders[i];
-		if(collider->showDebug != AF_TRUE){
+		if(collider->showDebug == AF_FALSE){
 			//AF_Log("Physics: LateRenderUpate: not showing debug %i\n", i);
 			continue;
 		}
 
-		if(collider->collision.collided != AF_TRUE){
+		if(collider->collision.collided == AF_FALSE){
 			//AF_Log("Physics: LateRenderUpate: not colided\n");
 			continue;
 		}
 		//AF_Log("Physics: LateRenderUpate: draw debug\n");
 		//AF_Physics_DrawBox(collider, collisionColor);	
 	}
+		*/
 }
 
 
