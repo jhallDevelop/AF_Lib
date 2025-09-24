@@ -496,7 +496,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 				AF_Renderer_BindFrameBuffer(renderTextureCamera->renderTextureData.fbo);
 				glViewport(0, 0, renderTextureCamera->renderTextureData.textureWidth, renderTextureCamera->renderTextureData.textureHeight);
 				// update the forward rendering for this camera
-				AF_ECS_UpdateCameraVectors(_ecs, i, renderTextureCamera->renderTextureWidth, renderTextureCamera->renderTextureHeight);
+				//AF_ECS_UpdateCameraVectors(_ecs, i, renderTextureCamera->renderTextureWidth, renderTextureCamera->renderTextureHeight);
 				renderTextureCamera->cameraFront = AF_Camera_CalculateFront(renderTextureCamera->yaw, renderTextureCamera->pitch);
 				// flip the z axis for the texture camera
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

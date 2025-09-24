@@ -43,6 +43,15 @@ extern "C" {
         return returnMatrix;
     }
 
+    // TODO: move this to AF_Math.h
+    // Returns -1.0f for negative numbers, 1.0f for positive numbers, and 0.0f for zero.
+    static inline float AF_SIGN(AF_FLOAT _val)
+    {
+        if (_val > 0.0f) return 1.0f;
+        if (_val < 0.0f) return -1.0f;
+        return 0.0f;
+    }
+
     
 
     /*
@@ -572,8 +581,144 @@ static inline Mat4 Mat4_Transpose(const Mat4* mat) {
     return transposed;
 }
 
+/*
+====================
+Mat4_Inverse
+Inverse a matrix
+====================
+*/
+static inline Mat4 Mat4_Inverse(const Mat4* mat) {
+    Mat4 inv;
+    float det;
+
+    // This is the adjugate matrix, which is the transpose of the cofactor matrix.
+    // The calculation is done directly using the input matrix's structure.
+    inv.rows[0].x =  mat->rows[1].y * mat->rows[2].z * mat->rows[3].w - mat->rows[1].y * mat->rows[2].w * mat->rows[3].z - mat->rows[2].y * mat->rows[1].z * mat->rows[3].w + mat->rows[2].y * mat->rows[1].w * mat->rows[3].z + mat->rows[3].y * mat->rows[1].z * mat->rows[2].w - mat->rows[3].y * mat->rows[1].w * mat->rows[2].z;
+    inv.rows[1].x = -mat->rows[1].x * mat->rows[2].z * mat->rows[3].w + mat->rows[1].x * mat->rows[2].w * mat->rows[3].z + mat->rows[2].x * mat->rows[1].z * mat->rows[3].w - mat->rows[2].x * mat->rows[1].w * mat->rows[3].z - mat->rows[3].x * mat->rows[1].z * mat->rows[2].w + mat->rows[3].x * mat->rows[1].w * mat->rows[2].z;
+    inv.rows[2].x =  mat->rows[1].x * mat->rows[2].y * mat->rows[3].w - mat->rows[1].x * mat->rows[2].w * mat->rows[3].y - mat->rows[2].x * mat->rows[1].y * mat->rows[3].w + mat->rows[2].x * mat->rows[1].w * mat->rows[3].y + mat->rows[3].x * mat->rows[1].y * mat->rows[2].w - mat->rows[3].x * mat->rows[1].w * mat->rows[2].y;
+    inv.rows[3].x = -mat->rows[1].x * mat->rows[2].y * mat->rows[3].z + mat->rows[1].x * mat->rows[2].z * mat->rows[3].y + mat->rows[2].x * mat->rows[1].y * mat->rows[3].z - mat->rows[2].x * mat->rows[1].z * mat->rows[3].y - mat->rows[3].x * mat->rows[1].y * mat->rows[2].z + mat->rows[3].x * mat->rows[1].z * mat->rows[2].y;
+
+    inv.rows[0].y = -mat->rows[0].y * mat->rows[2].z * mat->rows[3].w + mat->rows[0].y * mat->rows[2].w * mat->rows[3].z + mat->rows[2].y * mat->rows[0].z * mat->rows[3].w - mat->rows[2].y * mat->rows[0].w * mat->rows[3].z - mat->rows[3].y * mat->rows[0].z * mat->rows[2].w + mat->rows[3].y * mat->rows[0].w * mat->rows[2].z;
+    inv.rows[1].y =  mat->rows[0].x * mat->rows[2].z * mat->rows[3].w - mat->rows[0].x * mat->rows[2].w * mat->rows[3].z - mat->rows[2].x * mat->rows[0].z * mat->rows[3].w + mat->rows[2].x * mat->rows[0].w * mat->rows[3].z + mat->rows[3].x * mat->rows[0].z * mat->rows[2].w - mat->rows[3].x * mat->rows[0].w * mat->rows[2].z;
+    inv.rows[2].y = -mat->rows[0].x * mat->rows[2].y * mat->rows[3].w + mat->rows[0].x * mat->rows[2].w * mat->rows[3].y + mat->rows[2].x * mat->rows[0].y * mat->rows[3].w - mat->rows[2].x * mat->rows[0].w * mat->rows[3].y - mat->rows[3].x * mat->rows[0].y * mat->rows[2].w + mat->rows[3].x * mat->rows[0].w * mat->rows[2].y;
+    inv.rows[3].y =  mat->rows[0].x * mat->rows[2].y * mat->rows[3].z - mat->rows[0].x * mat->rows[2].z * mat->rows[3].y - mat->rows[2].x * mat->rows[0].y * mat->rows[3].z + mat->rows[2].x * mat->rows[0].z * mat->rows[3].y + mat->rows[3].x * mat->rows[0].y * mat->rows[2].z - mat->rows[3].x * mat->rows[0].z * mat->rows[2].y;
+
+    inv.rows[0].z =  mat->rows[0].y * mat->rows[1].z * mat->rows[3].w - mat->rows[0].y * mat->rows[1].w * mat->rows[3].z - mat->rows[1].y * mat->rows[0].z * mat->rows[3].w + mat->rows[1].y * mat->rows[0].w * mat->rows[3].z + mat->rows[3].y * mat->rows[0].z * mat->rows[1].w - mat->rows[3].y * mat->rows[0].w * mat->rows[1].z;
+    inv.rows[1].z = -mat->rows[0].x * mat->rows[1].z * mat->rows[3].w + mat->rows[0].x * mat->rows[1].w * mat->rows[3].z + mat->rows[1].x * mat->rows[0].z * mat->rows[3].w - mat->rows[1].x * mat->rows[0].w * mat->rows[3].z - mat->rows[3].x * mat->rows[0].z * mat->rows[1].w + mat->rows[3].x * mat->rows[0].w * mat->rows[1].z;
+    inv.rows[2].z =  mat->rows[0].x * mat->rows[1].y * mat->rows[3].w - mat->rows[0].x * mat->rows[1].w * mat->rows[3].y - mat->rows[1].x * mat->rows[0].y * mat->rows[3].w + mat->rows[1].x * mat->rows[0].w * mat->rows[3].y + mat->rows[3].x * mat->rows[0].y * mat->rows[1].w - mat->rows[3].x * mat->rows[0].w * mat->rows[1].y;
+    inv.rows[3].z = -mat->rows[0].x * mat->rows[1].y * mat->rows[3].z + mat->rows[0].x * mat->rows[1].z * mat->rows[3].y + mat->rows[1].x * mat->rows[0].y * mat->rows[3].z - mat->rows[1].x * mat->rows[0].z * mat->rows[3].y - mat->rows[3].x * mat->rows[0].y * mat->rows[1].z + mat->rows[3].x * mat->rows[0].z * mat->rows[1].y;
+
+    inv.rows[0].w = -mat->rows[0].y * mat->rows[1].z * mat->rows[2].w + mat->rows[0].y * mat->rows[1].w * mat->rows[2].z + mat->rows[1].y * mat->rows[0].z * mat->rows[2].w - mat->rows[1].y * mat->rows[0].w * mat->rows[2].z - mat->rows[2].y * mat->rows[0].z * mat->rows[1].w + mat->rows[2].y * mat->rows[0].w * mat->rows[1].z;
+    inv.rows[1].w =  mat->rows[0].x * mat->rows[1].z * mat->rows[2].w - mat->rows[0].x * mat->rows[1].w * mat->rows[2].z - mat->rows[1].x * mat->rows[0].z * mat->rows[2].w + mat->rows[1].x * mat->rows[0].w * mat->rows[2].z + mat->rows[2].x * mat->rows[0].z * mat->rows[1].w - mat->rows[2].x * mat->rows[0].w * mat->rows[1].z;
+    inv.rows[2].w = -mat->rows[0].x * mat->rows[1].y * mat->rows[2].w + mat->rows[0].x * mat->rows[1].w * mat->rows[2].y + mat->rows[1].x * mat->rows[0].y * mat->rows[2].w - mat->rows[1].x * mat->rows[0].w * mat->rows[2].y - mat->rows[2].x * mat->rows[0].y * mat->rows[1].w + mat->rows[2].x * mat->rows[0].w * mat->rows[1].y;
+    inv.rows[3].w =  mat->rows[0].x * mat->rows[1].y * mat->rows[2].z - mat->rows[0].x * mat->rows[1].z * mat->rows[2].y - mat->rows[1].x * mat->rows[0].y * mat->rows[2].z + mat->rows[1].x * mat->rows[0].z * mat->rows[2].y + mat->rows[2].x * mat->rows[0].y * mat->rows[1].z - mat->rows[2].x * mat->rows[0].z * mat->rows[1].y;
+
+    // Calculate the determinant
+    det = mat->rows[0].x * inv.rows[0].x + mat->rows[0].y * inv.rows[1].x + mat->rows[0].z * inv.rows[2].x + mat->rows[0].w * inv.rows[3].x;
+
+    // If the determinant is zero, the matrix is not invertible.
+    if (det == 0) {
+        return Mat4_IDENTITY();
+    }
+
+    // Divide the adjugate matrix by the determinant to get the inverse
+    det = 1.0f / det;
+    
+    Mat4 result;
+    for (int i = 0; i < 4; i++) {
+        result.rows[i] = Vec4_MULT_SCALAR(inv.rows[i], det);
+    }
+
+    return result;
+}
 
 
+/*
+====================
+Mat4_ObliqueProjection
+// Takes a projection matrix and a plane defined in CAMERA VIEW SPACE.
+// Returns a new, modified oblique projection matrix.
+====================
+*/
+inline static Mat4 Mat4_ObliqueProjection(Mat4 projection, Vec4 clipPlane)
+{
+    Vec4 q;
+    q.x = (AF_SIGN(clipPlane.x) + projection.rows[0].z) / projection.rows[0].x;
+    q.y = (AF_SIGN(clipPlane.y) + projection.rows[1].z) / projection.rows[1].y;
+    q.z = -1.0f;
+    q.w = (1.0f + projection.rows[2].z) / projection.rows[2].w;
+
+    Vec4 c = Vec4_MULT_SCALAR(clipPlane, 2.0f / Vec4_DOT(clipPlane, q));
+
+    Mat4 obliqueProj = projection;
+    obliqueProj.rows[2].x = c.x;
+    obliqueProj.rows[2].y = c.y;
+    obliqueProj.rows[2].z = c.z + 1.0f;
+    obliqueProj.rows[2].w = c.w;
+
+    return obliqueProj;
+}
+
+
+/*
+====================
+Mat4_Mat4_MULT_V4
+// Multiplies a 4x4 matrix by a Vec4 (column vector)
+// Assumes your Mat4 struct has a 'rows' member like: Vec4 rows[4];
+====================
+*/
+static inline Vec4 Mat4_MULT_V4(Mat4 m, Vec4 v)
+{
+    Vec4 result;
+    result.x = m.rows[0].x * v.x + m.rows[0].y * v.y + m.rows[0].z * v.z + m.rows[0].w * v.w;
+    result.y = m.rows[1].x * v.x + m.rows[1].y * v.y + m.rows[1].z * v.z + m.rows[1].w * v.w;
+    result.z = m.rows[2].x * v.x + m.rows[2].y * v.y + m.rows[2].z * v.z + m.rows[2].w * v.w;
+    result.w = m.rows[3].x * v.x + m.rows[3].y * v.y + m.rows[3].z * v.z + m.rows[3].w * v.w;
+    return result;
+}
+
+
+/*
+====================
+Mat4_GetDirection
+// Extracts a direction vector (X=0, Y=1, Z=2) from a model matrix
+====================
+*/
+static inline Vec3 Mat4_GetDirection(Mat4 m, int axis) {
+    Vec3 result;
+    if (axis == 0) { // X-axis
+        result.x = m.rows[0].x;
+        result.y = m.rows[1].x;
+        result.z = m.rows[2].x;
+    } else if (axis == 1) { // Y-axis
+        result.x = m.rows[0].y;
+        result.y = m.rows[1].y;
+        result.z = m.rows[2].y;
+    } else if (axis == 2) { // Z-axis
+        result.x = m.rows[0].z;
+        result.y = m.rows[1].z;
+        result.z = m.rows[2].z;
+    } else { // Should not happen
+        result.x = 0.0f;
+        result.y = 0.0f;
+        result.z = 0.0f;
+    }
+    return result;
+}
+
+/*
+====================
+Mat4_GetPosition
+// Extracts the position vector from a model matrix
+====================
+*/
+static inline Vec3 Mat4_GetPosition(Mat4 m) {
+    Vec3 result;
+    result.x = m.rows[0].w;
+    result.y = m.rows[1].w;
+    result.z = m.rows[2].w;
+    return result;
+}
     
 
 #ifdef __cplusplus
