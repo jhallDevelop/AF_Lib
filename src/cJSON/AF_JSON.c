@@ -540,6 +540,20 @@ void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform)
 		_transform->orientation.w = cJSON_GetArrayItem(orientationJSON, 3)->valuedouble;
 	}
 
+	// model matrix
+	cJSON* modelMatrixJSON = cJSON_GetObjectItem(_transformJSON, "modelMatrix");
+    if (modelMatrixJSON != NULL && cJSON_IsArray(modelMatrixJSON)) {
+        for (int row = 0; row < 4; row++) {
+            cJSON* rowArray = cJSON_GetArrayItem(modelMatrixJSON, row);
+            if (rowArray != NULL && cJSON_IsArray(rowArray) && cJSON_GetArraySize(rowArray) == 4) {
+                _transform->modelMat.rows[row].x = cJSON_GetArrayItem(rowArray, 0)->valuedouble;
+                _transform->modelMat.rows[row].y = cJSON_GetArrayItem(rowArray, 1)->valuedouble;
+                _transform->modelMat.rows[row].z = cJSON_GetArrayItem(rowArray, 2)->valuedouble;
+                _transform->modelMat.rows[row].w = cJSON_GetArrayItem(rowArray, 3)->valuedouble;
+            }
+        }
+    }
+
 	// don't worry about the model matrix, it will be updated later by the renderer
 }
 
