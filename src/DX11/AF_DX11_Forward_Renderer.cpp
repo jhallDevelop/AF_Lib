@@ -241,10 +241,10 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	}
 
 	// Clear Screen and buffers
-	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+	//AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glClearColor(_backgroundColor.x, _backgroundColor.y, _backgroundColor.z, 1.0f);
-	AF_Renderer_UnBindFrameBuffer();
+	//AF_Renderer_UnBindFrameBuffer();
 
 	// Clear the depth buffers
 
@@ -255,10 +255,10 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	//AF_Renderer_UnBindFrameBuffer();
 
 	// Clear the Debug buffers
-	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+	//AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//glClearColor(_backgroundColor.x, _backgroundColor.y, _backgroundColor.z, 1.0f);
-	AF_Renderer_UnBindFrameBuffer();
+	//AF_Renderer_UnBindFrameBuffer();
 }
 /*
 ====================
