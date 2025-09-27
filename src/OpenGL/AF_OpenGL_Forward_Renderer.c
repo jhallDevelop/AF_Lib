@@ -406,6 +406,7 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
 	AF_Renderer_UnBindFrameBuffer();
 }
+
 /*
 ====================
 AF_Renderer_Render
@@ -441,7 +442,6 @@ void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_Light
 
 	}
 }
-
 
 
 /*
@@ -491,13 +491,15 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// 1.5 Update the render texture cameras
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
 		AF_CCamera* renderTextureCamera = &_ecs->cameras[i];
+		
 		if(AF_Component_GetHasEnabled(renderTextureCamera->enabled) == AF_TRUE){
 			if(renderTextureCamera->enableRenderToTexture == AF_TRUE){
 				AF_Renderer_BindFrameBuffer(renderTextureCamera->renderTextureData.fbo);
 				glViewport(0, 0, renderTextureCamera->renderTextureData.textureWidth, renderTextureCamera->renderTextureData.textureHeight);
 				// update the forward rendering for this camera
 				//AF_ECS_UpdateCameraVectors(_ecs, i, renderTextureCamera->renderTextureWidth, renderTextureCamera->renderTextureHeight);
-				renderTextureCamera->cameraFront = AF_Camera_CalculateFront(renderTextureCamera->yaw, renderTextureCamera->pitch);
+				//AF_CTransform3D* cameraTransform = &_ecs->transforms[i];
+				//renderTextureCamera->cameraFront = AF_Camera_CalculateFront(cameraTransform->pos.y, cameraTransform->pos.x);//renderTextureCamera->yaw, renderTextureCamera->pitch);
 				// flip the z axis for the texture camera
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -766,9 +768,10 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
 		Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
 		// Update the model matrix
-		Mat4 modelMatColumn = Mat4_ToModelMat4(_ecs->transforms[i].pos, rotationToRadians, _ecs->transforms[i].scale);
-		
-		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
+		Mat4 modelMatColumn = Mat4_ToModelMat4(modelTransform->pos, rotationToRadians, modelTransform->scale);
+		modelTransform->modelMat = modelMatColumn;
+
+		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
 }

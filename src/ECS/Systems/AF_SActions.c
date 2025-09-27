@@ -26,7 +26,18 @@ void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _m
 
     xoffset *= _mouseLookSensitivity;
     yoffset *= _mouseLookSensitivity;
+    AF_CTransform3D* cameraTransform = &ecs->transforms[_cameraID];
+    
+    cameraTransform->rot.x += yoffset;
+    cameraTransform->rot.y += xoffset;
 
+    if(cameraTransform->rot.x > 89.0f){
+        cameraTransform->rot.x = 89.0f;
+    }
+    if(cameraTransform->rot.x < -89.0f){
+        cameraTransform->rot.x = -89.0f;
+    }
+    /*
     _camera->yaw += xoffset;
     _camera->pitch += yoffset;
 
@@ -37,7 +48,8 @@ void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _m
     if(_camera->pitch < -89.0f){
         _camera->pitch = -89.0f;
     }
+    */
 
     
-    _camera->cameraFront = AF_Camera_CalculateFront(_camera->yaw, _camera->pitch);
+    //_camera->cameraFront = AF_Camera_CalculateFront(cameraTransform->rot.y, cameraTransform->rot.x);
 }
