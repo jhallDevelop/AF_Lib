@@ -40,6 +40,15 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
     // Load ecs data from file
     // resync the pointers so we don't get null reference
     AF_ECS_ReSyncComponents(&_appData->ecs);
+    // update thje model matrix for all transforms
+    for (uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i) {
+        af_bool_t hasTransform = AF_Component_GetHas(_appData->ecs.transforms[i].enabled);
+        if (hasTransform == AF_FALSE) {
+            continue;
+        }
+        AF_CTransform3D* transform = &_appData->ecs.transforms[i];
+        transform->modelMat = Mat4_ToModelMat4(transform->pos, transform->rot, transform->scale);
+    }       
 
     // Reset the assets loaded,
     _appData->assets = AF_Assets_ZERO();
