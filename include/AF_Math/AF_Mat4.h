@@ -733,7 +733,23 @@ static inline void Mat4_SetPosition(Mat4* mat, Vec3 pos) {
     mat->rows[1].w = pos.y;
     mat->rows[2].w = pos.z;
 }
-    
+
+/*
+====================
+Mat4_GetRotation
+// Extracts the rotation vector (Euler angles) from a model matrix
+====================
+*/
+static inline Vec3 Mat4_GetRotation(const Mat4* mat) {
+    Vec3 euler;
+
+    // Extract the rotation angles from the matrix
+    euler.x = atan2f(mat->rows[2].y, mat->rows[2].z);
+    euler.y = atan2f(-mat->rows[2].x, sqrtf(mat->rows[2].y * mat->rows[2].y + mat->rows[2].z * mat->rows[2].z));
+    euler.z = atan2f(mat->rows[1].x, mat->rows[0].x);
+
+    return euler;
+}
 
 #ifdef __cplusplus
 }
