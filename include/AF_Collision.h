@@ -30,6 +30,7 @@ typedef struct AF_Collision {
 	float rayDistance;
 	Vec3 normal;
 	float penetration;
+	void* ecsPtr; // Pointer to the application data, useful for callbacks
 } AF_Collision;
 
 /*
@@ -47,6 +48,7 @@ static inline AF_Collision AF_Collision_ZERO(void){
 	collision.rayDistance = 0.0f;
 	collision.normal = Vec3_ZERO();
 	collision.penetration = 0.0f;
+	collision.ecsPtr = NULL;
 	return collision;
 }
 
@@ -67,6 +69,7 @@ static inline void AF_Collision_Reset(AF_Collision* _collision){
 	_collision->rayDistance = 0.0f;
 	_collision->normal = Vec3_ZERO();
 	_collision->penetration = 0.0f;
+	_collision->ecsPtr = NULL;
 }
 
 
