@@ -719,6 +719,20 @@ static inline Vec3 Mat4_GetPosition(Mat4 m) {
     result.z = m.rows[2].w;
     return result;
 }
+
+/*
+====================
+Mat4_SetPosition
+// Extracts the position vector from a model matrix
+// Add this helper function if you don't have one.
+// It sets the translation part of a matrix (assumes translation is in the last column).
+====================
+*/
+static inline void Mat4_SetPosition(Mat4* mat, Vec3 pos) {
+    mat->rows[0].w = pos.x;
+    mat->rows[1].w = pos.y;
+    mat->rows[2].w = pos.z;
+}
     
 
 #ifdef __cplusplus
