@@ -33,6 +33,7 @@ AF_CCollider AF_CCollider_ZERO(void){
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;
+	collider.collision.ecsPtr = NULL;
 	return collider;
 }
 
@@ -63,6 +64,7 @@ AF_CCollider AF_CCollider_ADD(void){
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;
+	collider.collision.ecsPtr = NULL;
 	return collider;
 }
 
@@ -94,6 +96,7 @@ AF_CCollider AF_CCollider_Sphere_ADD(void){
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;
+	collider.collision.ecsPtr = NULL;
 	return collider;
 }
 //
@@ -123,6 +126,7 @@ AF_CCollider AF_CCollider_Box_ADD(void){
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;
+	collider.collision.ecsPtr = NULL;
 	return collider;
 }
 
@@ -152,6 +156,7 @@ AF_CCollider AF_CCollider_Plane_ADD(void){
 	Vec3 defaultCollisionPoint = {0,0,0};
 	collider.collision.collisionPoint = defaultCollisionPoint;
 	collider.collision.rayDistance = 0.0f;
+	collider.collision.ecsPtr = NULL;
 	return collider;
 }
 
