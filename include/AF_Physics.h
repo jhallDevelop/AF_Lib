@@ -760,12 +760,14 @@ static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
 
 					//AF_Log("AF_Physics_AABB_Test: collision detected between entity id_tags: %i and %i\n", i, x);
 					if(collider1->collision.callback != NULL){
+						collider1->collision.ecsPtr = _ecs;
 						collider1->collision.callback(&collider1->collision);
 					}else{
 						AF_Log_Warning("AF_Physics_AABB_Test: collision detected but no callback set on entity id_tag: %i\n", i);
 					}
 
 					if(collider2->collision.callback != NULL){
+						collider2->collision.ecsPtr = _ecs;
 						collider2->collision.callback(&collider2->collision);
 					}else{
 						AF_Log_Warning("AF_Physics_AABB_Test: collision detected but no callback set on entity id_tag: %i\n", x);
