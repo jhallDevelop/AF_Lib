@@ -460,7 +460,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         AF_Log_Error("AF_Renderer_StartForwardRendering: window ptr is null\n");
         return;
     }
-
+	
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
@@ -501,6 +501,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 				//AF_CTransform3D* cameraTransform = &_ecs->transforms[i];
 				//renderTextureCamera->cameraFront = AF_Camera_CalculateFront(cameraTransform->pos.y, cameraTransform->pos.x);//renderTextureCamera->yaw, renderTextureCamera->pitch);
 				// flip the z axis for the texture camera
+				// render texture camera projection matrix is the same as the main camera
+				renderTextureCamera->projectionMatrix = _ecs->cameras[_cameraID].projectionMatrix;
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 				AF_Renderer_DrawMeshes(
