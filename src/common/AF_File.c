@@ -316,7 +316,7 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAl
 
         // Ensure there is space for the file name and a separating character
         if (bufferPosition + nameLength + 2 > MAX_FILELIST_BUFFER_SIZE) {
-            AF_Log_Error("Buffer overflow. Stopping file accumulation.\n");
+            AF_Log_Error("AF_File_ListFiles: Buffer overflow. Stopping file accumulation.\n");
             break;
         }
 
