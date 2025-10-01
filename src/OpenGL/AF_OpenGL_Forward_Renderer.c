@@ -1964,9 +1964,14 @@ void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
 			glDeleteBuffers(1, &mesh->ibo);
 
 			// Now that the mesh is loaded, we can delete the memory created for the verts and indices
-			free(mesh->vertices);
+			if(mesh->vertices != NULL){
+				free(mesh->vertices);
+			}
 			mesh->vertices = NULL;
-			free(mesh->indices);
+
+			if(mesh->indices != NULL){
+				free(mesh->indices);
+			}
 			mesh->indices = NULL;
 		}
 }
