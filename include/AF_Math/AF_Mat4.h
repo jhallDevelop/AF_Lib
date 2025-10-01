@@ -43,6 +43,22 @@ extern "C" {
         return returnMatrix;
     }
 
+      /*
+    ====================
+    Mat4_IDENTITY
+    Create a matrix filled with 1
+    ====================
+    */
+    static inline Mat4 Mat4_ONE(void){
+        Mat4 returnMatrix = {{
+            {1, 1, 1, 1},
+            {1, 1, 1, 1},
+            {1, 1, 1, 1},
+            {1, 1, 1, 1}            // Row order position
+        }};
+        return returnMatrix;
+    }
+
     // TODO: move this to AF_Math.h
     // Returns -1.0f for negative numbers, 1.0f for positive numbers, and 0.0f for zero.
     static inline float AF_SIGN(AF_FLOAT _val)
