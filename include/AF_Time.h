@@ -25,6 +25,9 @@ typedef struct {
 	double deltaTime;	// Time in ms since the last frame
 	double currentTime;		// Time captured by the system clock. 
     double lastTime;		// record of the previous time captured
+	AF_FLOAT fps; // Frames per second
+	AF_FLOAT fpsTimer; // Timer to track FPS updates
+	uint32_t frameCount; // Count frames for FPS calculation
 } AF_Time;
 
 static inline double AF_Time_GetTime(void){
@@ -45,6 +48,9 @@ static inline AF_Time AF_Time_ZERO(const float _currentTime){
 	returnTime.deltaTime = 0;
 	returnTime.currentTime = _currentTime;
 	returnTime.lastTime = 0.0f;
+	returnTime.fps = 0.0f;
+	returnTime.fpsTimer = 0.0f;
+	returnTime.frameCount = 0;
 
 	return returnTime;
 }
@@ -58,9 +64,21 @@ Update the time variables
 
 static inline void AF_Time_Update(AF_Time* _time){
 	_time->currentTime = AF_Time_GetTime();
-	_time->deltaTime = _time->currentTime -_time->lastTime;
-	_time->currentFrame += 1,
-	_time->lastTime = _time->currentTime;
+    _time->deltaTime = _time->currentTime -_time->lastTime;
+    _time->lastTime = _time->currentTime;
+
+    _time->frameCount += 1;
+    _time->fpsTimer += _time->deltaTime;
+    
+    // When one second has passed...
+    if(_time->fpsTimer >= 1.0f){
+        // Calculate and STORE the FPS in your new variable.
+        _time->fps = (float)_time->frameCount / _time->fpsTimer;
+
+        // Reset the counters for the next second.
+        _time->fpsTimer = 0.0f;
+        _time->frameCount = 0;
+    }
 }
 
 
