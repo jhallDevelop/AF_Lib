@@ -20,6 +20,7 @@ void AF_Physics_Init(AF_ECS* _ecs){
 	assert(_ecs != NULL && "Physics: Physics_Init pass in a null reference\n");
 	AF_Log("Physics_Init: \n");
 
+
 	// Setup Broadphase physics
 	/*
 	AF_Physics_UpdateBroadphaseAABB
@@ -41,6 +42,22 @@ void AF_Physics_Init(AF_ECS* _ecs){
 
 }
 
+/*
+====================
+AF_Physics_Update_Bounds
+Update the physics bounds
+====================
+*/
+void AF_Physics_Update_Bounds(AF_ECS* _ecs)
+{
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+	AF_CCollider* collider = &_ecs->colliders[i];
+		// update the bounds position
+		// update the bounding Pos
+		
+		collider->boundingPos = Vec3_ADD(_ecs->transforms[i].pos, collider->posOffset);
+	}
+}
 
 /*
 ====================
@@ -73,7 +90,9 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 
 		AF_CCollider* collider = &_ecs->colliders[i];
 		// update the bounds position
-		collider->pos = _ecs->transforms[i].pos;
+		// update the bounding Pos
+		
+		collider->boundingPos = Vec3_ADD(_ecs->transforms[i].pos, collider->posOffset);
 		// clear all collsision except keep the callback
 		AF_Collision_Reset(&collider->collision);
 	}

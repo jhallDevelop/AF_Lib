@@ -21,7 +21,7 @@ AF_CCollider AF_CCollider_ZERO(void){
 		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {0,0,0},
-		.pos = {0,0,0},
+		.posOffset = {0,0,0},
 		.showDebug = AF_FALSE,
 		.collisionMeshData = AF_MeshData_ZERO(),
 		.broadphaseAABB = {0,0,0}
@@ -53,7 +53,7 @@ AF_CCollider AF_CCollider_ADD(void){
 		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {1,1,1},
-		.pos = {0,0,0},
+		.posOffset = {0,0,0},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -85,7 +85,7 @@ AF_CCollider AF_CCollider_Sphere_ADD(void){
 		.enabled = component,
 		.type = Sphere,
 		.boundingVolume = {1,1,1},
-		.pos = {0,0,0},
+		.posOffset = {0,0,0},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -115,7 +115,7 @@ AF_CCollider AF_CCollider_Box_ADD(void){
 		.enabled = component,
 		.type = AABB,
 		.boundingVolume = {1,1,1},
-		.pos = {0,0,0},
+		.posOffset = {0,0,0},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -145,7 +145,7 @@ AF_CCollider AF_CCollider_Plane_ADD(void){
 		.enabled = component,
 		.type = Plane,
 		.boundingVolume = {0,.001f,0},
-		.pos = {0,0,0},
+		.posOffset = {0,0,0},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};

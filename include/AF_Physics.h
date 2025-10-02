@@ -66,6 +66,7 @@ Definition for Physics update
 ====================
 */
 AF_LIB_API void AF_Physics_Update(AF_ECS* _ecs, const float _dt);
+AF_LIB_API void AF_Physics_Update_Bounds(AF_ECS* _ecs);
 
 
 /*
@@ -341,7 +342,7 @@ Calculate ray intersection hit test against an Axis Aligned Bounding Box
 ====================
 */
 static inline af_bool_t AF_Physics_AABB_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision){
-	Vec3 boxPos = _collider->pos;
+	Vec3 boxPos = _collider->boundingPos;
 	Vec3* _size = &_collider->boundingVolume;
 	//Vec3 boxHalfSize = Vec3_MULT_SCALAR(*_size, 0.5f);
 	//Vec3 boxHalfSize = Vec3_DIV_SCALAR(*_size, 2);
@@ -431,7 +432,7 @@ Calculate ray intersection hit test against a Object Orientated Box
 */
 static inline af_bool_t AF_Physics_Plane_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision){
 
-	Vec3 planePos = _collider->pos;
+	Vec3 planePos = _collider->boundingPos;
 	Vec3* _size = &_collider->boundingVolume;
 	// assume a horizontal plane at planePos.y
 	AF_FLOAT t = (planePos.y - _ray->position.y) / _ray->direction.y;
@@ -533,6 +534,7 @@ AF_Physics_ImpulseResolveCollision
 Resolve collision between two rigidbodies
 ====================
 */
+// TODO: look for entity 10 (phys)
 static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _entityBID, AF_Collision* _collision){
 	AF_C3DRigidbody* rigidbodyA = &_ecs->rigidbodies[_entityAID];
 	AF_C3DRigidbody* rigidbodyB = &_ecs->rigidbodies[_entityBID];
@@ -987,7 +989,7 @@ static inline void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
 	// render debug collider
                 //draw all edges
                 //if(collider->type == Plane){
-	Vec3 pos = collider->pos;//_ecs[i].transforms->pos;
+	Vec3 pos = collider->boundingPos;//_ecs[i].transforms->pos;
 	Vec3 bounds = collider->boundingVolume;
 	// Top
 	/*

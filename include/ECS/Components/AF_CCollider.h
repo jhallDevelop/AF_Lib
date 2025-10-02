@@ -28,7 +28,8 @@ typedef struct {
     PACKED_CHAR enabled;
     enum CollisionVolumeType type;
     Vec3 boundingVolume;
-	Vec3 pos;
+	Vec3 posOffset;
+    Vec3 boundingPos;
     //AF_Rect bounds;
     AF_Collision collision; //TODO: why do we need this?
     af_bool_t showDebug;

@@ -751,9 +751,9 @@ void AF_JSON_JsonToCollider(cJSON* _colliderJSON, AF_CCollider* _collider) {
 	// Position
 	cJSON* posJSON = cJSON_GetObjectItem(_colliderJSON, "pos");
 	if (posJSON != NULL) {
-		_collider->pos.x = cJSON_GetArrayItem(posJSON, 0)->valuedouble;
-		_collider->pos.y = cJSON_GetArrayItem(posJSON, 1)->valuedouble;
-		_collider->pos.z = cJSON_GetArrayItem(posJSON, 2)->valuedouble;
+		_collider->posOffset.x = cJSON_GetArrayItem(posJSON, 0)->valuedouble;
+		_collider->posOffset.y = cJSON_GetArrayItem(posJSON, 1)->valuedouble;
+		_collider->posOffset.z = cJSON_GetArrayItem(posJSON, 2)->valuedouble;
 	}
 	// Collision, skipp for now
 
@@ -1689,7 +1689,7 @@ cJSON* AF_JSON_ColliderToJson(AF_CCollider* _component) {
 	AF_JSON_Vec3ToJson("boundingVolume", &_component->boundingVolume, returnJSON);
 
 	// pos
-	AF_JSON_Vec3ToJson("pos", &_component->pos, returnJSON);
+	AF_JSON_Vec3ToJson("pos", &_component->posOffset, returnJSON);
 
 	// collision
 	cJSON_AddNullToObject(returnJSON, "collision");
