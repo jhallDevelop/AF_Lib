@@ -19,7 +19,7 @@ extern "C" {
 
 enum CollisionVolumeType {
 	AABB = 1, 
-	OBB = 2, 
+	OBB_Type = 2, 
 	Plane = 3,
 	Sphere = 4, 
 	Mesh = 8, 

@@ -18,6 +18,7 @@ extern "C" {
 
 
 
+
 /// @brief Interpolates between two angles (radians) by 't', from T3D
 static inline float AF_Math_Lerp_Angle(float a, float b, float t) {
   float angleDiff = fmodf((b - a), PI*2);

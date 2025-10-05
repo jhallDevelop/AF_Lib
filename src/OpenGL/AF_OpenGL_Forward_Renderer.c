@@ -837,8 +837,9 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
 		Vec3 rotationToRadians = {AF_Math_Radians(trans->rot.x),AF_Math_Radians(trans->rot.y), AF_Math_Radians(trans->rot.z)};
 		// Update the model matrix
-		Mat4 modelMatColumn = Mat4_ToModelMat4(collider->boundingPos, rotationToRadians, collider->boundingVolume);//_ecs->transforms[i].scale);
-		
+		// Bounding volume is measured as half extents, so scale by 2
+		Mat4 modelMatColumn = Mat4_ToModelMat4(collider->boundingPos, rotationToRadians,  collider->boundingVolume);//_ecs->transforms[i].scale);
+
 		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, &colliderMesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");

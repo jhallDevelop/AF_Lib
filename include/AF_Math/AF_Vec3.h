@@ -16,6 +16,13 @@
 extern "C" {
 #endif
 
+    #ifndef AF_MAX
+    #define AF_MAX(a, b) (((a) > (b)) ? (a) : (b))
+    #endif
+
+    #ifndef AF_MIN
+    #define AF_MIN(a, b) (((a) < (b)) ? (a) : (b))
+    #endif
     /*
     ====================
     Vec3 Struct
@@ -178,6 +185,17 @@ extern "C" {
 
     /*
     ====================
+    Vec3_MAGNITUDE_SQ
+    Function for calculating the squared magnitude of a 3D vector.
+    This is faster than Vec3_MAGNITUDE as it avoids a square root.
+    ====================
+    */
+    static inline AF_FLOAT Vec3_MAGNITUDE_SQ(Vec3 v) {
+        return v.x * v.x + v.y * v.y + v.z * v.z;
+    }
+    
+    /*
+    ====================
     Vec3_MAGNITUDE
     Function for calculating the magnitude (length) of a 3D vector.
     ====================
@@ -285,6 +303,21 @@ extern "C" {
     {
         return fabs((_v1.x * (_v2.y - _v3.y) + _v2.x * (_v3.y - _v1.y) + _v3.x * (_v1.y - _v2.y)) / 2);
     }
+
+    /*
+    ====================
+    Vec3_Clamp
+    Clamps each component of a vector between the corresponding components of min and max vectors.
+    ====================
+    */
+    static inline Vec3 Vec3_CLAMP(Vec3 value, Vec3 min, Vec3 max) {
+        Vec3 result;
+        result.x = AF_MAX(min.x, AF_MIN(value.x, max.x));
+        result.y = AF_MAX(min.y, AF_MIN(value.y, max.y));
+        result.z = AF_MAX(min.z, AF_MIN(value.z, max.z));
+        return result;
+    }
+
 
 
 

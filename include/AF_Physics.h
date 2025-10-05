@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 #define GRAVITY_SCALE -9.8
-#define DAMPING_FACTOR 0.05f
+#define DAMPING_FACTOR 1.0//0.05f
 
 static const Vec3 AF_PHYSICS_CUBE_COLLISION_FACES [6] =
 {
@@ -49,6 +49,7 @@ static const Vec3 AF_PHYSICS_CUBE_COLLISION_FACES [6] =
 	{ 0 , -1 , 0} , { 0 , 1 , 0} ,
 	{ 0 , 0 , -1} , { 0 , 0 , 1} ,
 };
+
 
 
 /*
@@ -67,19 +68,10 @@ Definition for Physics update
 */
 AF_LIB_API void AF_Physics_Update(AF_ECS* _ecs, const float _dt);
 AF_LIB_API void AF_Physics_Update_Bounds(AF_ECS* _ecs);
-
-
-/*
-static void AF_Physics_EarlyUpdate(AF_ECS* _ecs){
-	// clear the velocities
-	for(int i =0 ; _ecs->entitiesCount; ++i){
-		AF_C3DRigidbody* rigidbody =  &_ecs->rigidbodies[i];
-		// clear the velocity
-		Vec3 zeroVelocity = {0,0,0};
-		rigidbody->velocity = zeroVelocity;
-	}
-}*/
-
+af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs);
+void AF_Physics_GetInterval(const AF_CTransform3D* transform, const Vec3* halfSize, const Vec3* axis, AF_FLOAT* min, AF_FLOAT* max);
+af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
+af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
 /*
 ====================
 AF_Physics_LateUpdate
@@ -180,7 +172,7 @@ Integrate the position and some dampening into the velocity
 */
 
 static inline void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt){
-	float frameDamping = powf ( DAMPING_FACTOR, _dt);
+	//float frameDamping = powf ( DAMPING_FACTOR, _dt);
 
 	Vec3 position = _transform->pos;
 	Vec3 linearVelocity = _rigidbody->velocity;
@@ -189,8 +181,8 @@ static inline void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_
 	_transform->pos = position;
 
 	// LinearDamping
-	linearVelocity = Vec3_MULT_SCALAR(linearVelocity, frameDamping);
-	_rigidbody->velocity = linearVelocity;
+	//linearVelocity = Vec3_MULT_SCALAR(linearVelocity, frameDamping);
+	
 
 	// Angular velocity and orientation
 	Vec4 orientation = _transform->orientation;
@@ -205,8 +197,12 @@ static inline void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_
 
 	_transform->orientation = orientation;
 
-	angVel = Vec3_MULT_SCALAR(angVel, frameDamping);
+	//angVel = Vec3_MULT_SCALAR(angVel, frameDamping);
 	_rigidbody->anglularVelocity = angVel;
+
+	// compbine linear and angular velocity into one velocity for drag purposes
+	//Vec3 combinedVelocity = Vec3_ADD(linearVelocity, angVel);
+	_rigidbody->velocity = linearVelocity;
 }
 
 /*
@@ -499,7 +495,7 @@ static inline af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_CCollider
 			return AF_Physics_AABB_RayIntersection(_ray, _collider, _collision);
 		break;
 		
-		case OBB:
+		case OBB_Type:
 			printf("AF_Physics_RayIntersection: OBB ray interaction not implemented\n");
 			return AF_FALSE;
 		break;
@@ -534,7 +530,6 @@ AF_Physics_ImpulseResolveCollision
 Resolve collision between two rigidbodies
 ====================
 */
-// TODO: look for entity 10 (phys)
 static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _entityBID, AF_Collision* _collision){
 	AF_C3DRigidbody* rigidbodyA = &_ecs->rigidbodies[_entityAID];
 	AF_C3DRigidbody* rigidbodyB = &_ecs->rigidbodies[_entityBID];
@@ -558,27 +553,35 @@ static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID
 	}
 
 	// Seperate using projection
-	//float entity1AdjMass = rigidbodyA->inverseMass / totalMass;
-	//float entity2AdjMass = rigidbodyB->inverseMass / totalMass;
+	// A value between 0.2 and 0.8 is standard. 1.0 can cause jitter.
+	//float penetrationScale = 0.075f; // Adjust as needed
+	//const float penetrationAllowance = 0.01f;
 
-	float penetrationScale = 0.075f; // Adjust as needed
+	// Calculate the total inverse mass for splitting the correction
+    float totalInverseMass = rigidbodyA->inverseMass + rigidbodyB->inverseMass;
+    if (totalInverseMass <= 0.0f) { // Both objects are static/immovable
+        return;
+    }
 
-	//Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * entity1AdjMass * penetrationScale)));
-	//Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * entity2AdjMass * penetrationScale)));
-	//Vec3 adjustedPosition1 = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * penetrationScale)));
-	//Vec3 adjustedPosition2 = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * penetrationScale)));
+	// Calculate the correction vector, allowing for a small amount of slop.
+    //Vec3 correction = Vec3_MULT_SCALAR(_collision->normal, AF_MAX(_collision->penetration - penetrationAllowance, 0.0f) / totalInverseMass * penetrationScale);
 
-	//transformA->pos = adjustedPosition1;
-	//transformB->pos = adjustedPosition2;
-	if (rigidbodyA->inverseMass > 0.0f) {
-    	transformA->pos = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * penetrationScale)));
+
+	af_bool_t hasRigidbodyA = AF_Component_GetEnabled(rigidbodyA->enabled);
+	af_bool_t hasRigidbodyB = AF_Component_GetEnabled(rigidbodyB->enabled);
+
+	// Seperate the objects based on their inverse masses
+	// Only move objects that have a rigidbody and are not static (inverseMass > 0)
+	if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
+    	transformA->pos = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * (rigidbodyA->inverseMass / totalInverseMass))));
 	}
-	if (rigidbodyB->inverseMass > 0.0f) {
-		transformB->pos = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * penetrationScale)));
+	if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
+		transformB->pos = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * (rigidbodyB->inverseMass / totalInverseMass))));
 	}
 
-	Vec3 relativeA = Vec3_MINUS(_collision->collisionPoint, transformA->pos);
-	Vec3 relativeB = Vec3_MINUS(_collision->collisionPoint, transformB->pos);
+	// Calculate relative vectors from the collider centers (not transform centers) to the collision point
+	Vec3 relativeA = Vec3_MINUS(_collision->collisionPoint, colliderA->boundingPos);
+	Vec3 relativeB = Vec3_MINUS(_collision->collisionPoint, colliderB->boundingPos);
 
 	Vec3 angVelocityA = Vec3_CROSS(rigidbodyA->anglularVelocity, relativeA);
 	Vec3 angVelocityB = Vec3_CROSS(rigidbodyB->anglularVelocity, relativeB);
@@ -615,18 +618,19 @@ static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID
 	}
 	
 
-
+	
 	Vec3 fullImpulse = Vec3_MULT_SCALAR(_collision->normal, j);
 
 	// apply linear and angualr impulses in opposite directions 
 	Vec3 negativeFullImpulse = Vec3_MULT_SCALAR(fullImpulse, -1);
 
-	if (rigidbodyA->inverseMass > 0.0f) {
+	// Apply impulses
+	if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
 		AF_Physics_ApplyLinearImpulse(rigidbodyA, negativeFullImpulse);
 		AF_Physics_ApplyAngularImpulse(rigidbodyA,Vec3_CROSS(relativeA, negativeFullImpulse));
 	}
 
-	if (rigidbodyB->inverseMass > 0.0f) {
+	if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
 		AF_Physics_ApplyLinearImpulse(rigidbodyB, fullImpulse);
 		AF_Physics_ApplyAngularImpulse(rigidbodyB,Vec3_CROSS(relativeB, fullImpulse));
 	}
@@ -634,167 +638,7 @@ static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID
 
 
 
-/*
-====================
-AF_PHYSICS_AABB_Test
-Calculate ray intersection hit test
-====================
-*/
-static inline af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs){
-	// TODO:
-	// implement cheaper nested for loop
-	/*
-	https://research.ncl.ac.uk/game/mastersdegree/gametechnologies/physicstutorials/4collisiondetection/Physics%20-%20Collision%20Detection.pdf
-	for int x = 0; x < lastObject ; ++ x {
-		for int y = x +1; y < lastObject ; ++ y ) {
-			if ( IsColliding (x , y )) {
-				ResolveCollision (x , y )
-			}
-		}
-	}
-	*/
-	af_bool_t returnValue = AF_FALSE;
-	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 
-		if(AF_Component_GetHasEnabled(_ecs->colliders[i].enabled) == AF_FALSE){
-			continue;
-		}
-		AF_Entity* entity1 = &_ecs->entities[i];
-		uint32_t entity1ID = AF_ECS_GetID(entity1->id_tag);
-		AF_CCollider* collider1 = &_ecs->colliders[entity1ID];
-		
-		
-		// rayIntersectionTest everything
-		for(uint32_t x = i + 1; x < _ecs->entitiesCount; ++x){
-			if(AF_Component_GetHasEnabled(_ecs->colliders[x].enabled) == AF_FALSE){
-				continue;
-			}
-
-			// check self
-			if(i == x){
-				continue;
-			}
-
-			AF_Entity* entity2 = &_ecs->entities[x];
-			uint32_t entity2ID = AF_ECS_GetID(entity2->id_tag);
-			AF_CCollider* collider2 = &_ecs->colliders[entity2ID];
-		
-			// only check colliders that can collide i.e. have a bounding volume
-			if(collider1->boundingVolume.x == 0 && collider1->boundingVolume.y == 0 && collider1->boundingVolume.z == 0){
-				continue;
-			}
-
-			if(collider2->boundingVolume.x == 0 && collider2->boundingVolume.y == 0 && collider2->boundingVolume.z == 0){
-				continue;
-			}
-
-			Vec3* posA = &_ecs->transforms[i].pos;
-			Vec3* posB = &_ecs->transforms[x].pos;
-			Vec3 halfSizeA = Vec3_MULT_SCALAR(collider1->boundingVolume, 0.5f);
-			Vec3 halfSizeB = Vec3_MULT_SCALAR(collider2->boundingVolume, 0.5f);
-			//Vec3 halfSizeA = Vec3_DIV_SCALAR(collider1->boundingVolume, 2);
-			//Vec3 halfSizeB = Vec3_DIV_SCALAR(collider2->boundingVolume, 2);
-
-			//Vec3 scaledHalfSizeA = Vec3_MULT(halfSizeA, transform1->scale);
-			//Vec3 scaledHalfSizeB = Vec3_MULT(halfSizeB, transform2->scale);
-
-
-			Vec3 delta = Vec3_MINUS(*posA, *posB);
-			Vec3 totalSize = Vec3_ADD(halfSizeA, halfSizeB);
-			//Vec3 totalSize = Vec3_ADD(scaledHalfSizeA, scaledHalfSizeB);
-
-			if(
-				fabsf(delta.x) < totalSize.x  &&
-				fabsf(delta.y) < totalSize.y && 
-				fabsf(delta.z) < totalSize.z){
-
-					// TODO: determine from what direction the collision occurs
-					//ResolveCollision(_ecs, i, x);
-					returnValue = AF_TRUE;
-					// Resolve collision
-					//AF_PHYSICS_CUBE_COLLISION_FACES
-					// Get the min and max of each cube
-					// Correct way to find min/max corners
-					Vec3 minA = Vec3_MINUS(*posA, halfSizeA);
-					Vec3 maxA = Vec3_ADD(*posA, halfSizeA);
-
-					Vec3 minB = Vec3_MINUS(*posB, halfSizeB);
-					Vec3 maxB = Vec3_ADD(*posB, halfSizeB);
-
-					
-					float distances [FACES_COUNT];
-					
-						 distances[0] = maxB.x - minA.x; // distance of box ’b ’ to ’ left ’ of ’a ’.
-						 distances[1] = maxA.x - minB.x; // distance of box ’b ’ to ’ right ’ of ’a ’.
-						 distances[2] = maxB.y - minA.y; // distance of box ’b ’ to ’ bottom ’ of ’a ’.
-						 distances[3] = maxA.y - minB.y; // distance of box ’b ’ to ’ top ’ of ’a ’.
-						 distances[4] = maxB.z - minA.z; // distance of box ’b ’ to ’ far ’ of ’a ’.
-						 distances[5] = maxA.z - minB.z;  // distance of box ’b ’ to ’ near ’ of ’a ’.
-					
-					//TODO: where is __FLT_MAX__ defined? may not be portable
-					float penetration = 2147483647.0;//__FLT_MAX__;
-					Vec3 bestAxis = {0,0,0};	// default value
-					for(int j = 0; j < FACES_COUNT; ++j){
-						if(distances[j] < penetration){
-							penetration = distances[j];
-							bestAxis = AF_PHYSICS_CUBE_COLLISION_FACES[j]; 
-						}
-					}
-
-					// create a new collision struct
-					//AF_Collision collision1 = {returnValue, entity1ID, entity2ID, collider1->collision.callback, {0,0,0}, 0.0f, bestAxis, penetration}; 
-					// TODO: i think the bestAxis should be inverted for the second object
-					//AF_Collision collision2 = {returnValue, entity2ID, entity1ID, collider2->collision.callback, {0,0,0}, 0.0f, Vec3_MULT_SCALAR(bestAxis, -1), penetration}; 
-					
-					// copy the new struct values to each collider
-					// Collision 1
-					collider1->collision.collided = AF_TRUE;
-					collider1->collision.entity1ID = entity1ID;
-					collider1->collision.entity2ID = entity2ID;
-					collider1->collision.penetration = penetration;
-					collider1->collision.normal = bestAxis;
-					
-					collider2->collision.collided = AF_TRUE;
-					collider2->collision.entity1ID = entity1ID;
-					collider2->collision.entity2ID = entity2ID;
-					collider2->collision.penetration = penetration;
-					collider2->collision.normal = Vec3_MULT_SCALAR(bestAxis, -1);
-
-					//AF_Log("AF_Physics_AABB_Test: collision detected between entity id_tags: %i and %i\n", i, x);
-					if(collider1->collision.callback != NULL){
-						collider1->collision.ecsPtr = _ecs;
-						collider1->collision.callback(&collider1->collision);
-					}else{
-						AF_Log_Warning("AF_Physics_AABB_Test: collision detected but no callback set on entity id_tag: %i\n", i);
-					}
-
-					if(collider2->collision.callback != NULL){
-						collider2->collision.ecsPtr = _ecs;
-						collider2->collision.callback(&collider2->collision);
-					}else{
-						AF_Log_Warning("AF_Physics_AABB_Test: collision detected but no callback set on entity id_tag: %i\n", x);
-					}
-
-					
-
-					// Apply collision resolution
-					//AF_CTransform3D* transform1 = &_ecs->transforms[i];
-					//AF_CTransform3D* transform2 = &_ecs->transforms[x];
-
-					//AF_C3DRigidbody* rigidbody1 = &_ecs->rigidbodies[i];
-					//AF_C3DRigidbody* rigidbody2 = &_ecs->rigidbodies[x];
-					// don't apply force for kinematic objects
-					AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
-					if(rigidbody->isKinematic == AF_TRUE){
-						continue;
-					}
-					AF_Physics_ResolveCollision(_ecs, entity1ID, entity2ID, &collider1->collision);
-			}
-		}
-	}
-		
-	return returnValue;
-}
 
 //=======BROAD / NARROW PHASE========
 
@@ -810,7 +654,7 @@ AF_Physics_NarrowPhase
 /**/
 static inline void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider){
 	if(_collider->type == AABB){
-		Vec3 boundingVolumeHalfDimensions = {_collider->boundingVolume.x/2.0f, _collider->boundingVolume.y/2.0f, _collider->boundingVolume.z/2.0f};
+		Vec3 boundingVolumeHalfDimensions = {_collider->boundingVolume.x*0.5f, _collider->boundingVolume.y*0.5f, _collider->boundingVolume.z*0.5f};
 		_collider->broadphaseAABB = boundingVolumeHalfDimensions;
 	}
 }
@@ -926,7 +770,7 @@ static inline af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Col
             case AABB:
                 currentCollision.collided = AF_Physics_AABB_RayIntersection(_ray, collider, &currentCollision);
                 break;
-            case OBB:
+            case OBB_Type:
                 currentCollision.collided = AF_Physics_OBB_RayIntersection(_ray, transform, &collider->boundingVolume, &currentCollision);
                 break;
             case Plane:
@@ -990,6 +834,7 @@ static inline void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
                 //draw all edges
                 //if(collider->type == Plane){
 	Vec3 pos = collider->boundingPos;//_ecs[i].transforms->pos;
+
 	Vec3 bounds = collider->boundingVolume;
 	// Top
 	/*
