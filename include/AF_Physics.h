@@ -40,8 +40,13 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 extern "C" {
 #endif
 
-#define GRAVITY_SCALE -9.8
-#define DAMPING_FACTOR 1.0//0.05f
+#define GRAVITY_SCALE -50.0f  // Balanced gravity for stable physics
+#define LINEAR_DAMPING 0.995f   // 0.5% linear energy loss per second (frame-rate independent)
+#define ANGULAR_DAMPING 0.99f  // 1% angular energy loss per second (frame-rate independent)
+
+// Penetration resolution constants (Baumgarte stabilization)
+#define PENETRATION_PERCENTAGE 0.4f  // Percentage of penetration to resolve per frame (0.2-0.8 recommended)
+#define PENETRATION_SLOP 0.01f       // Allow small penetration to prevent jitter
 
 static const Vec3 AF_PHYSICS_CUBE_COLLISION_FACES [6] =
 {
@@ -101,8 +106,86 @@ void AF_Physics_Shutdown(void);
 
 /*
 ====================
+AF_Physics_CalculateBoxInverseInertiaTensor
+Calculate the inverse inertia tensor for a box based on its dimensions and mass.
+For a box (cuboid), the inertia tensor diagonal is:
+I_x = (1/12) * mass * (height² + depth²)
+I_y = (1/12) * mass * (width² + depth²)
+I_z = (1/12) * mass * (width² + height²)
+We return the INVERSE for easier physics calculations.
+====================
+*/
+static inline Vec3 AF_Physics_CalculateBoxInverseInertiaTensor(Vec3 halfExtents, float inverseMass) {
+	if (inverseMass == 0.0f) {
+		// Static object - infinite inertia (zero inverse inertia)
+		Vec3 vecZero = {0.0f, 0.0f, 0.0f};
+		return vecZero;
+	}
+	
+	float mass = 1.0f / inverseMass;
+	
+	// Full extents (width, height, depth)
+	float width = halfExtents.x * 2.0f;
+	float height = halfExtents.y * 2.0f;
+	float depth = halfExtents.z * 2.0f;
+	
+	// Inertia tensor diagonal elements for a box
+	float I_x = (1.0f / 12.0f) * mass * (height * height + depth * depth);
+	float I_y = (1.0f / 12.0f) * mass * (width * width + depth * depth);
+	float I_z = (1.0f / 12.0f) * mass * (width * width + height * height);
+	
+	// Return inverse inertia tensor (avoid division by zero)
+	Vec3 inverseInertia;
+	inverseInertia.x = (I_x > 0.0001f) ? (1.0f / I_x) : 0.0f;
+	inverseInertia.y = (I_y > 0.0001f) ? (1.0f / I_y) : 0.0f;
+	inverseInertia.z = (I_z > 0.0001f) ? (1.0f / I_z) : 0.0f;
+	
+	return inverseInertia;
+}
+
+/*
+====================
+AF_Physics_TransformInertiaTensorToWorldSpace
+Transform the local-space inverse inertia tensor to world-space.
+For a diagonal tensor, this is: I_world = R * I_local * R^T
+Where R is the rotation matrix extracted from the model matrix.
+====================
+*/
+static inline Vec3 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat) {
+	// For a diagonal inertia tensor, we can use a simplified formula
+	// Extract rotation basis vectors from model matrix
+	Vec3 right = Mat4_GetDirection(modelMat, 0);   // X-axis
+	Vec3 up = Mat4_GetDirection(modelMat, 1);      // Y-axis  
+	Vec3 forward = Mat4_GetDirection(modelMat, 2); // Z-axis
+	
+	// Normalize to ensure orthonormality (in case of numerical errors)
+	right = Vec3_NORMALIZE(right);
+	up = Vec3_NORMALIZE(up);
+	forward = Vec3_NORMALIZE(forward);
+	
+	// Transform diagonal inertia tensor: I_world = R * I_local * R^T
+	// For diagonal tensors, each component is transformed by the corresponding axis
+	Vec3 worldInertia;
+	worldInertia.x = localInertia.x * (right.x * right.x) + 
+	                  localInertia.y * (up.x * up.x) + 
+	                  localInertia.z * (forward.x * forward.x);
+	                  
+	worldInertia.y = localInertia.x * (right.y * right.y) + 
+	                  localInertia.y * (up.y * up.y) + 
+	                  localInertia.z * (forward.y * forward.y);
+	                  
+	worldInertia.z = localInertia.x * (right.z * right.z) + 
+	                  localInertia.y * (up.z * up.z) + 
+	                  localInertia.z * (forward.z * forward.z);
+	
+	return worldInertia;
+}
+
+/*
+====================
 AF_Physics_ApplyAngularImpulse
-Apply force to rigidbody object
+Apply angular impulse to rigidbody object.
+Note: The inertia tensor should already be in world-space when calling this.
 ====================
 */
 static inline void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
@@ -148,10 +231,19 @@ static inline Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
     // Calculate the scalar component (w) of the quaternion
     float halfDt = dt * 0.5f; // Half of the time step
     float angleMagnitude = Vec3_MAGNITUDE(angVel); // Calculate the magnitude of angular velocity
-    float w = cos(angleMagnitude * halfDt); // Scalar part
+    
+    // Safety check: if angular velocity is too small, return identity quaternion
+    if (angleMagnitude < 0.0001f) {
+        return Vec4_ZERO(); // Identity quaternion (no rotation)
+    }
+    
+    float halfAngle = angleMagnitude * halfDt;
+    float w = cosf(halfAngle); // Scalar part
+    float sinHalfAngle = sinf(halfAngle);
 
-    // Calculate the vector part of the quaternion
-    Vec3 vectorPart = Vec3_MULT_SCALAR(angVel, sin(angleMagnitude * halfDt) / angleMagnitude);
+    // Calculate the vector part of the quaternion (normalize the axis first)
+    float scale = sinHalfAngle / angleMagnitude;
+    Vec3 vectorPart = Vec3_MULT_SCALAR(angVel, scale);
 
     // Create and return the quaternion
     Vec4 q = {
@@ -162,6 +254,112 @@ static inline Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
     };
     return q;
 }
+
+// Quaternion multiplication (Hamilton product)
+// q1 * q2 where q = (x, y, z, w)
+static inline Vec4 Quat_MULT(Vec4 q1, Vec4 q2) {
+    Vec4 result;
+    result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+    result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+    result.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
+    result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+    return result;
+}
+
+// Convert Euler angles (in radians) to quaternion
+// Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
+static inline Vec4 AF_EulerToQuaternion(Vec3 euler) {
+    float cp = cosf(euler.x * 0.5f);  // pitch
+    float sp = sinf(euler.x * 0.5f);
+    float cy = cosf(euler.y * 0.5f);  // yaw
+    float sy = sinf(euler.y * 0.5f);
+    float cr = cosf(euler.z * 0.5f);  // roll
+    float sr = sinf(euler.z * 0.5f);
+
+    Vec4 q;
+    q.w = cr * cp * cy + sr * sp * sy;
+    q.x = sr * cp * cy - cr * sp * sy;
+    q.y = cr * sp * cy + sr * cp * sy;
+    q.z = cr * cp * sy - sr * sp * cy;
+    
+    return q;
+}
+
+// Convert quaternion to 4x4 rotation matrix
+static inline Mat4 QuaternionToMat4(Vec4 q) {
+    // Normalize the quaternion first
+    float mag = sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+    if (mag > 0.0001f) {
+        q.x /= mag;
+        q.y /= mag;
+        q.z /= mag;
+        q.w /= mag;
+    }
+    
+    float xx = q.x * q.x;
+    float yy = q.y * q.y;
+    float zz = q.z * q.z;
+    float xy = q.x * q.y;
+    float xz = q.x * q.z;
+    float yz = q.y * q.z;
+    float wx = q.w * q.x;
+    float wy = q.w * q.y;
+    float wz = q.w * q.z;
+
+    Mat4 mat;
+    mat.rows[0].x = 1.0f - 2.0f * (yy + zz);
+    mat.rows[0].y = 2.0f * (xy - wz);
+    mat.rows[0].z = 2.0f * (xz + wy);
+    mat.rows[0].w = 0.0f;
+
+    mat.rows[1].x = 2.0f * (xy + wz);
+    mat.rows[1].y = 1.0f - 2.0f * (xx + zz);
+    mat.rows[1].z = 2.0f * (yz - wx);
+    mat.rows[1].w = 0.0f;
+
+    mat.rows[2].x = 2.0f * (xz - wy);
+    mat.rows[2].y = 2.0f * (yz + wx);
+    mat.rows[2].z = 1.0f - 2.0f * (xx + yy);
+    mat.rows[2].w = 0.0f;
+
+    mat.rows[3].x = 0.0f;
+    mat.rows[3].y = 0.0f;
+    mat.rows[3].z = 0.0f;
+    mat.rows[3].w = 1.0f;
+
+    return mat;
+}
+
+// Build model matrix from position, quaternion rotation, and scale
+static inline Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale) {
+    // Get rotation matrix from quaternion
+    Mat4 rot = QuaternionToMat4(quat);
+    
+    // Apply scale and position
+    Mat4 result;
+    result.rows[0].x = rot.rows[0].x * scale.x;
+    result.rows[0].y = rot.rows[0].y * scale.y;
+    result.rows[0].z = rot.rows[0].z * scale.z;
+    result.rows[0].w = 0.0f;
+
+    result.rows[1].x = rot.rows[1].x * scale.x;
+    result.rows[1].y = rot.rows[1].y * scale.y;
+    result.rows[1].z = rot.rows[1].z * scale.z;
+    result.rows[1].w = 0.0f;
+
+    result.rows[2].x = rot.rows[2].x * scale.x;
+    result.rows[2].y = rot.rows[2].y * scale.y;
+    result.rows[2].z = rot.rows[2].z * scale.z;
+    result.rows[2].w = 0.0f;
+
+    result.rows[3].x = pos.x;
+    result.rows[3].y = pos.y;
+    result.rows[3].z = pos.z;
+    result.rows[3].w = 1.0f;
+
+    return result;
+}
+
 
 
 /*
@@ -181,27 +379,80 @@ static inline void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_
 	_transform->pos = position;
 
 	// LinearDamping
-	//linearVelocity = Vec3_MULT_SCALAR(linearVelocity, frameDamping);
+	//_rigidbody->velocity = Vec3_MULT_SCALAR(_rigidbody->velocity, LINEAR_DAMPING);
 	
 
 	// Angular velocity and orientation
 	Vec4 orientation = _transform->orientation;
 	Vec3 angVel = _rigidbody->anglularVelocity;
 
-	Vec3 anglularVecDT = Vec3_MULT_SCALAR(angVel, _dt);
-	Vec3 anglularVecDTHalf = Vec3_MULT_SCALAR(anglularVecDT, 0.5f);
-	Vec4 quatAngVel = createQuaternionFromAngularVelocity(anglularVecDTHalf,0.0);
-	Vec4 quatAngOrient = Vec4_MULT(quatAngVel, orientation);
-	orientation = Vec4_ADD(orientation, quatAngOrient);
-	orientation = Vec4_NORMALIZE(orientation);
+	// Only integrate if there's significant angular velocity
+	float angVelMag = Vec3_MAGNITUDE(angVel);
+	if (angVelMag > 0.0001f) {
+		// Create a quaternion representing the rotation from angular velocity
+		Vec4 quatAngVel = createQuaternionFromAngularVelocity(angVel, _dt);
+		// Apply the rotation: new_orientation = delta_rotation * current_orientation
+		orientation = Quat_MULT(quatAngVel, orientation);
+		orientation = Vec4_NORMALIZE(orientation);
+		_transform->orientation = orientation;
+		
+		// ONLY convert quaternion back to Euler when the object actually rotates
+		// This prevents fighting with other systems (like camera controllers) that set Euler angles directly
+		// Using standard game engine convention: rot.x=pitch, rot.y=yaw, rot.z=roll
+		float w = orientation.w, x = orientation.x, y = orientation.y, z = orientation.z;
+		
+		// Pitch (x-axis rotation) - looking up/down
+		float sinp = 2.0f * (w * x + y * z);
+		// Clamp to prevent NaN from asinf
+		sinp = (sinp > 1.0f) ? 1.0f : ((sinp < -1.0f) ? -1.0f : sinp);
+		_transform->rot.x = asinf(sinp) * (180.0f / AF_PI);
+		
+		// Yaw (y-axis rotation) - turning left/right
+		float siny_cosp = 2.0f * (w * y - z * x);
+		float cosy_cosp = 1.0f - 2.0f * (x * x + y * y);
+		_transform->rot.y = atan2f(siny_cosp, cosy_cosp) * (180.0f / AF_PI);
+		
+		// Roll (z-axis rotation) - tilting side to side
+		float sinr_cosp = 2.0f * (w * z + x * y);
+		float cosr_cosp = 1.0f - 2.0f * (y * y + z * z);
+		_transform->rot.z = atan2f(sinr_cosp, cosr_cosp) * (180.0f / AF_PI);
+	}
 
-	_transform->orientation = orientation;
-
-	//angVel = Vec3_MULT_SCALAR(angVel, frameDamping);
+	// Apply frame-rate independent damping using exponential decay: damping^dt
+	// This ensures consistent behavior regardless of frame rate
+	float linearDampingFactor = powf(LINEAR_DAMPING, _dt);
+	float angularDampingFactor = powf(ANGULAR_DAMPING, _dt);
+	
+	float angularSpeed = Vec3_MAGNITUDE(angVel);
+	
+	// Apply adaptive angular damping - stronger when rotating slowly to help settle
+	const float slowRotationThreshold = 0.5f; // radians per second
+	if (angularSpeed < slowRotationThreshold && angularSpeed > 0.0f) {
+		// Interpolate damping strength based on rotation speed
+		float dampingStrength = angularSpeed / slowRotationThreshold; // 0 to 1
+		// Use stronger damping (0.90) for slow rotation, normal (ANGULAR_DAMPING) for fast
+		float adaptiveDamping = 0.90f + (dampingStrength * (ANGULAR_DAMPING - 0.90f));
+		angularDampingFactor = powf(adaptiveDamping, _dt);
+	}
+	
+	// Apply damping to velocities
+	linearVelocity = Vec3_MULT_SCALAR(linearVelocity, linearDampingFactor);
+	angVel = Vec3_MULT_SCALAR(angVel, angularDampingFactor);
+	
+	// Sleep very slow objects to prevent endless micro-movements
+	const float sleepLinearThreshold = 0.01f;  // Very low - only stop truly stationary objects
+	const float sleepAngularThreshold = 0.02f; // Slightly higher to stop slow rotation sooner
+	
+	float linearSpeed = Vec3_MAGNITUDE(linearVelocity);
+	
+	if (linearSpeed < sleepLinearThreshold) {
+		linearVelocity = Vec3_ZERO();
+	}
+	if (angularSpeed < sleepAngularThreshold) {
+		angVel = Vec3_ZERO();
+	}
+	
 	_rigidbody->anglularVelocity = angVel;
-
-	// compbine linear and angular velocity into one velocity for drag purposes
-	//Vec3 combinedVelocity = Vec3_ADD(linearVelocity, angVel);
 	_rigidbody->velocity = linearVelocity;
 }
 
@@ -211,22 +462,37 @@ AF_PHYSICS_INTEGRATEACCELL
 Integrate gravity and acceleration into the velocity
 ====================
 */
-static inline void AF_Physics_IntegrateAccell(AF_C3DRigidbody* _rigidbody, const float _dt){
-	// iterate over all the game objects
-	if(AF_Component_GetEnabled(_rigidbody->enabled != AF_TRUE)){
-		return;
-	}
-	float inverseMass = _rigidbody->inverseMass;
+static inline void AF_Physics_IntegrateAccell(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt){
+    // iterate over all the game objects
+    if(AF_Component_GetEnabled(_rigidbody->enabled) != AF_TRUE){
+        return;
+    }
+    
+    float inverseMass = _rigidbody->inverseMass;
 
-	if (inverseMass > 0.0f) {
-		Vec3 force = _rigidbody->force;
-		Vec3 accell = Vec3_MULT_SCALAR(force, inverseMass);
-		if (_rigidbody->gravity == AF_TRUE) {
-			accell.y += GRAVITY_SCALE;
-		}
-		Vec3 accelDT = Vec3_MULT_SCALAR(accell, _dt);
-		_rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, accelDT);
-	}
+    if (inverseMass > 0.0f) {
+        // == Linear Acceleration ==
+        Vec3 force = _rigidbody->force;
+        Vec3 linearAcceleration = Vec3_MULT_SCALAR(force, inverseMass);
+        if (_rigidbody->gravity == AF_TRUE) {
+            linearAcceleration.y += GRAVITY_SCALE;
+        }
+        _rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, Vec3_MULT_SCALAR(linearAcceleration, _dt));
+        
+        // == Angular Acceleration (THE FIX) ==
+        // 1. Transform local inverse inertia tensor to world space
+        Vec3 worldInvInertia = AF_Physics_TransformInertiaTensorToWorldSpace(_rigidbody->inertiaTensor, _transform->modelMat);
+        
+        // 2. Calculate angular acceleration from torque: α = I⁻¹ * τ
+        Vec3 angularAcceleration = Vec3_MULT(worldInvInertia, _rigidbody->torque);
+        
+        // 3. Update angular velocity: ω_new = ω_old + α * Δt
+        _rigidbody->anglularVelocity = Vec3_ADD(_rigidbody->anglularVelocity, Vec3_MULT_SCALAR(angularAcceleration, _dt));
+
+        // Clear forces and torques after applying them to prevent accumulation
+        _rigidbody->force = Vec3_ZERO();
+        _rigidbody->torque = Vec3_ZERO();
+    }
 }
 
 
@@ -563,20 +829,24 @@ static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID
         return;
     }
 
-	// Calculate the correction vector, allowing for a small amount of slop.
-    //Vec3 correction = Vec3_MULT_SCALAR(_collision->normal, AF_MAX(_collision->penetration - penetrationAllowance, 0.0f) / totalInverseMass * penetrationScale);
-
-
 	af_bool_t hasRigidbodyA = AF_Component_GetEnabled(rigidbodyA->enabled);
 	af_bool_t hasRigidbodyB = AF_Component_GetEnabled(rigidbodyB->enabled);
 
-	// Seperate the objects based on their inverse masses
+	// Baumgarte Stabilization: Separate objects with percentage-based penetration correction
+	// Only correct penetration beyond the slop threshold to prevent jitter
+	float correctionMagnitude = fmaxf(colliderA->collision.penetration - PENETRATION_SLOP, 0.0f);
+	float correctionAmount = correctionMagnitude * PENETRATION_PERCENTAGE;
+	
 	// Only move objects that have a rigidbody and are not static (inverseMass > 0)
 	if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
-    	transformA->pos = Vec3_MINUS(transformA->pos, Vec3_MULT_SCALAR(colliderA->collision.normal, (colliderA->collision.penetration * (rigidbodyA->inverseMass / totalInverseMass))));
+		Vec3 correction = Vec3_MULT_SCALAR(colliderA->collision.normal, 
+			correctionAmount * (rigidbodyA->inverseMass / totalInverseMass));
+    	transformA->pos = Vec3_MINUS(transformA->pos, correction);
 	}
 	if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
-		transformB->pos = Vec3_MINUS(transformB->pos, Vec3_MULT_SCALAR(colliderB->collision.normal, (colliderB->collision.penetration * (rigidbodyB->inverseMass / totalInverseMass))));
+		Vec3 correction = Vec3_MULT_SCALAR(colliderB->collision.normal, 
+			correctionAmount * (rigidbodyB->inverseMass / totalInverseMass));
+		transformB->pos = Vec3_MINUS(transformB->pos, correction);
 	}
 
 	// Calculate relative vectors from the collider centers (not transform centers) to the collision point
@@ -591,22 +861,41 @@ static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID
 
 	Vec3 contactVelocity = Vec3_MINUS(fullVelocityB, fullVelocityA);
 
-
 	// Build up the impulse force
 	float impulseForce = Vec3_DOT(contactVelocity, _collision->normal);
+	
+	// Check if objects are moving together (impulseForce < 0)
+	// If they're moving apart, don't resolve (prevents objects from 'sticking' together)
+	if (impulseForce >= 0.0f) {
+		return; // Objects are already separating
+	}
 
-	// work out the effect of inertia
+	// Work out the effect of inertia (using world-space transformed inertia tensor)
+	// Transform the local-space inverse inertia tensors to world-space
+	Vec3 worldInertiaTensorA = AF_Physics_TransformInertiaTensorToWorldSpace(rigidbodyA->inertiaTensor, transformA->modelMat);
+	Vec3 worldInertiaTensorB = AF_Physics_TransformInertiaTensorToWorldSpace(rigidbodyB->inertiaTensor, transformB->modelMat);
+	
 	Vec3 crossRelativeNormalA = Vec3_CROSS(relativeA, _collision->normal);
-	Vec3 tensorCrossRelativeNormalA = Vec3_MULT(rigidbodyA->inertiaTensor, crossRelativeNormalA);
+	Vec3 tensorCrossRelativeNormalA = Vec3_MULT(worldInertiaTensorA, crossRelativeNormalA);
 	Vec3 inertiaA = Vec3_CROSS(tensorCrossRelativeNormalA, relativeA);
 
 	Vec3 crossRelativeNormalB = Vec3_CROSS(relativeB, _collision->normal);
-	Vec3 tensorCrossRelativeNormalB = Vec3_MULT(rigidbodyB->inertiaTensor, crossRelativeNormalB);
+	Vec3 tensorCrossRelativeNormalB = Vec3_MULT(worldInertiaTensorB, crossRelativeNormalB);
 	Vec3 inertiaB = Vec3_CROSS(tensorCrossRelativeNormalB, relativeB);
 
 	float angularEffect = Vec3_DOT(Vec3_ADD(inertiaA, inertiaB), _collision->normal);
 
-	float cRestitution = 0.66f; // disperse some kinectic energy
+	// Coefficient of restitution - use velocity-dependent value
+	// For fast collisions, dissipate some kinetic energy (0.2)
+	// For slow collisions (resting contacts), use zero restitution to help settle
+	float relativeVelocityMag = fabsf(impulseForce);
+	float cRestitution = 0.2f;
+	
+	const float restingThreshold = 1.0f; // Below this velocity, treat as resting contact
+	if (relativeVelocityMag < restingThreshold) {
+		// Interpolate restitution from 0 to 0.2 based on velocity
+		cRestitution = (relativeVelocityMag / restingThreshold) * 0.2f;
+	}
 	
 	float j = 0;
 
@@ -617,22 +906,158 @@ static inline void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID
 		j = 0;
 	}
 	
-
+	
 	
 	Vec3 fullImpulse = Vec3_MULT_SCALAR(_collision->normal, j);
 
 	// apply linear and angualr impulses in opposite directions 
 	Vec3 negativeFullImpulse = Vec3_MULT_SCALAR(fullImpulse, -1);
 
+	// Calculate angular impulses
+	Vec3 angularImpulseA = Vec3_CROSS(relativeA, negativeFullImpulse);
+	Vec3 angularImpulseB = Vec3_CROSS(relativeB, fullImpulse);
+	
+	
+	// Detect resting contacts and heavily reduce/remove angular impulses to prevent rotation
+	// Resting = low velocity collision + collision normal pointing mostly upward
+	const float restingAngularThreshold = 1.5f; // Higher threshold - catch more resting cases
+	const float restingNormalThreshold = 0.7f;  // Lower threshold - more permissive (Y > 0.7)
+	
+	af_bool_t isRestingContact = AF_FALSE;
+	if (relativeVelocityMag < restingAngularThreshold && fabsf(_collision->normal.y) > restingNormalThreshold) {
+		isRestingContact = AF_TRUE;
+		// This is a resting contact - remove angular impulses completely
+		Vec3 vecZero = {0, 0, 0};
+		angularImpulseA = vecZero;
+		angularImpulseB = vecZero;
+	}
+
 	// Apply impulses
 	if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
 		AF_Physics_ApplyLinearImpulse(rigidbodyA, negativeFullImpulse);
-		AF_Physics_ApplyAngularImpulse(rigidbodyA,Vec3_CROSS(relativeA, negativeFullImpulse));
+		AF_Physics_ApplyAngularImpulse(rigidbodyA, angularImpulseA);
+		
+		// For resting contacts, directly damp angular velocity to stop rotation
+		if (isRestingContact) {
+			rigidbodyA->anglularVelocity = Vec3_MULT_SCALAR(rigidbodyA->anglularVelocity, 0.9f);
+		}
 	}
 
 	if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
 		AF_Physics_ApplyLinearImpulse(rigidbodyB, fullImpulse);
-		AF_Physics_ApplyAngularImpulse(rigidbodyB,Vec3_CROSS(relativeB, fullImpulse));
+		AF_Physics_ApplyAngularImpulse(rigidbodyB, angularImpulseB);
+		
+		// For resting contacts, directly damp angular velocity to stop rotation
+		if (isRestingContact) {
+			rigidbodyB->anglularVelocity = Vec3_MULT_SCALAR(rigidbodyB->anglularVelocity, 0.9f);
+		}
+	}
+	
+
+	// Friction
+	const float mu = 0.1f; // Friction coefficient
+	// Recalculate contact velocity after normal impulse
+	angVelocityA = Vec3_CROSS(rigidbodyA->anglularVelocity, relativeA);
+	angVelocityB = Vec3_CROSS(rigidbodyB->anglularVelocity, relativeB);
+	Vec3 fullVelocityA_after = Vec3_ADD(rigidbodyA->velocity, angVelocityA);
+	Vec3 fullVelocityB_after = Vec3_ADD(rigidbodyB->velocity, angVelocityB);
+	contactVelocity = Vec3_MINUS(fullVelocityB_after, fullVelocityA_after);
+
+	// Tangent vector
+	float contactVelDotNormal = Vec3_DOT(contactVelocity, _collision->normal);
+	Vec3 tangent = Vec3_MINUS(contactVelocity, Vec3_MULT_SCALAR(_collision->normal, contactVelDotNormal));
+	float tangentMag = Vec3_MAGNITUDE(tangent);
+	if (tangentMag > 0.0001f) {
+		tangent = Vec3_MULT_SCALAR(tangent, 1.0f / tangentMag); // Normalize
+
+		// Friction impulse
+		float jt = -Vec3_DOT(contactVelocity, tangent);
+
+		// Denominator for friction
+		Vec3 crossRelativeTangentA = Vec3_CROSS(relativeA, tangent);
+		Vec3 tensorCrossTangentA = Vec3_MULT(worldInertiaTensorA, crossRelativeTangentA);
+		Vec3 inertiaTangentA = Vec3_CROSS(tensorCrossTangentA, relativeA);
+
+		Vec3 crossRelativeTangentB = Vec3_CROSS(relativeB, Vec3_MULT_SCALAR(tangent, -1));
+		Vec3 tensorCrossTangentB = Vec3_MULT(worldInertiaTensorB, crossRelativeTangentB);
+		Vec3 inertiaTangentB = Vec3_CROSS(tensorCrossTangentB, relativeB);
+
+		float denom = totalMass + Vec3_DOT(Vec3_ADD(inertiaTangentA, inertiaTangentB), tangent);
+		if (denom > 0.0001f) {
+			jt /= denom;
+			// Clamp to Coulomb's law
+			float maxJt = mu * fabsf(j);
+			jt = fmaxf(-maxJt, fminf(jt, maxJt));
+
+			Vec3 frictionImpulse = Vec3_MULT_SCALAR(tangent, jt);
+
+			// Apply friction impulses
+			if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
+				AF_Physics_ApplyLinearImpulse(rigidbodyA, Vec3_MULT_SCALAR(frictionImpulse, -1));
+				Vec3 angularFrictionA = Vec3_CROSS(relativeA, Vec3_MULT_SCALAR(frictionImpulse, -1));
+				AF_Physics_ApplyAngularImpulse(rigidbodyA, angularFrictionA);
+			}
+			if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
+				AF_Physics_ApplyLinearImpulse(rigidbodyB, frictionImpulse);
+				Vec3 angularFrictionB = Vec3_CROSS(relativeB, frictionImpulse);
+				AF_Physics_ApplyAngularImpulse(rigidbodyB, angularFrictionB);
+			}
+		}
+	}
+
+	// Apply stabilizing torque to help objects settle flat when resting
+	// This helps objects rotate toward their most stable (flat) orientation
+	float angVelMagA = Vec3_MAGNITUDE(rigidbodyA->anglularVelocity);
+	float angVelMagB = Vec3_MAGNITUDE(rigidbodyB->anglularVelocity);
+	
+	// For object A: Apply stabilizing torque if it has gravity and low angular velocity
+	if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE && 
+	    rigidbodyA->gravity == AF_TRUE && angVelMagA < 3.0f) {
+		
+		// Calculate the "up" vector from current orientation
+		// Correctly calculate the world-space "up" vector from the object's orientation
+		Vec4 quat = transformA->orientation; // or transformB->orientation
+		Vec3 localUp = {
+			2.0f * (quat.x * quat.y - quat.w * quat.z),
+			1.0f - 2.0f * (quat.x * quat.x + quat.z * quat.z),
+			2.0f * (quat.y * quat.z + quat.w * quat.x)
+		};
+		Vec3 worldUp = {0, 1, 0};
+		
+		// Calculate torque to align local up with world up
+		Vec3 torqueAxis = Vec3_CROSS(localUp, worldUp);
+		float torqueMagnitude = Vec3_MAGNITUDE(torqueAxis);
+		
+		// Only apply if there's a meaningful misalignment
+		if (torqueMagnitude > 0.01f) {
+			// Scale torque based on velocity (stronger when slower)
+			float torqueScale = 1.5f * (1.0f - (angVelMagA / 3.0f));
+			Vec3 stabilizingTorque = Vec3_MULT_SCALAR(torqueAxis, torqueScale);
+			rigidbodyA->torque = Vec3_ADD(rigidbodyA->torque, stabilizingTorque);
+		}
+	}
+	
+	// For object B: Apply stabilizing torque if it has gravity and low angular velocity
+	if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE && 
+	    rigidbodyB->gravity == AF_TRUE && angVelMagB < 3.0f) {
+		
+		// For object B:
+		Vec4 quat = transformB->orientation;
+		Vec3 localUp = {
+			2.0f * (quat.x * quat.y - quat.w * quat.z),
+			1.0f - 2.0f * (quat.x * quat.x + quat.z * quat.z),
+			2.0f * (quat.y * quat.z + quat.w * quat.x)
+		};
+		Vec3 worldUp = {0, 1, 0};
+		
+		Vec3 torqueAxis = Vec3_CROSS(localUp, worldUp);
+		float torqueMagnitude = Vec3_MAGNITUDE(torqueAxis);
+		
+		if (torqueMagnitude > 0.01f) {
+			float torqueScale = 1.5f * (1.0f - (angVelMagB / 3.0f));
+			Vec3 stabilizingTorque = Vec3_MULT_SCALAR(torqueAxis, torqueScale);
+			rigidbodyB->torque = Vec3_ADD(rigidbodyB->torque, stabilizingTorque);
+		}
 	}
 }
 

@@ -97,7 +97,7 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 		//debgf("Physics: upate: velocity x: %f y: %f z: %f\n", rigidbody->velocity.x, rigidbody->velocity.y, rigidbody->velocity.z);
 		// if the object isn't static
 		if(rigidbody->inverseMass > 0 || rigidbody->isKinematic == AF_TRUE){
-				AF_Physics_IntegrateAccell(rigidbody, _dt);
+				AF_Physics_IntegrateAccell(transform, rigidbody, _dt);
 				AF_Physics_IntegrateVelocity(transform, rigidbody, _dt);  
 		    }
 
@@ -113,7 +113,7 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 
 		// clear all collsision except keep the callback
 		AF_Collision_Reset(&collider->collision);
-	}
+	} 
 }
 
 /*
@@ -179,7 +179,7 @@ void AF_Physics_GetInterval(const AF_CTransform3D* transform, const Vec3* halfSi
 
     Mat4 modelMat = transform->modelMat;
     for (int i = 0; i < 8; ++i) {
-		Vec4 corner = {corners[i].x, corners[i].y, corners[i].z};
+		Vec4 corner = {corners[i].x, corners[i].y, corners[i].z, 1.0f};
 		Vec4 returnCorners = Mat4_MULT_V4(modelMat, corner);
 
         corners[i].x = returnCorners.x;
@@ -300,7 +300,8 @@ Returns AF_TRUE if a collision occurs.
 ====================
 */
 af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision) {
-    af_bool_t returnValue = AF_FALSE;
+    if(transformA == NULL || transformB == NULL || outCollision == NULL) return AF_FALSE;
+	af_bool_t returnValue = AF_FALSE;
 	Vec3* posA = &colliderA->boundingPos;
 	Vec3* posB = &colliderB->boundingPos;
 
@@ -433,7 +434,7 @@ https://www.r-5.org/files/books/computers/algo-list/realtime-3d/Christer_Ericson
 */
 
 af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision) {
-    
+    if(_ecs == NULL || transformA == NULL || outCollision == NULL) return AF_FALSE;
     AF_FLOAT ra, rb;
     Mat3 R, AbsR;
     

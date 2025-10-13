@@ -16,13 +16,15 @@ Fixed operations are not implemented yet.
 extern "C" {
 #endif
 
-
-
+#define AF_PI 3.14159265358979323846  // Define the value of Pi
+#define AF_PI_DIV_180  0.01745329251994329576923690768489 // PI / 180
+#define AF_180_DIV_PI 57.295779513082320876798154814105 // 180 / PI
+#define AF_PI_MUL_2 6.28318530717958647692  // 2 * PI
 
 /// @brief Interpolates between two angles (radians) by 't', from T3D
 static inline float AF_Math_Lerp_Angle(float a, float b, float t) {
-  float angleDiff = fmodf((b - a), PI*2);
-  float shortDist = fmodf(angleDiff*2, PI*2) - angleDiff;
+  float angleDiff = fmodf((b - a), AF_PI_MUL_2);
+  float shortDist = fmodf(angleDiff*2, AF_PI_MUL_2) - angleDiff;
   return a + shortDist * t;
 }
 
@@ -110,7 +112,7 @@ static inline AF_FLOAT AF_Math_Radians(AF_FLOAT _degrees){
 #else
 
 
-#define AF_PI 3.14159265358979323846  // Define the value of Pi
+
 
 #include "math.h"  // Standard math library
 
@@ -177,7 +179,7 @@ Converts degrees to radians using floating-point arithmetic.
 =========================
 */
 static inline AF_FLOAT AF_Math_Radians(AF_FLOAT _degrees){
-    return (_degrees * AF_PI) / 180; 
+    return _degrees * AF_PI_DIV_180;
 }
 
 /*
@@ -186,8 +188,8 @@ AF_Math_Degrees
 Converts radians to degrees using floating-point arithmetic.
 =========================
 */
-static inline AF_FLOAT AF_Math_Degrees(AF_FLOAT _degrees){
-    return (_degrees / AF_PI) * 180; 
+static inline AF_FLOAT AF_Math_Degrees(AF_FLOAT _radians){
+    return _radians * AF_180_DIV_PI;
 }
 
 
