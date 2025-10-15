@@ -262,13 +262,22 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
 
             // --- FIX: Add the collision handling logic here ---
 
-            // 1. Copy the collision result into each collider's data structure.
+            // 1. Preserve the callback pointers before overwriting
+            void (*callback1)(AF_Collision*) = collider1->collision.callback;
+            void (*callback2)(AF_Collision*) = collider2->collision.callback;
+
+            // 2. Copy the collision result into each collider's data structure.
             collider1->collision = collisionResult;
             collider2->collision = collisionResult;
+            
+            // 3. Restore the callback pointers
+            collider1->collision.callback = callback1;
+            collider2->collision.callback = callback2;
+            
             // Invert the normal for the second collider.
             collider2->collision.normal = Vec3_MULT_SCALAR(collisionResult.normal, -1.0f);
 
-            // 2. Invoke the callbacks if they exist.
+            // 4. Invoke the callbacks if they exist.
             if(collider1->collision.callback != NULL){
                 collider1->collision.ecsPtr = _ecs;
                 collider1->collision.callback(&collider1->collision);
@@ -278,7 +287,7 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
                 collider2->collision.callback(&collider2->collision);
             }
 
-            // 3. Resolve the collision for non-kinematic objects.
+            // 5. Resolve the collision for non-kinematic objects.
             AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
             if(rigidbody->isKinematic == AF_FALSE){
                 // Pass the correct collision data to the resolver.

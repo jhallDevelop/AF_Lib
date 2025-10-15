@@ -503,8 +503,14 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 				// flip the z axis for the texture camera
 				// render texture camera projection matrix is the same as the main camera
 				renderTextureCamera->projectionMatrix = _ecs->cameras[_cameraID].projectionMatrix;
+				
+				// Set the background color for this camera before clearing
+				glClearColor(renderTextureCamera->backgroundColor.x, 
+				             renderTextureCamera->backgroundColor.y,
+				             renderTextureCamera->backgroundColor.z, 
+				             renderTextureCamera->backgroundColor.w);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-				glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+				
 				AF_Renderer_DrawMeshes(
 					&renderTextureCamera->viewMatrix,
 					&renderTextureCamera->projectionMatrix,
