@@ -74,9 +74,24 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         af_bool_t hasText = AF_Component_GetHas(_appData->ecs.texts[i].enabled);
         if (hasText == AF_TRUE) {
             AF_CText* textComponent = &_appData->ecs.texts[i];
-            uint32_t fontSize = (textComponent->font.fontSize > 0) ? textComponent->font.fontSize : 48;
-            af_bool_t fontLoadSuccess = AF_MeshLoad_InitFontMesh(&_appData->assets, textComponent, textComponent->fontPath, fontSize);
-            if (fontLoadSuccess == AF_FALSE) {
+            uint32_t fontSize = 1;
+            if(textComponent->font.fontSize > 0) {
+                fontSize = textComponent->font.fontSize;
+            } 
+
+            // Load the shader for the text mesh
+            uint32_t textShaderID = AF_MeshLoad_Shader_LoadFromAssets(&_appData->assets, textComponent->mesh.shader.vertPath, textComponent->mesh.shader.fragPath); 
+            textComponent->mesh.shader.shaderID = textShaderID;
+
+            // Load the font
+            af_bool_t fontLoadSuccess = AF_LoadFont(&textComponent->font);
+            if(fontLoadSuccess == AF_FALSE) {
+                AF_Log_Error("AF_Project_Load: Failed to load font %s for text component\n", textComponent->font.fontPath);
+                continue;
+            }
+            // Init the font mesh
+            af_bool_t fontMeshLoadSuccess = AF_MeshLoad_InitTextMesh(&_appData->assets, textComponent, textComponent->fontPath, fontSize);
+            if (fontMeshLoadSuccess == AF_FALSE) {
                 AF_Log_Error("AF_Project_Load: Failed to load font %s for text component\n", textComponent->fontPath);
                 continue;
             }

@@ -24,6 +24,7 @@ This implementation is for OpenGL
 
 #include "AF_Assets.h"
 #include "AF_Renderer_Util.h"
+#include "ECS/Components/AF_CText.h"
 
 #define NO_SHARED_SHADER 0
 
@@ -533,8 +534,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// if texture type is renderTexture, make the texture id the same as the screen frame buffer
 	
     
-    glCullFace(GL_BACK);
-    
+    //glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
     // --- Main Mesh Drawing ---
     AF_Renderer_DrawMeshes(
         &camera->viewMatrix,
@@ -545,6 +546,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         NO_SHARED_SHADER,
         _renderingData
     );
+
+	
 
     // --- Debug Collision Hull Drawing (Desktop Only) ---
     #ifndef AF_WEB_BUILD
@@ -564,7 +567,15 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         // Switch back to fill mode for subsequent rendering (like ImGui).
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     #endif
+
+	// == Draw Text Meshes ==
+	// Render text and UI
+	//
+	AF_Renderer_DrawTextMeshes(_ecs, _renderingData);
+
     AF_Renderer_UnBindFrameBuffer();
+
+	
 
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Optional Debug View) ====
     AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
@@ -579,6 +590,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
+	
+
     AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Finished Forward rendering\n");
 }
 
@@ -591,12 +604,126 @@ Simple render command to cleanup forward rendering steps
 */
 void AF_Renderer_EndForwardRendering(void){
 
-	// ==== DEPTH PASS ====
+	
 
-	// ==== COLOR PASS ====
+}
 
-	// ==== LIGHTING PASS ====
+/*
+====================
+AF_Renderer_Text(AF_ECS* _ecs)
+Render text meshes
+====================
+*/
+void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) {
+    AF_Renderer_CheckError("AF_Renderer_DrawTextMeshes: Start rendering text meshes\n");
+    // Bind the framebuffer 
+    //AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 
+	/**/
+    // Set OpenGL state for 2D rendering
+    // Disable depth testing so UI draws on top
+    glDisable(GL_DEPTH_TEST);
+    // Enable blending for transparency in glyphs
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // for each entity
+    for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
+        AF_Entity* entity = &_ecs->entities[i];
+        if (AF_Component_GetHasEnabled(entity->flags) == AF_FALSE) {
+            continue;
+        }
+
+        AF_CText* textMeshComp = &_ecs->texts[i];
+        if (AF_Component_GetHasEnabled(textMeshComp->enabled) == AF_FALSE) {
+            continue;
+        }
+
+        // ============= Render the text mesh =============
+        // use the shader
+        AF_Shader_Use(textMeshComp->mesh.shader.shaderID);
+
+        // set the orthographic projection matrix
+        AF_FLOAT screenWidth = (AF_FLOAT)_renderingData->windowPtr->frameBufferWidth;
+        AF_FLOAT screenHeight = (AF_FLOAT)_renderingData->windowPtr->frameBufferHeight;
+        AF_Shader_SetVec2(textMeshComp->mesh.shader.shaderID, "screenSize", screenWidth, screenHeight);
+
+
+
+        // send the shader the colour to use
+        AF_Shader_SetVec3(textMeshComp->mesh.shader.shaderID, "textColor", textMeshComp->textColor[0], textMeshComp->textColor[1], textMeshComp->textColor[2]);
+        // Tell the shader to use texture unit 0 for the 'text' sampler
+        AF_Shader_SetInt(textMeshComp->mesh.shader.shaderID, "text", 0);
+
+        // activate the texture
+        glActiveTexture(GL_TEXTURE0);
+
+        // bind the VAO
+        glBindVertexArray(textMeshComp->mesh.meshes[0].vao);
+
+		
+        // 'x' will be our advancing cursor, starting at the component's screen position
+        AF_FLOAT x = textMeshComp->screenPos.x;
+        AF_FLOAT y = textMeshComp->screenPos.y;
+        
+        // for each character in the text
+        for (uint32_t c = 0; c < AF_MAX_PATH_CHAR_SIZE; c++) {
+            // break if we reach the null terminator
+            if (textMeshComp->text[c] == '\0') {
+                break;
+            }
+            
+            AF_Font* font = &textMeshComp->font;
+            AF_Character ch = font->characters[(unsigned char)textMeshComp->text[c]];
+
+            // If the character has a texture, render it.
+            if (ch.TextureID != 0) {
+                // compute the character quad's position and size.
+                AF_FLOAT xpos = x + ch.Bearing.x;
+                AF_FLOAT ypos = y - (ch.Size.y - ch.Bearing.y);
+                AF_FLOAT width = ch.Size.x;
+                AF_FLOAT height = ch.Size.y;
+
+                // Construct an updated VBO for the character
+                AF_FLOAT vertices[6][4] = {
+                    { xpos,         ypos + height,   0.0f, 0.0f },            
+                    { xpos,         ypos,            0.0f, 1.0f },
+                    { xpos + width, ypos,            1.0f, 1.0f },
+
+                    { xpos,         ypos + height,   0.0f, 0.0f },
+                    { xpos + width, ypos,            1.0f, 1.0f },
+                    { xpos + width, ypos + height,   1.0f, 0.0f }           
+                };
+                
+                // Render glyph texture over quad
+                glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+                
+                // bind the VBO and update its memory
+                glBindBuffer(GL_ARRAY_BUFFER, textMeshComp->mesh.meshes[0].vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+                
+                // Draw the quad
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
+            
+            // advance the cursor for the next character
+            x += (ch.Advance >> 6); // bitshift by 6 to get value in pixels (2^6 = 64)
+        }
+        
+        //unbind the vertex array and texture
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    
+    // unbind the shader
+    AF_Shader_Use(0);
+    // unbind the framebuffer
+    //AF_Renderer_UnBindFrameBuffer();
+
+    // Restore OpenGL state for 3D rendering
+    //glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+    AF_Renderer_CheckError("AF_Renderer_DrawTextMeshes: Finished rendering text meshes\n");
 }
 
 
@@ -1169,8 +1296,29 @@ void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){
 			AF_Renderer_CreateMeshBuffer(&_mesh->meshes[j]);
 		}
     }
+}
 
-	
+void AF_Renderer_InitTextMeshBuffers(AF_CText* _fontComponent){
+	if (_fontComponent == NULL) {
+        AF_Log_Error("AF_Renderer_InitTextMeshBuffers: _fontComponent is NULL!\n");
+        return;
+    }
+    AF_Renderer_CheckError( "AF_Renderer_InitTextMeshBuffers: before create text mesh buffers\n");
+    // setup the font mesh data
+    _fontComponent->mesh.meshCount = 1; // only one mesh for font
+    _fontComponent->mesh.meshes[0].vertexCount = 6; // A quad is 6 vertices (2 triangles)
+    _fontComponent->mesh.meshes[0].indexCount = 0; // no indices for font mesh, using glDrawArrays
+    _fontComponent->mesh.meshes[0].vertices = NULL; // Data is dynamic, no static vertex array needed.
+    glGenVertexArrays(1, &_fontComponent->mesh.meshes[0].vao);
+    glGenBuffers(1, &_fontComponent->mesh.meshes[0].vbo);
+    glBindVertexArray(_fontComponent->mesh.meshes[0].vao);
+    glBindBuffer(GL_ARRAY_BUFFER, _fontComponent->mesh.meshes[0].vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(AF_FLOAT) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(AF_FLOAT), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    AF_Renderer_CheckError( "AF_Renderer_InitTextMeshBuffers: after create text mesh buffers\n");
 }
 
 /*
@@ -1421,6 +1569,8 @@ void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     _frameBufferData->textureID = depthMap;
+
+	AF_Renderer_CheckError("AF_Renderer_CreateDepthFrameBuffer: Finished creating depth framebuffer\n");
 }
 
 /*

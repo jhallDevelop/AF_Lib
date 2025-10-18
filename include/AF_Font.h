@@ -45,6 +45,7 @@ Holds all state information relevant to a font as loaded using FreeType
 =========================
 */
 typedef struct AF_Font {
+    char fontName[AF_MAX_PATH_CHAR_SIZE];  // Name of the font
     char fontPath[AF_MAX_PATH_CHAR_SIZE];          // Path to the font file
     uint32_t fontSize;          // Size of the font
     AF_Character characters[AF_CHARACTER_SET_SIZE]; // Array of characters
@@ -58,6 +59,7 @@ Initializes an AF_Font struct to zero/default values
 */
 static inline AF_Font AF_Font_Zero(void) {
     AF_Font font;
+    font.fontName[0] = '\0';
     font.fontPath[0] = '\0';
     font.fontSize = 0;
     for (int i = 0; i < AF_CHARACTER_SET_SIZE; i++) {
@@ -65,6 +67,8 @@ static inline AF_Font AF_Font_Zero(void) {
     }
     return font;
 }
+
+af_bool_t AF_LoadFont(AF_Font* _font);
 
 
 #endif // AF_FONT_H

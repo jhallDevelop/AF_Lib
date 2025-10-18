@@ -92,6 +92,9 @@ void AF_Renderer_UpdateLighting(AF_ECS* _ecs, AF_LightingData* _lightingData);
 
 void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 
+// ============================  DRAW TEXT ================================
+void AF_Renderer_InitTextMeshBuffers(AF_CText* _fontComponent);
+void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 
 // ============================  DESTROY / CLEANUP ================================ 
 // Destroy

@@ -4,21 +4,10 @@
 #include <stddef.h> // For NULL
 
 #define AF_CTEXT_DEFAULT_FONT_PATH "assets/font/Antonio-Bold.ttf"
-#define AF_CTEXT_DEFAULT_FONT_VERT_PATH "assets/shaders/text.vert"
-#define AF_CTEXT_DEFAULT_FONT_FRAG_PATH "assets/shaders/text.frag"
+#define AF_CTEXT_DEFAULT_FONT_VERT_PATH "assets/shaders/OSX/text.vert"
+#define AF_CTEXT_DEFAULT_FONT_FRAG_PATH "assets/shaders/OSX/text.frag"
 #define AF_CTEXT_DEFAULT_FONT_SIZE 48
-// Static quad vertices for text rendering (positions + texCoords)
-static AF_Vertex AF_CTEXT_QUAD_VERTS[6] = {
-    // Triangle 1: top-left, bottom-left, bottom-right
-    {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // top-left
-    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // bottom-left
-    {{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // bottom-right
-    
-    // Triangle 2: top-left, bottom-right, top-right
-    {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // top-left
-    {{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // bottom-right
-    {{ 1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}  // top-right
-};
+
 
 
 /*

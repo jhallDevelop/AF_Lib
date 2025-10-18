@@ -56,42 +56,18 @@ AF_MeshLoad_InitFontMesh
 Initialize a font component by loading the font from file
 ====================
 */
-af_bool_t AF_MeshLoad_InitFontMesh(AF_Assets* _assets, AF_CText* _fontComponent, const char* _fontPath, float _fontSize){
-    if(_assets == NULL || _fontComponent == NULL || _fontPath == NULL){
+af_bool_t AF_MeshLoad_InitTextMesh(AF_Assets* _assets, AF_CText* _fontComponent, const char* _fontPath, float _fontSize){
+    if (_assets == NULL || _fontComponent == NULL || _fontPath == NULL || _fontSize <= 0) {
         AF_Log_Error("AF_MeshLoad_Init: NULL pointer provided\n");
         return AF_FALSE;
     }
     
-    //AF_Log("AF_MeshLoad_Load: Show Model File Browser \n");
-    // delete the existing mesh data
-    // save a copy of the mesh path, and shader as we still want to use that.
-    // copy the mesh path
-    char meshPath[AF_MAX_PATH_CHAR_SIZE];
-    snprintf(meshPath, sizeof(meshPath), "%s", _fontComponent->fontPath);
+    // The shader ID is already loaded and set by AF_Project_SyncEntities.
+    // This function's only responsibility is to initialize the OpenGL buffers.
+    // We can remove the redundant shader loading logic.
 
-    // copy the shader to re-use it. 
-    // save a copy of the shaders used
-    char vertCopy[128];
-    char fragCopy[128];
-    snprintf(vertCopy,sizeof(vertCopy),"%s", _fontComponent->mesh.shader.vertPath);
-    snprintf(fragCopy,sizeof(fragCopy),"%s", _fontComponent->mesh.shader.fragPath);
-
-    // Blat the component. removing all memory
-    //AF_Log_Warning("AF_MeshLoad_Load: DISABLED destroying mesh, need to sync AF_Lib from home \n");
-
-    //Load the new model from path
-
-    // copy back the shader paths
-    snprintf(_fontComponent->mesh.shader.vertPath,sizeof(_fontComponent->mesh.shader.vertPath),"%s", vertCopy);
-    snprintf(_fontComponent->mesh.shader.fragPath,sizeof(_fontComponent->mesh.shader.fragPath),"%s", fragCopy);
-
-    _fontComponent->mesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(_assets, _fontComponent->mesh.shader.vertPath, _fontComponent->mesh.shader.fragPath);
-    // Add material reference back
-    _fontComponent->mesh.material.shaderID = _fontComponent->mesh.shader.shaderID;
-    for(uint32_t i = 0; i < _fontComponent->mesh.meshCount; ++i){
-        AF_MeshData* meshData = &_fontComponent->mesh.meshes[i];
-        AF_Renderer_CreateMeshBuffer(&_fontComponent->mesh.meshes[i]);
-    }
+    // setup the font mesh data
+    AF_Renderer_InitTextMeshBuffers(_fontComponent);
 
     return AF_TRUE;
 }

@@ -1211,6 +1211,12 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 	// font
 	cJSON* fontJSON = cJSON_GetObjectItem(_textJSON, "font");
 	if (fontJSON != NULL) {
+		// font name
+		cJSON* fontNameJSON = cJSON_GetObjectItem(fontJSON, "fontName");
+		if (fontNameJSON != NULL && cJSON_IsString(fontNameJSON)) {
+			snprintf(_text->font.fontName, AF_MAX_PATH_CHAR_SIZE, "%s", fontNameJSON->valuestring);
+		}	
+
 		// fontPath in font
 		cJSON* fontPathInFontJSON = cJSON_GetObjectItem(fontJSON, "fontPath");
 		if (fontPathInFontJSON != NULL && cJSON_IsString(fontPathInFontJSON)) {
@@ -1226,6 +1232,11 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 	// mesh shader paths (for text rendering)
 	cJSON* meshShaderJSON = cJSON_GetObjectItem(_textJSON, "meshShader");
 	if (meshShaderJSON != NULL) {
+		cJSON* shaderNameJSON = cJSON_GetObjectItem(meshShaderJSON, "name");
+		if (shaderNameJSON != NULL && cJSON_IsString(shaderNameJSON)) {
+			snprintf(_text->mesh.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", shaderNameJSON->valuestring);
+		}	
+
 		cJSON* vertPathJSON = cJSON_GetObjectItem(meshShaderJSON, "vertPath");
 		if (vertPathJSON != NULL && cJSON_IsString(vertPathJSON)) {
 			snprintf(_text->mesh.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", vertPathJSON->valuestring);
@@ -2026,11 +2037,13 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
 
 	// font
 	cJSON* fontJSON = cJSON_AddObjectToObject(returnJSON, "font");
+	cJSON_AddStringToObject(fontJSON, "fontName", _component->font.fontName);
 	cJSON_AddStringToObject(fontJSON, "fontPath", _component->font.fontPath);
 	cJSON_AddNumberToObject(fontJSON, "fontSize", _component->font.fontSize);
 
 	// mesh shader paths (for text rendering)
 	cJSON* meshShaderJSON = cJSON_AddObjectToObject(returnJSON, "meshShader");
+	cJSON_AddStringToObject(meshShaderJSON, "shaderName", _component->mesh.shader.name);
 	cJSON_AddStringToObject(meshShaderJSON, "vertPath", _component->mesh.shader.vertPath);
 	cJSON_AddStringToObject(meshShaderJSON, "fragPath", _component->mesh.shader.fragPath);
 
