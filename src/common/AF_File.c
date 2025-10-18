@@ -428,9 +428,42 @@ Editor_Utils_SetWorkingDirectory
 Set the working directory
 ================
 */
-void AF_File_SetWorkingDirectory(const char* _projectRoot) {
+void AF_File_SetWorkingDirectory(const char *_projectRoot)
+{
     //AF_Log_Error("Editor_Utils_SetWorkingDirectory: Windows not defined\n");
     if (chdir(_projectRoot) != 0) {  // Use _chdir(projectRoot) on Windows
         AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
     }
+}
+
+/*
+====================
+AF_File_GetPathName
+Get the path name from a full file path
+====================
+*/
+uint32_t AF_File_GetPathName(const char *_fontPath, char *_buffer, uint32_t _bufferSize)
+{
+    if (_fontPath == NULL || _buffer == NULL || _bufferSize == 0) {
+        AF_Log_Error("AF_File_GetPathName: Invalid input parameters\n");
+        return 0;
+    }
+
+    const char *lastSlash = strrchr(_fontPath, '/');
+    const char *lastBackslash = strrchr(_fontPath, '\\');
+    const char *lastSeparator = lastSlash > lastBackslash ? lastSlash : lastBackslash;
+
+    size_t pathLength = lastSeparator ? (size_t)(lastSeparator - _fontPath) : strlen(_fontPath);
+    if (pathLength >= _bufferSize) {
+        AF_Log_Error("AF_File_GetPathName: Buffer too small for path name\n");
+        if (_bufferSize > 0) {
+            _buffer[0] = '\0'; // Ensure buffer is null-terminated
+        }
+        return 0;
+    }
+
+    strncpy(_buffer, _fontPath, pathLength);
+    _buffer[pathLength] = '\0'; // Null-terminate the string
+
+    return (uint32_t)pathLength;
 }

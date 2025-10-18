@@ -3,8 +3,13 @@
 //#include "AF_Util.h"
 //#include "AF_File.h"
 
-// These two should be moved to a more common location
-af_bool_t AF_MeshLoad_Init(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
+/*
+====================
+AF_MeshLoad_InitMesh
+Initialize a mesh component by loading the model from file
+====================
+*/
+af_bool_t AF_MeshLoad_InitMesh(AF_Assets* _assets, AF_CMesh* _meshComponent, const char* _modelPath){
     if(_assets == NULL || _meshComponent == NULL || _modelPath == NULL){
         AF_Log_Error("AF_MeshLoad_Init: NULL pointer provided\n");
         return AF_FALSE;
@@ -43,6 +48,54 @@ af_bool_t AF_MeshLoad_Init(AF_Assets* _assets, AF_CMesh* _meshComponent, const c
 
     return AF_TRUE;
 }
+
+
+/*
+====================
+AF_MeshLoad_InitFontMesh
+Initialize a font component by loading the font from file
+====================
+*/
+af_bool_t AF_MeshLoad_InitFontMesh(AF_Assets* _assets, AF_CText* _fontComponent, const char* _fontPath, float _fontSize){
+    if(_assets == NULL || _fontComponent == NULL || _fontPath == NULL){
+        AF_Log_Error("AF_MeshLoad_Init: NULL pointer provided\n");
+        return AF_FALSE;
+    }
+    
+    //AF_Log("AF_MeshLoad_Load: Show Model File Browser \n");
+    // delete the existing mesh data
+    // save a copy of the mesh path, and shader as we still want to use that.
+    // copy the mesh path
+    char meshPath[AF_MAX_PATH_CHAR_SIZE];
+    snprintf(meshPath, sizeof(meshPath), "%s", _fontComponent->fontPath);
+
+    // copy the shader to re-use it. 
+    // save a copy of the shaders used
+    char vertCopy[128];
+    char fragCopy[128];
+    snprintf(vertCopy,sizeof(vertCopy),"%s", _fontComponent->mesh.shader.vertPath);
+    snprintf(fragCopy,sizeof(fragCopy),"%s", _fontComponent->mesh.shader.fragPath);
+
+    // Blat the component. removing all memory
+    //AF_Log_Warning("AF_MeshLoad_Load: DISABLED destroying mesh, need to sync AF_Lib from home \n");
+
+    //Load the new model from path
+
+    // copy back the shader paths
+    snprintf(_fontComponent->mesh.shader.vertPath,sizeof(_fontComponent->mesh.shader.vertPath),"%s", vertCopy);
+    snprintf(_fontComponent->mesh.shader.fragPath,sizeof(_fontComponent->mesh.shader.fragPath),"%s", fragCopy);
+
+    _fontComponent->mesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(_assets, _fontComponent->mesh.shader.vertPath, _fontComponent->mesh.shader.fragPath);
+    // Add material reference back
+    _fontComponent->mesh.material.shaderID = _fontComponent->mesh.shader.shaderID;
+    for(uint32_t i = 0; i < _fontComponent->mesh.meshCount; ++i){
+        AF_MeshData* meshData = &_fontComponent->mesh.meshes[i];
+        AF_Renderer_CreateMeshBuffer(&_fontComponent->mesh.meshes[i]);
+    }
+
+    return AF_TRUE;
+}
+
 
 
 /*====================

@@ -55,21 +55,33 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
 
     // Load Reload meshes
     for (uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i) {
-
+        // Load Mesh
         af_bool_t hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
-        if (hasMesh == AF_FALSE) {
-            continue;
+        if (hasMesh == AF_TRUE) {
+            
+            // init the mesh
+            AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
+            af_bool_t meshLoadSuccess = AF_MeshLoad_InitMesh(&_appData->assets, meshComponent, meshComponent->meshPath);
+            AF_Renderer_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
+            //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
+            if (meshLoadSuccess == false) {
+                AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
+                continue;
+            }
         }
 
-        // init the mesh
-        AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
-        af_bool_t meshLoadSuccess = AF_MeshLoad_Init(&_appData->assets, meshComponent, meshComponent->meshPath);
-        AF_Renderer_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
-        //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
-        if (meshLoadSuccess == false) {
-            AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
-            continue;
+        // Load Font/Mesh for text components
+        af_bool_t hasText = AF_Component_GetHas(_appData->ecs.texts[i].enabled);
+        if (hasText == AF_TRUE) {
+            AF_CText* textComponent = &_appData->ecs.texts[i];
+            uint32_t fontSize = (textComponent->font.fontSize > 0) ? textComponent->font.fontSize : 48;
+            af_bool_t fontLoadSuccess = AF_MeshLoad_InitFontMesh(&_appData->assets, textComponent, textComponent->fontPath, fontSize);
+            if (fontLoadSuccess == AF_FALSE) {
+                AF_Log_Error("AF_Project_Load: Failed to load font %s for text component\n", textComponent->fontPath);
+                continue;
+            }
         }
+
     }
 }
 

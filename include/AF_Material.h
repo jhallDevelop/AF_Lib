@@ -15,6 +15,7 @@ extern "C" {
 #endif
 
 #include "AF_Texture.h"
+#include "AF_Lib_Define.h"
 
 typedef struct AF_Color {
 	uint8_t r;

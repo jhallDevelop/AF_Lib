@@ -491,18 +491,16 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// 1.5 Update the render texture cameras
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
 		AF_CCamera* renderTextureCamera = &_ecs->cameras[i];
-		
 		if(AF_Component_GetHasEnabled(renderTextureCamera->enabled) == AF_TRUE){
 			if(renderTextureCamera->enableRenderToTexture == AF_TRUE){
 				AF_Renderer_BindFrameBuffer(renderTextureCamera->renderTextureData.fbo);
 				glViewport(0, 0, renderTextureCamera->renderTextureData.textureWidth, renderTextureCamera->renderTextureData.textureHeight);
 				// update the forward rendering for this camera
-				//AF_ECS_UpdateCameraVectors(_ecs, i, renderTextureCamera->renderTextureWidth, renderTextureCamera->renderTextureHeight);
-				//AF_CTransform3D* cameraTransform = &_ecs->transforms[i];
 				//renderTextureCamera->cameraFront = AF_Camera_CalculateFront(cameraTransform->pos.y, cameraTransform->pos.x);//renderTextureCamera->yaw, renderTextureCamera->pitch);
 				// flip the z axis for the texture camera
 				// render texture camera projection matrix is the same as the main camera
 				renderTextureCamera->projectionMatrix = _ecs->cameras[_cameraID].projectionMatrix;
+				
 				
 				// Set the background color for this camera before clearing
 				glClearColor(renderTextureCamera->backgroundColor.x, 

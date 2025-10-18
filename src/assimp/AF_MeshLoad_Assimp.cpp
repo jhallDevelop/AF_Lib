@@ -37,7 +37,7 @@ af_bool_t AF_MeshLoad_FromFile(AF_Assets* _assets, AF_CMesh* _meshComponent, con
         return AF_FALSE;
     }
 
-    af_bool_t meshLoadInitSuccess = AF_MeshLoad_Init(_assets, _meshComponent, _modelPath);
+    af_bool_t meshLoadInitSuccess = AF_MeshLoad_InitMesh(_assets, _meshComponent, _modelPath);
     if(meshLoadInitSuccess == AF_FALSE){
         AF_Log_Error("AF_MeshLoad_Load: ERROR: Failed to initialize mesh loading for path %s\n", _modelPath);
         return AF_FALSE;

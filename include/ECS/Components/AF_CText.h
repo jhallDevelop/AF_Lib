@@ -12,7 +12,8 @@ and helper functions
 #include "AF_Math/AF_Vec2.h"
 #include "AF_Math/AF_Vec4.h"
 #include "AF_Lib_Define.h"
-
+#include "AF_Font.h"
+#include "ECS/Components/AF_CMesh.h"
 
 
 #ifdef __cplusplus
@@ -31,6 +32,8 @@ typedef struct AF_CText {
     Vec2 textBounds;
     uint8_t textColor[4];
     void* textData;
+    AF_CMesh mesh;
+    AF_Font font;
 } AF_CText;
 
 AF_CText AF_CText_ADD(void);

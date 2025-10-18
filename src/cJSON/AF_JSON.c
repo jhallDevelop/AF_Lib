@@ -240,7 +240,7 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 
 		// Text Component
 		cJSON* textJSON = cJSON_GetObjectItem(entityJSON, "text");
-		//AF_JSON_JsonToText(textJSON, &ecs->texts[entityIndex]);
+		AF_JSON_JsonToText(textJSON, &ecs->texts[ecs->currentEntity]);
 
 		// Audio Source Component
 		cJSON* audioSourceJSON = cJSON_GetObjectItem(entityJSON, "audioSource");
@@ -1137,20 +1137,40 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 		AF_Log_Error("AF_JSON_JsonToText: Invalid JSON or text pointer.\n");
 		return;
 	}
+	
 	// Has
-	_text->enabled = AF_Component_SetHas(_text->enabled, cJSON_GetObjectItem(_textJSON, "has")->valueint);
+	cJSON* hasJSON = cJSON_GetObjectItem(_textJSON, "has");
+	if (hasJSON != NULL) {
+		_text->enabled = AF_Component_SetHas(_text->enabled, hasJSON->valueint);
+	}
+	
 	// Enabled
-	_text->enabled = AF_Component_SetEnabled(_text->enabled, cJSON_GetObjectItem(_textJSON, "enabled")->valueint);
+	cJSON* enabledJSON = cJSON_GetObjectItem(_textJSON, "enabled");
+	if (enabledJSON != NULL) {
+		_text->enabled = AF_Component_SetEnabled(_text->enabled, enabledJSON->valueint);
+	}
+	
 	// isDirty
-	_text->isDirty = cJSON_GetObjectItem(_textJSON, "isDirty")->valueint;
+	cJSON* isDirtyJSON = cJSON_GetObjectItem(_textJSON, "isDirty");
+	if (isDirtyJSON != NULL) {
+		_text->isDirty = isDirtyJSON->valueint;
+	}
+	
 	// isShowing
-	_text->isShowing = cJSON_GetObjectItem(_textJSON, "isShowing")->valueint;
+	cJSON* isShowingJSON = cJSON_GetObjectItem(_textJSON, "isShowing");
+	if (isShowingJSON != NULL) {
+		_text->isShowing = isShowingJSON->valueint;
+	}
+	
 	// fontID
-	_text->fontID = (uint8_t)cJSON_GetObjectItem(_textJSON, "fontID")->valueint;
+	cJSON* fontIDJSON = cJSON_GetObjectItem(_textJSON, "fontID");
+	if (fontIDJSON != NULL) {
+		_text->fontID = (uint8_t)fontIDJSON->valueint;
+	}
+	
 	// fontPath
 	cJSON* fontPathJSON = cJSON_GetObjectItem(_textJSON, "fontPath");
 	if (fontPathJSON != NULL && cJSON_IsString(fontPathJSON)) {
-
 		snprintf(_text->fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", fontPathJSON->valuestring); // Copy the string to the fontPath
 	}
 
@@ -1186,6 +1206,34 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 		_text->textColor[1] = 255; // White
 		_text->textColor[2] = 255; // White
 		_text->textColor[3] = 255; // Full opacity
+	}
+
+	// font
+	cJSON* fontJSON = cJSON_GetObjectItem(_textJSON, "font");
+	if (fontJSON != NULL) {
+		// fontPath in font
+		cJSON* fontPathInFontJSON = cJSON_GetObjectItem(fontJSON, "fontPath");
+		if (fontPathInFontJSON != NULL && cJSON_IsString(fontPathInFontJSON)) {
+			snprintf(_text->font.fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", fontPathInFontJSON->valuestring);
+		}
+		// fontSize
+		cJSON* fontSizeJSON = cJSON_GetObjectItem(fontJSON, "fontSize");
+		if (fontSizeJSON != NULL) {
+			_text->font.fontSize = (uint32_t)fontSizeJSON->valueint;
+		}
+	}
+
+	// mesh shader paths (for text rendering)
+	cJSON* meshShaderJSON = cJSON_GetObjectItem(_textJSON, "meshShader");
+	if (meshShaderJSON != NULL) {
+		cJSON* vertPathJSON = cJSON_GetObjectItem(meshShaderJSON, "vertPath");
+		if (vertPathJSON != NULL && cJSON_IsString(vertPathJSON)) {
+			snprintf(_text->mesh.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", vertPathJSON->valuestring);
+		}
+		cJSON* fragPathJSON = cJSON_GetObjectItem(meshShaderJSON, "fragPath");
+		if (fragPathJSON != NULL && cJSON_IsString(fragPathJSON)) {
+			snprintf(_text->mesh.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", fragPathJSON->valuestring);
+		}
 	}
 
 }
@@ -1976,6 +2024,15 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
 	cJSON* zObject = cJSON_AddNumberToObject(textJSONArray, "z", _component->textColor[2]);
 	cJSON* wObject = cJSON_AddNumberToObject(textJSONArray, "w", _component->textColor[3]);
 
+	// font
+	cJSON* fontJSON = cJSON_AddObjectToObject(returnJSON, "font");
+	cJSON_AddStringToObject(fontJSON, "fontPath", _component->font.fontPath);
+	cJSON_AddNumberToObject(fontJSON, "fontSize", _component->font.fontSize);
+
+	// mesh shader paths (for text rendering)
+	cJSON* meshShaderJSON = cJSON_AddObjectToObject(returnJSON, "meshShader");
+	cJSON_AddStringToObject(meshShaderJSON, "vertPath", _component->mesh.shader.vertPath);
+	cJSON_AddStringToObject(meshShaderJSON, "fragPath", _component->mesh.shader.fragPath);
 
 	// textData
 	cJSON_AddNullToObject(returnJSON, "textData");

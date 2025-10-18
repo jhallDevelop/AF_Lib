@@ -15,7 +15,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdint.h>
-
+#include "AF_Lib_Define.h"
 
 //#define AF_INPUT_KEYS_MAPPED 10
 #define AF_TEXTURE_TYPE_COUNT 8
