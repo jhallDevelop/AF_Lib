@@ -660,9 +660,12 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
         //glUseProgram(shaderProgram);
 		glUseProgram(spriteComp->spriteMesh.shader.shaderID);
 
-		// Set screen size uniform
+		// send the shader the colour to use
+        AF_Shader_SetVec4(spriteComp->spriteMesh.shader.shaderID, "spriteColor", spriteComp->spriteColor[0], spriteComp->spriteColor[1], spriteComp->spriteColor[2], spriteComp->spriteColor[3]);
+        // Set screen size uniform
         AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "screenSize", screenWidth, screenHeight);
-
+		// Tell the shader to use texture unit 0 for the 'text' sampler
+        AF_Shader_SetInt(spriteComp->spriteMesh.shader.shaderID, "sprite", 0);
         // Calculate vertex positions based on sprite component data
         float xpos = spriteComp->spritePos.x;
         float ypos = spriteComp->spritePos.y;
