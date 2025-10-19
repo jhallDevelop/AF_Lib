@@ -68,7 +68,7 @@ AF_CText AF_CText_ADD(void){
     returnText.mesh.meshes[0].vertexCount = 6;
     returnText.mesh.meshes[0].indexCount = 6;
     // assign the static quad vertices
-    returnText.mesh.meshes[0].vertices = AF_CTEXT_QUAD_VERTS;
+    returnText.mesh.meshes[0].vertices = AF_CMESH_QUAD_VERTS;
     // set the default shader paths
     snprintf(returnText.mesh.shader.vertPath, sizeof(returnText.mesh.shader.vertPath), "%s", AF_CTEXT_DEFAULT_FONT_VERT_PATH);
     snprintf(returnText.mesh.shader.fragPath, sizeof(returnText.mesh.shader.fragPath), "%s", AF_CTEXT_DEFAULT_FONT_FRAG_PATH);

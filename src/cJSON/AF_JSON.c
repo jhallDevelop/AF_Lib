@@ -627,6 +627,13 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 		_sprite->spriteSheetSize.y = cJSON_GetArrayItem(spriteSheetSizeJSON, 1)->valuedouble;
 	}
 
+	// sprite sheet pos
+	cJSON* spriteSheetPosJSON = cJSON_GetObjectItem(_spriteJSON, "spriteSheetPos");
+	if (spriteSheetPosJSON != NULL) {
+		_sprite->spriteSheetPos.x = cJSON_GetArrayItem(spriteSheetPosJSON, 0)->valuedouble;
+		_sprite->spriteSheetPos.y = cJSON_GetArrayItem(spriteSheetPosJSON, 1)->valuedouble;
+	}	
+
 	// Sprite Color
 	cJSON* spriteColorJSON = cJSON_GetObjectItem(_spriteJSON, "spriteColor");
 	if (spriteColorJSON != NULL) {
@@ -640,10 +647,42 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 	cJSON* spritePathJSON = cJSON_GetObjectItem(_spriteJSON, "spritePath");
 	if (spritePathJSON != NULL && cJSON_IsString(spritePathJSON)) {
 		snprintf(_sprite->spritePath, AF_MAX_PATH_CHAR_SIZE, "%s", spritePathJSON->valuestring); // Copy the string to the spritePath
+		// also set the sprite path in the sprite mesh
+		snprintf(_sprite->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", spritePathJSON->valuestring);
 	}
 	else {
 		snprintf(_sprite->spritePath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
 	}
+
+	// Get the sprite mesh path
+	cJSON* spriteMeshPathJSON = cJSON_GetObjectItem(_spriteJSON, "spriteMeshPath");
+	if (spriteMeshPathJSON != NULL && cJSON_IsString(spriteMeshPathJSON)) {
+		snprintf(_sprite->spriteMesh.meshPath, AF_MAX_PATH_CHAR_SIZE, "%s", spriteMeshPathJSON->valuestring); // Copy the string to the spriteMeshPath
+	}
+	else {
+		snprintf(_sprite->spriteMesh.meshPath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
+	}
+
+	// Get the sprite fragment shader path
+	cJSON* spriteFragShaderPathJSON = cJSON_GetObjectItem(_spriteJSON, "spriteShaderFragPath");
+	if (spriteFragShaderPathJSON != NULL && cJSON_IsString(spriteFragShaderPathJSON)) {
+		snprintf(_sprite->spriteMesh.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", spriteFragShaderPathJSON->valuestring); // Copy the string to the spriteFragShaderPath
+	}
+	else {
+		snprintf(_sprite->spriteMesh.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
+	}
+
+	// Get the sprite vertex shader path
+	cJSON* spriteVertShaderPathJSON = cJSON_GetObjectItem(_spriteJSON, "spriteShaderVertPath");
+	if (spriteVertShaderPathJSON != NULL && cJSON_IsString(spriteVertShaderPathJSON)) {
+		snprintf(_sprite->spriteMesh.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", spriteVertShaderPathJSON->valuestring); // Copy the string to the spriteVertShaderPath
+	}
+	else {
+		snprintf(_sprite->spriteMesh.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
+	}	
+
+	
+
 	// Sprite Data
 	// skip sprite data for now, it will be loaded later when the sprite is used
 
@@ -1669,13 +1708,26 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	Vec2 spriteSheetSize = _sprite->spriteSheetSize;    // 8 bytes
 	AF_JSON_Vec2ToJson("spriteSheetSize", &spriteSheetSize, spriteJSON);
 
+	Vec2 spriteSheetPos = _sprite->spriteSheetPos;      // 8 bytes
+	AF_JSON_Vec2ToJson("spriteSheetPos", &spriteSheetPos, spriteJSON);
+
 	// sprite color
 	Vec4 spriteColor = { (AF_FLOAT)_sprite->spriteColor[0], (AF_FLOAT)_sprite->spriteColor[1], (AF_FLOAT)_sprite->spriteColor[2], (AF_FLOAT)_sprite->spriteColor[3] };
-	AF_JSON_Vec4ToJson("spriteColo", &spriteColor, spriteJSON);
+	AF_JSON_Vec4ToJson("spriteColor", &spriteColor, spriteJSON);
 
 	// sprite path
 	const char* spritePath = _sprite->spritePath;
 	cJSON_AddStringToObject(spriteJSON, "spritePath", spritePath);
+
+	// save the sprite mesh path
+	const char* spriteMeshPath = _sprite->spriteMesh.meshPath;
+	cJSON_AddStringToObject(spriteJSON, "spriteMeshPath", spriteMeshPath);
+
+	// save the sprite shader paths
+	const char* spriteShaderVertPath = _sprite->spriteMesh.shader.vertPath;
+	cJSON_AddStringToObject(spriteJSON, "spriteShaderVertPath", spriteShaderVertPath);
+	const char* spriteShaderFragPath = _sprite->spriteMesh.shader.fragPath;
+	cJSON_AddStringToObject(spriteJSON, "spriteShaderFragPath", spriteShaderFragPath);
 
 	// sprite data
 	void* spriteData = _sprite->spriteData; // special ptr for sprite data to be cast when known
@@ -1688,6 +1740,10 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	// filtering
 	af_bool_t filtering = _sprite->filtering;
 	cJSON_AddNumberToObject(spriteJSON, "filtering", filtering);
+
+
+	// Save the sprite mesh data
+	
 
 	return spriteJSON;
 }

@@ -25,6 +25,19 @@ extern "C" {
 
 #define AF_MAX_MESH_COUNT 32
 
+// Static quad vertices for text rendering (positions + texCoords)
+static AF_Vertex AF_CMESH_QUAD_VERTS[6] = {
+    // Triangle 1: top-left, bottom-left, bottom-right
+    {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // top-left
+    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // bottom-left
+    {{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // bottom-right
+    
+    // Triangle 2: top-left, bottom-right, top-right
+    {{-1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // top-left
+    {{ 1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}, // bottom-right
+    {{ 1.0f,  1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}}  // top-right
+};
+
 enum AF_MESH_TYPE{
 	AF_MESH_TYPE_PLANE, 
 	AF_MESH_TYPE_CUBE,

@@ -571,7 +571,18 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// == Draw Text Meshes ==
 	// Render text and UI
 	//
+	// --- 2D Rendering Pass ---
+    // Set OpenGL state for 2D rendering once before drawing all 2D elements.
+    glDisable(GL_DEPTH_TEST);
+    // glDisable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	AF_Renderer_DrawSpriteMeshes(_ecs, _renderingData);
 	AF_Renderer_DrawTextMeshes(_ecs, _renderingData);
+
+	// Restore OpenGL state for 3D/UI rendering
+    glEnable(GL_DEPTH_TEST);
+	
 
     AF_Renderer_UnBindFrameBuffer();
 
@@ -610,7 +621,94 @@ void AF_Renderer_EndForwardRendering(void){
 
 /*
 ====================
-AF_Renderer_Text(AF_ECS* _ecs)
+AF_Renderer_Sprite(AF_ECS* _ecs)
+Render text meshes
+====================
+*/
+void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) {
+    AF_Renderer_CheckError("AF_Renderer_DrawSpriteMeshes: Start rendering sprite meshes\n");
+
+
+    
+
+
+    // Set OpenGL state for 2D rendering
+    glDisable(GL_DEPTH_TEST);
+    // glDisable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    // Create an orthographic projection matrix once for all sprites
+    AF_FLOAT screenWidth = (AF_FLOAT)_renderingData->windowPtr->frameBufferWidth;
+    AF_FLOAT screenHeight = (AF_FLOAT)_renderingData->windowPtr->frameBufferHeight;
+    // Use a top-left origin for 2D rendering
+    Mat4 projection = Mat4_Ortho(0.0f, screenWidth, screenHeight, 0.0f, -1.0f, 1.0f);
+    
+    //AF_Log("Sprite rendering - Screen size: %fx%f\n", screenWidth, screenHeight);
+
+    // for each entity
+    for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
+        AF_Entity* entity = &_ecs->entities[i];
+        if (AF_Component_GetHasEnabled(entity->flags) == AF_FALSE) {
+            continue;
+        }
+
+        AF_CSprite* spriteComp = &_ecs->sprites[i];
+        if (AF_Component_GetHasEnabled(spriteComp->enabled) == AF_FALSE) {
+            continue;
+        }
+        
+        //glUseProgram(shaderProgram);
+		glUseProgram(spriteComp->spriteMesh.shader.shaderID);
+
+		// Set screen size uniform
+        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "screenSize", screenWidth, screenHeight);
+
+        // Calculate vertex positions based on sprite component data
+        float xpos = spriteComp->spritePos.x;
+        float ypos = spriteComp->spritePos.y;
+        float w = spriteComp->spriteSize.x;
+        float h = spriteComp->spriteSize.y;
+
+        float vertices[6][5] = {
+            {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
+            {xpos,     ypos,     0.0f, 0.0f, 0.0f},
+            {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
+
+            {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
+            {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
+            {xpos + w, ypos + h, 0.0f, 1.0f, 1.0f}
+        };
+
+        // Bind texture
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, spriteComp->spriteMesh.material.diffuseTexture.id);
+
+        // Render quad
+        glBindVertexArray(spriteComp->spriteMesh.meshes[0].vao);
+        glBindBuffer(GL_ARRAY_BUFFER, spriteComp->spriteMesh.meshes[0].vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+    }
+    
+    // Unbind the shader
+    glUseProgram(0);
+
+    
+    //glDeleteProgram(shaderProgram);
+
+    // Restore OpenGL state for 3D rendering
+    glEnable(GL_DEPTH_TEST);
+	
+
+    AF_Renderer_CheckError("AF_Renderer_DrawSpriteMeshes: Finished rendering sprite meshes\n");
+}
+
+/*
+====================
+AF_Renderer_DrawTextMeshes
 Render text meshes
 ====================
 */
@@ -619,13 +717,7 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
     // Bind the framebuffer 
     //AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 
-	/**/
-    // Set OpenGL state for 2D rendering
-    // Disable depth testing so UI draws on top
-    glDisable(GL_DEPTH_TEST);
-    // Enable blending for transparency in glyphs
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
     
     // for each entity
     for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
@@ -720,9 +812,7 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
     // unbind the framebuffer
     //AF_Renderer_UnBindFrameBuffer();
 
-    // Restore OpenGL state for 3D rendering
-    //glDisable(GL_BLEND);
-    glEnable(GL_DEPTH_TEST);
+    
     AF_Renderer_CheckError("AF_Renderer_DrawTextMeshes: Finished rendering text meshes\n");
 }
 
@@ -876,7 +966,7 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 
 		AF_CMesh* mesh = &_ecs->meshes[i];
 		// Skip if there is no rendering component
-		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == AF_FALSE){
+		if(!AF_Component_GetHas(mesh->enabled)){ // || hasEnabled == AF_FALSE){
 			continue;
 		}
 
@@ -922,14 +1012,6 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 			continue;
 		}
 
-		/*
-		AF_CMesh* mesh = &_ecs->meshes[i];
-		// Skip if there is no rendering component
-		if(!AF_Component_GetHas(mesh->enabled)){// || hasEnabled == AF_FALSE){
-			continue;
-		}
-		*/
-
 		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
 
 		AF_CCollider* collider = &_ecs->colliders[i];
@@ -957,7 +1039,7 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 		/**/
 		//AF_CMesh* colliderMesh = &_ecs->meshes[i];
 		// Skip if there is no rendering component
-		if(!AF_Component_GetHas(colliderMesh.enabled)){// || hasEnabled == AF_FALSE){
+		if(!AF_Component_GetHas(colliderMesh.enabled)){ // || hasEnabled == AF_FALSE){
 			continue;
 		}
 		
@@ -1171,23 +1253,15 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
     // Unbind textures explicitly from the units they were bound to
     // Assuming these were the maximum units you might have used within the loop.
     // If _mesh->textured was false, these calls are harmless.
-    if(_mesh->textured == AF_TRUE) { // Only unbind if textures were potentially bound
-        // Check each texture type again, similar to how you bound them
-        // This is a bit repetitive; ideally, you'd track which units were used.
-        // For now, let's assume you used up to 3 units if textured.
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-        // Diffuse Texture was on unit 0
-        glActiveTexture(GL_TEXTURE0 + 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-        // Shadow map Texture was on unit 1
-        glActiveTexture(GL_TEXTURE0 + 1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        // Specular Texture was on unit 2
-        //glActiveTexture(GL_TEXTURE0 + 2);
-        //glBindTexture(GL_TEXTURE_2D, 0);
-    }
+    // Specular Texture was on unit 2
+    //glActiveTexture(GL_TEXTURE0 + 2);
+    //glBindTexture(GL_TEXTURE_2D, 0);
 
     // It's good practice to reset the active texture unit to a default,
     // though well-behaved subsequent code (like ImGui's backend) should set its own.
@@ -1260,7 +1334,6 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 }
 
 
-
 // ============================  MESH BUFFERS ================================ 
 
 /*
@@ -1320,6 +1393,47 @@ void AF_Renderer_InitTextMeshBuffers(AF_CText* _fontComponent){
     glBindVertexArray(0);
     AF_Renderer_CheckError( "AF_Renderer_InitTextMeshBuffers: after create text mesh buffers\n");
 }
+
+void AF_Renderer_InitSpriteMeshBuffer(AF_CSprite* _spriteComponent){
+	if (_spriteComponent == NULL) {
+		AF_Log_Error("AF_Renderer_InitSpriteMeshBuffer: _spriteComponent is NULL!\n");
+		return;
+	}
+	AF_Renderer_CheckError( "AF_Renderer_InitSpriteMeshBuffer: before create sprite mesh buffers\n");
+	// A simple quad
+    float vertices[] = {
+        // positions        // texture Coords
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
+
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
+         0.5f,  0.5f, 0.0f,  1.0f, 1.0f
+    };
+
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // texture coord attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	_spriteComponent->spriteMesh.meshCount = 1; // only one mesh for sprite
+	_spriteComponent->spriteMesh.meshes[0].vertexCount = 6; // A quad
+	_spriteComponent->spriteMesh.meshes[0].indexCount = 0; // no indices for sprite mesh, using glDrawArrays
+	_spriteComponent->spriteMesh.meshes[0].vao = VAO;
+	_spriteComponent->spriteMesh.meshes[0].vbo = VBO;
+
+	AF_Renderer_CheckError( "AF_Renderer_InitSpriteMeshBuffer: after create sprite mesh buffers\n");
+}	
 
 /*
 ====================
@@ -1440,7 +1554,6 @@ void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData)
 	_renderingData->screenQUAD_VAO = quadVAO;
 	_renderingData->screenQUAD_VBO = quadVBO;
 }
-
 
 
 // ============================  FRAME BUFFERS ================================ 
@@ -1825,7 +1938,7 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
 	//_lightingData->shadowLightSpaceMatrix.rows[1].y *= -1.0f;
 
 
-	//AF_Util_Mat4_Log(_lightingData->shadowLightSpaceMatrix);
+	//AF_Util_Mat4_Log(_lightingData->shadowData.shadowLightSpaceMatrix);
 	//AF_Log("=========shadowLightSpaceMatrix========\n");
 	//AF_Util_Mat4_Log(shadowLightSpaceMatrix);
 	// render scene from light's point of view
@@ -2000,7 +2113,6 @@ void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
 		}
 	}
 }
-
 
 
 // ============================  DESTROY / CLEANUP ================================ 
@@ -2196,12 +2308,6 @@ void AF_Renderer_CheckFrameBufferStatus(const char* _message){
 }
 
 
-/*
-====================
-AF_Renderer_SetPolygonMode
-Set the polygon mode used
-====================
-*/
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
 	switch(_polygonMode){
 		case AF_RENDERER_POLYGON_MODE_FILL:
@@ -2226,3 +2332,64 @@ void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
 	}
 }
 
+
+void AF_Renderer_DrawTestTriangle() {
+    const char* vertexShaderSource = "#version 330 core\n"
+        "layout (location = 0) in vec3 aPos;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+        "}\0";
+    const char* fragmentShaderSource = "#version 330 core\n"
+        "out vec4 FragColor;\n"
+        "void main()\n"
+        "{\n"
+        "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "}\n\0";
+
+    // build and compile our shader program
+    // ------------------------------------
+    // vertex shader
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    // fragment shader
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    // link shaders
+    unsigned int shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f, // left
+         0.5f, -0.5f, 0.0f, // right
+         0.0f,  0.5f, 0.0f  // top
+    };
+
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glUseProgram(shaderProgram);
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteProgram(shaderProgram);
+}

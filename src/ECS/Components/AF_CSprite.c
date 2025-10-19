@@ -1,6 +1,10 @@
 #include "ECS/Components/AF_CSprite.h"
 #include "ECS/Components/AF_Component.h"
 
+
+
+
+
 /*
 ====================
 AF_CSprite_ZERO
@@ -24,11 +28,13 @@ AF_CSprite AF_CSprite_ZERO(void){
 		.flipX = AF_FALSE,
 		.flipY = AF_FALSE,
 		.spriteSheetSize = {0, 0},
+		.spriteSheetPos = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
 		.spritePath = "\0",
 		.spriteData = NULL,
 		.isPlaying = AF_FALSE,
-		.filtering = AF_FALSE
+		.filtering = AF_FALSE,
+		.spriteMesh = AF_CMesh_ZERO()
 		};
 	return returnSprite;
 }
@@ -53,17 +59,31 @@ AF_CSprite AF_CSprite_ADD(void){
 		.nextFrameTime = 0,
 		.animationSpeed = 0,
 		.spritePos = {0, 0},
-		.spriteSize = {0, 0},
-		.spriteScale = {0,0},
+		.spriteSize = {64, 64},
+		.spriteScale = {1,1},
 		.spriteRotation = 0.0f,
 		.flipX = AF_FALSE,
 		.flipY = AF_FALSE,
-		.spriteSheetSize = {0, 0},
+		.spriteSheetSize = {512, 512},
+		.spriteSheetPos = {0, 0},
 		.spriteColor = {255, 255, 255, 255},
 		.spritePath = "\0",
 		.spriteData = NULL,
 		.isPlaying = AF_FALSE, 
-		.filtering = AF_FALSE
+		.filtering = AF_FALSE,
+		.spriteMesh = AF_CMesh_ZERO()
 	};
+
+	snprintf(returnSprite.spriteMesh.meshPath, AF_MAX_PATH_CHAR_SIZE, "%s", AF_CSPRITE_DEFAULT_SPRITE_MESH_NAME);
+
+    // Initialize the mesh to be a quad for rendering text
+    returnSprite.spriteMesh.meshCount = 1;
+    returnSprite.spriteMesh.meshes[0].vertexCount = 6;
+    returnSprite.spriteMesh.meshes[0].indexCount = 6;
+    // assign the static quad vertices
+    //returnSprite.spriteMesh.meshes[0].vertices = AF_CMESH_QUAD_VERTS;
+    // set the default shader paths
+    snprintf(returnSprite.spriteMesh.shader.vertPath, sizeof(returnSprite.spriteMesh.shader.vertPath), "%s", AF_CSPRITE_DEFAULT_SPRITE_VERT_PATH);
+    snprintf(returnSprite.spriteMesh.shader.fragPath, sizeof(returnSprite.spriteMesh.shader.fragPath), "%s", AF_CSPRITE_DEFAULT_SPRITE_FRAG_PATH);
 	return returnSprite;
 }

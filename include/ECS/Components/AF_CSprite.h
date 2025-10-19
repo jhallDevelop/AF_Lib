@@ -11,9 +11,16 @@ and helper functions
 #include <stdio.h>
 #include "AF_Component.h"
 #include "AF_Math/AF_Vec2.h"
+#include "AF_CMesh.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif
+
+#define AF_CSPRITE_DEFAULT_SPRITE_MESH_NAME "plane"
+#define AF_CSPRITE_DEFAULT_SPRITE_VERT_PATH "sprite.vert"
+#define AF_CSPRITE_DEFAULT_SPRITE_FRAG_PATH "sprite.frag"
+#define AF_CSPRITE_DEFAULT_SPRITE_TEXTURE_NAME "atlas.png"
+
 /*
 ====================
 AF_CSprite
@@ -37,12 +44,14 @@ typedef struct {
 	af_bool_t flipX;
 	af_bool_t flipY;
 	Vec2 spriteSheetSize;    // 8 bytes
+	Vec2 spriteSheetPos;     // 8 bytes
 	uint8_t spriteColor[4];
 	// TODO: move strings out to a separate struct or use a string library
 	char spritePath[AF_MAX_PATH_CHAR_SIZE];
 	void* spriteData; // special ptr for sprite data to be cast when known
 	af_bool_t isPlaying;
 	af_bool_t filtering;
+	AF_CMesh spriteMesh; // 64 bytes
 	
 } AF_CSprite;
 

@@ -96,6 +96,12 @@ void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 void AF_Renderer_InitTextMeshBuffers(AF_CText* _fontComponent);
 void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 
+// ============================  DRAW SPRITES ================================
+void AF_Renderer_InitSpriteMeshBuffer(AF_CSprite* _spriteComponent);
+void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
+void AF_Renderer_DrawTestTriangle();
+void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
+
 // ============================  DESTROY / CLEANUP ================================ 
 // Destroy
 AF_LIB_API void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);

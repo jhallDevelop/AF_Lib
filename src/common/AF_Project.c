@@ -70,6 +70,20 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             }
         }
 
+        // Load Sprite Mesh components
+        af_bool_t hasSprite = AF_Component_GetHas(_appData->ecs.sprites[i].enabled);
+        if (hasSprite == AF_TRUE) {
+            AF_CSprite* spriteComponent = &_appData->ecs.sprites[i];
+            
+            // Reload the sprite's mesh and texture from their file paths.
+            // AF_MeshLoad_FromFile will handle loading the model data and shader.
+            AF_Renderer_InitSpriteMeshBuffer(spriteComponent);
+            spriteComponent->spriteMesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(&_appData->assets, spriteComponent->spriteMesh.shader.vertPath, spriteComponent->spriteMesh.shader.fragPath);
+            //snprintf(spriteComponent->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "assets/textures/%s", spriteComponent->spriteMesh.material.diffuseTexture.path);
+            AF_Renderer_ReLoadTexture(&_appData->assets, &spriteComponent->spriteMesh.material.diffuseTexture);
+            
+        }
+
         // Load Font/Mesh for text components
         af_bool_t hasText = AF_Component_GetHas(_appData->ecs.texts[i].enabled);
         if (hasText == AF_TRUE) {
@@ -96,6 +110,8 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
                 continue;
             }
         }
+
+
 
     }
 }
