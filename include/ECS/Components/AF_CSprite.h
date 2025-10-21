@@ -40,6 +40,8 @@ typedef struct {
 	Vec2 spritePos;		    // 8 bytes
 	Vec2 spriteSize;    	// size of sprite in pixels
 	Vec2 spriteScale;		// transform scale
+	Vec2 spriteFramePos;	// atlas position
+	Vec2 spriteFrameSize; 	// atlas frame size
 	float spriteRotation;	// rotation
 	af_bool_t flipX;
 	af_bool_t flipY;

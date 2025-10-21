@@ -605,6 +605,20 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 		_sprite->spriteSize.y = cJSON_GetArrayItem(spriteSizeJSON, 1)->valuedouble;
 	}
 
+	// Sprite Frame Pos
+	cJSON* spriteFramePosJSON = cJSON_GetObjectItem(_spriteJSON, "spriteFramePos");
+	if (spriteFramePosJSON != NULL) {
+		_sprite->spriteFramePos.x = cJSON_GetArrayItem(spriteFramePosJSON, 0)->valuedouble;
+		_sprite->spriteFramePos.y = cJSON_GetArrayItem(spriteFramePosJSON, 1)->valuedouble;
+	}
+
+	// Sprite Frame size
+	cJSON* spriteFrameSizeJSON = cJSON_GetObjectItem(_spriteJSON, "spriteFrameSize");
+	if (spriteFrameSizeJSON != NULL) {
+		_sprite->spriteFrameSize.x = cJSON_GetArrayItem(spriteFrameSizeJSON, 0)->valuedouble;
+		_sprite->spriteFrameSize.y = cJSON_GetArrayItem(spriteFrameSizeJSON, 1)->valuedouble;
+	}
+
 	// Sprite Scale
 	cJSON* spriteScaleJSON = cJSON_GetObjectItem(_spriteJSON, "spriteScale");
 	if (spriteScaleJSON != NULL) {
@@ -1234,17 +1248,17 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 	// textColor
 	cJSON* textColorJSON = cJSON_GetObjectItem(_textJSON, "textColor");
 	if (textColorJSON != NULL) {
-		_text->textColor[0] = (uint8_t)cJSON_GetArrayItem(textColorJSON, 0)->valueint;
-		_text->textColor[1] = (uint8_t)cJSON_GetArrayItem(textColorJSON, 1)->valueint;
-		_text->textColor[2] = (uint8_t)cJSON_GetArrayItem(textColorJSON, 2)->valueint;
-		_text->textColor[3] = (uint8_t)cJSON_GetArrayItem(textColorJSON, 3)->valueint;
+		_text->textColor[0] = cJSON_GetArrayItem(textColorJSON, 0)->valuedouble;
+		_text->textColor[1] = cJSON_GetArrayItem(textColorJSON, 1)->valuedouble;
+		_text->textColor[2] = cJSON_GetArrayItem(textColorJSON, 2)->valuedouble;
+		_text->textColor[3] = cJSON_GetArrayItem(textColorJSON, 3)->valuedouble;
 	}
 	else {
 		// Default text color if not provided
-		_text->textColor[0] = 255; // White
-		_text->textColor[1] = 255; // White
-		_text->textColor[2] = 255; // White
-		_text->textColor[3] = 255; // Full opacity
+		_text->textColor[0] = 1.0f; // White
+		_text->textColor[1] = 1.0f; // White
+		_text->textColor[2] = 1.0f; // White
+		_text->textColor[3] = 1.0f; // Full opacity
 	}
 
 	// font
@@ -1690,6 +1704,15 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	Vec2 spriteSize = _sprite->spriteSize;    	// size of sprite in pixels
 	AF_JSON_Vec2ToJson("spriteSize", &spriteSize, spriteJSON);
 
+	// sprite frame pos
+	Vec2 spriteFramePos = _sprite->spriteFramePos;    	// frame pos of sprite in pixels
+	AF_JSON_Vec2ToJson("spriteFramePos", &spriteFramePos, spriteJSON);
+
+	// sprite frame size
+	Vec2 spriteFrameSize = _sprite->spriteFrameSize;    	// frame size of sprite in pixels
+	AF_JSON_Vec2ToJson("spriteFrameSize", &spriteFrameSize, spriteJSON);
+
+
 	// sprite scale
 	Vec2 spriteScale = _sprite->spriteScale;		// transform scale
 	AF_JSON_Vec2ToJson("spriteScale", &spriteScale, spriteJSON);
@@ -2051,62 +2074,62 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
 }
 
 cJSON* AF_JSON_TextToJson(AF_CText* _component) {
-	cJSON* returnJSON = cJSON_CreateObject();
+    cJSON* returnJSON = cJSON_CreateObject();
 
-	// has
-	af_bool_t has = AF_Component_GetHas(_component->enabled);
-	cJSON_AddNumberToObject(returnJSON, "has", has);
+    // has
+    af_bool_t has = AF_Component_GetHas(_component->enabled);
+    cJSON_AddNumberToObject(returnJSON, "has", has);
 
-	// enabled
-	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
-	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
+    // enabled
+    af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
+    cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
 
-	// Is dirty
-	cJSON_AddNumberToObject(returnJSON, "has", _component->isDirty);
+    // Is dirty
+    cJSON_AddNumberToObject(returnJSON, "isDirty", _component->isDirty);
 
-	// isShowing
-	cJSON_AddNumberToObject(returnJSON, "isShowing", _component->isShowing);
+    // isShowing
+    cJSON_AddNumberToObject(returnJSON, "isShowing", _component->isShowing);
 
-	// fontID
-	cJSON_AddNumberToObject(returnJSON, "fontID", _component->fontID);
+    // fontID
+    cJSON_AddNumberToObject(returnJSON, "fontID", _component->fontID);
 
-	// fontPath
-	cJSON_AddStringToObject(returnJSON, "fontPath", _component->fontPath);
+    // fontPath
+    cJSON_AddStringToObject(returnJSON, "fontPath", _component->fontPath);
 
-	// text
-	cJSON_AddStringToObject(returnJSON, "text", _component->text);
+    // text
+    cJSON_AddStringToObject(returnJSON, "text", _component->text);
 
-	// screenPos
-	//AF_JSON_Vec2ToJson("screenPos", &_component->screenPos, returnJSON);
+    // screenPos
+    Vec2 screenPos = _component->screenPos;
+    AF_JSON_Vec2ToJson("screenPos", &screenPos, returnJSON);
 
-	// textBounds
-	Vec2 textBounds;
-	AF_JSON_Vec2ToJson("textBounds", &textBounds, returnJSON);
+    // textBounds
+    Vec2 textBounds = _component->textBounds;
+    AF_JSON_Vec2ToJson("textBounds", &textBounds, returnJSON);
 
-	// textColor
-	uint8_t textColor[4];
-	cJSON* textJSONArray = cJSON_AddArrayToObject(returnJSON, "textColor");
-	cJSON* xObject = cJSON_AddNumberToObject(textJSONArray, "x", _component->textColor[0]);
-	cJSON* yObject = cJSON_AddNumberToObject(textJSONArray, "y", _component->textColor[1]);
-	cJSON* zObject = cJSON_AddNumberToObject(textJSONArray, "z", _component->textColor[2]);
-	cJSON* wObject = cJSON_AddNumberToObject(textJSONArray, "w", _component->textColor[3]);
+    // textColor
+    cJSON* textJSONArray = cJSON_AddArrayToObject(returnJSON, "textColor");
+    cJSON_AddItemToArray(textJSONArray, cJSON_CreateNumber(_component->textColor[0]));
+    cJSON_AddItemToArray(textJSONArray, cJSON_CreateNumber(_component->textColor[1]));
+    cJSON_AddItemToArray(textJSONArray, cJSON_CreateNumber(_component->textColor[2]));
+    cJSON_AddItemToArray(textJSONArray, cJSON_CreateNumber(_component->textColor[3]));
 
-	// font
-	cJSON* fontJSON = cJSON_AddObjectToObject(returnJSON, "font");
-	cJSON_AddStringToObject(fontJSON, "fontName", _component->font.fontName);
-	cJSON_AddStringToObject(fontJSON, "fontPath", _component->font.fontPath);
-	cJSON_AddNumberToObject(fontJSON, "fontSize", _component->font.fontSize);
+    // font
+    cJSON* fontJSON = cJSON_AddObjectToObject(returnJSON, "font");
+    cJSON_AddStringToObject(fontJSON, "fontName", _component->font.fontName);
+    cJSON_AddStringToObject(fontJSON, "fontPath", _component->font.fontPath);
+    cJSON_AddNumberToObject(fontJSON, "fontSize", _component->font.fontSize);
 
-	// mesh shader paths (for text rendering)
-	cJSON* meshShaderJSON = cJSON_AddObjectToObject(returnJSON, "meshShader");
-	cJSON_AddStringToObject(meshShaderJSON, "shaderName", _component->mesh.shader.name);
-	cJSON_AddStringToObject(meshShaderJSON, "vertPath", _component->mesh.shader.vertPath);
-	cJSON_AddStringToObject(meshShaderJSON, "fragPath", _component->mesh.shader.fragPath);
+    // mesh shader paths (for text rendering)
+    cJSON* meshShaderJSON = cJSON_AddObjectToObject(returnJSON, "meshShader");
+    cJSON_AddStringToObject(meshShaderJSON, "shaderName", _component->mesh.shader.name);
+    cJSON_AddStringToObject(meshShaderJSON, "vertPath", _component->mesh.shader.vertPath);
+    cJSON_AddStringToObject(meshShaderJSON, "fragPath", _component->mesh.shader.fragPath);
 
-	// textData
-	cJSON_AddNullToObject(returnJSON, "textData");
+    // textData
+    cJSON_AddNullToObject(returnJSON, "textData");
 
-	return returnJSON;
+    return returnJSON;
 }
 
 cJSON* AF_JSON_AudioSourceToJson(AF_CAudioSource* _component) {

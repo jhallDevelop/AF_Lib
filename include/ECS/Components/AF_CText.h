@@ -32,7 +32,7 @@ typedef struct AF_CText {
     char text[AF_MAX_PATH_CHAR_SIZE];
     Vec2 screenPos;
     Vec2 textBounds;
-    uint8_t textColor[4];
+    AF_FLOAT textColor[4];
     void* textData;
     AF_CMesh mesh;
     AF_Font font;

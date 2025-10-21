@@ -648,6 +648,7 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
     // for each entity
     for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
         AF_Entity* entity = &_ecs->entities[i];
+		AF_CTransform3D* transform = &_ecs->transforms[i];
         if (AF_Component_GetHasEnabled(entity->flags) == AF_FALSE) {
             continue;
         }
@@ -664,13 +665,31 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
         AF_Shader_SetVec4(spriteComp->spriteMesh.shader.shaderID, "spriteColor", spriteComp->spriteColor[0], spriteComp->spriteColor[1], spriteComp->spriteColor[2], spriteComp->spriteColor[3]);
         // Set screen size uniform
         AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "screenSize", screenWidth, screenHeight);
+
+		 // Normalize and set frame uniforms. The shader expects values between 0.0 and 1.0.
+        Vec2 normalizedFramePos = {0.0f, 0.0f};
+        Vec2 normalizedFrameSize = {1.0f, 1.0f}; // Default to the full texture
+
+        // Prevent division by zero if the sprite sheet size isn't set
+        if (spriteComp->spriteSheetSize.x > 0.0f && spriteComp->spriteSheetSize.y > 0.0f) {
+            normalizedFramePos.x = spriteComp->spriteFramePos.x / spriteComp->spriteSheetSize.x;
+            normalizedFramePos.y = spriteComp->spriteFramePos.y / spriteComp->spriteSheetSize.y;
+            normalizedFrameSize.x = spriteComp->spriteFrameSize.x / spriteComp->spriteSheetSize.x;
+            normalizedFrameSize.y = spriteComp->spriteFrameSize.y / spriteComp->spriteSheetSize.y;
+        }
+
+        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "spriteFramePos", normalizedFramePos.x, normalizedFramePos.y);
+        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "spriteFrameSize", normalizedFrameSize.x, normalizedFrameSize.y);
+        
+
+
 		// Tell the shader to use texture unit 0 for the 'text' sampler
         AF_Shader_SetInt(spriteComp->spriteMesh.shader.shaderID, "sprite", 0);
         // Calculate vertex positions based on sprite component data
-        float xpos = spriteComp->spritePos.x;
-        float ypos = spriteComp->spritePos.y;
-        float w = spriteComp->spriteSize.x;
-        float h = spriteComp->spriteSize.y;
+        float xpos = transform->pos.x;//spriteComp->spritePos.x;
+        float ypos = transform->pos.y;//spriteComp->spritePos.y;
+        float w = transform->scale.x * spriteComp->spriteSize.x;
+        float h = transform->scale.y * spriteComp->spriteSize.y;
 
         float vertices[6][5] = {
             {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
@@ -681,6 +700,24 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
             {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
             {xpos + w, ypos + h, 0.0f, 1.0f, 1.0f}
         };
+
+		/*
+		
+		float xpos = transform.pos.x;
+        float ypos = transform.pos.y;
+        float w = spriteComp->spriteScale.x;
+        float h = spriteComp->spriteScale.y;
+
+        float vertices[6][5] = {
+            {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
+            {xpos,     ypos,     0.0f, 0.0f, 0.0f},
+            {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
+
+            {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
+            {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
+            {xpos + w, ypos + h, 0.0f, 1.0f, 1.0f}
+        };
+		*/
 
         // Bind texture
         glActiveTexture(GL_TEXTURE0);
@@ -743,10 +780,9 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
         AF_FLOAT screenHeight = (AF_FLOAT)_renderingData->windowPtr->frameBufferHeight;
         AF_Shader_SetVec2(textMeshComp->mesh.shader.shaderID, "screenSize", screenWidth, screenHeight);
 
-
-
         // send the shader the colour to use
         AF_Shader_SetVec3(textMeshComp->mesh.shader.shaderID, "textColor", textMeshComp->textColor[0], textMeshComp->textColor[1], textMeshComp->textColor[2]);
+
         // Tell the shader to use texture unit 0 for the 'text' sampler
         AF_Shader_SetInt(textMeshComp->mesh.shader.shaderID, "text", 0);
 
@@ -760,6 +796,14 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
         // 'x' will be our advancing cursor, starting at the component's screen position
         AF_FLOAT x = textMeshComp->screenPos.x;
         AF_FLOAT y = textMeshComp->screenPos.y;
+
+		// Establish a baseline so the text renders correctly.
+        // We assume the user provides 'y' as the desired top coordinate.
+        // The baseline is then y + the ascender of the font.
+        // We'll use the bearing of the first character as an approximation for the ascender.
+        AF_Font* font = &textMeshComp->font;
+        AF_FLOAT baseline = y + font->characters[(unsigned char)textMeshComp->text[0]].Bearing.y;
+
         
         // for each character in the text
         for (uint32_t c = 0; c < AF_MAX_PATH_CHAR_SIZE; c++) {
@@ -771,13 +815,17 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
             AF_Font* font = &textMeshComp->font;
             AF_Character ch = font->characters[(unsigned char)textMeshComp->text[c]];
 
+			
             // If the character has a texture, render it.
             if (ch.TextureID != 0) {
                 // compute the character quad's position and size.
+                // compute the character quad's top-left position and size.
+                // The y coordinate is the baseline. We subtract the bearingY to find the top of the glyph.
                 AF_FLOAT xpos = x + ch.Bearing.x;
-                AF_FLOAT ypos = y - (ch.Size.y - ch.Bearing.y);
+                AF_FLOAT ypos = baseline - ch.Bearing.y;
                 AF_FLOAT width = ch.Size.x;
                 AF_FLOAT height = ch.Size.y;
+
 
                 // Construct an updated VBO for the character
                 AF_FLOAT vertices[6][4] = {
