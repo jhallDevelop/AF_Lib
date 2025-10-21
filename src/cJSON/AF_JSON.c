@@ -651,10 +651,10 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 	// Sprite Color
 	cJSON* spriteColorJSON = cJSON_GetObjectItem(_spriteJSON, "spriteColor");
 	if (spriteColorJSON != NULL) {
-		_sprite->spriteColor[0] = (uint8_t)cJSON_GetArrayItem(spriteColorJSON, 0)->valueint;
-		_sprite->spriteColor[1] = (uint8_t)cJSON_GetArrayItem(spriteColorJSON, 1)->valueint;
-		_sprite->spriteColor[2] = (uint8_t)cJSON_GetArrayItem(spriteColorJSON, 2)->valueint;
-		_sprite->spriteColor[3] = (uint8_t)cJSON_GetArrayItem(spriteColorJSON, 3)->valueint;
+		_sprite->spriteColor[0] = cJSON_GetArrayItem(spriteColorJSON, 0)->valuedouble;
+		_sprite->spriteColor[1] = cJSON_GetArrayItem(spriteColorJSON, 1)->valuedouble;
+		_sprite->spriteColor[2] = cJSON_GetArrayItem(spriteColorJSON, 2)->valuedouble;
+		_sprite->spriteColor[3] = cJSON_GetArrayItem(spriteColorJSON, 3)->valuedouble;
 	}
 
 	// Sprite Path
@@ -1735,7 +1735,7 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	AF_JSON_Vec2ToJson("spriteSheetPos", &spriteSheetPos, spriteJSON);
 
 	// sprite color
-	Vec4 spriteColor = { (AF_FLOAT)_sprite->spriteColor[0], (AF_FLOAT)_sprite->spriteColor[1], (AF_FLOAT)_sprite->spriteColor[2], (AF_FLOAT)_sprite->spriteColor[3] };
+	Vec4 spriteColor = { _sprite->spriteColor[0], _sprite->spriteColor[1], _sprite->spriteColor[2],_sprite->spriteColor[3] };
 	AF_JSON_Vec4ToJson("spriteColor", &spriteColor, spriteJSON);
 
 	// sprite path
