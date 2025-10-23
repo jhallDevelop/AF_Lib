@@ -658,14 +658,13 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 	}
 
 	// Sprite Path
-	cJSON* spritePathJSON = cJSON_GetObjectItem(_spriteJSON, "spritePath");
+	cJSON* spritePathJSON = cJSON_GetObjectItem(_spriteJSON, "spriteTexturePath");
 	if (spritePathJSON != NULL && cJSON_IsString(spritePathJSON)) {
-		snprintf(_sprite->spritePath, AF_MAX_PATH_CHAR_SIZE, "%s", spritePathJSON->valuestring); // Copy the string to the spritePath
 		// also set the sprite path in the sprite mesh
 		snprintf(_sprite->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", spritePathJSON->valuestring);
 	}
 	else {
-		snprintf(_sprite->spritePath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
+		snprintf(_sprite->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", "\0");
 	}
 
 	// Get the sprite mesh path
@@ -675,6 +674,15 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 	}
 	else {
 		snprintf(_sprite->spriteMesh.meshPath, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
+	}
+
+	// sprite shader name
+	cJSON* spriteShaderNameJSON = cJSON_GetObjectItem(_spriteJSON, "spriteShaderName");
+	if (spriteShaderNameJSON != NULL && cJSON_IsString(spriteShaderNameJSON)) {
+		snprintf(_sprite->spriteMesh.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", spriteShaderNameJSON->valuestring); // Copy the string to the spriteShaderName
+	}
+	else {
+		snprintf(_sprite->spriteMesh.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", "\0"); // Set to NULL if not found or not a string
 	}
 
 	// Get the sprite fragment shader path
@@ -1739,12 +1747,16 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	AF_JSON_Vec4ToJson("spriteColor", &spriteColor, spriteJSON);
 
 	// sprite path
-	const char* spritePath = _sprite->spritePath;
-	cJSON_AddStringToObject(spriteJSON, "spritePath", spritePath);
+	const char* spritePath = _sprite->spriteMesh.material.diffuseTexture.path;
+	cJSON_AddStringToObject(spriteJSON, "spriteTexturePath", spritePath);
 
 	// save the sprite mesh path
 	const char* spriteMeshPath = _sprite->spriteMesh.meshPath;
 	cJSON_AddStringToObject(spriteJSON, "spriteMeshPath", spriteMeshPath);
+
+	// save the sprite shader name
+	const char* spriteShaderName = _sprite->spriteMesh.shader.name;
+	cJSON_AddStringToObject(spriteJSON, "spriteShaderName", spriteShaderName);	
 
 	// save the sprite shader paths
 	const char* spriteShaderVertPath = _sprite->spriteMesh.shader.vertPath;

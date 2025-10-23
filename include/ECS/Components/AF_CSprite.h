@@ -49,7 +49,6 @@ typedef struct {
 	Vec2 spriteSheetPos;     // 8 bytes
 	uint8_t spriteColor[4];
 	// TODO: move strings out to a separate struct or use a string library
-	char spritePath[AF_MAX_PATH_CHAR_SIZE];
 	void* spriteData; // special ptr for sprite data to be cast when known
 	af_bool_t isPlaying;
 	af_bool_t filtering;
