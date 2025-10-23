@@ -114,14 +114,21 @@ typedef struct AF_RenderingData{
 } AF_RenderingData;
 
 // ================ Screen FBO Data ================
+#define SCREEN_SHADER_NAME "screenFrameBuffer"
 #define SCREEN_VERT_SHADER_PATH "screenFrameBuffer.vert"
 #define SCREEN_FRAG_SHADER_PATH "screenFrameBuffer.frag"
 
 // ================ Depth Data ================
+#define DEPTH_SHADER_NAME "depth"
 #define DEPTH_VERT_SHADER_PATH "depth.vert"
 #define DEPTH_FRAG_SHADER_PATH "depth.frag"
+
+
+#define DEPTH_DEBUG_SHADER_NAME "debugDepth"
 #define DEPTH_DEBUG_VERT_SHADER_PATH "debugDepth.vert"
 #define DEPTH_DEBUG_FRAG_SHADER_PATH "debugDepth.frag"
+
+#define DEBUG_GEOMETRY_SHADER_NAME "debugGeometry"
 #define DEBUG_GEOMETRY_VERT_SHADER_PATH "debugGeometry.vert"
 #define DEBUG_GEOMETRY_FRAG_SHADER_PATH "debugGeometry.frag"
 

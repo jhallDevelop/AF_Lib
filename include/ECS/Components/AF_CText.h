@@ -20,7 +20,10 @@ and helper functions
 extern "C" {    
 #endif
 
-
+#define AF_CTEXT_DEFAULT_TEXT_MESH_NAME "plane"
+#define AF_CTEXT_DEFAULT_TEXT_VERT_PATH "text.vert"
+#define AF_CTEXT_DEFAULT_TEXT_FRAG_PATH "text.frag"
+//#define AF_CTEXT_DEFAULT_TEXT_TEXTURE_NAME "atlas.png"
 
 typedef struct AF_CText {
     PACKED_CHAR enabled;	    // 1 byte

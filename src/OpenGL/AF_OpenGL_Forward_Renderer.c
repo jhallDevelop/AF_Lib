@@ -117,8 +117,6 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 			.textureID = 0,
 			.textureWidth = *_screenWidth,
 			.textureHeight = *_screenHeight,
-			.vertPath = screenVertShaderFullPath, 
-			.fragPath = screenFragShaderFullPath, 
 			.shaderTextureName = "screenTexture",
 			#ifdef AF_WEB_BUILD
                 .internalFormat = GL_SRGB8_ALPHA8, // Use sRGB format for WebGL for correct gamma
@@ -131,11 +129,21 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 			.minFilter = GL_LINEAR,
 			.magFilter = GL_LINEAR
 		};
+
+		// copy the shader paths in
+		snprintf(screenBufferData.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", SCREEN_SHADER_NAME);
+		snprintf(screenBufferData.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", screenVertShaderFullPath);
+		snprintf(screenBufferData.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", screenFragShaderFullPath);
+
+
 		
 		// Set the screen Frame buffer texture
 		AF_Shader_Use(screenBufferData.shaderID);
 		AF_Shader_SetInt(screenBufferData.shaderID, screenBufferData.shaderTextureName, 0);
 		AF_Shader_Use(0);
+
+
+		// ============ Screen Buffer ============
 		// copy to the render data to use
 		_renderingData->screenFrameBufferData = screenBufferData;
 	
@@ -160,8 +168,6 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 			.textureID = 0,
 			.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH,
 			.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT,
-			.vertPath = depthVertShaderFullPath, 
-			.fragPath = depthFragShaderFullPath, 
 			.shaderTextureName = "",
 			.internalFormat = GL_DEPTH_COMPONENT,//GL_RGB,
 			.textureAttatchmentType = GL_DEPTH_ATTACHMENT, //GL_COLOR_ATTACHMENT0,
@@ -171,10 +177,15 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 			.magFilter = GL_NEAREST //GL_LINEAR
 		};
 
+		// copy the shader paths in
+		snprintf(depthBufferData.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", DEPTH_SHADER_NAME);
+		snprintf(depthBufferData.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", depthVertShaderFullPath);
+		snprintf(depthBufferData.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", depthFragShaderFullPath);
+
 		
+		// ============== Depth Debug Buffer ==============
 		// Set the screen Frame buffer texture
 		_renderingData->depthFrameBufferData = depthBufferData;
-
 
 		// Setup depth debug frame buffer
 		// setup depth frame buffer
@@ -195,8 +206,6 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 			.textureID = 0,
 			.textureWidth = *_screenWidth,
 			.textureHeight = *_screenHeight,
-			.vertPath = screenVertShaderFullPath, 
-			.fragPath = screenFragShaderFullPath, 
 			.shaderTextureName = "depthMap",
 			.internalFormat = GL_RGB,
 			.textureAttatchmentType = GL_COLOR_ATTACHMENT0,
@@ -206,6 +215,13 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 			.magFilter = GL_LINEAR
 		};
 
+		// copy the shader paths in
+		snprintf(depthDebugBufferData.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", DEPTH_DEBUG_SHADER_NAME);
+		snprintf(depthDebugBufferData.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", depthDebugVertShaderFullPath);
+		snprintf(depthDebugBufferData.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", depthDebugFragShaderFullPath);
+
+
+		// ============== Render Texture Buffers ==============
 		// For each render texture in the scene, if there is a camera attatched to it
 		// Then create a frame buffer for it
 		for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
@@ -222,9 +238,7 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 						.shaderID = screenBufferShaderID,
 						.textureID = 0,
 						.textureWidth = cameraComponent->renderTextureWidth,
-						.textureHeight = cameraComponent->renderTextureHeight,
-						.vertPath = screenVertShaderFullPath, 
-						.fragPath = screenFragShaderFullPath, 
+						.textureHeight = cameraComponent->renderTextureHeight, 
 						.shaderTextureName = "screenTexture",
 						#ifdef AF_WEB_BUILD
 							.internalFormat = GL_SRGB8_ALPHA8, // Use sRGB format for WebGL for correct gamma
@@ -237,6 +251,11 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 						.minFilter = GL_LINEAR,
 						.magFilter = GL_LINEAR
 					};
+
+					// copy the shader paths in
+					snprintf(renderTextureBufferData.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", SCREEN_SHADER_NAME);
+					snprintf(renderTextureBufferData.shader.vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", screenVertShaderFullPath);
+					snprintf(renderTextureBufferData.shader.fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", screenFragShaderFullPath);
 					
 					// Set the screen Frame buffer texture
 					AF_Shader_Use(renderTextureBufferData.shaderID);
@@ -812,8 +831,8 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
                 break;
             }
             
-            AF_Font* font = &textMeshComp->font;
-            AF_Character ch = font->characters[(unsigned char)textMeshComp->text[c]];
+            AF_Font* chFont = &textMeshComp->font;
+            AF_Character ch = chFont->characters[(unsigned char)textMeshComp->text[c]];
 
 			
             // If the character has a texture, render it.
@@ -969,8 +988,12 @@ unsigned int AF_Renderer_LoadTexture(char const * path) {
             internalFormat = GL_RED; 
 			dataFormat = GL_RED;
         } else if (nrComponents == 3) {
-            internalFormat = GL_RGB8; 
-			dataFormat = GL_RGB; // Use sized internal format
+			#ifdef AF_WEB_BUILD
+                        internalFormat = GL_RGB;
+            #else
+                        internalFormat = GL_RGB8; 
+            #endif
+            dataFormat = GL_RGB; // Use sized internal format
         } else if (nrComponents == 4) {
             #ifdef AF_WEB_BUILD
 						internalFormat = GL_RGBA;
@@ -1858,7 +1881,7 @@ Create Depth map texture and return the texture id
 ====================
 */
 // Modified Texture Creation Function
-uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
+uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData) {
     unsigned int fboTextureID = 0;
     glGenTextures(1, &fboTextureID);
     glBindTexture(GL_TEXTURE_2D, fboTextureID);
@@ -1880,7 +1903,7 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
             internalFormat = GL_DEPTH_COMPONENT24;
             type = GL_FLOAT;
         #endif
-    } else if ((GLenum)_frameBufferData->internalFormat == GL_RGBA || (GLenum)_frameBufferData->internalFormat == GL_RGBA16F) {
+    } else if ((GLenum)_frameBufferData->internalFormat == GL_RGBA || (GLenum)_frameBufferData->internalFormat == GL_RGBA16F || (GLenum)_frameBufferData->internalFormat == GL_SRGB8_ALPHA8) {
         format = GL_RGBA;
         type = GL_UNSIGNED_BYTE; // Standard for 8-bit per channel color
         #ifdef AF_WEB_BUILD
@@ -1894,7 +1917,7 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
                 internalFormat = GL_RGBA;
             }
         #else
-            internalFormat = _frameBufferData->internalFormat; // Use GL_RGBA or GL_RGBA16F on desktop
+            internalFormat = _frameBufferData->internalFormat; // Use GL_RGBA, GL_RGBA16F, or GL_SRGB8_ALPHA8 on desktop
         #endif
     } else { // Default to RGB
         format = GL_RGB;
@@ -1917,7 +1940,7 @@ uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData){
     #ifdef AF_WEB_BUILD
         // WebGL requires GL_CLAMP_TO_EDGE for non-power-of-two textures and for depth textures.
         AF_Log("AF_Renderer_CreateFBOTexture: WEB GL_CLAMP_TO_EDGE\n");
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     #else
         // Desktop can use GL_CLAMP_TO_BORDER for depth maps to avoid sampling outside the map.
@@ -2384,7 +2407,7 @@ void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
 }
 
 
-void AF_Renderer_DrawTestTriangle() {
+void AF_Renderer_DrawTestTriangle(void) {
     const char* vertexShaderSource = "#version 330 core\n"
         "layout (location = 0) in vec3 aPos;\n"
         "void main()\n"

@@ -2122,7 +2122,7 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
 
     // mesh shader paths (for text rendering)
     cJSON* meshShaderJSON = cJSON_AddObjectToObject(returnJSON, "meshShader");
-    cJSON_AddStringToObject(meshShaderJSON, "shaderName", _component->mesh.shader.name);
+    cJSON_AddStringToObject(meshShaderJSON, "name", _component->mesh.shader.name);
     cJSON_AddStringToObject(meshShaderJSON, "vertPath", _component->mesh.shader.vertPath);
     cJSON_AddStringToObject(meshShaderJSON, "fragPath", _component->mesh.shader.fragPath);
 

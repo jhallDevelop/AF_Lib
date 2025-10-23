@@ -2,6 +2,7 @@
 #define AF_FRAMEBUFFERDATA_H
 
 #include <stdint.h>
+#include "AF_Shader.h"
 
 typedef struct AF_FrameBufferData{
     uint32_t fbo;
@@ -10,8 +11,7 @@ typedef struct AF_FrameBufferData{
     uint32_t textureID;
     uint16_t textureWidth;
     uint16_t textureHeight;
-    const char* vertPath;
-    const char* fragPath;
+    AF_Shader shader;
     const char* shaderTextureName;
     uint32_t internalFormat;
     uint32_t textureAttatchmentType;
@@ -29,8 +29,7 @@ static inline AF_FrameBufferData AF_FrameBufferData_ZERO(void){
     returnBufferData.textureID = 0;
     returnBufferData.textureWidth = 0;
     returnBufferData.textureHeight = 0;
-    returnBufferData.vertPath = "\0";
-    returnBufferData.fragPath = "\0";
+    returnBufferData.shader = AF_Shader_ZERO();
     returnBufferData.shaderTextureName = "\0";
     returnBufferData.internalFormat = 0;
     returnBufferData.textureAttatchmentType = 0;

@@ -99,7 +99,7 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 // ============================  DRAW SPRITES ================================
 void AF_Renderer_InitSpriteMeshBuffer(AF_CSprite* _spriteComponent);
 void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
-void AF_Renderer_DrawTestTriangle();
+void AF_Renderer_DrawTestTriangle(void);
 void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 
 // ============================  DESTROY / CLEANUP ================================ 
