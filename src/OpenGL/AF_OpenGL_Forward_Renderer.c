@@ -509,6 +509,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	AF_Renderer_UnBindFrameBuffer();
 
 	// 1.5 Update the render texture cameras
+	
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
 		AF_CCamera* renderTextureCamera = &_ecs->cameras[i];
 		if(AF_Component_GetHasEnabled(renderTextureCamera->enabled) == AF_TRUE){
@@ -1165,6 +1166,29 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	//AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
+
+		// --- FEEDBACK LOOP DETECTION ---
+		// TODO this is likely slow. need a faster solution if we want to support many FBOs and textures
+        // Query the currently bound framebuffer's color attachment texture id.
+        // If the mesh's diffuse texture is the same texture attached to the FBO we are rendering to,
+        // drawing would create a feedback loop. Skip drawing this mesh in that case.
+        GLint currentFBO = 0;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFBO);
+        if (currentFBO != 0) {
+            GLint attachmentType = 0;
+            glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentType);
+            if (attachmentType == GL_TEXTURE) {
+                GLint attachedTex = 0;
+                glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &attachedTex);
+                // Compare attached texture with mesh diffuse texture id (if any)
+                if (_mesh->material.diffuseTexture.id != 0 && (GLuint)attachedTex == _mesh->material.diffuseTexture.id) {
+                    //AF_Log_Warning("AF_Renderer_DrawMesh: Skipping draw to avoid feedback loop (mesh uses framebuffer's attached texture)\n");
+                    continue;
+                }
+                // Also check shadow/depth texture or other bound textures if you want to be thorough
+            }
+        }
+
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
 		if(_mesh->textured == AF_TRUE){
