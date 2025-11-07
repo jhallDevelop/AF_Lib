@@ -17,6 +17,8 @@ define extra types e.g. af_bool_t which doesn't exist in c
 // Define Bool
 #define AF_TRUE 1
 #define AF_FALSE 0
+#define AF_SUCCESS 1
+#define AF_FAIL 0
 typedef char af_bool_t;		// 1 byte
 typedef char PACKED_CHAR;	// 1 byte
 typedef uint16_t PACKED_UINT16;	// 2 bytes
