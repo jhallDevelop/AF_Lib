@@ -71,14 +71,15 @@ Take in a script component, and the loaded script shared object
 Bind the script shared objects start, update, and destroy function points to the component
 ===============================================================================
 */
-inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr){
+inline static uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr){
     if(_script == NULL || _scriptSharedObjPtr == NULL){
         AF_Log_Error("AF_Script_Bind_Functions: passed a null reference\n");
-        return;
+        return AF_FAIL;
     }
 
 #ifdef _WIN32
     AF_Log_Error("AF_Script_Bind_Functions: Windows not defined\n");
+    return AF_FAIL;
 #else
     // ==== START Func ==== 
     // Get the script name
@@ -92,7 +93,7 @@ inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSh
     char *error = dlerror(); 
     if (error != NULL) {
         AF_Log_Error("AF_Script_Bind_Functions: Failed to load Start_%s: %s\n", startFuncName, error);
-        return;
+        return AF_FAIL;
     }
 
     _script->startFuncPtr = startSCriptFunctPtr;
@@ -109,7 +110,7 @@ inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSh
     error = dlerror(); 
     if (error != NULL) {
         AF_Log_Error("AF_Script_Bind_Functions: Failed to load Start_%s: %s\n", updateFuncName, error);
-        return;
+        return AF_FAIL;
     }
 
     _script->updateFuncPtr = updateScriptFunctPtr;
@@ -126,11 +127,13 @@ inline static void AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSh
     error = dlerror(); 
     if (error != NULL) {
         AF_Log_Error("AF_Script_Bind_Functions: Failed to load Start_%s: %s\n", destroyFuncName, error);
-        return;
+        return AF_FAIL;
     }
 
     _script->destroyFuncPtr = destroyScriptFunctPtr;
 #endif
+
+    return AF_SUCCESS;
 }
 
 
@@ -159,7 +162,10 @@ inline static void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
             script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
     
             // attempt the bind the scripts functions to this component
-            AF_Script_Bind_Functions(script, script->loadedScriptPtr);
+            uint32_t scriptBindSuccess =  AF_Script_Bind_Functions(script, script->loadedScriptPtr);
+            if(scriptBindSuccess == AF_FAIL){
+                AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to bind script: Entity: %i, Script: %i\n", i, scriptID);
+            }
         }
         
     }
