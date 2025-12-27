@@ -508,6 +508,30 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     }
 	AF_Renderer_UnBindFrameBuffer();
 
+	// 2. ==== MAIN COLOR & DEBUG PASS ====
+    AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+    glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
+    
+    // Clear color and depth of the main framebuffer before drawing the scene.
+    //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// if texture type is renderTexture, make the texture id the same as the screen frame buffer
+	
+    /**/
+    //glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
+    // --- Main Mesh Drawing ---
+    AF_Renderer_DrawMeshes(
+        &camera->viewMatrix,
+        &camera->projectionMatrix,
+        _ecs,
+        &cameraTransform->pos,
+        _lightingData,
+        NO_SHARED_SHADER,
+        _renderingData
+    );
+	AF_Renderer_UnBindFrameBuffer();
+
 	// 1.5 Update the render texture cameras
 	
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
@@ -522,6 +546,14 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 				// render texture camera projection matrix is the same as the main camera
 				renderTextureCamera->projectionMatrix = _ecs->cameras[_cameraID].projectionMatrix;
 				
+				/*
+				Vec3 targetPos = Vec3_ADD(cameraTransform->pos, renderTextureCamera->cameraFront);
+				renderTextureCamera->viewMatrix = Mat4_Lookat(
+					cameraTransform->pos,
+					targetPos,
+					renderTextureCamera->cameraUp
+				);*/
+
 				
 				// Set the background color for this camera before clearing
 				glClearColor(renderTextureCamera->backgroundColor.x, 
@@ -544,28 +576,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 		}
 	}
     
-    // 2. ==== MAIN COLOR & DEBUG PASS ====
-    AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-    glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
     
-    // Clear color and depth of the main framebuffer before drawing the scene.
-    //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// if texture type is renderTexture, make the texture id the same as the screen frame buffer
-	
-    
-    //glCullFace(GL_BACK);
-    glDisable(GL_CULL_FACE);
-    // --- Main Mesh Drawing ---
-    AF_Renderer_DrawMeshes(
-        &camera->viewMatrix,
-        &camera->projectionMatrix,
-        _ecs,
-        &cameraTransform->pos,
-        _lightingData,
-        NO_SHARED_SHADER,
-        _renderingData
-    );
 
 	
 
@@ -647,10 +658,6 @@ Render text meshes
 */
 void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) {
     AF_Renderer_CheckError("AF_Renderer_DrawSpriteMeshes: Start rendering sprite meshes\n");
-
-
-    
-
 
     // Set OpenGL state for 2D rendering
     glDisable(GL_DEPTH_TEST);

@@ -24,6 +24,7 @@ extern "C" {
 #include "AF_ProjectData.h"
 #include "AF_LightingData.h"
 #include "AF_RenderingData.h"
+#include "AF_Event.h"
 
 #pragma pack(push, 8)  // Set 8-byte alignment
 typedef struct AF_AppData {
@@ -39,6 +40,8 @@ typedef struct AF_AppData {
     AF_ProjectData projectData;  // Struct size depends on definition
     AF_LightingData lightingData;   // struct to hold important cached lighting data
     AF_RenderingData rendererData;   // struct to hold important rendering data
+    AF_Event_s events[AF_EVENT_QUEUE_SIZE]; // Event system queue
+    AF_EventRegistry_s eventRegistry; // Listener registry
     // Group boolean values together at the end to minimize padding
     bool isRunning;        // 1 byte
     bool isFullscreen;     // 1 byte
@@ -58,6 +61,12 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
     _appData->projectData = Editor_Project_Data_ZERO();
     _appData->rendererData = AF_RenderingData_ZERO();
     _appData->lightingData = AF_LightingData_ZERO();
+    
+    AF_Event_Initialize(&_appData->eventRegistry);
+    for(uint32_t i = 0; i < AF_EVENT_QUEUE_SIZE; i++){
+        _appData->events[i] = AF_Event_ZERO();
+    }
+
     _appData->isRunning = AF_FALSE;
     _appData->isFullscreen = AF_FALSE;
 }
