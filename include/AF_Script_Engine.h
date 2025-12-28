@@ -115,6 +115,24 @@ inline static uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scri
 
     _script->updateFuncPtr = updateScriptFunctPtr;
 
+    // ==== Late Update Func ==== 
+    // Get the script name
+    char lateUpdateFuncName[MAX_FUNCTION_NAME];
+    snprintf(lateUpdateFuncName, MAX_FUNCTION_NAME, "LateUpdate_%s", _script->scriptName);
+
+    // Search the shared object for the function named
+    ScriptFuncPtr lateUpdateScriptFunctPtr = (ScriptFuncPtr) dlsym(_scriptSharedObjPtr, lateUpdateFuncName);
+    
+    // Check for any error after dlsym
+    error = dlerror(); 
+    if (error != NULL) {
+        AF_Log_Error("AF_Script_Bind_Functions: Failed to load LateUpdate_%s: %s\n", lateUpdateFuncName, error);
+        return AF_FAIL;
+    }
+
+    _script->lateUpdateFuncPtr = lateUpdateScriptFunctPtr;
+
+
     // ==== Destroy Func ==== 
     // Get the script name
     char destroyFuncName[MAX_FUNCTION_NAME];
@@ -221,6 +239,7 @@ inline static void AF_Script_UnloadScripts(AF_ECS* _ecs){
             // set the script ptrs to null
             script->startFuncPtr = NULL;
             script->updateFuncPtr = NULL;
+            script->lateUpdateFuncPtr = NULL;
             script->destroyFuncPtr = NULL;
         }
     }
@@ -309,6 +328,37 @@ inline static void AF_Script_Call_Update(AF_AppData* _appData){
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
+            // Call it passing the entity ID and reference to the game data
+            scriptFunctPtr(i, _appData);
+        }
+    }
+}
+
+/*
+===============================================================================
+AF_Script_Call_LateUpdate
+Loop through all script components that have valid script func pointers and call Update
+===============================================================================
+*/
+inline static void AF_Script_Call_LateUpdate(AF_AppData* _appData){
+	AF_ECS* ecs = &_appData->ecs;
+    for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
+        // Run all the scripts
+        for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
+            AF_CScript* script = &ecs->scripts[scriptID];
+            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
+                continue;
+            }
+        
+            if(script->lateUpdateFuncPtr == NULL){
+                //AF_Log_Error("AF_CallScriptUpdate: script updateFuncPtr is null. Forgot to set it\n");
+                continue;
+            }
+
+            // Call the function
+            // Cast to special func ptr
+            ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->lateUpdateFuncPtr;
             // Call it passing the entity ID and reference to the game data
             scriptFunctPtr(i, _appData);
         }

@@ -35,6 +35,7 @@ typedef struct AF_CScript {
 	char scriptFullPath[MAX_CSCRIPT_PATH];
 	ScriptFuncPtr startFuncPtr;
 	ScriptFuncPtr updateFuncPtr;
+	ScriptFuncPtr lateUpdateFuncPtr;
 	ScriptFuncPtr destroyFuncPtr;
 	void* loadedScriptPtr;
 } AF_CScript;
