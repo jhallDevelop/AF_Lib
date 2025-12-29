@@ -42,6 +42,7 @@ typedef struct {
 
     AF_CAnimation animations[AF_ECS_TOTAL_ENTITIES];	// animation Component
     AF_CMesh meshes[AF_ECS_TOTAL_ENTITIES];		// mesh component 	// TODO: turn this into a component type
+	AF_CTerrain terrains[AF_ECS_TOTAL_ENTITIES];		// terrain component
 	AF_CText texts[AF_ECS_TOTAL_ENTITIES];
 	AF_CAudioSource audioSources[AF_ECS_TOTAL_ENTITIES];
 	AF_CPlayerData playerDatas[AF_ECS_TOTAL_ENTITIES];

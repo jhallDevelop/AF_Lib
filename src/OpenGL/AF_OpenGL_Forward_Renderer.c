@@ -583,6 +583,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // --- Debug Collision Hull Drawing (Desktop Only) ---
     #ifndef AF_WEB_BUILD
         // glPolygonMode is not available in WebGL. This block will only compile for desktop.
+        GLint previousPolygonMode[2];
+        glGetIntegerv(GL_POLYGON_MODE, previousPolygonMode);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         AF_Renderer_DrawCollisionMeshes(
@@ -595,8 +597,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
             _renderingData
         );
 
-        // Switch back to fill mode for subsequent rendering (like ImGui).
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // Switch back to the previous polygon mode.
+        glPolygonMode(GL_FRONT_AND_BACK, previousPolygonMode[0]);
     #endif
 
 	// == Draw Text Meshes ==
@@ -652,8 +654,8 @@ void AF_Renderer_EndForwardRendering(void){
 
 /*
 ====================
-AF_Renderer_Sprite(AF_ECS* _ecs)
-Render text meshes
+AF_Renderer_DrawSpriteMeshes
+Render sprite meshes
 ====================
 */
 void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) {
@@ -2417,19 +2419,19 @@ void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
 	switch(_polygonMode){
 		case AF_RENDERER_POLYGON_MODE_FILL:
 			#ifndef AF_WEB_BUILD
-				AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
+				//AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			#endif
 		break;
 		case AF_RENDERER_POLYGON_MODE_POINT:
 			#ifndef AF_WEB_BUILD
-				AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
+				//AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
 				glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 			#endif
 		break;
 		case AF_RENDERER_POLYGON_MODE_LINE:
 			#ifndef AF_WEB_BUILD
-				AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
+				//AF_Log_Warning("AF_Renderer_SetPolygonMode: glPolygonMode not implemented\n");
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			#endif
 		break;

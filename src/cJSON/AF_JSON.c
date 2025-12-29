@@ -10,6 +10,7 @@ void AF_JSON_JsonToCollider(cJSON* _colliderJSON, AF_CCollider* _collider);
 void AF_JSON_JsonToAnimation(cJSON* _animationJSON, AF_CAnimation* _animation);
 void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera);
 void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh);
+void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain);
 void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text);
 void AF_JSON_JsonToAudioSource(cJSON* _audioSourceJSON, AF_CAudioSource* _audioSource);
 void AF_JSON_JsonToPlayerData(cJSON* _playerDataJSON, AF_CPlayerData* _playerData);
@@ -27,6 +28,7 @@ cJSON* AF_JSON_ColliderToJson(AF_CCollider* _component);
 cJSON* AF_JSON_AnimationToJson(AF_CAnimation* _component);
 cJSON* AF_JSON_CameraToJson(AF_CCamera* _component);
 cJSON* AF_JSON_MeshToJson(AF_CMesh* _component);
+cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component);
 cJSON* AF_JSON_TextToJson(AF_CText* _component);
 cJSON* AF_JSON_AudioSourceToJson(AF_CAudioSource* _component);
 cJSON* AF_JSON_PlayerDataToJson(AF_CPlayerData* _component);
@@ -238,6 +240,10 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		cJSON* meshJSON = cJSON_GetObjectItem(entityJSON, "mesh");
 		AF_JSON_JsonToMesh(meshJSON, &ecs->meshes[ecs->currentEntity]);
 
+		// Terrain Component
+		cJSON* terrainJSON = cJSON_GetObjectItem(entityJSON, "terrain");
+		AF_JSON_JsonToTerrain(terrainJSON, &ecs->terrains[ecs->currentEntity]);
+
 		// Text Component
 		cJSON* textJSON = cJSON_GetObjectItem(entityJSON, "text");
 		AF_JSON_JsonToText(textJSON, &ecs->texts[ecs->currentEntity]);
@@ -397,6 +403,11 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		char meshTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
 		cJSON* meshJSON = AF_JSON_MeshToJson(&_ecs->meshes[entityID]);
 		cJSON_AddItemToObject(entityJSON, "mesh", meshJSON);
+
+		// Terrain
+		AF_CTerrain* terrain = &_ecs->terrains[entityID];		char terrainTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
+		cJSON* terrainJSON = AF_JSON_TerrainToJson(&_ecs->terrains[entityID]);
+		cJSON_AddItemToObject(entityJSON, "terrain", terrainJSON);
 
 		// Text
 		AF_CText* text = &_ecs->texts[entityID];
@@ -1192,7 +1203,53 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
     if (item) _mesh->castShadows = item->valueint;
 }
 
-// text
+// terrain
+void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
+	if (_terrainJSON == NULL || _terrain == NULL) {
+        AF_Log_Error("AF_JSON_JsonToTerrain: Invalid JSON or terrain pointer.\n");
+        return;
+    }
+
+    cJSON *item = NULL; // Re-usable pointer for getting items
+
+    // Has
+    item = cJSON_GetObjectItem(_terrainJSON, "has");
+    if (item && cJSON_IsNumber(item)) {
+        _terrain->enabled = AF_Component_SetHas(_terrain->enabled, item->valueint);
+    }
+
+    // Enabled
+    item = cJSON_GetObjectItem(_terrainJSON, "enabled");
+    if (item && cJSON_IsNumber(item)) {
+        _terrain->enabled = AF_Component_SetEnabled(_terrain->enabled, item->valueint);
+    }
+
+	// Lod 0
+	cJSON* lod0Size = cJSON_GetObjectItem(_terrainJSON, "lod0Size");
+	if (lod0Size && cJSON_IsNumber(lod0Size)) {
+		_terrain->lod0Size = (uint32_t)lod0Size->valueint;
+	}
+
+	// Lod 1
+	cJSON* lod1Size = cJSON_GetObjectItem(_terrainJSON, "lod1Size");
+	if (lod1Size && cJSON_IsNumber(lod1Size)) {
+		_terrain->lod1Size = (uint32_t)lod1Size->valueint;
+	}
+
+	// Lod 2
+	cJSON* lod2Size = cJSON_GetObjectItem(_terrainJSON, "lod2Size");
+	if (lod2Size && cJSON_IsNumber(lod2Size)) {
+		_terrain->lod2Size = (uint32_t)lod2Size->valueint;
+	}
+
+	// mesh component index
+	cJSON* meshComponentIndex = cJSON_GetObjectItem(_terrainJSON, "meshComponentIndex");
+	if (meshComponentIndex && cJSON_IsNumber(meshComponentIndex)) {
+		_terrain->meshComponentIndex = (uint32_t)meshComponentIndex->valueint;
+	}	
+
+}
+
 void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 	if (_textJSON == NULL || _text == NULL) {
 		AF_Log_Error("AF_JSON_JsonToText: Invalid JSON or text pointer.\n");
@@ -2081,6 +2138,33 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
     // modelMatrix
     cJSON_AddNullToObject(returnJSON, "modelMatrix");
 
+
+    return returnJSON;
+}
+
+cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
+    cJSON* returnJSON = cJSON_CreateObject();
+
+    // has
+    af_bool_t has = AF_Component_GetHas(_component->enabled);
+    cJSON_AddNumberToObject(returnJSON, "has", has);
+
+    // enabled
+    af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
+    cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
+
+
+	// Lod0 size
+	cJSON_AddNumberToObject(returnJSON, "lod0Size", _component->lod0Size);
+
+	// Lod1 size
+	cJSON_AddNumberToObject(returnJSON, "lod1Size", _component->lod1Size);
+
+	// Lod2 size
+	cJSON_AddNumberToObject(returnJSON, "lod2Size", _component->lod2Size);
+
+	// meshComponentIndex
+	cJSON_AddNumberToObject(returnJSON, "meshComponentIndex", _component->meshComponentIndex);
 
     return returnJSON;
 }

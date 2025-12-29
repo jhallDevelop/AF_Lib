@@ -21,6 +21,7 @@ The entity struct and helper functions
 // Components
 #include "ECS/Components/AF_C3DRigidbody.h"
 #include "ECS/Components/AF_CMesh.h"
+#include "ECS/Components/AF_CTerrain.h"
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CAnimation.h"
 #include "ECS/Components/AF_CCamera.h"
