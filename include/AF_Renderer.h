@@ -10,6 +10,7 @@ Definition for functions for rendering
 #include "AF_Lib_API.h"
 #include "AF_Window.h"
 #include "ECS/Components/AF_CCamera.h"
+#include "ECS/Components/AF_CTerrain.h"
 #include "AF_MeshData.h"
 #include "ECS/Entities/AF_ECS.h"
 #include "AF_LightingData.h"
@@ -43,6 +44,7 @@ void AF_Renderer_SetFlipImage(af_bool_t _flipImage);
 uint32_t AF_Renderer_LoadTexture(char const * path);
 void AF_Renderer_ReLoadTexture(AF_Assets* _assets, AF_Texture* _texture);
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID);
+void AF_Renderer_SetTerrainHeightMap(const uint32_t _shaderID, AF_CTerrain* _terrain);
 
 // ============================  Forward Rendering ================================ 
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID);
@@ -61,6 +63,7 @@ void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData);
 void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData);
 void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount);
 void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);  
+void AF_Renderer_UpdateMeshBufferData(AF_MeshData* _meshData);
 void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs);
 void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider);
 

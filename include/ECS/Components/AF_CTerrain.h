@@ -15,8 +15,6 @@ functions to load meshes, creating memory on the heap based on the size of the m
 #include "AF_MeshData.h"
 #include "AF_Shader.h"
 
-//#define DEFAULT_ASSET_PATH "./assets/"
-#define DEFAULT_MODEL_PATH "./assets/models/UV_Cube/UV_Cube.obj"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,10 +24,15 @@ extern "C" {
 // Terrain Struct
 typedef struct AF_CTerrain {
     PACKED_CHAR enabled;
-    uint32_t lod0Size;
-    uint32_t lod1Size;
-    uint32_t lod2Size;
+    uint8_t lod0Size;
+    uint8_t lod1Size;
+    uint8_t lod2Size;
     uint32_t meshComponentIndex;
+    char heightMapPath[AF_MAX_PATH_CHAR_SIZE];
+    uint32_t heightmapTextureID;
+    float heightScale;
+    float texelSizeX;
+    float texelSizeY;
 } AF_CTerrain;
 
 AF_CTerrain AF_CTerrain_ZERO(void);

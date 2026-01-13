@@ -1248,6 +1248,12 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 		_terrain->meshComponentIndex = (uint32_t)meshComponentIndex->valueint;
 	}	
 
+	// heightmap path
+	cJSON* heightMapPath = cJSON_GetObjectItem(_terrainJSON, "heightMapPath");
+	if (heightMapPath && cJSON_IsString(heightMapPath)) {
+		snprintf(_terrain->heightMapPath, AF_MAX_PATH_CHAR_SIZE, "%s", heightMapPath->valuestring);
+	}
+
 }
 
 void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
@@ -2166,6 +2172,9 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
 	// meshComponentIndex
 	cJSON_AddNumberToObject(returnJSON, "meshComponentIndex", _component->meshComponentIndex);
 
+
+	// heightMapPath
+	cJSON_AddStringToObject(returnJSON, "heightMapPath", _component->heightMapPath);
     return returnJSON;
 }
 

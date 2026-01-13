@@ -903,6 +903,35 @@ void AF_Renderer_RenderDepthMeshes(AF_ECS* _ecs){
 
 
 // ============================ TEXTURES =================================
+/*
+=================================================================================================
+AF_Renderer_SetTerrainHeightMap
+Sets the heightmap texture and uniforms for terrain rendering
+Binds texture to unit 2 and sets heightScale and texelSize uniforms
+NOTE: Assumes shader is already bound with glUseProgram before calling this
+=================================================================================================
+*/
+void AF_Renderer_SetTerrainHeightMap(const uint32_t _shaderID, AF_CTerrain* _terrain){
+	if(_terrain == NULL){
+		AF_Log_Warning("AF_Renderer_SetTerrainHeightMap: Terrain is NULL\n");
+		return;
+	}
+	
+	if(_terrain->heightmapTextureID == 0){
+		AF_Log_Warning("AF_Renderer_SetTerrainHeightMap: Heightmap texture ID is 0, skipping bind\n");
+		return;
+	}
+	
+	// Use texture unit 2 for heightmap (0 = diffuse, 1 = shadow map)
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glBindTexture(GL_TEXTURE_2D, _terrain->heightmapTextureID);
+	
+	// Set terrain uniforms (shader should already be bound)
+	AF_Shader_SetInt(_shaderID, "heightMap", 2);
+	AF_Shader_SetFloat(_shaderID, "heightScale", _terrain->heightScale);
+	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
+}
+
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
     glUseProgram(_shaderID); // Bind the shader program
     glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
@@ -1078,6 +1107,22 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		Mat4 modelMatColumn = Mat4_ToModelMat4(modelTransform->pos, rotationToRadians, modelTransform->scale);
 		modelTransform->modelMat = modelMatColumn;
 
+		// Special case for terrain to bind heightmap texture
+		AF_CTerrain* terrain = &_ecs->terrains[i];
+		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){	
+			// Just bind textures and store uniforms to be set in DrawMesh
+			// start using the shader
+			glUseProgram(mesh->material.shaderID); 
+
+			// Send the heightmap texture to the shader
+			uint32_t heightmapTextureUnit = 2;
+			glActiveTexture(GL_TEXTURE0 + heightmapTextureUnit);
+			glBindTexture(GL_TEXTURE_2D, terrain->heightmapTextureID);
+			AF_Shader_SetInt(mesh->material.shaderID, "heightMap", heightmapTextureUnit); // Set sampler to unit 0
+			AF_Shader_SetFloat(mesh->material.shaderID, "heightScale", terrain->heightScale);
+			AF_Shader_SetVec2(mesh->material.shaderID, "texelSize", terrain->texelSizeX, terrain->texelSizeY);
+		}
+			
 		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
@@ -1137,6 +1182,8 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 		// Bounding volume is measured as half extents, so scale by 2
 		Mat4 modelMatColumn = Mat4_ToModelMat4(collider->boundingPos, rotationToRadians,  collider->boundingVolume);//_ecs->transforms[i].scale);
 
+
+		
 		AF_Renderer_DrawMesh(&modelMatColumn, _viewMat, _projMat, &colliderMesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
@@ -1172,7 +1219,31 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	}
 	glUseProgram(shader); 
 	
+	/*
+	// TODO: are we even using terrain in this mesh? if not skip this
+	// Set terrain uniforms if texture unit 2 has a heightmap bound
+	// Check if there's a texture on unit 2 (terrain sets this)
+	GLint currentTexture = 0;
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexture);
+	if(currentTexture != 0){
+		// Terrain heightmap is bound, set the uniforms
+		// We need to get terrain data from ECS - find terrain component for this entity
+		for(uint32_t terrainIdx = 0; terrainIdx < _ecs->entitiesCount; terrainIdx++){
+			AF_CTerrain* terrain = &_ecs->terrains[terrainIdx];
+			if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE && terrain->heightmapTextureID == (uint32_t)currentTexture){
+				AF_Shader_SetInt(shader, "heightMap", 2);
+				AF_Shader_SetFloat(shader, "heightScale", terrain->heightScale);
+				AF_Shader_SetVec2(shader, "texelSize", terrain->texelSizeX, terrain->texelSizeY);
+				break;
+			}
+		}
+	}
+		*/
+	
 	//AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
+
+	
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 
@@ -1287,6 +1358,11 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
 		}
 		
+		// Debug: Check VAO before binding
+		if(_mesh->meshes[i].vao == 0){
+			AF_Log_Error("AF_Renderer_DrawMesh: Attempting to bind VAO 0 for mesh %u\n", i);
+			continue;
+		}
 
 		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
 		AF_Renderer_CheckError( "Error bind vao Rendering OpenGL! \n");
@@ -1638,6 +1714,31 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
 	AF_Renderer_CheckError("Error InitMesh Buffers for OpenGL! \n");
 }
 
+/*
+=================================================================================================
+AF_Renderer_UpdateMeshBufferData
+Updates the vertex data of an existing VBO on the GPU. The buffer must have been created
+with GL_DYNAMIC_DRAW for optimal performance.
+=================================================================================================
+*/
+void AF_Renderer_UpdateMeshBufferData(AF_MeshData* _meshData) {
+	if(_meshData == NULL || _meshData->vertices == NULL) {
+		AF_Log_Error("AF_Renderer_UpdateMeshBufferData: Invalid _meshData or vertices is NULL!\n");
+		return;
+	}	
+
+	if(_meshData->vbo == 0) {
+		AF_Log_Error("AF_Renderer_UpdateMeshBufferData: VBO is 0, cannot update!\n");
+		return;
+	}
+
+	uint32_t vertextBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
+	glBindBuffer(GL_ARRAY_BUFFER, _meshData->vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertextBufferSize, _meshData->vertices);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);	
+	
+	AF_Renderer_CheckError("AF_Renderer_UpdateMeshBufferData: Error updating mesh buffer data!\n");
+}
 
 /*
 ====================

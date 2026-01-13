@@ -14,6 +14,11 @@ AF_CTerrain AF_CTerrain_ZERO(void){
 	.lod1Size = 0,
 	.lod2Size = 0,
 	.meshComponentIndex = 0,
+	.heightMapPath = "\0",
+	.heightmapTextureID = 0,
+	.heightScale = 10.0f,
+	.texelSizeX = 1.0f / 256.0f,
+	.texelSizeY = 1.0f / 256.0f
 	};
     return returnTerrain;
 }
@@ -33,6 +38,11 @@ AF_CTerrain AF_CTerrain_ADD(void){
 	.lod1Size = 0,
 	.lod2Size = 0,
 	.meshComponentIndex = 0,
+	.heightMapPath = "\0",
+	.heightmapTextureID = 0,
+	.heightScale = 10.0f,
+	.texelSizeX = 1.0f / 256.0f,
+	.texelSizeY = 1.0f / 256.0f
 	};
     return returnTerrain;
 }
