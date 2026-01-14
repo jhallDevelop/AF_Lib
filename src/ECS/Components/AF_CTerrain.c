@@ -16,9 +16,12 @@ AF_CTerrain AF_CTerrain_ZERO(void){
 	.meshComponentIndex = 0,
 	.heightMapPath = "\0",
 	.heightmapTextureID = 0,
-	.heightScale = 10.0f,
+	.heightScale = 1.0f,
 	.texelSizeX = 1.0f / 256.0f,
-	.texelSizeY = 1.0f / 256.0f
+	.texelSizeY = 1.0f / 256.0f,
+	.gridSize = 10,
+	.heightMapUVScaleX = 0.1f,
+	.heightMapUVSCaleY = 0.1f
 	};
     return returnTerrain;
 }
@@ -40,9 +43,12 @@ AF_CTerrain AF_CTerrain_ADD(void){
 	.meshComponentIndex = 0,
 	.heightMapPath = "\0",
 	.heightmapTextureID = 0,
-	.heightScale = 10.0f,
+	.heightScale = 1.0f,
 	.texelSizeX = 1.0f / 256.0f,
-	.texelSizeY = 1.0f / 256.0f
+	.texelSizeY = 1.0f / 256.0f,
+	.gridSize = 10,
+	.heightMapUVScaleX = 0.1f,
+	.heightMapUVSCaleY = 0.1f
 	};
     return returnTerrain;
 }

@@ -70,6 +70,13 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             }
         }
 
+        // Terrain textures
+        af_bool_t hasTerrain = AF_Component_GetHas(_appData->ecs.terrains[i].enabled);
+        if (hasTerrain == AF_TRUE) {
+            AF_CTerrain* terrainComponent = &_appData->ecs.terrains[i];
+            terrainComponent->heightmapTextureID = AF_Renderer_LoadTexture(terrainComponent->heightMapPath);
+        }   
+
         // Load Sprite Mesh components
         af_bool_t hasSprite = AF_Component_GetHas(_appData->ecs.sprites[i].enabled);
         if (hasSprite == AF_TRUE) {

@@ -30,9 +30,12 @@ typedef struct AF_CTerrain {
     uint32_t meshComponentIndex;
     char heightMapPath[AF_MAX_PATH_CHAR_SIZE];
     uint32_t heightmapTextureID;
-    float heightScale;
-    float texelSizeX;
-    float texelSizeY;
+    AF_FLOAT heightScale;
+    AF_FLOAT texelSizeX;
+    AF_FLOAT texelSizeY;
+    uint32_t gridSize;
+    AF_FLOAT heightMapUVScaleX;
+    AF_FLOAT heightMapUVSCaleY;
 } AF_CTerrain;
 
 AF_CTerrain AF_CTerrain_ZERO(void);

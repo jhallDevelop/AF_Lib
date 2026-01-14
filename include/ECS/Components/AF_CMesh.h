@@ -67,7 +67,10 @@ typedef struct AF_CMesh {
     af_bool_t recieveShadows;
     af_bool_t castShadows;
 	void* modelMatrix;	// belongs in transform, unless nessisary
-	void* displayListBuffer;	
+	void* displayListBuffer;
+	af_bool_t isInstanced;	
+	uint32_t instanceCount;
+	uint32_t instanceVBO;
 } AF_CMesh;
 
 AF_CMesh AF_CMesh_ZERO(void);

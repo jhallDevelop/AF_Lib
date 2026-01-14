@@ -1254,6 +1254,29 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 		snprintf(_terrain->heightMapPath, AF_MAX_PATH_CHAR_SIZE, "%s", heightMapPath->valuestring);
 	}
 
+	// heightmap texture id
+	cJSON* heightMapTextureID = cJSON_GetObjectItem(_terrainJSON, "heightmapTextureID");
+	if (heightMapTextureID && cJSON_IsNumber(heightMapTextureID)) {
+		_terrain->heightmapTextureID = (uint32_t)heightMapTextureID->valueint;
+	}
+
+	// heightmap scale
+	cJSON* heightMapScale = cJSON_GetObjectItem(_terrainJSON, "heightScale");
+	if (heightMapScale && cJSON_IsNumber(heightMapScale)) {
+		_terrain->heightScale = (AF_FLOAT)heightMapScale->valuedouble;
+	}	
+
+	// heightmap texelsize x
+	cJSON* heightMapTexelSizeX = cJSON_GetObjectItem(_terrainJSON, "texelSizeX");
+	if (heightMapTexelSizeX && cJSON_IsNumber(heightMapTexelSizeX)) {
+		_terrain->texelSizeX = (AF_FLOAT)heightMapTexelSizeX->valuedouble;
+	}
+
+	// heightmap texelsize y
+	cJSON* heightMapTexelSizeY = cJSON_GetObjectItem(_terrainJSON, "texelSizeY");
+	if (heightMapTexelSizeY && cJSON_IsNumber(heightMapTexelSizeY)) {
+		_terrain->texelSizeY = (AF_FLOAT)heightMapTexelSizeY->valuedouble;
+	}
 }
 
 void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
@@ -2159,7 +2182,6 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
     af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
     cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
 
-
 	// Lod0 size
 	cJSON_AddNumberToObject(returnJSON, "lod0Size", _component->lod0Size);
 
@@ -2172,9 +2194,20 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
 	// meshComponentIndex
 	cJSON_AddNumberToObject(returnJSON, "meshComponentIndex", _component->meshComponentIndex);
 
-
 	// heightMapPath
 	cJSON_AddStringToObject(returnJSON, "heightMapPath", _component->heightMapPath);
+
+	// heightmapTextureID;
+	cJSON_AddNumberToObject(returnJSON, "heightmapTextureID", _component->heightmapTextureID);
+
+    // heightScale;
+	cJSON_AddNumberToObject(returnJSON, "heightScale", _component->heightScale);
+
+    // texelSizeX;
+	cJSON_AddNumberToObject(returnJSON, "texelSizeX", _component->texelSizeX);
+
+    // texelSizeY;
+    cJSON_AddNumberToObject(returnJSON, "texelSizeY", _component->texelSizeY);
     return returnJSON;
 }
 

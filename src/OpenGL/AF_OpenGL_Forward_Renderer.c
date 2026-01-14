@@ -389,6 +389,73 @@ void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs){
 	}
 }
 
+// =================================================================================================
+// AF_Renderer_InitInstancedTerrainMeshBuffer
+// Generates a VBO for per-instance data (world offset, UV offset) and configures the
+// mesh's VAO to use it for instanced rendering.
+// =================================================================================================
+void AF_Renderer_InitInstancedTerrainMeshBuffer(uint32_t _gridSize, AF_CMesh* _mesh){
+	if(_mesh == NULL){
+		AF_Log_Error("AF_Renderer_InitInstancedTerrainMeshBuffer: Mesh is NULL\n");
+			return;
+	}
+
+	if(_mesh->meshes[0].vao == 0){
+		AF_Log_Error("AF_Renderer_InitInstancedTerrainMeshBuffer: Mesh VAO is 0, ensure mesh buffer is created first\n");
+			return;
+	}
+	
+	// Generate instance data
+	uint32_t INSTANCE_COUNT = _gridSize * _gridSize;
+	const AF_FLOAT TILE_WORLD_SIZE = 1.0f; // Size of each terrain tile in world units
+
+	// use Vec4 to pack world offset (xy and uv offset zw)
+	Vec4* instanceData = (Vec4*)malloc(sizeof(Vec4) * INSTANCE_COUNT);
+	if(!instanceData){
+		AF_Log_Error("AF_Renderer_InitInstancedTerrainMeshBuffer: malloc failed\n");
+		return;
+	}
+
+	for(uint32_t i = 0; i < _gridSize; i++){
+		for(uint32_t j = 0; j < _gridSize; j++){
+			uint32_t index = i * _gridSize + j;
+			instanceData[index].x = j * TILE_WORLD_SIZE; // world offset x
+			instanceData[index].y = i * TILE_WORLD_SIZE; // world offset y
+			instanceData[index].z = (AF_FLOAT)j / (AF_FLOAT)_gridSize; // uv offset x
+			instanceData[index].w = (AF_FLOAT)i / (AF_FLOAT)_gridSize; // uv offset y
+		}
+	}
+
+	// Create the buffers for instance data
+	glGenBuffers(1, &_mesh->instanceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, _mesh->instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vec4) * INSTANCE_COUNT, instanceData, GL_STATIC_DRAW);
+	
+	// Configure vertex attributes for instance data
+	glBindVertexArray(_mesh->meshes[0].vao);
+
+	// Attribute location 5: aInstanceOffset (vec2)
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(Vec4), (void*)0);
+	glVertexAttribDivisor(5, 1); // Update per instance
+
+	// Attribute location 6: aInstanceUVOffset (vec2)
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vec4), (void*)(2 * sizeof(AF_FLOAT)));
+	glVertexAttribDivisor(6, 1); // Update per instance
+
+	// unbind
+	glBindVertexArray(0);
+
+	// clean up malloced memory
+	free(instanceData);
+
+	// store the instance count
+	_mesh->instanceCount = INSTANCE_COUNT;
+
+	AF_Log("AF_Renderer_InitInstancedTerrainMeshBuffer: Created %u instances for terrain\n", INSTANCE_COUNT);
+}
+
 
 
 
@@ -930,6 +997,7 @@ void AF_Renderer_SetTerrainHeightMap(const uint32_t _shaderID, AF_CTerrain* _ter
 	AF_Shader_SetInt(_shaderID, "heightMap", 2);
 	AF_Shader_SetFloat(_shaderID, "heightScale", _terrain->heightScale);
 	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
+	AF_Shader_SetVec2(_shaderID, "uvHeightmapScale", _terrain->heightMapUVScaleX, _terrain->heightMapUVSCaleY);
 }
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
@@ -1119,8 +1187,10 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 			glActiveTexture(GL_TEXTURE0 + heightmapTextureUnit);
 			glBindTexture(GL_TEXTURE_2D, terrain->heightmapTextureID);
 			AF_Shader_SetInt(mesh->material.shaderID, "heightMap", heightmapTextureUnit); // Set sampler to unit 0
+			
 			AF_Shader_SetFloat(mesh->material.shaderID, "heightScale", terrain->heightScale);
 			AF_Shader_SetVec2(mesh->material.shaderID, "texelSize", terrain->texelSizeX, terrain->texelSizeY);
+			AF_Shader_SetVec2(mesh->material.shaderID, "uvHeightmapScale", terrain->heightMapUVScaleX, terrain->heightMapUVSCaleY);
 		}
 			
 		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
@@ -1421,8 +1491,19 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		AF_Shader_SetVec2(shader, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);
 		AF_Shader_SetVec2(shader, "uvScale", _mesh->material.diffuseTexture.uvScaleX, _mesh->material.diffuseTexture.uvScaleY);
 		
-		
-		glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+		//Is this an instanced mesh or a regular mesh?
+		if(_mesh->isInstanced == AF_TRUE){
+			// Draw instanced mesh
+			uint32_t instanceCount = _mesh->instanceCount;
+			if(instanceCount == 0){
+				AF_Log_Warning("AF_Renderer_DrawMesh: instanceCount is 0 for instanced mesh. Can't draw elements\n");
+				//return;
+			}
+			glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, instanceCount);
+		}else{
+			// Draw regular mesh
+			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+		}
 			
 		AF_Renderer_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
 
@@ -2601,3 +2682,5 @@ void AF_Renderer_DrawTestTriangle(void) {
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
 }
+
+

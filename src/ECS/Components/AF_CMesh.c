@@ -26,7 +26,10 @@ AF_CMesh AF_CMesh_ZERO(void){
 	.recieveShadows = AF_FALSE,
 	.castShadows = AF_FALSE,
 	.modelMatrix = NULL,
-	.displayListBuffer = NULL
+	.displayListBuffer = NULL,
+	.isInstanced = AF_FALSE,
+	.instanceCount = 0,
+	.instanceVBO = 0
 	};
 	// ensure its init and safe with null terminator
 	returnMesh.meshPath[0] = '\0';  // Ensure the path is empty
@@ -68,7 +71,10 @@ AF_CMesh AF_CMesh_ADD(void){
 	.recieveShadows = AF_TRUE,
 	.castShadows = AF_TRUE,
 	.modelMatrix = NULL,
-	.displayListBuffer = NULL
+	.displayListBuffer = NULL,
+	.isInstanced = AF_FALSE,
+	.instanceCount = 0,
+	.instanceVBO = 0
 	};
 
 	// init the meshes

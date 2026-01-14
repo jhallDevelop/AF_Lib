@@ -66,6 +66,7 @@ void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);
 void AF_Renderer_UpdateMeshBufferData(AF_MeshData* _meshData);
 void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs);
 void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider);
+void AF_Renderer_InitInstancedTerrainMeshBuffer(uint32_t _gridSize, AF_CMesh* _mesh);
 
 
 // ============================  FRAME BUFFERS ================================ 
