@@ -34,6 +34,7 @@ typedef struct AF_CTerrain {
     AF_FLOAT texelSizeX;
     AF_FLOAT texelSizeY;
     uint32_t gridSize;
+    uint32_t gridScale;
     AF_FLOAT heightMapUVScaleX;
     AF_FLOAT heightMapUVSCaleY;
 } AF_CTerrain;

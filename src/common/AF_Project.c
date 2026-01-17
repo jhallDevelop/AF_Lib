@@ -75,6 +75,8 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         if (hasTerrain == AF_TRUE) {
             AF_CTerrain* terrainComponent = &_appData->ecs.terrains[i];
             terrainComponent->heightmapTextureID = AF_Renderer_LoadTexture(terrainComponent->heightMapPath);
+            AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
+            AF_Renderer_InitInstancedTerrainMeshBuffer(terrainComponent->gridSize, meshComponent);
         }   
 
         // Load Sprite Mesh components

@@ -110,6 +110,7 @@ typedef struct AF_RenderingData{
     uint16_t viewportTextureHeight; // The height the FBO texture should be / currently is
     af_bool_t     viewportSizeDirty;     // Flag if it needs to be recreated
 	void* specialRenderData; // Pointer to the device context (e.g., for DirectX or Vulkan)
+    uint32_t cameraUBO;
     // Add any other rendering specific data here
 } AF_RenderingData;
 
@@ -160,6 +161,7 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
     returnRenderingData.viewportTextureHeight = 0; // The height the FBO texture should be / currently is
     returnRenderingData.viewportSizeDirty = AF_FALSE;    // Flag if it needs to be recreated
     returnRenderingData.specialRenderData = NULL;
+    returnRenderingData.cameraUBO = 0;
 	return returnRenderingData;
 }
 

@@ -988,6 +988,16 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
     if (item && cJSON_IsNumber(item)) {
         _mesh->meshCount = (uint32_t)item->valueint;
     }
+	
+    item = cJSON_GetObjectItem(_meshJSON, "isInstanced");
+    if (item && cJSON_IsNumber(item)) {
+        _mesh->isInstanced = (uint32_t)item->valueint;
+    }
+
+	item = cJSON_GetObjectItem(_meshJSON, "instanceCount");
+    if (item && cJSON_IsNumber(item)) {
+        _mesh->instanceCount = (uint32_t)item->valueint;
+    }
 
     // Load mesh data
     cJSON* meshesArray = cJSON_GetObjectItem(_meshJSON, "meshes");
@@ -1276,6 +1286,28 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 	cJSON* heightMapTexelSizeY = cJSON_GetObjectItem(_terrainJSON, "texelSizeY");
 	if (heightMapTexelSizeY && cJSON_IsNumber(heightMapTexelSizeY)) {
 		_terrain->texelSizeY = (AF_FLOAT)heightMapTexelSizeY->valuedouble;
+	}
+
+	// heightmap gridSize 
+	cJSON* gridSize = cJSON_GetObjectItem(_terrainJSON, "gridSize");
+	if (gridSize && cJSON_IsNumber(gridSize)) {
+		_terrain->gridSize = (uint32_t)gridSize->valueint;
+	}
+
+	// heightmap gridScale 
+	cJSON* gridScale = cJSON_GetObjectItem(_terrainJSON, "gridScale");
+	if (gridScale && cJSON_IsNumber(gridScale)) {
+		_terrain->gridScale = (uint32_t)gridScale->valueint;
+	}
+
+	cJSON* heightMapUVScaleX = cJSON_GetObjectItem(_terrainJSON, "heightMapUVScaleX");
+	if (heightMapUVScaleX && cJSON_IsNumber(heightMapUVScaleX)) {
+		_terrain->heightMapUVScaleX = (AF_FLOAT)heightMapUVScaleX->valuedouble;
+	}
+
+	cJSON* heightMapUVSCaleY = cJSON_GetObjectItem(_terrainJSON, "heightMapUVSCaleY");
+	if (heightMapUVSCaleY && cJSON_IsNumber(heightMapUVSCaleY)) {
+		_terrain->heightMapUVSCaleY = (AF_FLOAT)heightMapUVSCaleY->valuedouble;
 	}
 }
 
@@ -2060,6 +2092,14 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
     // meshCount
     cJSON_AddNumberToObject(returnJSON, "meshCount", _component->meshCount);
 
+	// isIstanced
+	cJSON_AddNumberToObject(returnJSON, "isInstanced", _component->isInstanced);
+	
+
+	// instanceCount
+	cJSON_AddNumberToObject(returnJSON, "instanceCount", _component->instanceCount);
+	
+
     // mesh
     cJSON* meshesArray = cJSON_AddArrayToObject(returnJSON, "meshes");
     
@@ -2208,7 +2248,22 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
 
     // texelSizeY;
     cJSON_AddNumberToObject(returnJSON, "texelSizeY", _component->texelSizeY);
-    return returnJSON;
+    
+	
+	// gridSize;
+    cJSON_AddNumberToObject(returnJSON, "gridSize", _component->gridSize);
+    
+	// gridScale;
+    cJSON_AddNumberToObject(returnJSON, "gridScale", _component->gridScale);
+    
+	// heightMapUVScaleX;
+    cJSON_AddNumberToObject(returnJSON, "heightMapUVScaleX", _component->heightMapUVScaleX);
+
+	// heightMapUVSCaleY;
+    cJSON_AddNumberToObject(returnJSON, "heightMapUVSCaleY", _component->heightMapUVSCaleY);
+
+	
+	return returnJSON;
 }
 
 cJSON* AF_JSON_TextToJson(AF_CText* _component) {

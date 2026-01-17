@@ -19,7 +19,8 @@ AF_CTerrain AF_CTerrain_ZERO(void){
 	.heightScale = 1.0f,
 	.texelSizeX = 1.0f / 256.0f,
 	.texelSizeY = 1.0f / 256.0f,
-	.gridSize = 10,
+	.gridSize = 64,
+	.gridScale = 1,
 	.heightMapUVScaleX = 0.1f,
 	.heightMapUVSCaleY = 0.1f
 	};
@@ -46,7 +47,8 @@ AF_CTerrain AF_CTerrain_ADD(void){
 	.heightScale = 1.0f,
 	.texelSizeX = 1.0f / 256.0f,
 	.texelSizeY = 1.0f / 256.0f,
-	.gridSize = 10,
+	.gridSize = 64,
+	.gridScale = 1,
 	.heightMapUVScaleX = 0.1f,
 	.heightMapUVSCaleY = 0.1f
 	};

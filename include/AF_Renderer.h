@@ -120,8 +120,18 @@ void AF_Renderer_DeleteTexture(uint32_t* _textureID);
 void AF_Renderer_CheckFrameBufferStatus(const char* _message);
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
 
+uint32_t AF_Renderer_CreateCameraUBO(void);
+void AF_Renderer_UpdateCameraUBO(uint32_t uboID, AF_FLOAT* viewMatrix, AF_FLOAT* projMatrix, AF_FLOAT* camPos, AF_FLOAT currentTime);
 
-
+// ====================================== STRUCTS =====================================
+// Camera UBO
+typedef struct {
+    AF_FLOAT view[16];       // 64 bytes
+    AF_FLOAT projection[16]; // 64 bytes
+    AF_FLOAT cameraPos[4];   // 16 bytes
+    AF_FLOAT time;           // 4 bytes (perfectly fills the 16-byte chunk)
+                          // Total: 160 bytes
+} AF_CameraUBO_s;
 
 
 

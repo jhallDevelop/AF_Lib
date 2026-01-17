@@ -301,6 +301,9 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 		return AF_FALSE;
 	}
 
+	// Create Camera UBO
+	_renderingData->cameraUBO = AF_Renderer_CreateCameraUBO();
+
 	return AF_TRUE;
 	
 }
@@ -390,70 +393,24 @@ void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs){
 }
 
 // =================================================================================================
-// AF_Renderer_InitInstancedTerrainMeshBuffer
-// Generates a VBO for per-instance data (world offset, UV offset) and configures the
-// mesh's VAO to use it for instanced rendering.
+// AF_Renderer_InitGPUTerrainMeshBuffer
+// Creates an empty VAO for GPU-generated terrain (vertices generated in shader using gl_VertexID)
+// No vertex data is uploaded - the shader generates all geometry procedurally
 // =================================================================================================
 void AF_Renderer_InitInstancedTerrainMeshBuffer(uint32_t _gridSize, AF_CMesh* _mesh){
 	if(_mesh == NULL){
-		AF_Log_Error("AF_Renderer_InitInstancedTerrainMeshBuffer: Mesh is NULL\n");
-			return;
-	}
-
-	if(_mesh->meshes[0].vao == 0){
-		AF_Log_Error("AF_Renderer_InitInstancedTerrainMeshBuffer: Mesh VAO is 0, ensure mesh buffer is created first\n");
-			return;
-	}
-	
-	// Generate instance data
-	uint32_t INSTANCE_COUNT = _gridSize * _gridSize;
-	const AF_FLOAT TILE_WORLD_SIZE = 1.0f; // Size of each terrain tile in world units
-
-	// use Vec4 to pack world offset (xy and uv offset zw)
-	Vec4* instanceData = (Vec4*)malloc(sizeof(Vec4) * INSTANCE_COUNT);
-	if(!instanceData){
-		AF_Log_Error("AF_Renderer_InitInstancedTerrainMeshBuffer: malloc failed\n");
+		AF_Log_Error("AF_Renderer_InitGPUTerrainMeshBuffer: Mesh is NULL\n");
 		return;
 	}
 
-	for(uint32_t i = 0; i < _gridSize; i++){
-		for(uint32_t j = 0; j < _gridSize; j++){
-			uint32_t index = i * _gridSize + j;
-			instanceData[index].x = j * TILE_WORLD_SIZE; // world offset x
-			instanceData[index].y = i * TILE_WORLD_SIZE; // world offset y
-			instanceData[index].z = (AF_FLOAT)j / (AF_FLOAT)_gridSize; // uv offset x
-			instanceData[index].w = (AF_FLOAT)i / (AF_FLOAT)_gridSize; // uv offset y
-		}
+	// Create an empty VAO for the terrain
+	// We don't need any vertex buffers since vertices are generated on the GPU
+	if(_mesh->meshes[0].vao == 0){
+		glGenVertexArrays(1, &_mesh->meshes[0].vao);
 	}
-
-	// Create the buffers for instance data
-	glGenBuffers(1, &_mesh->instanceVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, _mesh->instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vec4) * INSTANCE_COUNT, instanceData, GL_STATIC_DRAW);
 	
-	// Configure vertex attributes for instance data
-	glBindVertexArray(_mesh->meshes[0].vao);
-
-	// Attribute location 5: aInstanceOffset (vec2)
-	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(Vec4), (void*)0);
-	glVertexAttribDivisor(5, 1); // Update per instance
-
-	// Attribute location 6: aInstanceUVOffset (vec2)
-	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(Vec4), (void*)(2 * sizeof(AF_FLOAT)));
-	glVertexAttribDivisor(6, 1); // Update per instance
-
-	// unbind
-	glBindVertexArray(0);
-
-	// clean up malloced memory
-	free(instanceData);
-
-	// store the instance count
-	_mesh->instanceCount = INSTANCE_COUNT;
-
-	AF_Log("AF_Renderer_InitInstancedTerrainMeshBuffer: Created %u instances for terrain\n", INSTANCE_COUNT);
+	// That's it! The shader will generate all vertices using gl_VertexID
+	AF_Log("AF_Renderer_InitGPUTerrainMeshBuffer: Created empty VAO for GPU-generated terrain (gridSize=%u)\n", _gridSize);
 }
 
 
@@ -503,6 +460,11 @@ Simple render command to decide how to progress other rendering steps
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
 	// START RENDERING
 	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
+
+	// Update Camera UBO
+	AF_CCamera *camera = &_ecs->cameras[_cameraID];
+	AF_CTransform3D *cameraTransform = &_ecs->transforms[_cameraID];
+	AF_Renderer_UpdateCameraUBO(_renderingData->cameraUBO, (AF_FLOAT*)&camera->viewMatrix, (AF_FLOAT*)&camera->projectionMatrix, (AF_FLOAT*)&cameraTransform->pos, 0.0f);
 
 	// Update lighting data
 	AF_Renderer_UpdateLighting(_ecs, _lightingData);
@@ -998,6 +960,10 @@ void AF_Renderer_SetTerrainHeightMap(const uint32_t _shaderID, AF_CTerrain* _ter
 	AF_Shader_SetFloat(_shaderID, "heightScale", _terrain->heightScale);
 	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
 	AF_Shader_SetVec2(_shaderID, "uvHeightmapScale", _terrain->heightMapUVScaleX, _terrain->heightMapUVSCaleY);
+
+	// GPU rendering data
+	AF_Shader_SetInt(_shaderID, "gridSize", _terrain->gridSize);
+	AF_Shader_SetInt(_shaderID, "gridScale", _terrain->gridSize);
 }
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
@@ -1139,6 +1105,7 @@ Loop through the entities and draw the meshes that have components attached
 ====================
 */
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
+	
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
 		if(!AF_Component_GetHas(entity->flags)){
@@ -1493,15 +1460,35 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		
 		//Is this an instanced mesh or a regular mesh?
 		if(_mesh->isInstanced == AF_TRUE){
-			// Draw instanced mesh
-			uint32_t instanceCount = _mesh->instanceCount;
-			if(instanceCount == 0){
-				AF_Log_Warning("AF_Renderer_DrawMesh: instanceCount is 0 for instanced mesh. Can't draw elements\n");
-				//return;
-			}
-			glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, instanceCount);
-		}else{
-			// Draw regular mesh
+			// GPU-generated terrain rendering
+            // We need to get the actual terrain grid size from the component
+            // Search for the terrain component that matches this mesh
+            uint32_t terrainGridSize = 65; // Default fallback
+            
+            for(uint32_t terrainIdx = 0; terrainIdx < _ecs->entitiesCount; terrainIdx++){
+                AF_CTerrain* terrain = &_ecs->terrains[terrainIdx];
+                if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){
+                    // Found an active terrain, use its grid size
+                    terrainGridSize = terrain->gridSize;
+                    
+                    // Set the shader uniforms for terrain generation
+                    AF_Shader_SetInt(shader, "gridSize", terrain->gridSize);
+                    AF_Shader_SetInt(shader, "gridScale", terrain->gridScale);
+                    break;
+                }
+            }
+            
+            // Calculate vertex count: (gridSize-1) * (gridSize-1) quads * 6 vertices per quad
+            const uint32_t numQuads = (terrainGridSize - 1) * (terrainGridSize - 1);
+            const uint32_t vertexCountToDraw = numQuads * 6;
+            
+            //AF_Log("Drawing terrain with gridSize=%u, vertexCount=%u\n", terrainGridSize, vertexCountToDraw);
+
+            // Use glDrawArrays because we're generating vertices in the shader
+            glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
+		}
+		else{
+			// Draw regular mesh with index buffer
 			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 		}
 			
@@ -2681,6 +2668,47 @@ void AF_Renderer_DrawTestTriangle(void) {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
+}
+
+
+// ============================
+// AF_Renderer_UpdateCameraUBO(uint32_t uboID, AF_FLOAT* viewMatrix, AF_FLOAT* projMatrix, AF_FLOAT* camPos, AF_FLOAT currentTime);
+// Updates the camera UBO with the provided view and projection matrices, camera position, and current time.
+// ============================
+void AF_Renderer_UpdateCameraUBO(uint32_t uboID, AF_FLOAT* viewMatrix, AF_FLOAT* projMatrix, AF_FLOAT* camPos, AF_FLOAT currentTime) {
+	AF_CameraUBO_s uboData;
+
+	// Copy view matrix
+	memcpy(uboData.view, viewMatrix, sizeof(AF_FLOAT) * 16);
+	memcpy(uboData.projection, projMatrix, sizeof(AF_FLOAT) * 16);
+
+	// Copy vector and scalr cam position
+	uboData.cameraPos[0] = camPos[0];
+	uboData.cameraPos[1] = camPos[1];
+	uboData.cameraPos[2] = camPos[2];
+	uboData.cameraPos[3] = 1.0f; // padding
+	uboData.time = currentTime;
+
+	// upload to GPU
+	glBindBuffer(GL_UNIFORM_BUFFER, uboID);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(AF_CameraUBO_s), &uboData);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);	
+}
+
+uint32_t AF_Renderer_CreateCameraUBO(void){
+	uint32_t uboID;
+	glGenBuffers(1, &uboID);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboID);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(AF_CameraUBO_s), NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// Associate the UBO (uboID) with the global binding point 0.
+    // This makes the buffer's data available to any shader that binds its uniform block
+    // to this same point. This only needs to be done once.
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboID);
+
+
+	return uboID;
 }
 
 
