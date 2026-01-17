@@ -19,12 +19,11 @@ This implementation is for OpenGL
 #define GL_SILENCE_DEPRECATION
 #include "AF_Util.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include "AF_Assets.h"
 #include "AF_Renderer_Util.h"
 #include "ECS/Components/AF_CText.h"
+#include "AF_Lighting.h"
+#include "AF_TextureLoader.h"
 
 #define NO_SHARED_SHADER 0
 
@@ -460,7 +459,7 @@ void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_Light
 	AF_Renderer_UpdateCameraUBO(_renderingData->cameraUBO, (AF_FLOAT*)&camera->viewMatrix, (AF_FLOAT*)&camera->projectionMatrix, (AF_FLOAT*)&cameraTransform->pos, 0.0f);
 
 	// Update lighting data
-	AF_Renderer_UpdateLighting(_ecs, _lightingData);
+	AF_Lighting_UpdateLighting(_ecs, _lightingData);
 
 
 	// Switch Between Renderer
@@ -1006,136 +1005,13 @@ void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader
 }
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
-    glUseProgram(_shaderID); // Bind the shader program
-    glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
-    glUseProgram(0);
-}
-
-/*
-====================
-AF_Renderer_ReLoadTexture
-Reload textures
-====================
-*/
-void AF_Renderer_ReLoadTexture(AF_Assets* _assets, AF_Texture* _texture) {
-
-    if (!_texture || _texture->path[0] == '\0') {
-        AF_Log_Error("AF_Renderer_ReLoadTexture: Null or empty texture path provided.\n");
-        
-    }
-    //snprintf(returnTexture.path, AF_MAX_PATH_CHAR_SIZE, "%s", _texture->path);
-
-    // Potentially check cache first if you don't want to *always* reload from disk
-    AF_Texture cachedTexture = AF_Assets_GetTexture(_assets, _texture->path);
-    if (cachedTexture.type != AF_TEXTURE_TYPE_NONE) {
-		//AF_Log("AF_Renderer_ReLoadTexture: Loading Cached texture id: %i from assets for path: %s\n", returnTexture.id, _texturePath);
-    //     // Optional: Could check glIsTexture(cachedTexture.id) here if paranoid
-         //return cachedTexture;
-		 // copy the texture data from the chached version
-		 *_texture = cachedTexture;
-    }
-
-	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture not found. Loading texture for first time: %s\n", _texturePath);
-    _texture->id = AF_Renderer_LoadTexture(_texture->path);
-
-    if (_texture->id == 0) { // Now this check is meaningful
-        AF_Log_Error("AF_Renderer_ReLoadTexture: Call to AF_Renderer_LoadTexture failed for path: %s\n", _texture->path);
-        // returnTexture.type is already AF_TEXTURE_TYPE_NONE
-        //return returnTexture;
-    }
-
-    //_texture->type = AF_TEXTURE_TYPE_DIFFUSE; // Or determine more robustly
-	//AF_Log("AF_Renderer_ReLoadTexture: Cached texture id: %i stored in assets: %s\n",returnTexture.id,  _texturePath);
-    AF_Assets_AddTexture(_assets, *_texture); // Add/update in asset manager
-
-    //return returnTexture;
+	glUseProgram(_shaderID); // Bind the shader program
+	glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
+	glUseProgram(0);
 }
 
 
-/*
-====================
-AF_Renderer_SetFlipImage
-Set the flip image for stb_image.h
-====================
-*/
-// tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-void AF_Renderer_SetFlipImage(af_bool_t _flipImage)	{
-	bool isFlipped = false;
-	if(_flipImage == AF_FALSE){
-		isFlipped = false;
-	}else{
-		isFlipped = true;
-	}
-	
-    stbi_set_flip_vertically_on_load(isFlipped);
-}
-
-
-/*
-====================
-AF_Renderer_LoadTexture
-Load textures
-====================
-*/
-unsigned int AF_Renderer_LoadTexture(char const * path) {
-    if (!path || path[0] == '\0') {
-        AF_Log_Error("AF_Renderer_LoadTexture: Null or empty texture path provided.\n");
-        return 0; // Return 0 for invalid path
-    }
-
-    unsigned int textureID = 0; // Initialize to 0
-    int width, height, nrComponents;
-	//AF_Renderer_SetFlipImage(true);
-    //stbi_set_flip_vertically_on_load(true); // Often needed for OpenGL, make it consistent or configurable
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-
-    if (data) {
-		glBindTexture(GL_TEXTURE_2D,0); // free the old bind texture if deleted
-        glGenTextures(1, &textureID); // Generate ID only if data is loaded
-        glBindTexture(GL_TEXTURE_2D, textureID);
-
-        GLenum internalFormat = GL_RGB;
-        GLenum dataFormat = GL_RGB;
-        if (nrComponents == 1) {
-            internalFormat = GL_RED; 
-			dataFormat = GL_RED;
-        } else if (nrComponents == 3) {
-			#ifdef AF_WEB_BUILD
-                        internalFormat = GL_RGB;
-            #else
-                        internalFormat = GL_RGB8; 
-            #endif
-            dataFormat = GL_RGB; // Use sized internal format
-        } else if (nrComponents == 4) {
-            #ifdef AF_WEB_BUILD
-						internalFormat = GL_RGBA;
-			#else
-						internalFormat = GL_RGBA8; // Use sized internal format on desktop
-			#endif
-			dataFormat = GL_RGBA;
-        }
-
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glBindTexture(GL_TEXTURE_2D, 0); // Good practice: unbind after configuring
-        stbi_image_free(data);
-        return textureID;
-    } else {
-        AF_Log_Error("AF_Renderer_LoadTexture: Texture failed to load at path: \"%s\" (stbi_load error: %s)\n", path, stbi_failure_reason());
-        // No textureID was generated and bound with data, so return 0
-        return 0;
-    }
-}
-
-
-// ============================  DRAW ================================ 
-
+// ============================  DRAW ================================
 
 /*
 ====================
@@ -1327,7 +1203,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		// Get the next available lights and send data to shader
 		if(_mesh->recieveLights == AF_TRUE){
-			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
+			AF_Lighting_RenderForwardPointLights(shader, _ecs, _lightingData);
 		}
 		
 		// Debug: Check VAO before binding
@@ -2101,162 +1977,6 @@ void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingDat
     );
 
 }
-
-// ============================  LIGHTING ================================ 
-/*
-====================
-AF_Renderer_RenderForwardPointLights
-Update shaders with lighting data
-====================
-*/
-void AF_Renderer_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData){
-	
-	// if we have a found ambient light
-	if(_lightingData->ambientLightEntityIndex > 0){
-		AF_CLight* light = &_ecs->lights[_lightingData->ambientLightEntityIndex];
-		glUniform1f(glGetUniformLocation(_shader, "material.shininess"), 32.0f);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.direction"), light->direction.x, light->direction.y, light->direction.z);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.ambient"),  light->ambientCol.x, light->ambientCol.y, light->ambientCol.z); 
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.diffuse"),  light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.specular"),  light->specularCol.x, light->specularCol.y, light->specularCol.z);
-	}
-	// if we have a found spot light
-	
-	if(_lightingData->spotLightEntityIndex > 0){
-		AF_Entity* spotLightEntity = &_ecs->entities[_lightingData->spotLightEntityIndex];
-		AF_CLight* spotLight = &_ecs->lights[_lightingData->spotLightEntityIndex];
-		uint32_t spotLightEntityID = AF_ECS_GetID(spotLightEntity->id_tag);
-		AF_CTransform3D* spotLightTransform = &_ecs->transforms[spotLightEntityID];	
-		Vec3* spotLightPos = &spotLightTransform->pos;
-		
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.ambient"), spotLight->ambientCol.x, spotLight->ambientCol.y, spotLight->ambientCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.diffuse"), spotLight->diffuseCol.x, spotLight->diffuseCol.y, spotLight->diffuseCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.specular"), spotLight->specularCol.x, spotLight->specularCol.y, spotLight->specularCol.z);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.constant"), spotLight->constant); 
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.linear"), spotLight->linear);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.quadratic"), spotLight->quadratic);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.cutoff"), AF_Math_Cos(AF_Math_Radians(spotLight->cutOff)));
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.outerCutOff"), AF_Math_Cos(AF_Math_Radians(spotLight->outerCutoff)));
-	}
-	
-	// if we have a found point lights, for each found light
-	for(uint8_t i = 0; i < _lightingData->pointLightsFound; i++){
-		// Point Light
-		uint16_t pointLightEntityIndex = _lightingData->pointLightIndexArray[i];
-		AF_CLight* light = &_ecs->lights[pointLightEntityIndex];
-		char posUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(posUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
-		uint32_t pointLightEntityID = AF_ECS_GetID(_ecs->entities[pointLightEntityIndex].id_tag);
-		Vec3* lightPosition = &_ecs->transforms[pointLightEntityID].pos;
-		glUniform3f(glGetUniformLocation(_shader, posUniformName), lightPosition->x, lightPosition->y, lightPosition->z);
-		
-		// Ambient
-		char ambientUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(ambientUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
-		glUniform3f(glGetUniformLocation(_shader, ambientUniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);
-		
-		// Diffuse
-		char pointUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(pointUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
-		glUniform3f(glGetUniformLocation(_shader, pointUniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z); 
-		
-		// Specular
-		char specUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(specUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
-		glUniform3f(glGetUniformLocation(_shader, specUniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);
-		
-		// Constant
-		char constantUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(constantUniformName, AF_MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
-		GLint unformShaderName = glGetUniformLocation(_shader, constantUniformName);
-		AF_Shader_SetFloat(_shader, constantUniformName, light->constant);
-	
-		// Linear
-		char linearUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(linearUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
-		glUniform1f(glGetUniformLocation(_shader, linearUniformName), light->linear);//0.09f); //_light->linear);//0.09f); 
-
-		// Quadratic
-		char quadraticUniformName[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(quadraticUniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
-		glUniform1f(glGetUniformLocation(_shader, quadraticUniformName), light->quadratic);//0.032f); //_light->quadratic);//0.032f); 
-	}
-	
-}
-
-/*
-====================
-AF_Renderer_UpdateLighting
-Update lighting data by searching and storing the index's of active lights
-Used in later render passes
-====================
-*/
-void AF_Renderer_UpdateLighting(AF_ECS *_ecs, AF_LightingData *_lightingData)
-{
-	// clear the lighting data so we can re-count fresh
-	_lightingData->ambientLightEntityIndex = 0;
-	_lightingData->spotLightEntityIndex = 0;
-	for(uint16_t x = 0; x < _lightingData->maxLights; x++){
-		_lightingData->pointLightIndexArray[x] = 0;
-	}
-	_lightingData->pointLightsFound = 0;
-
-	// search all lights in the entities
-	// store the point lights, ambient, and spot light
-	af_bool_t ambientLightFound = AF_FALSE;
-	af_bool_t spotLightfound = AF_FALSE;
-	af_bool_t allPointLightsFound = AF_FALSE;
-	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-		// early exit if we have found all available lights
-		if(ambientLightFound == AF_TRUE && spotLightfound == AF_TRUE && allPointLightsFound == AF_TRUE){
-			break;
-		}
-
-		AF_Entity* entity = &_ecs->entities[i];
-		// Only search enabled entities
-		if(!AF_Component_GetEnabled(entity->flags)){
-			continue;
-		}
-
-		// search if this is a light component that is is enabled
-		AF_CLight* light = &_ecs->lights[i];
-
-		if(!AF_Component_GetHasEnabled(light->enabled)){
-			continue;
-		}
-
-		// What type of light
-		if(light->lightType == AF_LIGHT_TYPE_AMBIENT){
-			if(_lightingData->ambientLightEntityIndex > 0){
-				AF_Log_Warning("AF_Renderer_UpdateLighting: Ambient Light already Set (entityIndex %i).  Can't set ambient light (entityIndex: %i) You are only allowed 1. Disable the others\n", _lightingData->ambientLightEntityIndex, i);
-				continue;
-			}
-			_lightingData->ambientLightEntityIndex = i;
-		}else if(light->lightType == AF_LIGHT_TYPE_POINT){
-			if(_lightingData->pointLightsFound >= 4){
-				AF_Log_Warning("AF_Renderer_UpdateLighting: Point Lights already Maxed out (entityIndex %i, %i, %i, %i). \
-					Can't set point light (entityIndex: %i) You are only allowed 1. \
-					Disable the others\n", \
-					_lightingData->pointLightIndexArray[0], \
-					_lightingData->pointLightIndexArray[1], \
-					_lightingData->pointLightIndexArray[2], \
-					_lightingData->pointLightIndexArray[3], i);
-					continue;
-			}
-			_lightingData->pointLightIndexArray[_lightingData->pointLightsFound] = i;
-			_lightingData->pointLightsFound++;
-		}else if (light->lightType == AF_LIGHT_TYPE_SPOT){
-			if(_lightingData->spotLightEntityIndex > 0){
-				AF_Log_Warning("AF_Renderer_UpdateLighting: Spot Light already Set (entityIndex %i). Can't set spot light (entityIndex: %i) You are only allowed 1. Disable the others\n", _lightingData->spotLightEntityIndex, i);
-				continue;
-			}
-			_lightingData->spotLightEntityIndex = i;
-		}
-	}
-}
-
 
 // ============================  DESTROY / CLEANUP ================================ 
 

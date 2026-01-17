@@ -345,7 +345,7 @@ AF_Texture AF_MeshLoad_Assimp_LoadMaterialTextures(AF_Assets& _assets, const cha
         {   // if texture hasn't been loaded already, load it
             AF_Log("AF_MeshLoad_Assimp_LoadMaterialTextures: Texture doesnt exist yet, Loading new texture from assimp path %s\n", assimpTexturePath);
             std::snprintf(returnTexture.path, sizeof(returnTexture.path), "%s/%s", modelDirectorStr.c_str(), str.C_Str());
-            returnTexture.id = AF_TextureLoader_LoadTexture(returnTexture.path);
+            returnTexture.id = AF_Renderer_LoadTexture(returnTexture.path);
 
             // Map the assimp texture type to our texture type
             if(_assimpType == aiTextureType_DIFFUSE){

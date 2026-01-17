@@ -15,6 +15,7 @@ AF_PROJECT_H
 #include "AF_MeshLoad.h"
 #include "ECS/Components/AF_Component.h"
 #include "AF_JSON.h"
+#include "AF_TextureLoader.h"
 
 
 
@@ -62,7 +63,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             // init the mesh
             AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
             af_bool_t meshLoadSuccess = AF_MeshLoad_InitMesh(&_appData->assets, meshComponent, meshComponent->meshPath);
-            AF_Renderer_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
+            AF_TextureLoader_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
             //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
             if (meshLoadSuccess == false) {
                 AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
@@ -74,7 +75,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         af_bool_t hasTerrain = AF_Component_GetHas(_appData->ecs.terrains[i].enabled);
         if (hasTerrain == AF_TRUE) {
             AF_CTerrain* terrainComponent = &_appData->ecs.terrains[i];
-            terrainComponent->heightmapTextureID = AF_Renderer_LoadTexture(terrainComponent->heightMapPath);
+            terrainComponent->heightmapTextureID = AF_TextureLoader_LoadTexture(terrainComponent->heightMapPath);
             AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
             AF_Renderer_InitInstancedTerrainMeshBuffer(terrainComponent->gridSize, meshComponent);
         }   
@@ -89,7 +90,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             AF_Renderer_InitSpriteMeshBuffer(spriteComponent);
             spriteComponent->spriteMesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(&_appData->assets, spriteComponent->spriteMesh.shader.vertPath, spriteComponent->spriteMesh.shader.fragPath);
             //snprintf(spriteComponent->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "assets/textures/%s", spriteComponent->spriteMesh.material.diffuseTexture.path);
-            AF_Renderer_ReLoadTexture(&_appData->assets, &spriteComponent->spriteMesh.material.diffuseTexture);
+            AF_TextureLoader_ReLoadTexture(&_appData->assets, &spriteComponent->spriteMesh.material.diffuseTexture);
             
         }
 
