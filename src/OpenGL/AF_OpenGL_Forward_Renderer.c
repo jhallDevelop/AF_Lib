@@ -28,6 +28,13 @@ This implementation is for OpenGL
 
 #define NO_SHARED_SHADER 0
 
+// Debug error checking macro - only enabled in debug builds
+#ifdef AF_DEBUG
+	#define AF_RENDERER_CHECK_GL_ERROR(msg) AF_Renderer_CheckError(msg)
+#else
+	#define AF_RENDERER_CHECK_GL_ERROR(msg) ((void)0)
+#endif
+
 // string to use in logging
 const char* openglRendererFileTitle = "AF_OpenGL_Renderer:";
 
@@ -425,20 +432,6 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 		_renderingData->windowPtr->isWindowResized = AF_FALSE; // Reset the flag after resizing
 	}
 	
-	// Clear Screen and buffers
-	//AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-	//glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
-	//AF_Renderer_UnBindFrameBuffer();
-
-	// Clear the depth buffers
-	
-	//AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-	//glClear(GL_DEPTH_BUFFER_BIT);
-	//	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
-	//AF_Renderer_UnBindFrameBuffer();
-
 	// Clear the Debug buffers
 	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
@@ -541,14 +534,8 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
     glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
     
-    // Clear color and depth of the main framebuffer before drawing the scene.
-    //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// if texture type is renderTexture, make the texture id the same as the screen frame buffer
-	
-    /**/
-    //glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
+    
     // --- Main Mesh Drawing ---
     AF_Renderer_DrawMeshes(
         &camera->viewMatrix,
@@ -925,45 +912,97 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
     AF_Renderer_CheckError("AF_Renderer_DrawTextMeshes: Finished rendering text meshes\n");
 }
 
-
-void AF_Renderer_RenderDepthMeshes(AF_ECS* _ecs){
-	if(_ecs == NULL){}
-}
-
-
 // ============================ TEXTURES =================================
-/*
-=================================================================================================
-AF_Renderer_SetTerrainHeightMap
-Sets the heightmap texture and uniforms for terrain rendering
-Binds texture to unit 2 and sets heightScale and texelSize uniforms
-NOTE: Assumes shader is already bound with glUseProgram before calling this
-=================================================================================================
-*/
-void AF_Renderer_SetTerrainHeightMap(const uint32_t _shaderID, AF_CTerrain* _terrain){
-	if(_terrain == NULL){
-		AF_Log_Warning("AF_Renderer_SetTerrainHeightMap: Terrain is NULL\n");
+// =================================================================================================
+// AF_Renderer_SetupTerrainUniforms
+// Consolidates all terrain-specific shader uniform setup
+// Binds heightmap to texture unit 2 and sets all terrain shader uniforms
+// NOTE: Assumes shader is already bound with glUseProgram before calling this
+// =================================================================================================
+void AF_Renderer_SetupTerrainUniforms(uint32_t _shaderID, AF_CTerrain* _terrain){
+	if(_terrain == NULL || _terrain->heightmapTextureID == 0){
 		return;
 	}
 	
-	if(_terrain->heightmapTextureID == 0){
-		AF_Log_Warning("AF_Renderer_SetTerrainHeightMap: Heightmap texture ID is 0, skipping bind\n");
-		return;
-	}
-	
-	// Use texture unit 2 for heightmap (0 = diffuse, 1 = shadow map)
+	// Bind heightmap texture to unit 2 (0 = diffuse, 1 = shadow map)
 	glActiveTexture(GL_TEXTURE0 + 2);
 	glBindTexture(GL_TEXTURE_2D, _terrain->heightmapTextureID);
 	
-	// Set terrain uniforms (shader should already be bound)
+	// Set all terrain uniforms at once
 	AF_Shader_SetInt(_shaderID, "heightMap", 2);
 	AF_Shader_SetFloat(_shaderID, "heightScale", _terrain->heightScale);
 	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
-	AF_Shader_SetVec2(_shaderID, "uvHeightmapScale", _terrain->heightMapUVScaleX, _terrain->heightMapUVSCaleY);
-
-	// GPU rendering data
 	AF_Shader_SetInt(_shaderID, "gridSize", _terrain->gridSize);
-	AF_Shader_SetInt(_shaderID, "gridScale", _terrain->gridSize);
+	AF_Shader_SetInt(_shaderID, "gridScale", _terrain->gridScale);
+}
+
+// =================================================================================================
+// AF_Renderer_BindMeshTextures
+// Binds all textures for a mesh (diffuse, shadow map, etc.)
+// =================================================================================================
+void AF_Renderer_BindMeshTextures(AF_CMesh* _mesh, AF_RenderingData* _renderingData, uint32_t _shader){
+	// Diffuse texture (unit 0)
+	if(_mesh->material.diffuseTexture.id != 0){
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, _mesh->material.diffuseTexture.id);
+		AF_Shader_SetInt(_shader, "material.diffuse", 0);
+	}
+	
+	// Shadow map (unit 1)
+	if(_renderingData->depthFrameBufferData.textureID != 0){
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, _renderingData->depthFrameBufferData.textureID);
+		AF_Shader_SetInt(_shader, "shadowMap", 1);
+	}
+}
+
+// =================================================================================================
+// AF_Renderer_UnbindTextures
+// Unbinds all texture units used by mesh rendering
+// =================================================================================================
+void AF_Renderer_UnbindTextures(void){
+	for(uint32_t i = 0; i < 3; i++){
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	glActiveTexture(GL_TEXTURE0);
+}
+
+// =================================================================================================
+// AF_Renderer_FindActiveTerrain
+// Helper function to find the active terrain component for GPU-generated terrain
+// =================================================================================================
+AF_CTerrain* AF_Renderer_FindActiveTerrain(AF_ECS* _ecs){
+	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+		AF_CTerrain* terrain = &_ecs->terrains[i];
+		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){
+			return terrain;
+		}
+	}
+	return NULL;
+}
+
+// =================================================================================================
+// AF_Renderer_ExecuteDrawCall
+// Executes the appropriate draw call based on mesh type (instanced vs regular)
+// =================================================================================================
+void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader, uint32_t _indexCount){
+	if(_mesh->isInstanced == AF_TRUE){
+		// GPU-generated terrain rendering
+		AF_CTerrain* terrain = AF_Renderer_FindActiveTerrain(_ecs);
+		uint32_t terrainGridSize = terrain ? terrain->gridSize : 65;
+		
+		// Calculate vertex count: (gridSize-1) * (gridSize-1) quads * 6 vertices per quad
+		const uint32_t numQuads = (terrainGridSize - 1) * (terrainGridSize - 1);
+		const uint32_t vertexCountToDraw = numQuads * 6;
+		
+		// Use glDrawArrays because we're generating vertices in the shader
+		glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
+	}
+	else{
+		// Regular indexed mesh
+		glDrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0);
+	}
 }
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
@@ -1145,19 +1184,8 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		// Special case for terrain to bind heightmap texture
 		AF_CTerrain* terrain = &_ecs->terrains[i];
 		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){	
-			// Just bind textures and store uniforms to be set in DrawMesh
-			// start using the shader
-			glUseProgram(mesh->material.shaderID); 
-
-			// Send the heightmap texture to the shader
-			uint32_t heightmapTextureUnit = 2;
-			glActiveTexture(GL_TEXTURE0 + heightmapTextureUnit);
-			glBindTexture(GL_TEXTURE_2D, terrain->heightmapTextureID);
-			AF_Shader_SetInt(mesh->material.shaderID, "heightMap", heightmapTextureUnit); // Set sampler to unit 0
-			
-			AF_Shader_SetFloat(mesh->material.shaderID, "heightScale", terrain->heightScale);
-			AF_Shader_SetVec2(mesh->material.shaderID, "texelSize", terrain->texelSizeX, terrain->texelSizeY);
-			AF_Shader_SetVec2(mesh->material.shaderID, "uvHeightmapScale", terrain->heightMapUVScaleX, terrain->heightMapUVSCaleY);
+			glUseProgram(mesh->material.shaderID);
+			AF_Renderer_SetupTerrainUniforms(mesh->material.shaderID, terrain);
 		}
 			
 		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
@@ -1226,61 +1254,24 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
 }
 
-/*
-====================
-AF_Renderer_DrawMesh
-Loop through the meshes in a component and draw using opengl
-====================
-*/
+// =================================================================================================
+// AF_Renderer_DrawMesh
+// Loop through the meshes in a component and draw using opengl
+// =================================================================================================
 void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
-	// draw meshes
-	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL)
-	{
+	// Validate parameters and early exit conditions
+	if(_modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL){
 		AF_Log_Error("AF_Renderer_DrawMesh: Passed Null reference \n");
 		return;
 	}
 	
-	// don't render if we are not enabled or the component isn't supposed to render
 	if(!AF_Component_GetHasEnabled(_mesh->enabled)){
 		return;
 	}
-	// TODO: this is very expensive. batch these up or just per model, use one shader/material
-	// ---- Setup shader ----
-	uint32_t shader = 0;
-	// if we are not using a shared shader then use the individual mesh shader
-	if(_shaderOverride == NO_SHARED_SHADER){
-		shader = _mesh->shader.shaderID;
-	}else{
-		// otherwise use a shared shader
-		shader = _shaderOverride;
-	}
-	glUseProgram(shader); 
 	
-	/*
-	// TODO: are we even using terrain in this mesh? if not skip this
-	// Set terrain uniforms if texture unit 2 has a heightmap bound
-	// Check if there's a texture on unit 2 (terrain sets this)
-	GLint currentTexture = 0;
-	glActiveTexture(GL_TEXTURE0 + 2);
-	glGetIntegerv(GL_TEXTURE_BINDING_2D, &currentTexture);
-	if(currentTexture != 0){
-		// Terrain heightmap is bound, set the uniforms
-		// We need to get terrain data from ECS - find terrain component for this entity
-		for(uint32_t terrainIdx = 0; terrainIdx < _ecs->entitiesCount; terrainIdx++){
-			AF_CTerrain* terrain = &_ecs->terrains[terrainIdx];
-			if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE && terrain->heightmapTextureID == (uint32_t)currentTexture){
-				AF_Shader_SetInt(shader, "heightMap", 2);
-				AF_Shader_SetFloat(shader, "heightScale", terrain->heightScale);
-				AF_Shader_SetVec2(shader, "texelSize", terrain->texelSizeX, terrain->texelSizeY);
-				break;
-			}
-		}
-	}
-		*/
-	
-	//AF_Shader_SetMat4(shader, "lightSpaceMatrix", _lightingData->shadowData.shadowLightSpaceMatrix);
-
-	
+	// Setup shader
+	uint32_t shader = (_shaderOverride == NO_SHARED_SHADER) ? _mesh->shader.shaderID : _shaderOverride;
+	glUseProgram(shader);
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 
@@ -1325,72 +1316,16 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 				continue;
 			}
 
-			// ---- Diffuse Texture ----
-			//if((_mesh->meshes[i].material.diffuseTexture.type != AF_TEXTURE_TYPE_NONE)){
-			
+			// Bind textures if not using shared shader
 			if(_shaderOverride == NO_SHARED_SHADER){	
-				// ---- Diffuse Texture ----
-				if (_mesh->material.diffuseTexture.id != 0) { // Assuming type check already done
-					uint32_t diffuseTextureUnit = 0;
-					glActiveTexture(GL_TEXTURE0 + diffuseTextureUnit);
-					glBindTexture(GL_TEXTURE_2D, _mesh->material.diffuseTexture.id);
-					AF_Shader_SetInt(shader, "material.diffuse", diffuseTextureUnit); // Set sampler to unit 0
-				}
-			
-				// ---- Shadow Map ----
-				//if (_lightingData->shadowsEnabled == AF_TRUE && _renderingData->depthFrameBufferData.textureID != 0) {
-				if (_renderingData->depthFrameBufferData.textureID != 0) {
-					
-					uint32_t shadowMapTextureUnit = 1; // Define texture unit for shadow map (e.g., unit 1)
-					glActiveTexture(GL_TEXTURE0 + shadowMapTextureUnit);
-					glBindTexture(GL_TEXTURE_2D, _renderingData->depthFrameBufferData.textureID); // Bind actual shadow map texture to unit 1
-					AF_Shader_SetInt(shader, "shadowMap", shadowMapTextureUnit); // Tell "shadowMap" sampler to use TEXTURE UNIT 1
-				}else{
-					
-					
-				}
-				
+				AF_Renderer_BindMeshTextures(_mesh, _renderingData, shader);
 			}
-
-			/*
-			// ---- Normal Texture ----
-			if((_mesh->meshes[i].material.normalTexture.type != AF_TEXTURE_TYPE_NONE)){
-				uint32_t normalTextureBinding = 1;
-				glActiveTexture(GL_TEXTURE0 + normalTextureBinding); // active proper texture unit before binding
-				glUniform1i(glGetUniformLocation(shader, "normal"), normalTextureBinding);
-				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.normalTexture.id);
-			}
-
-			// ---- Specular Texture ----
-			if((_mesh->meshes[i].material.specularTexture.type != AF_TEXTURE_TYPE_NONE)){
-				uint32_t specularTextureBinding = 2;
-				glActiveTexture(GL_TEXTURE0 + specularTextureBinding); // active proper texture unit before binding
-				glUniform1i(glGetUniformLocation(shader, "specular"), specularTextureBinding);
-				// and finally bind the texture
-				glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.specularTexture.id);
-			}*/
 		}
 
-
-		// Does the shader use lighting?
-        //if(_mesh->recieveLights == AF_TRUE){
-		// TODO: confirm if the camera position is stored in column or row major order of the viewMat
-		
-		//glUniform3f(glGetUniformLocation(shader, "viewPos"), _cameraPos->x, _cameraPos->y, _cameraPos->z); 
+		// Set camera position for lighting calculations
 		AF_Shader_SetVec3(shader, "viewPos", _cameraPos->x, _cameraPos->y, _cameraPos->z);
-		// ideally shininess is set to 32.0f
-		/*
-		if((_mesh->meshes[i].material.diffuseTexture != NULL) && (_mesh->meshes[i].material.diffuseTexture->type != AF_TEXTURE_TYPE_NONE)){
-			uint32_t diffuseTextureBinding = 0;
-			glActiveTexture(GL_TEXTURE0 + diffuseTextureBinding); // active proper texture unit before binding
-			glUniform1i(glGetUniformLocation(shader, "material.diffuse"), diffuseTextureBinding);
 
-			// and finally bind the texture
-			glBindTexture(GL_TEXTURE_2D, _mesh->meshes[i].material.diffuseTexture->id);
-		}*/
-
-		// Get the next available lights and send data to shader up to MAX_LIGHT_NUM, likley 4
+		// Get the next available lights and send data to shader
 		if(_mesh->recieveLights == AF_TRUE){
 			AF_Renderer_RenderForwardPointLights(shader, _ecs, _lightingData);
 		}
@@ -1408,39 +1343,16 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
 		AF_Renderer_CheckError("Error binding VBO for drawing!");
 
-
-		//---------------Send command to Graphics API to Draw Triangles------------
-		
-		// NOTE: GL_TRUE Indicates that the matrix you are passing to OpenGL is in row-major order 
-
-		// TODO: make this configurable from the editor component
-		//glEnable(GL_CULL_FACE);
-		//glCullFace(GL_BACK); // Default
-		//glFrontFace(GL_CCW); // Or GL_CW
-		//glFrontFace(GL_CW);
-		//AF_Log("==== Projection Matrix ====\n");
-		//AF_Util_Mat4_Log(*_projMat);
-		
+		// Send matrices to shader (GL_TRUE = row-major order)
 		int projLocation = glGetUniformLocation(shader, "projection");
 		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
-		// View
-		//AF_Log("==== View Matrix ====\n");
-		//AF_Util_Mat4_Log(*_viewMat);
+		
 		int viewLocation = glGetUniformLocation(shader, "view");
 		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
 
-		// Model
-		//AF_Log("==== Model Matrix ====\n");
-		//AF_Util_Mat4_Log(*_modelMat);
 		int modelLocation = glGetUniformLocation(shader, "model");
 		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
 
-		//AF_Log("==== ------------------ ====\n");
-
-		// Texture 
-		//int textureUniformLocation = glGetUniformLocation(shaderID, "image");
-
-		// send the camera data to the shader
 		// Prep drawing
 		unsigned int indexCount = _mesh->meshes[i].indexCount;
 		if(indexCount == 0){
@@ -1458,39 +1370,8 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		AF_Shader_SetVec2(shader, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);
 		AF_Shader_SetVec2(shader, "uvScale", _mesh->material.diffuseTexture.uvScaleX, _mesh->material.diffuseTexture.uvScaleY);
 		
-		//Is this an instanced mesh or a regular mesh?
-		if(_mesh->isInstanced == AF_TRUE){
-			// GPU-generated terrain rendering
-            // We need to get the actual terrain grid size from the component
-            // Search for the terrain component that matches this mesh
-            uint32_t terrainGridSize = 65; // Default fallback
-            
-            for(uint32_t terrainIdx = 0; terrainIdx < _ecs->entitiesCount; terrainIdx++){
-                AF_CTerrain* terrain = &_ecs->terrains[terrainIdx];
-                if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){
-                    // Found an active terrain, use its grid size
-                    terrainGridSize = terrain->gridSize;
-                    
-                    // Set the shader uniforms for terrain generation
-                    AF_Shader_SetInt(shader, "gridSize", terrain->gridSize);
-                    AF_Shader_SetInt(shader, "gridScale", terrain->gridScale);
-                    break;
-                }
-            }
-            
-            // Calculate vertex count: (gridSize-1) * (gridSize-1) quads * 6 vertices per quad
-            const uint32_t numQuads = (terrainGridSize - 1) * (terrainGridSize - 1);
-            const uint32_t vertexCountToDraw = numQuads * 6;
-            
-            //AF_Log("Drawing terrain with gridSize=%u, vertexCount=%u\n", terrainGridSize, vertexCountToDraw);
-
-            // Use glDrawArrays because we're generating vertices in the shader
-            glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
-		}
-		else{
-			// Draw regular mesh with index buffer
-			glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
-		}
+		// Execute the appropriate draw call (instanced or regular)
+		AF_Renderer_ExecuteDrawCall(_mesh, _ecs, shader, indexCount);
 			
 		AF_Renderer_CheckError( "AF_Renderer_DrawMesh_Error drawElements Rendering OpenGL! \n");
 
@@ -1501,22 +1382,8 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	// Unbind shader
     glUseProgram(0);
 
-    // Unbind textures explicitly from the units they were bound to
-    // Assuming these were the maximum units you might have used within the loop.
-    // If _mesh->textured was false, these calls are harmless.
-    glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glActiveTexture(GL_TEXTURE0 + 1);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Specular Texture was on unit 2
-    //glActiveTexture(GL_TEXTURE0 + 2);
-    //glBindTexture(GL_TEXTURE_2D, 0);
-
-    // It's good practice to reset the active texture unit to a default,
-    // though well-behaved subsequent code (like ImGui's backend) should set its own.
-    glActiveTexture(GL_TEXTURE0);
+    // Unbind all textures
+    AF_Renderer_UnbindTextures();
 }
 
 /*
