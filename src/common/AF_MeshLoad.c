@@ -1,5 +1,6 @@
 #include "AF_MeshLoad.h"
 #include "AF_Renderer.h"
+#include "AF_RendererBuffer.h"
 //#include "AF_Util.h"
 //#include "AF_File.h"
 
@@ -43,7 +44,7 @@ af_bool_t AF_MeshLoad_InitMesh(AF_Assets* _assets, AF_CMesh* _meshComponent, con
     _meshComponent->material.shaderID = _meshComponent->shader.shaderID;
     for(uint32_t i = 0; i < _meshComponent->meshCount; ++i){
         AF_MeshData* meshData = &_meshComponent->meshes[i];
-        AF_Renderer_CreateMeshBuffer(&_meshComponent->meshes[i]);
+        AF_RendererBuffer_CreateMeshBuffer(&_meshComponent->meshes[i]);
     }
 
     return AF_TRUE;
@@ -67,7 +68,7 @@ af_bool_t AF_MeshLoad_InitTextMesh(AF_Assets* _assets, AF_CText* _fontComponent,
     // We can remove the redundant shader loading logic.
 
     // setup the font mesh data
-    AF_Renderer_InitTextMeshBuffers(_fontComponent);
+    AF_RendererBuffer_InitTextMeshBuffers(_fontComponent);
 
     return AF_TRUE;
 }

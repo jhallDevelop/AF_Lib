@@ -12,6 +12,7 @@ AF_PROJECT_H
 #include "AF_Assets.h"
 #include "AF_File.h"
 #include "AF_Renderer.h"
+#include "AF_RendererBuffer.h"
 #include "AF_MeshLoad.h"
 #include "ECS/Components/AF_Component.h"
 #include "AF_JSON.h"
@@ -77,7 +78,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             AF_CTerrain* terrainComponent = &_appData->ecs.terrains[i];
             terrainComponent->heightmapTextureID = AF_TextureLoader_LoadTexture(terrainComponent->heightMapPath);
             AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
-            AF_Renderer_InitInstancedTerrainMeshBuffer(terrainComponent->gridSize, meshComponent);
+            AF_RendererBuffer_InitInstancedTerrainMeshBuffer(terrainComponent->gridSize, meshComponent);
         }   
 
         // Load Sprite Mesh components
@@ -87,7 +88,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             
             // Reload the sprite's mesh and texture from their file paths.
             // AF_MeshLoad_FromFile will handle loading the model data and shader.
-            AF_Renderer_InitSpriteMeshBuffer(spriteComponent);
+            AF_RendererBuffer_InitSpriteMeshBuffer(spriteComponent);
             spriteComponent->spriteMesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(&_appData->assets, spriteComponent->spriteMesh.shader.vertPath, spriteComponent->spriteMesh.shader.fragPath);
             //snprintf(spriteComponent->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "assets/textures/%s", spriteComponent->spriteMesh.material.diffuseTexture.path);
             AF_TextureLoader_ReLoadTexture(&_appData->assets, &spriteComponent->spriteMesh.material.diffuseTexture);

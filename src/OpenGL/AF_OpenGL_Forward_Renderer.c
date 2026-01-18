@@ -24,6 +24,8 @@ This implementation is for OpenGL
 #include "ECS/Components/AF_CText.h"
 #include "AF_Lighting.h"
 #include "AF_TextureLoader.h"
+#include "AF_RendererFramebuffer.h"
+#include "AF_RendererBuffer.h"
 
 #define NO_SHARED_SHADER 0
 
@@ -271,7 +273,7 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 					cameraComponent->renderTextureData = renderTextureBufferData;
 
 					// create the frame buffer for the camera
-					AF_Renderer_CreateFramebuffer(&cameraComponent->renderTextureData);
+					AF_RendererFramebuffer_CreateFramebuffer(&cameraComponent->renderTextureData);
 				} else {
 					AF_Log_Error("AF_Renderer_Start: Camera Render Texture has invalid width or height\n");
 				}
@@ -290,7 +292,7 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
     }
 	
 	// Recreate the quad mesh buffers
-	AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
+	AF_RendererBuffer_CreateScreenFBOQuadMeshBuffer(_renderingData);
 
 
 	// Create the collision Geometry debug shader stuff for rendering debug lines ect.
@@ -308,119 +310,25 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 	}
 
 	// Create Camera UBO
-	_renderingData->cameraUBO = AF_Renderer_CreateCameraUBO();
+	_renderingData->cameraUBO = AF_RendererBuffer_CreateCameraUBO();
 
 	return AF_TRUE;
 	
 }
 
-void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider){
-	if(_collider == NULL){
-		AF_Log_Error("AF_Renderer_CreateCollisionGeometryMeshBuffer: Collider is NULL\n");
-		return;
-	}
-
-	// for now, everything is a box
-	_collider->collisionMeshData.vertexCount = 8;
-	_collider->collisionMeshData.indexCount = 36;
-	
-	
-	_collider->collisionMeshData.vertices = (AF_Vertex*)malloc(sizeof(AF_Vertex) * _collider->collisionMeshData.vertexCount);
-	_collider->collisionMeshData.indices = (uint32_t*)malloc(sizeof(uint32_t) * _collider->collisionMeshData.indexCount);
-	if(!_collider->collisionMeshData.vertices || !_collider->collisionMeshData.indices){
-        AF_Log_Error("AF_Renderer_CreateCollisionGeometryMeshBuffer: malloc failed\n");
-        free(_collider->collisionMeshData.vertices);
-        free(_collider->collisionMeshData.indices);
-		
-        return;
-    }
-
-	
-	// Initialize vertices (zero all fields first, then set positions)
-    AF_Vertex vertices[8] = {0};
-  
-    
-    // Set positions for unit cube vertices
-    Vec3 positions[8] = {
-        {-1.0f, -1.0f,  1.0f}, // 0
-        {-1.0f,  1.0f,  1.0f}, // 1
-        {-1.0f, -1.0f, -1.0f}, // 2
-        {-1.0f,  1.0f, -1.0f}, // 3
-        { 1.0f, -1.0f,  1.0f}, // 4
-        { 1.0f,  1.0f,  1.0f}, // 5
-        { 1.0f, -1.0f, -1.0f}, // 6
-        { 1.0f,  1.0f, -1.0f}  // 7
-    };
-    
-    for(int i = 0; i < 8; i++) {
-        vertices[i].position = positions[i];
-        // normal, tangent, bitangent, and texCoord are already zero-initialized
-        _collider->collisionMeshData.vertices[i] = vertices[i];
-    }
-
-    // Indices for cube faces (from OBJ conversion)
-    uint32_t indices[36] = {
-        0,1,3,  0,3,2,  // Face 1
-        2,3,7,  2,7,6,  // Face 2
-        6,7,5,  6,5,4,  // Face 3
-        4,5,1,  4,1,0,  // Face 4
-        2,6,4,  2,4,0,  // Face 5
-        7,3,1,  7,1,5   // Face 6
-    };
-
-    // Copy indices to allocated memory
-    memcpy(_collider->collisionMeshData.indices, indices, sizeof(indices));
-
-	// load the mesh data to the GPU, the Create meshbuffer function handles 
-	// The delete of the mesh data vert, and indicies memory, however double check it
-	AF_Renderer_CreateMeshBuffer(&_collider->collisionMeshData);
-	if(_collider->collisionMeshData.vertices != NULL){
-		free(_collider->collisionMeshData.vertices);
-		_collider->collisionMeshData.vertices = NULL;
-	}
-
-	if(_collider->collisionMeshData.indices != NULL){
-		free(_collider->collisionMeshData.indices);
-		_collider->collisionMeshData.indices = NULL;
-	}
-}
-
+// ============================  BUFFER MANAGEMENT ================================
 void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs){
-	// for each entity
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-		// if the entity has a collider component
 		AF_Entity* entity = &_ecs->entities[i];
 		AF_CCollider* collider = &_ecs->colliders[i];
 		if(AF_Component_GetHasEnabled(collider->enabled) == AF_TRUE){
-			// create the collision geometry
-			AF_Renderer_CreateCollisionGeometryMeshBuffer(collider);
+			AF_RendererBuffer_CreateCollisionGeometryMeshBuffer(collider);
 		}
 	}
 }
 
-// =================================================================================================
-// AF_Renderer_InitGPUTerrainMeshBuffer
-// Creates an empty VAO for GPU-generated terrain (vertices generated in shader using gl_VertexID)
-// No vertex data is uploaded - the shader generates all geometry procedurally
-// =================================================================================================
-void AF_Renderer_InitInstancedTerrainMeshBuffer(uint32_t _gridSize, AF_CMesh* _mesh){
-	if(_mesh == NULL){
-		AF_Log_Error("AF_Renderer_InitGPUTerrainMeshBuffer: Mesh is NULL\n");
-		return;
-	}
 
-	// Create an empty VAO for the terrain
-	// We don't need any vertex buffers since vertices are generated on the GPU
-	if(_mesh->meshes[0].vao == 0){
-		glGenVertexArrays(1, &_mesh->meshes[0].vao);
-	}
-	
-	// That's it! The shader will generate all vertices using gl_VertexID
-	AF_Log("AF_Renderer_InitGPUTerrainMeshBuffer: Created empty VAO for GPU-generated terrain (gridSize=%u)\n", _gridSize);
-}
-
-
-
+// ============================  INITIALIZATION & SETUP ================================
 
 void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgroundColor)
 {
@@ -432,16 +340,18 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	}
 	
 	// Clear the Debug buffers
-	AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+	AF_RendererFramebuffer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
-	AF_Renderer_UnBindFrameBuffer();
+	AF_RendererFramebuffer_UnBindFrameBuffer();
 
-	AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+	AF_RendererFramebuffer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
-	AF_Renderer_UnBindFrameBuffer();
+	AF_RendererFramebuffer_UnBindFrameBuffer();
 }
+
+// ============================  MAIN RENDERING PASSES ================================
 
 /*
 ====================
@@ -456,7 +366,7 @@ void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_Light
 	// Update Camera UBO
 	AF_CCamera *camera = &_ecs->cameras[_cameraID];
 	AF_CTransform3D *cameraTransform = &_ecs->transforms[_cameraID];
-	AF_Renderer_UpdateCameraUBO(_renderingData->cameraUBO, (AF_FLOAT*)&camera->viewMatrix, (AF_FLOAT*)&camera->projectionMatrix, (AF_FLOAT*)&cameraTransform->pos, 0.0f);
+	AF_RendererBuffer_UpdateCameraUBO(_renderingData->cameraUBO, (AF_FLOAT*)&camera->viewMatrix, (AF_FLOAT*)&camera->projectionMatrix, (AF_FLOAT*)&cameraTransform->pos, 0.0f);
 
 	// Update lighting data
 	AF_Lighting_UpdateLighting(_ecs, _lightingData);
@@ -507,7 +417,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     glFrontFace(GL_CCW);
 
     // 1. ==== DEPTH PASS (For Shadow Mapping) ====
-    AF_Renderer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
+    AF_RendererFramebuffer_BindFrameBuffer(_renderingData->depthFrameBufferData.fbo);
     glViewport(0, 0, _renderingData->depthFrameBufferData.textureWidth, _renderingData->depthFrameBufferData.textureHeight);
     
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -527,10 +437,10 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         uint32_t depthCameraID = AF_ECS_GetID(depthCameraEntity->id_tag);
         AF_Renderer_StartDepthPass(_renderingData, _lightingData, _ecs, depthCameraID);
     }
-	AF_Renderer_UnBindFrameBuffer();
+	AF_RendererFramebuffer_UnBindFrameBuffer();
 
 	// 2. ==== MAIN COLOR & DEBUG PASS ====
-    AF_Renderer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+    AF_RendererFramebuffer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
     glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
     
     glDisable(GL_CULL_FACE);
@@ -545,7 +455,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         NO_SHARED_SHADER,
         _renderingData
     );
-	AF_Renderer_UnBindFrameBuffer();
+	AF_RendererFramebuffer_UnBindFrameBuffer();
 
 	// 1.5 Update the render texture cameras
 	
@@ -553,7 +463,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 		AF_CCamera* renderTextureCamera = &_ecs->cameras[i];
 		if(AF_Component_GetHasEnabled(renderTextureCamera->enabled) == AF_TRUE){
 			if(renderTextureCamera->enableRenderToTexture == AF_TRUE){
-				AF_Renderer_BindFrameBuffer(renderTextureCamera->renderTextureData.fbo);
+				AF_RendererFramebuffer_BindFrameBuffer(renderTextureCamera->renderTextureData.fbo);
 				glViewport(0, 0, renderTextureCamera->renderTextureData.textureWidth, renderTextureCamera->renderTextureData.textureHeight);
 				// update the forward rendering for this camera
 				//renderTextureCamera->cameraFront = AF_Camera_CalculateFront(cameraTransform->pos.y, cameraTransform->pos.x);//renderTextureCamera->yaw, renderTextureCamera->pitch);
@@ -586,7 +496,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 					NO_SHARED_SHADER,
 					_renderingData
 				);
-				AF_Renderer_UnBindFrameBuffer();
+				AF_RendererFramebuffer_UnBindFrameBuffer();
 			}
 		}
 	}
@@ -632,12 +542,12 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     glEnable(GL_DEPTH_TEST);
 	
 
-    AF_Renderer_UnBindFrameBuffer();
+    AF_RendererFramebuffer_UnBindFrameBuffer();
 
 	
 
     // 3. ==== VISUALIZE DEPTH TO TEXTURE (Optional Debug View) ====
-    AF_Renderer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
+    AF_RendererFramebuffer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
     glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -645,7 +555,7 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
     // AF_Renderer_RenderScreenDebugFBOQuad(_renderingData); // This would draw the depth map visualization
     
     // Unbind everything to return to the default state
-    AF_Renderer_UnBindFrameBuffer();
+    AF_RendererFramebuffer_UnBindFrameBuffer();
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
@@ -768,13 +678,7 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
         glBindTexture(GL_TEXTURE_2D, spriteComp->spriteMesh.material.diffuseTexture.id);
 
         // Render quad
-        glBindVertexArray(spriteComp->spriteMesh.meshes[0].vao);
-        glBindBuffer(GL_ARRAY_BUFFER, spriteComp->spriteMesh.meshes[0].vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
+        AF_RendererBuffer_UpdateAndDrawSpriteBuffer(spriteComp, vertices);
     }
     
     // Unbind the shader
@@ -885,12 +789,8 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
                 // Render glyph texture over quad
                 glBindTexture(GL_TEXTURE_2D, ch.TextureID);
                 
-                // bind the VBO and update its memory
-                glBindBuffer(GL_ARRAY_BUFFER, textMeshComp->mesh.meshes[0].vbo);
-                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-                
-                // Draw the quad
-                glDrawArrays(GL_TRIANGLES, 0, 6);
+                // Update VBO and draw the quad
+                AF_RendererBuffer_UpdateAndDrawTextBuffer(textMeshComp, vertices);
             }
             
             // advance the cursor for the next character
@@ -1011,7 +911,9 @@ void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName
 }
 
 
-// ============================  DRAW ================================
+// ============================  MESH DRAWING SYSTEMS ================================
+// These functions iterate through ECS entities and draw different mesh types
+// Tightly coupled with OpenGL - keep here for now
 
 /*
 ====================
@@ -1278,7 +1180,7 @@ void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData){
     glBindTexture(GL_TEXTURE_2D, _renderingData->depthFrameBufferData.textureID); // Bind your actual depth map texture
 
     if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
-        AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
+        AF_RendererBuffer_CreateScreenFBOQuadMeshBuffer(_renderingData);
     }
 	
     glBindVertexArray(_renderingData->screenQUAD_VAO);
@@ -1298,7 +1200,7 @@ Render the quad to the screen and swap the frame buffers over.
 */
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
-	AF_Renderer_BindFrameBuffer(0);
+	AF_RendererFramebuffer_BindFrameBuffer(0);
 
     glViewport(0, 0, _renderingData->windowPtr->frameBufferWidth, _renderingData->windowPtr->frameBufferHeight);
     
@@ -1315,7 +1217,7 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
     glBindTexture(GL_TEXTURE_2D, _renderingData->screenFrameBufferData.textureID); // Bind your actual depth map texture
 
     if (_renderingData->screenQUAD_VAO == 0) { // Lazy init, good
-        AF_Renderer_CreateScreenFBOQuadMeshBuffer(_renderingData);
+        AF_RendererBuffer_CreateScreenFBOQuadMeshBuffer(_renderingData);
     }
     glBindVertexArray(_renderingData->screenQUAD_VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -1328,254 +1230,15 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 }
 
 
-// ============================  MESH BUFFERS ================================ 
+// ============================  BUFFER MANAGEMENT ================================
+// OpenGL VAO/VBO/EBO creation and initialization for meshes, text, sprites
 
-/*
-====================
-AF_Renderer_InitMeshBuffers
-Init the mesh buffers for OpenGL
-====================
-*/
 void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){ 
-    if (_entityCount == 0) {
-    AF_Log_Error("No meshes to draw!\n");
-    	return;
-    }
-
-    for(uint32_t i = 0; i < _entityCount; i++){
-	   //AF_CMesh* mesh = _entities[i].mesh;
-
-	    af_bool_t hasMesh = AF_Component_GetHas(_mesh->enabled);
-	    // Skip setting up if we don't have a mesh component
-	    if(hasMesh == AF_FALSE){
-			continue;
-	    }
-
-		AF_Renderer_CheckError( "Mesh has no indices!\n");
-
-		// for each sub mesh. setup the mesh buffers
-		for(uint32_t j = 0; j < _mesh->meshCount; j++){
-			if(_mesh->meshes[j].vertexCount < 1){
-				// skip creating mesh buffer as we don't have any vetices
-				AF_Log_Warning("AF_Renderer_InitMeshBuffers: skip creating mesh buffer as we don't have any vetices\n");
-				continue;
-			}
-			AF_Renderer_CreateMeshBuffer(&_mesh->meshes[j]);
-		}
-    }
-}
-
-void AF_Renderer_InitTextMeshBuffers(AF_CText* _fontComponent){
-	if (_fontComponent == NULL) {
-        AF_Log_Error("AF_Renderer_InitTextMeshBuffers: _fontComponent is NULL!\n");
-        return;
-    }
-    AF_Renderer_CheckError( "AF_Renderer_InitTextMeshBuffers: before create text mesh buffers\n");
-    // setup the font mesh data
-    _fontComponent->mesh.meshCount = 1; // only one mesh for font
-    _fontComponent->mesh.meshes[0].vertexCount = 6; // A quad is 6 vertices (2 triangles)
-    _fontComponent->mesh.meshes[0].indexCount = 0; // no indices for font mesh, using glDrawArrays
-    _fontComponent->mesh.meshes[0].vertices = NULL; // Data is dynamic, no static vertex array needed.
-    glGenVertexArrays(1, &_fontComponent->mesh.meshes[0].vao);
-    glGenBuffers(1, &_fontComponent->mesh.meshes[0].vbo);
-    glBindVertexArray(_fontComponent->mesh.meshes[0].vao);
-    glBindBuffer(GL_ARRAY_BUFFER, _fontComponent->mesh.meshes[0].vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(AF_FLOAT) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(AF_FLOAT), (void*)0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    AF_Renderer_CheckError( "AF_Renderer_InitTextMeshBuffers: after create text mesh buffers\n");
-}
-
-void AF_Renderer_InitSpriteMeshBuffer(AF_CSprite* _spriteComponent){
-	if (_spriteComponent == NULL) {
-		AF_Log_Error("AF_Renderer_InitSpriteMeshBuffer: _spriteComponent is NULL!\n");
-		return;
-	}
-	AF_Renderer_CheckError( "AF_Renderer_InitSpriteMeshBuffer: before create sprite mesh buffers\n");
-	// A simple quad
-    float vertices[] = {
-        // positions        // texture Coords
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
-
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f,
-         0.5f,  0.5f, 0.0f,  1.0f, 1.0f
-    };
-
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // texture coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	_spriteComponent->spriteMesh.meshCount = 1; // only one mesh for sprite
-	_spriteComponent->spriteMesh.meshes[0].vertexCount = 6; // A quad
-	_spriteComponent->spriteMesh.meshes[0].indexCount = 0; // no indices for sprite mesh, using glDrawArrays
-	_spriteComponent->spriteMesh.meshes[0].vao = VAO;
-	_spriteComponent->spriteMesh.meshes[0].vbo = VBO;
-
-	AF_Renderer_CheckError( "AF_Renderer_InitSpriteMeshBuffer: after create sprite mesh buffers\n");
-}	
-
-/*
-====================
-AF_Renderer_CreateMeshBuffer
-Do the initial setup for a models mesh buffer
-====================
-*/
-void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData){
-	if(_meshData == NULL){
-		AF_Log_Error("Invalid _meshData, is NULL!\n");
-		return;
-	}
-	
-	if (_meshData->vertexCount == 0 || _meshData->indexCount == 0) {
-		AF_Log_Error("Invalid vertex or index data!\n");
-		return;
-	}
-		
-	//int vertexBufferSize = _entityCount * (mesh->vertexCount * sizeof(AF_Vertex));
-	int vertexBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
-	//AF_Log("Init GL Buffers for vertex buffer size of: %i\n",vertexBufferSize);
-	AF_Renderer_CheckError( "OpenGL error occurred just before gVAO, gVBO, gEBO buffer creation.\n");
-		
-	glGenVertexArrays(1, &_meshData->vao);
-	glGenBuffers(1, &_meshData->vbo);
-	glGenBuffers(1, &_meshData->ibo);
-	AF_Renderer_CheckError( "OpenGL error occurred during gVAO, gVBO, gEBO buffer creation.\n");
-
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s)
-	glBindVertexArray(_meshData->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, _meshData->vbo);
-	AF_Renderer_CheckError( "OpenGL error occurred during binding of the gVAO, gVBO.\n");
-
-	// our buffer needs to be 8 floats (3*pos, 3*normal, 2*tex)
-	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, _meshData->vertices, GL_STATIC_DRAW);
-	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the verts.\n");
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// Bind the IBO and set the buffer data
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _meshData->ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, _meshData->indexCount * sizeof(uint32_t), &_meshData->indices[0], GL_STATIC_DRAW);
-	AF_Renderer_CheckError( "OpenGL error occurred during glBufferData for the indexes.\n");
-
-	// Stride is 8 floats wide, 3*pos, 3*normal, 2*tex
-	// Vertex positions
-	glEnableVertexAttribArray(0);
-	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, position));
-	
-
-	// Vertex normals
-	glEnableVertexAttribArray(1);
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(3 * sizeof(float)));
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, normal));
-	
-	// Vertex texture coords
-	//glVertexAttribPointer(4, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(12 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, texCoord));
-
-
-	// Vertex tangent attributes
-	glEnableVertexAttribArray(3);
-	//glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(6 * sizeof(float)));
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, tangent));
-	
-
-	// Vertex bi tangent attributes
-	glEnableVertexAttribArray(4);
-	//glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)(9 * sizeof(float)));
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AF_Vertex), (void*)offsetof(AF_Vertex, bitangent));
-	
-
-	
-	AF_Renderer_CheckError( "OpenGL error occurred during assignment of vertexAttribs.\n");
-
-	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-	glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-	// remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-	glBindVertexArray(0); 
-
-	_meshData->vao = _meshData->vao;
-	_meshData->vbo = _meshData->vbo;
-	_meshData->ibo = _meshData->ibo;
-	// Bind the IBO and set the buffer data
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gIBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, _meshList->meshes->indices, GL_STATIC_DRAW);
-
-	
-	AF_Renderer_CheckError("Error InitMesh Buffers for OpenGL! \n");
-}
-
-/*
-=================================================================================================
-AF_Renderer_UpdateMeshBufferData
-Updates the vertex data of an existing VBO on the GPU. The buffer must have been created
-with GL_DYNAMIC_DRAW for optimal performance.
-=================================================================================================
-*/
-void AF_Renderer_UpdateMeshBufferData(AF_MeshData* _meshData) {
-	if(_meshData == NULL || _meshData->vertices == NULL) {
-		AF_Log_Error("AF_Renderer_UpdateMeshBufferData: Invalid _meshData or vertices is NULL!\n");
-		return;
-	}	
-
-	if(_meshData->vbo == 0) {
-		AF_Log_Error("AF_Renderer_UpdateMeshBufferData: VBO is 0, cannot update!\n");
-		return;
-	}
-
-	uint32_t vertextBufferSize = _meshData->vertexCount * sizeof(AF_Vertex);
-	glBindBuffer(GL_ARRAY_BUFFER, _meshData->vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertextBufferSize, _meshData->vertices);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);	
-	
-	AF_Renderer_CheckError("AF_Renderer_UpdateMeshBufferData: Error updating mesh buffer data!\n");
-}
-
-/*
-====================
-AF_Renderer_CreateScreenFBOQuadMeshBuffer
-Create the screen quad mesh buffers
-====================
-*/
-void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData){
-	// screen quad VAO
-	unsigned int quadVAO, quadVBO;
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(QUAD_VERTICES), &QUAD_VERTICES, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-	_renderingData->screenQUAD_VAO = quadVAO;
-	_renderingData->screenQUAD_VBO = quadVBO;
+	AF_RendererBuffer_InitMeshBuffers(_mesh, _entityCount);
 }
 
 
-// ============================  FRAME BUFFERS ================================ 
+// ============================  FRAMEBUFFER OPERATIONS ================================ 
 /*
 ====================
 AF_Renderer_FrameResized
@@ -1605,20 +1268,20 @@ void AF_Renderer_FrameResized(void* _renderingData){
 	//update the screen size
 	renderingDataPtr->screenFrameBufferData.textureWidth = window->frameBufferWidth;
 	renderingDataPtr->screenFrameBufferData.textureHeight = window->frameBufferHeight;
-	AF_Renderer_CreateFramebuffer(&renderingDataPtr->screenFrameBufferData);
+	AF_RendererFramebuffer_CreateFramebuffer(&renderingDataPtr->screenFrameBufferData);
 
 	// resize the render to texture frame buffer for shadows
 	
 
 	renderingDataPtr->depthFrameBufferData.textureWidth = AF_RENDERINGDATA_SHADOW_WIDTH;//window->frameBufferWidth;
 	renderingDataPtr->depthFrameBufferData.textureHeight = AF_RENDERINGDATA_SHADOW_HEIGHT;//window->frameBufferHeight;
-	//AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthFrameBufferData);
-	AF_Renderer_CreateDepthFrameBuffer(&renderingDataPtr->depthFrameBufferData);
+	//AF_RendererFramebuffer_CreateFramebuffer(&renderingDataPtr->depthFrameBufferData);
+	AF_RendererFramebuffer_CreateDepthFrameBuffer(&renderingDataPtr->depthFrameBufferData);
 
 	// resize the debug frame buffer
 	renderingDataPtr->depthDebugFrameBufferData.textureWidth = window->frameBufferWidth;
 	renderingDataPtr->depthDebugFrameBufferData.textureHeight = window->frameBufferHeight;
-	AF_Renderer_CreateFramebuffer(&renderingDataPtr->depthDebugFrameBufferData);
+	AF_RendererFramebuffer_CreateFramebuffer(&renderingDataPtr->depthDebugFrameBufferData);
 
 }
 
@@ -1630,280 +1293,6 @@ Create frame buffer object
 return framebuffer index uint32_t
 ====================
 */
-uint32_t AF_Renderer_CreateFBO(void){
-	unsigned int fBO;
-	glGenFramebuffers(1, &fBO);
-	return fBO;
-}
-
-void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
-    if (_frameBufferData == NULL) {
-        AF_Log_Error("AF_Renderer_CreateDepthFrameBuffer: _frameBufferData is NULL.\n");
-        return;
-    }
-    // Delete the existing framebuffer, texture, and renderbuffer if they exist
-    AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
-    AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
-
-    // Generate the framebuffer id
-    _frameBufferData->fbo = AF_Renderer_CreateFBO();
-    AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
-
-    // Create the texture
-    unsigned int depthMap;
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    
-    #ifdef AF_WEB_BUILD
-        AF_Log("AF_Renderer_CreateDepthFrameBuffer: WEB\n");
-        // WebGL depth texture requirements. GL_DEPTH_COMPONENT16 is a good default for WebGL 2.
-        // For WebGL 1, you might need to check for the WEBGL_depth_texture extension.
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
-            _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, 
-            GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, NULL);
-        
-        // WebGL-compatible texture parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    #else
-        AF_Log("AF_Renderer_CreateDepthFrameBuffer: Desktop\n");
-        // Desktop OpenGL depth texture
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 
-            _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, 
-            GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        
-        // Desktop OpenGL texture parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        float borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    #endif
-
-    // Attach depth texture as FBO's depth buffer
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-    
-    // On desktop, you must explicitly tell OpenGL not to draw to any color buffer.
-    // On WebGL, this is implicit if no color attachment is present.
-    #ifndef AF_WEB_BUILD
-        glDrawBuffer(GL_NONE);
-    #endif
-
-    // FIX: Remove glReadBuffer. It is not available in WebGL 1 and is not needed.
-    // glReadBuffer(GL_NONE);
-
-    // Check framebuffer completeness
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        AF_Log_Error("AF_Renderer_CreateDepthFrameBuffer: Framebuffer not complete!\n");
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    _frameBufferData->textureID = depthMap;
-
-	AF_Renderer_CheckError("AF_Renderer_CreateDepthFrameBuffer: Finished creating depth framebuffer\n");
-}
-
-/*
-====================
-AF_Renderer_CreateFramebuffer
-Create FBO, RBO, and Texture to use in frame buffer rendering for color
-====================
-*/
-void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _frameBufferData)
-{
-    if (_frameBufferData == NULL) {
-        AF_Log_Error("AF_Renderer_CreateFramebuffer: _frameBufferData is NULL.\n");
-        return;
-    }
-
-    // Delete the existing framebuffer, texture, and renderbuffer if they exist
-    AF_Renderer_DeleteFBO(&_frameBufferData->fbo);
-    AF_Renderer_DeleteRBO(&_frameBufferData->rbo);
-    AF_Renderer_DeleteTexture(&_frameBufferData->textureID);
-    
-    // 1. Generate and bind the framebuffer
-    _frameBufferData->fbo = AF_Renderer_CreateFBO();
-    AF_Renderer_BindFrameBuffer(_frameBufferData->fbo);
-
-    // 2. Generate and attach the color texture
-    _frameBufferData->textureID = AF_Renderer_CreateFBOTexture(_frameBufferData);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _frameBufferData->textureID, 0);
-
-    // 3. Generate and attach the depth/stencil renderbuffer
-    _frameBufferData->rbo = AF_Renderer_CreateRBO();
-    glBindRenderbuffer(GL_RENDERBUFFER, _frameBufferData->rbo);
-    
-    // Use GL_DEPTH_STENCIL for WebGL 1 compatibility, which is a safe default.
-    // WebGL 2 and Desktop GL also support GL_DEPTH24_STENCIL8.
-    #ifdef AF_WEB_BUILD
-		AF_Log("AF_Renderer_CreateFramebuffer: WEB glRenderbufferStorage GL_DEPTH_STENCIL\n");
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, _frameBufferData->textureWidth, _frameBufferData->textureHeight);
-    #else
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, _frameBufferData->textureWidth, _frameBufferData->textureHeight);
-    #endif
-    
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _frameBufferData->rbo);
-
-    // 4. Check for completeness
-    AF_Renderer_CheckFrameBufferStatus("AF_Renderer_CreateFramebuffer");
-    
-    // 5. Unbind the framebuffer to return to the default state
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-/*
-====================
-AF_Renderer_CreateRBO
-Create render buffer object
-return renderbuffer index uint32_t
-====================
-*/
-uint32_t AF_Renderer_CreateRBO(void)
-{
-    unsigned int rBO;
-	glGenRenderbuffers(1, &rBO);
-	return rBO;
-}
-
-
-
-/*
-====================
-AF_Renderer_BindDepthFrameBuffer
-Bind the depth FBO to the framebuffer command on the gpu
-====================
-*/
-void AF_Renderer_BindFrameBuffer(uint32_t _fBOID){
-	glBindFramebuffer(GL_FRAMEBUFFER, _fBOID);
-}
-
-/*
-====================
-AF_Renderer_UnBindFrameBuffer
-UnBind the depth FBO to the framebuffer command on the gpu
-====================
-*/
-void AF_Renderer_UnBindFrameBuffer(void){
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-/*
-====================
-AF_Renderer_BindFrameBufferToTexture
-Bind the depth FBO and Texture to the framebuffer command on the gpu
-====================
-*/
-void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType){
-	glBindFramebuffer(GL_FRAMEBUFFER, _fBOID);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, _textureAttatchmentType, GL_TEXTURE_2D, _textureID, 0);
-}
-
-
-/*
-====================
-AF_Renderer_BindRenderBuffer
-bind the render buffer to the frame buffer
-====================
-*/
-void AF_Renderer_BindRenderBuffer(uint32_t _rbo, uint32_t _screenWidth, uint32_t _screenHeight){
-	// MUST bind the RBO first!
-	glBindRenderbuffer(GL_RENDERBUFFER, _rbo);
-	// Now allocate storage for the currently bound RBO
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, _screenWidth, _screenHeight); // use a single renderbuffer object for both a depth AND stencil buffer.
-    // Attach the RBO to the currently bound FBO
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _rbo); // now actually attach it
-	// Unbind RBO (optional but good practice)
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-}
-
-
-/*
-====================
-AF_Renderer_CreateDepthMapTexture
-Create Depth map texture and return the texture id
-====================
-*/
-// Modified Texture Creation Function
-uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _frameBufferData) {
-    unsigned int fboTextureID = 0;
-    glGenTextures(1, &fboTextureID);
-    glBindTexture(GL_TEXTURE_2D, fboTextureID);
-
-    GLenum internalFormat;
-    GLenum format;
-    GLenum type;
-
-    // Determine the correct formats and type based on the requested internal format
-    if ((GLenum)_frameBufferData->internalFormat == GL_DEPTH_COMPONENT) {
-        format = GL_DEPTH_COMPONENT;
-        #ifdef AF_WEB_BUILD
-            // WebGL 1 requires unsized internal format and a specific type for depth.
-            // GL_DEPTH_COMPONENT16 is available in WebGL 2 for better precision.
-            internalFormat = GL_DEPTH_COMPONENT;
-            type = GL_UNSIGNED_SHORT;
-        #else
-            // Desktop can use a more precise sized format.
-            internalFormat = GL_DEPTH_COMPONENT24;
-            type = GL_FLOAT;
-        #endif
-    } else if ((GLenum)_frameBufferData->internalFormat == GL_RGBA || (GLenum)_frameBufferData->internalFormat == GL_RGBA16F || (GLenum)_frameBufferData->internalFormat == GL_SRGB8_ALPHA8) {
-        format = GL_RGBA;
-        type = GL_UNSIGNED_BYTE; // Standard for 8-bit per channel color
-        #ifdef AF_WEB_BUILD
-            // WebGL 1 requires the internal format to match the base format.
-            // WebGL 2 supports sized formats like GL_RGBA16F.
-            // WebGL 2 supports sized sRGB formats.
-            // If the request is for sRGB, use it. Otherwise, default to linear RGBA.
-            if ((GLenum)_frameBufferData->internalFormat == GL_SRGB8_ALPHA8) {
-                internalFormat = GL_SRGB8_ALPHA8;
-            } else {
-                internalFormat = GL_RGBA;
-            }
-        #else
-            internalFormat = _frameBufferData->internalFormat; // Use GL_RGBA, GL_RGBA16F, or GL_SRGB8_ALPHA8 on desktop
-        #endif
-    } else { // Default to RGB
-        format = GL_RGB;
-        type = GL_UNSIGNED_BYTE;
-        #ifdef AF_WEB_BUILD
-            internalFormat = GL_RGB;
-        #else
-            internalFormat = GL_RGB8;
-        #endif
-    }
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat,
-        _frameBufferData->textureWidth, _frameBufferData->textureHeight, 0,
-        format, type, NULL);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GLint)_frameBufferData->minFilter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (GLint)_frameBufferData->magFilter);
-
-    // Set texture wrapping parameters
-    #ifdef AF_WEB_BUILD
-        // WebGL requires GL_CLAMP_TO_EDGE for non-power-of-two textures and for depth textures.
-        AF_Log("AF_Renderer_CreateFBOTexture: WEB GL_CLAMP_TO_EDGE\n");
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    #else
-        // Desktop can use GL_CLAMP_TO_BORDER for depth maps to avoid sampling outside the map.
-        if (format == GL_DEPTH_COMPONENT) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-            float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        }
-    #endif
-
-    glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
-    return fboTextureID;
-}
-
 
 // ============================  DEPTH ================================ 
 /*
@@ -2014,7 +1403,7 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 		AF_Shader_Delete(meshComponent->shader.shaderID);
 
 		// Destroy the mesh buffers
-		AF_Renderer_DestroyMeshBuffers(meshComponent);
+		AF_RendererBuffer_DestroyMeshBuffers(meshComponent);
 
 		
 
@@ -2038,8 +1427,7 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 	glDeleteFramebuffers(1, &_renderingData->depthFrameBufferData.rbo);
 
 	// Screen Quad
-	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VAO);
-	glDeleteVertexArrays(1, &_renderingData->screenQUAD_VBO);
+	AF_RendererBuffer_DeleteScreenQuadBuffers(_renderingData);
 	// Delete textures
 
 	// Delete Shaders
@@ -2059,116 +1447,30 @@ Destroy the material textures
 void AF_Renderer_Destroy_Material_Textures(AF_Material* _material){
 	// Diffuse
 	if(_material->diffuseTexture.type != AF_TEXTURE_TYPE_NONE){
-		AF_Renderer_DeleteTexture(&_material->diffuseTexture.id);
+		AF_RendererFramebuffer_DeleteTexture(&_material->diffuseTexture.id);
 	}
 
 	// Specular
 	if(_material->specularTexture.type != AF_TEXTURE_TYPE_NONE){
-		AF_Renderer_DeleteTexture(&_material->specularTexture.id);
+		AF_RendererFramebuffer_DeleteTexture(&_material->specularTexture.id);
 	}
 
 	// Normal
 	if(_material->normalTexture.type != AF_TEXTURE_TYPE_NONE){
-		AF_Renderer_DeleteTexture(&_material->normalTexture.id);
+		AF_RendererFramebuffer_DeleteTexture(&_material->normalTexture.id);
 	}
 }
 
-/*
-====================
-AF_Renderer_DestroyMeshComponent
-Destroy the mesh renderer component renderer data
-====================
-*/
-void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh){
-		// for each mesh
-		for(uint32_t j = 0; j < _mesh->meshCount; j++){
-			// ------------------------------------------------------------------------
-			AF_MeshData* mesh = &_mesh->meshes[j];
-			if(mesh == NULL){
-				AF_Log_Warning("AF_Renderer_DestroyMeshBuffers: skipping destroy of mesh %i\n", j);
-				continue;
-			}
 
-		
-			glDeleteVertexArrays(1, &mesh->vao); // ✅ Correct: Delete VAO
-			glDeleteBuffers(1, &mesh->vbo);
-			glDeleteBuffers(1, &mesh->ibo);
-
-			// Now that the mesh is loaded, we can delete the memory created for the verts and indices
-			if(mesh->vertices != NULL){
-				free(mesh->vertices);
-			}
-			mesh->vertices = NULL;
-
-			if(mesh->indices != NULL){
-				free(mesh->indices);
-			}
-			mesh->indices = NULL;
-		}
-}
+// ============================  RESOURCE CLEANUP & DESTRUCTION ================================
 
 /*====================
 AF_Renderer_DeleteFBO
 Delete a frame buffer to render to
 ====================*/
-void AF_Renderer_DeleteFBO(uint32_t* _fboID)
-{
-	glDeleteFramebuffers(1, _fboID);
-	*_fboID = 0;
-}
-
-
-/*====================
-AF_Renderer_DeleteRBO
-Delete a render buffer object
-====================*/
-void AF_Renderer_DeleteRBO(uint32_t* _rboID)
-{
-	glDeleteRenderbuffers(1, _rboID);
-	*_rboID = 0;
-}
-
-/*====================
-AF_Renderer_DeleteTexture
-Delete a texture buffer object
-====================*/
-void AF_Renderer_DeleteTexture(uint32_t* _textureID)
-{
-	glDeleteTextures(1, _textureID);
-	*_textureID = 0;
-}
 
 
 // ====================================== HELPER FUNCTIONS =====================================
-
-
-/*
-====================
-AF_Renderer_CheckFrameBufferStatus
-Helper function for checking for GL errors for frame buffers
-====================
-*/
-void AF_Renderer_CheckFrameBufferStatus(const char* _message){
-	// In AF_Renderer_Start_ScreenFrameBuffers, replace the check with this:
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE) {
-		// Log the specific error code!
-		const char* statusStr = "";
-		switch (status) {
-			case GL_FRAMEBUFFER_UNDEFINED:                     statusStr = "GL_FRAMEBUFFER_UNDEFINED"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:         statusStr = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER"; break;
-			case GL_FRAMEBUFFER_UNSUPPORTED:                   statusStr = "GL_FRAMEBUFFER_UNSUPPORTED"; break;
-			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:        statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE"; break;
-			// case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:   statusStr = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS"; break; // If using newer GL
-			default:                                           statusStr = "Unknown Error"; break;
-		}
-		// Make sure the error message accurately reflects where it's coming from
-		AF_Log_Error("AF_Renderer_CheckFrameBufferStatus: ERROR::FRAMEBUFFER:: Framebuffer is not complete! Status: 0x%x (%s): %s\n", status, statusStr, _message);
-	}
-}
 
 
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode){
@@ -2256,46 +1558,4 @@ void AF_Renderer_DrawTestTriangle(void) {
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
 }
-
-
-// ============================
-// AF_Renderer_UpdateCameraUBO(uint32_t uboID, AF_FLOAT* viewMatrix, AF_FLOAT* projMatrix, AF_FLOAT* camPos, AF_FLOAT currentTime);
-// Updates the camera UBO with the provided view and projection matrices, camera position, and current time.
-// ============================
-void AF_Renderer_UpdateCameraUBO(uint32_t uboID, AF_FLOAT* viewMatrix, AF_FLOAT* projMatrix, AF_FLOAT* camPos, AF_FLOAT currentTime) {
-	AF_CameraUBO_s uboData;
-
-	// Copy view matrix
-	memcpy(uboData.view, viewMatrix, sizeof(AF_FLOAT) * 16);
-	memcpy(uboData.projection, projMatrix, sizeof(AF_FLOAT) * 16);
-
-	// Copy vector and scalr cam position
-	uboData.cameraPos[0] = camPos[0];
-	uboData.cameraPos[1] = camPos[1];
-	uboData.cameraPos[2] = camPos[2];
-	uboData.cameraPos[3] = 1.0f; // padding
-	uboData.time = currentTime;
-
-	// upload to GPU
-	glBindBuffer(GL_UNIFORM_BUFFER, uboID);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(AF_CameraUBO_s), &uboData);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);	
-}
-
-uint32_t AF_Renderer_CreateCameraUBO(void){
-	uint32_t uboID;
-	glGenBuffers(1, &uboID);
-	glBindBuffer(GL_UNIFORM_BUFFER, uboID);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(AF_CameraUBO_s), NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	// Associate the UBO (uboID) with the global binding point 0.
-    // This makes the buffer's data available to any shader that binds its uniform block
-    // to this same point. This only needs to be done once.
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboID);
-
-
-	return uboID;
-}
-
 

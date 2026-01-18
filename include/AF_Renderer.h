@@ -60,28 +60,14 @@ void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData);
 void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData);
 
 // ============================  MESH BUFFERS ================================ 
-void AF_Renderer_CreateScreenFBOQuadMeshBuffer(AF_RenderingData* _renderingData);
-void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount);
-void AF_Renderer_CreateMeshBuffer(AF_MeshData* _meshData);  
-void AF_Renderer_UpdateMeshBufferData(AF_MeshData* _meshData);
+// NOTE: Buffer management functions have been moved to AF_RendererBuffer.h
+// Use AF_RendererBuffer_* functions for buffer operations
 void AF_Renderer_InitCollisionGeomtery(AF_ECS* _ecs);
-void AF_Renderer_CreateCollisionGeometryMeshBuffer(AF_CCollider* _collider);
-void AF_Renderer_InitInstancedTerrainMeshBuffer(uint32_t _gridSize, AF_CMesh* _mesh);
-
 
 // ============================  FRAME BUFFERS ================================ 
-
-uint32_t AF_Renderer_CreateFBO(void);
-void AF_Renderer_CreateFramebuffer(AF_FrameBufferData* _framebufferData);
-void AF_Renderer_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData);
-uint32_t AF_Renderer_CreateRBO(void);
-uint32_t AF_Renderer_CreateFBOTexture(AF_FrameBufferData* _framebufferData);
-void AF_Renderer_BindFrameBuffer(uint32_t _fBOID);
-void AF_Renderer_UnBindFrameBuffer(void);
-void AF_Renderer_BindFrameBufferToTexture(uint32_t _fBOID, uint32_t _textureID, uint32_t _textureAttatchmentType);
-void AF_Renderer_BindRenderBuffer(uint32_t _rbo, uint32_t _screenWidth, uint32_t _screenHeight);
+// NOTE: Framebuffer management functions have been moved to AF_RendererFramebuffer.h
+// Use AF_RendererFramebuffer_* functions for framebuffer operations
 void AF_Renderer_FrameResized(void* _renderingData);
-
 
 // ============================  DEPTH ================================ 
 void AF_Renderer_StartDepthPass(AF_RenderingData* _renderingData, AF_LightingData* _lightingData, AF_ECS* _ecs, uint32_t _cameraID);
@@ -97,148 +83,31 @@ void AF_Renderer_UpdateLighting(AF_ECS* _ecs, AF_LightingData* _lightingData);
 void AF_Renderer_PlayAnimation(AF_CSkeletalAnimation* _animation);
 
 // ============================  DRAW TEXT ================================
-void AF_Renderer_InitTextMeshBuffers(AF_CText* _fontComponent);
+// NOTE: AF_Renderer_InitTextMeshBuffers moved to AF_RendererBuffer.h
 void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 
 // ============================  DRAW SPRITES ================================
-void AF_Renderer_InitSpriteMeshBuffer(AF_CSprite* _spriteComponent);
+// NOTE: AF_Renderer_InitSpriteMeshBuffer moved to AF_RendererBuffer.h
 void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 void AF_Renderer_DrawTestTriangle(void);
 void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData);
 
 // ============================  DESTROY / CLEANUP ================================ 
 // Destroy
-AF_LIB_API void AF_Renderer_DestroyMeshBuffers(AF_CMesh* _mesh);
+// NOTE: AF_Renderer_DestroyMeshBuffers moved to AF_RendererBuffer.h
+// NOTE: Framebuffer deletion functions moved to AF_RendererFramebuffer.h
 void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
-void AF_Renderer_DeleteFBO(uint32_t* _fboID);
-void AF_Renderer_DeleteRBO(uint32_t* _rboID);
-void AF_Renderer_DeleteTexture(uint32_t* _textureID);
-
 
 
 // ====================================== HELPER FUNCTIONS =====================================
-void AF_Renderer_CheckFrameBufferStatus(const char* _message);
+// NOTE: AF_Renderer_CheckFrameBufferStatus moved to AF_RendererFramebuffer.h
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
 
-uint32_t AF_Renderer_CreateCameraUBO(void);
-void AF_Renderer_UpdateCameraUBO(uint32_t uboID, AF_FLOAT* viewMatrix, AF_FLOAT* projMatrix, AF_FLOAT* camPos, AF_FLOAT currentTime);
-
-// ====================================== STRUCTS =====================================
-// Camera UBO
-typedef struct {
-    AF_FLOAT view[16];       // 64 bytes
-    AF_FLOAT projection[16]; // 64 bytes
-    AF_FLOAT cameraPos[4];   // 16 bytes
-    AF_FLOAT time;           // 4 bytes (perfectly fills the 16-byte chunk)
-                          // Total: 160 bytes
-} AF_CameraUBO_s;
-
-
+// NOTE: UBO functions moved to AF_RendererBuffer.h
+// Use AF_RendererBuffer_CreateCameraUBO() and AF_RendererBuffer_UpdateCameraUBO()
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif // AF_RENDERER_H
-
-// ========== JUNK / OLD FUNCTIONS FROM VULKAN ===========
-
-//static unsigned int LoadTexture(char const * path);
-//static void SetDiffuseTexture(const unsigned int _shaderID);
-//static void SetSpecularTexture(const unsigned int _shaderID);
-//static void SetEmissionTexture(const unsigned int _shaderID);
-//static void SetEmissionMaskTexture(const unsigned int _shaderID);
-// Cleanup
-//static void CleanUpMesh(const unsigned int _shaderID);
-//void CloseWindow();
-//void CleanUp();
-//void CleanupSwapChain();
-
-
-// Error checking
-// Util
-//static void CheckGLError(std::string _message);
-//bool CheckValidationLayerSupport();
-//void SetupDebugMessager();
-//void PickPhysicalDevice();
-
-// Load Models
-//void LoadModel(CModel& _model, std::vector<AF_Vertex>& _vertices, std::vector<uint32_t>& _indices);
-
-
-// Getters and setters
-//VkSampler& GetTextureSampler();
-//std::vector<VkImageView>& GetImageViews();
-//VkImageView& GetCurrentImageView();
-//VkImageView& GetCurrentEditorImageView();
-//void SetEditorMode(const bool _state);
-//void SetViewportEditor(const bool _state);
-//uint32_t GetDrawCalls() const;
-//VkExtent2D& GetSwapChainExtent() const;
-//bool GetFramebufferResized() const;
-//void SetFramebufferResized(const bool _state);
-//static glm::vec3 CalculateFront(const CTransform3D& _transform);
-//std::vector<AF_Mesh>& getMeshes() const override;
-
-//void DrawFrame(GLFWwindow* _window, Entity& _cameraEntity, std::vector<Entity*>& _entities);
-//static void RenderMesh(const AF_Mesh& _mesh, const AF_Camera& _camera);
-//uint32_t AF_LoadTexture(const char* _texturePath, af_bool_t _flipTexture);
-
-//void Init(GLFWwindow* _window, std::vector<Entity*>& _entities);
-//void InitRenderingData(std::vector<Entity*>& _entities);
-//static AF_MeshBuffers InitBuffers(const AF_MeshBuffers& _bufferObject);
-// vulkan things
-//void CreateSurface(GLFWwindow* _window);
-//void RecreateSwapChain(GLFWwindow* _window);
-//VkDevice& GetDevice();
-//VkPhysicalDevice& GetPhysicalDevice();
-//VkInstance& GetInstance();
-//VkQueue& GetQueue();
-//VkRenderPass& GetRenderPass();
-//VkSampleCountFlagBits& GetMSAASamples();
-////void InitWindow(AF_AppData& _appData);
-//void InitVulkan(GLFWwindow* _window, std::vector<Entity*>& _entities);
-//void CreateInstance();
-        
-//void CreateLogicalDevice();
-//void CreateSwapChain(GLFWwindow* _window);
-//void CreateSurface();
-//void CreateImageViews();
-// EditorImageViews
-//void CreateOffscreenImageResources();
-//void CreateRenderPass();
-//void CreateFrameBuffers();
-//void CreateCommandPool();
-//void CreateDepthResources();
-
-
-//void CreateTextureImage(const char* _texturePath, std::vector<VkImage>& _textureImages, std::vector<VkDeviceMemory>& _textureImagesMemory, const uint32_t _levels, VkImageCreateFlagBits _flags, VkImageLayout _imageLayout);
-//void CreateTextureImage(const char* _texturePath, VkImage& _textureImage, VkDeviceMemory& _textureImageMemory);
-//void CreateTextureImageView(VkImage& _textureImage, VkImageView& _textureImageView, uint32_t _mipLevels);
-//void CreateTextureImageView(std::vector<VkImage>& _textureImages, std::vector<VkImageView>& _textureImageViews, uint32_t _mipLevels, uint32_t _layers, VkImageViewType _imageViewType);
-//void CreateTextureSampler(VkDevice& _device, VkPhysicalDevice& _physicalDevice, VkSampler& _textureSampler);
-//void CreateTextureSampler(VkDevice& _device, VkPhysicalDevice& _physicalDevice, std::vector<VkImage>& _textureImages, std::vector<VkSampler>& _textureSamplers);
-
-
-//void CreateVertexBuffer(VkDevice& _device, std::vector<AF_Vertex>& _vertices);
-//void CreateIndexBuffer(VkDevice& _device, std::vector<uint32_t>& indices);
-//void CreateUniformBuffers(VkDevice& _device, std::vector<VkBuffer>& _uniformBuffers, std::vector<VkDeviceMemory>& _uniformBuffersMemory, std::vector<void*>& _uniformBuffersMapped, const VkDeviceSize _uniformBufferSize);
-
-
-//void CreateDescriptorPool();
-//void CreateTextureDescriptorSets(VkDevice& _device, std::vector<VkImageView>& _modelTextureImagesView, std::vector<VkSampler>& _modelTextureSamplers );
-
-//void CreateDescriptorSets();
-//void CreateDescriptorSetLayout();
-//void CreateGraphicsPipeline(std::vector<Entity*>& _entities);
-//void CreateCommandBuffers();
-//void CreateSyncObjects();
-//void CreateColorResources();
-//void CreateIMGUIRenderPass();
-//void CreateOffscreenFramebuffer();
-
-// Create Material
-//AF_Material& CreateMaterial(const AF_Vec2 _screenDimensions, const std::string& _vertShaderPath, const std::string& _fragShaderPath, const std::string& _diffuseTexturePath) override;
-//AF_Mesh& CreateMesh(const AF_Vec2& _cameraSize, const std::string& _vertShaderPath, const std::string& _fragShaderPath, const std::string& _texturePath)  override;
-
-
