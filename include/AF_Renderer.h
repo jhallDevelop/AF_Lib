@@ -103,6 +103,7 @@ void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
 // NOTE: AF_Renderer_CheckFrameBufferStatus moved to AF_RendererFramebuffer.h
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
 int AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter);
+void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData);
 // NOTE: UBO functions moved to AF_RendererBuffer.h
 // Use AF_RendererBuffer_CreateCameraUBO() and AF_RendererBuffer_UpdateCameraUBO()
 

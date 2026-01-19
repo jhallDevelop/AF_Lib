@@ -833,6 +833,7 @@ void AF_Renderer_SetupTerrainUniforms(uint32_t _shaderID, AF_CTerrain* _terrain)
 	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
 	AF_Shader_SetInt(_shaderID, "gridSize", _terrain->gridSize);
 	AF_Shader_SetInt(_shaderID, "gridScale", _terrain->gridScale);
+	AF_Shader_SetInt(_shaderID, "lodSkipInterval", _terrain->lodLevel);
 	// Set LOD uniform (1 = full detail, no culling)
 
 
@@ -889,8 +890,10 @@ AF_CTerrain* AF_Renderer_FindActiveTerrain(AF_ECS* _ecs){
 // Executes the appropriate draw call based on mesh type (instanced vs regular)
 // =================================================================================================
 void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader, uint32_t _indexCount){
+	// TODO: chunk up terrain mesh and render/cull chunks based on camera position for large terrains
 	if(_mesh->isInstanced == AF_TRUE){
 		// GPU-generated terrain rendering
+		/*
 		AF_CTerrain* terrain = AF_Renderer_FindActiveTerrain(_ecs);
 		uint32_t terrainGridSize = terrain ? terrain->gridSize : 65;
 		uint32_t lodLevel = terrain ? terrain->lodLevel : 0;
@@ -908,6 +911,7 @@ void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader
 
 		// Use glDrawArrays because we're generating vertices in the shader
 		glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
+		*/
 	}
 	else{
 		// Regular indexed mesh
@@ -973,19 +977,12 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		// Special case for terrain to bind heightmap texture
 		AF_CTerrain* terrain = &_ecs->terrains[i];
 		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){	
-			glUseProgram(mesh->material.shaderID);
-			AF_Renderer_SetupTerrainUniforms(mesh->material.shaderID, terrain);
-			// Terrain center position
-			Vec3* terrainPos = &_ecs->transforms[i].pos;
-			// Get the lod level
-	 		terrain->lodLevel = AF_Renderer_CalculateLODInterval(*_cameraPos, *terrainPos);
-			//AF_Log("AF_Renderer_DrawMeshes: Terrain LOD Interval: %i\n", lodInterval);
-    
-			// Set LOD uniform
-			AF_Shader_SetInt(mesh->material.shaderID, "lodSkipInterval", terrain->lodLevel);
+			
+			AF_Renderer_DrawTerrain(i, terrain, &modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
+		}else{
+			AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 		}
 			
-		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
 	}
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
 }
@@ -1133,10 +1130,12 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 			continue;
 		}
 
+		
 		glBindVertexArray(_mesh->meshes[i].vao);//_meshList->vao);
 		AF_Renderer_CheckError( "Error bind vao Rendering OpenGL! \n");
 
 		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
+		
 		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
 		AF_Renderer_CheckError("Error binding VBO for drawing!");
 
@@ -1147,6 +1146,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		int viewLocation = glGetUniformLocation(shader, "view");
 		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
 
+		
 		int modelLocation = glGetUniformLocation(shader, "model");
 		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
 
@@ -1593,9 +1593,71 @@ int AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter) {
 	// Convert distance to LOD level directly
 	// Clamp between 0 and 5 for reasonable LOD levels
 	int lodLevel = (int)distance;
-	if (lodLevel < 0) lodLevel = 0;
+	if (lodLevel < 1) lodLevel = 0;
 	if (lodLevel > 5) lodLevel = 5;
 	
 	return lodLevel;
 }
 
+// =================================================================================================
+// AF_Renderer_DrawTerrain
+// Draws a terrain mesh with LOD based on camera distance
+// =================================================================================================
+void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
+	// Validate parameters and early exit conditions
+    if(_terrain == NULL || _modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL){
+        AF_Log_Error("AF_Renderer_DrawTerrain: Passed Null reference \n");
+        return;
+    }
+    
+    // Determine which shader to use (prioritize override, then material, then mesh)
+    uint32_t shaderID = (_shaderOverride == NO_SHARED_SHADER) ? _mesh->material.shaderID : _shaderOverride;
+    if (shaderID == 0) {
+        shaderID = _mesh->shader.shaderID;
+    }
+	// Calculate lod level
+	_terrain->lodLevel = AF_Renderer_CalculateLODInterval(*_cameraPos, _ecs->transforms[_terrainID].pos);
+
+    glUseProgram(shaderID);
+
+    // 1. Bind all textures (Diffuse unit 0, Shadow unit 1)
+    AF_Renderer_BindMeshTextures(_mesh, _renderingData, shaderID);
+
+    // 2. Setup Terrain Specifics (Heightmap unit 2, scales, etc.)
+    // Bind heightmap texture to unit 2 (0 = diffuse, 1 = shadow map)
+	glActiveTexture(GL_TEXTURE0 + 2);
+	glBindTexture(GL_TEXTURE_2D, _terrain->heightmapTextureID);
+	
+	// Set all terrain uniforms at once
+	AF_Shader_SetInt(shaderID, "heightMap", 2);
+	AF_Shader_SetFloat(shaderID, "heightScale", _terrain->heightScale);
+	AF_Shader_SetVec2(shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
+	AF_Shader_SetInt(shaderID, "gridSize", _terrain->gridSize);
+	AF_Shader_SetInt(shaderID, "gridScale", _terrain->gridScale);
+	AF_Shader_SetInt(shaderID, "lodSkipInterval", _terrain->lodLevel);
+    
+
+    // 3. Set Lighting Uniforms
+    AF_Shader_SetVec3(shaderID, "viewPos", _cameraPos->x, _cameraPos->y, _cameraPos->z);
+    //AF_Lighting_RenderForwardPointLights(shaderID, _ecs, _lightingData);
+    
+    // 4. Set Transformation Matrices
+    AF_Shader_SetMat4(shaderID, "model", *_modelMat);
+
+    // 5. Set UV adjustments
+    AF_Shader_SetVec2(shaderID, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);
+    AF_Shader_SetVec2(shaderID, "uvScale", _mesh->material.diffuseTexture.uvScaleX, _mesh->material.diffuseTexture.uvScaleY);
+
+    // 6. Draw the terrain
+    glBindVertexArray(_mesh->meshes[0].vao);
+    
+    // Calculate vertex count for LOD grid
+    uint32_t lodSkip = 1 << _terrain->lodLevel;
+    uint32_t lodGridSize = (_terrain->gridSize + lodSkip - 1) / lodSkip;
+    const uint32_t vertexCountToDraw = (lodGridSize - 1) * (lodGridSize - 1) * 6;
+
+    glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
