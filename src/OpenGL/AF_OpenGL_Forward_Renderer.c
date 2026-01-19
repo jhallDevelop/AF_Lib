@@ -833,6 +833,9 @@ void AF_Renderer_SetupTerrainUniforms(uint32_t _shaderID, AF_CTerrain* _terrain)
 	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
 	AF_Shader_SetInt(_shaderID, "gridSize", _terrain->gridSize);
 	AF_Shader_SetInt(_shaderID, "gridScale", _terrain->gridScale);
+	// Set LOD uniform (1 = full detail, no culling)
+
+
 }
 
 // =================================================================================================
@@ -890,11 +893,19 @@ void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader
 		// GPU-generated terrain rendering
 		AF_CTerrain* terrain = AF_Renderer_FindActiveTerrain(_ecs);
 		uint32_t terrainGridSize = terrain ? terrain->gridSize : 65;
+		uint32_t lodLevel = terrain ? terrain->lodLevel : 0;
 		
-		// Calculate vertex count: (gridSize-1) * (gridSize-1) quads * 6 vertices per quad
-		const uint32_t numQuads = (terrainGridSize - 1) * (terrainGridSize - 1);
+		// Calculate LOD skip: 2^lodLevel (1, 2, 4, 8, 16...)
+		uint32_t lodSkip = 1 << lodLevel;
+		
+		// Calculate LOD-reduced grid size
+		uint32_t lodGridSize = (terrainGridSize + lodSkip - 1) / lodSkip;
+		
+		// Calculate vertex count for LOD grid: (lodGridSize-1)^2 quads * 6 verts per quad
+		const uint32_t numQuadsPerRow = lodGridSize - 1;
+		const uint32_t numQuads = numQuadsPerRow * numQuadsPerRow;
 		const uint32_t vertexCountToDraw = numQuads * 6;
-		
+
 		// Use glDrawArrays because we're generating vertices in the shader
 		glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
 	}
@@ -964,6 +975,14 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){	
 			glUseProgram(mesh->material.shaderID);
 			AF_Renderer_SetupTerrainUniforms(mesh->material.shaderID, terrain);
+			// Terrain center position
+			Vec3* terrainPos = &_ecs->transforms[i].pos;
+			// Get the lod level
+	 		terrain->lodLevel = AF_Renderer_CalculateLODInterval(*_cameraPos, *terrainPos);
+			//AF_Log("AF_Renderer_DrawMeshes: Terrain LOD Interval: %i\n", lodInterval);
+    
+			// Set LOD uniform
+			AF_Shader_SetInt(mesh->material.shaderID, "lodSkipInterval", terrain->lodLevel);
 		}
 			
 		AF_Renderer_DrawMesh(&modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
@@ -1147,7 +1166,7 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		AF_Shader_SetVec2(shader, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);
 		AF_Shader_SetVec2(shader, "uvScale", _mesh->material.diffuseTexture.uvScaleX, _mesh->material.diffuseTexture.uvScaleY);
-		
+
 		// Execute the appropriate draw call (instanced or regular)
 		AF_Renderer_ExecuteDrawCall(_mesh, _ecs, shader, indexCount);
 			
@@ -1557,5 +1576,26 @@ void AF_Renderer_DrawTestTriangle(void) {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
+}
+
+// =================================================================================================
+// AF_Terrain_CalculateLODInterval
+// Calculates LOD skip interval based on camera distance
+// Returns 1 (full detail), 2 (half), 4 (quarter), 8 (eighth), etc.
+// =================================================================================================
+int AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter) {
+    // Calculate distance
+    //float dx = cameraPos.x - terrainCenter.x;
+    //float dz = cameraPos.z - terrainCenter.z;
+    //float distance = sqrtf(dx * dx + dz * dz);
+	float distance = cameraPos.y - terrainCenter.y;
+	
+	// Convert distance to LOD level directly
+	// Clamp between 0 and 5 for reasonable LOD levels
+	int lodLevel = (int)distance;
+	if (lodLevel < 0) lodLevel = 0;
+	if (lodLevel > 5) lodLevel = 5;
+	
+	return lodLevel;
 }
 

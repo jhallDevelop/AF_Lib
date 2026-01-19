@@ -22,7 +22,8 @@ AF_CTerrain AF_CTerrain_ZERO(void){
 	.gridSize = 64,
 	.gridScale = 1,
 	.heightMapUVScaleX = 0.1f,
-	.heightMapUVSCaleY = 0.1f
+	.heightMapUVSCaleY = 0.1f,
+	.lodLevel = 0
 	};
     return returnTerrain;
 }
@@ -50,7 +51,8 @@ AF_CTerrain AF_CTerrain_ADD(void){
 	.gridSize = 64,
 	.gridScale = 1,
 	.heightMapUVScaleX = 0.1f,
-	.heightMapUVSCaleY = 0.1f
+	.heightMapUVSCaleY = 0.1f,
+	.lodLevel = 0
 	};
     return returnTerrain;
 }

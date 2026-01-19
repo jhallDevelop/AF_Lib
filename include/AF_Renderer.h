@@ -102,7 +102,7 @@ void AF_Renderer_Destroy_Material_Textures(AF_Material* _material);
 // ====================================== HELPER FUNCTIONS =====================================
 // NOTE: AF_Renderer_CheckFrameBufferStatus moved to AF_RendererFramebuffer.h
 void AF_Renderer_SetPolygonMode(AF_Renderer_PolygonMode_e _polygonMode);
-
+int AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter);
 // NOTE: UBO functions moved to AF_RendererBuffer.h
 // Use AF_RendererBuffer_CreateCameraUBO() and AF_RendererBuffer_UpdateCameraUBO()
 

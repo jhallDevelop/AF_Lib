@@ -37,6 +37,7 @@ typedef struct AF_CTerrain {
     uint32_t gridScale;
     AF_FLOAT heightMapUVScaleX;
     AF_FLOAT heightMapUVSCaleY;
+    uint32_t lodLevel;
 } AF_CTerrain;
 
 AF_CTerrain AF_CTerrain_ZERO(void);
