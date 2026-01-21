@@ -832,7 +832,7 @@ void AF_Renderer_SetupTerrainUniforms(uint32_t _shaderID, AF_CTerrain* _terrain)
 	AF_Shader_SetFloat(_shaderID, "heightScale", _terrain->heightScale);
 	AF_Shader_SetVec2(_shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
 	AF_Shader_SetInt(_shaderID, "gridSize", _terrain->gridSize);
-	AF_Shader_SetInt(_shaderID, "gridScale", _terrain->gridScale);
+	AF_Shader_SetFloat(_shaderID, "gridScale", _terrain->gridScale);
 	AF_Shader_SetInt(_shaderID, "lodSkipInterval", _terrain->lodLevel);
 	// Set LOD uniform (1 = full detail, no culling)
 
@@ -1583,18 +1583,26 @@ void AF_Renderer_DrawTestTriangle(void) {
 // Calculates LOD skip interval based on camera distance
 // Returns 1 (full detail), 2 (half), 4 (quarter), 8 (eighth), etc.
 // =================================================================================================
-int AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter) {
+int32_t AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter, AF_FLOAT patchSize, uint32_t gridSize) {
     // Calculate distance
-    //float dx = cameraPos.x - terrainCenter.x;
-    //float dz = cameraPos.z - terrainCenter.z;
-    //float distance = sqrtf(dx * dx + dz * dz);
-	float distance = cameraPos.y - terrainCenter.y;
+    float dx = cameraPos.x - terrainCenter.x;
+    float dy = cameraPos.y - terrainCenter.y;
+    float dz = cameraPos.z - terrainCenter.z;
+    float distance = sqrtf(dx * dx + dy * dy + dz * dz);
 	
 	// Convert distance to LOD level directly
-	// Clamp between 0 and 5 for reasonable LOD levels
-	int lodLevel = (int)distance;
-	if (lodLevel < 1) lodLevel = 0;
-	if (lodLevel > 5) lodLevel = 5;
+	// Base LOD on chunk size (patchSize)
+	// Switch LOD every 2 chunks (256m if chunk is 128m) - Harsher drop-off
+	int32_t lodLevel = (int32_t)(distance / (patchSize * 2.0f)); 
+	if (lodLevel < 0) lodLevel = 0;
+
+    // Clamp LOD level based on gridSize to prevent quadsPerRow < 1
+    // e.g. if gridSize is 17, max lodSkip is 16 (LOD 4)
+    uint32_t maxLOD = 0;
+    while (((gridSize - 1) >> (maxLOD + 1)) > 0) {
+        maxLOD++;
+    }
+	if (lodLevel > (int32_t)maxLOD) lodLevel = (int32_t)maxLOD;
 	
 	return lodLevel;
 }
@@ -1615,9 +1623,7 @@ void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _
     if (shaderID == 0) {
         shaderID = _mesh->shader.shaderID;
     }
-	// Calculate lod level
-	_terrain->lodLevel = AF_Renderer_CalculateLODInterval(*_cameraPos, _ecs->transforms[_terrainID].pos);
-
+	
     glUseProgram(shaderID);
 
     // 1. Bind all textures (Diffuse unit 0, Shadow unit 1)
@@ -1633,30 +1639,121 @@ void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _
 	AF_Shader_SetFloat(shaderID, "heightScale", _terrain->heightScale);
 	AF_Shader_SetVec2(shaderID, "texelSize", _terrain->texelSizeX, _terrain->texelSizeY);
 	AF_Shader_SetInt(shaderID, "gridSize", _terrain->gridSize);
-	AF_Shader_SetInt(shaderID, "gridScale", _terrain->gridScale);
-	AF_Shader_SetInt(shaderID, "lodSkipInterval", _terrain->lodLevel);
+	
+	// Safety check for numChunks and gridScale
+	if (_terrain->numChunks == 0) _terrain->numChunks = 8;
+	if (_terrain->gridScale == 0) _terrain->gridScale = 100;
+	
+	AF_Shader_SetInt(shaderID, "numChunks", _terrain->numChunks);
+	
+	
     
 
     // 3. Set Lighting Uniforms
     AF_Shader_SetVec3(shaderID, "viewPos", _cameraPos->x, _cameraPos->y, _cameraPos->z);
     //AF_Lighting_RenderForwardPointLights(shaderID, _ecs, _lightingData);
     
-    // 4. Set Transformation Matrices
-    AF_Shader_SetMat4(shaderID, "model", *_modelMat);
-
-    // 5. Set UV adjustments
+    // 4. Set UV adjustments
     AF_Shader_SetVec2(shaderID, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);
     AF_Shader_SetVec2(shaderID, "uvScale", _mesh->material.diffuseTexture.uvScaleX, _mesh->material.diffuseTexture.uvScaleY);
-
-    // 6. Draw the terrain
-    glBindVertexArray(_mesh->meshes[0].vao);
+	
+	// Determine number of vertices to draw based on LOD
+	// Calculate vertex count for LOD grid
+	
+	
+	// For each terrain chunk, draw with LOD
+	// Terrain chunk are gridSize * gridSize
+	// each chunk can have dynamic verts set by Lod levels in the editor
+	// each chunk needs a model matrix that offsets it to the correct position
+	// gridScale now defines the physical size of the chunk, and gridSize defines the vertex density
+    AF_FLOAT patchSize = (AF_FLOAT)_terrain->gridScale;
+    AF_Shader_SetFloat(shaderID, "patchSize", patchSize);
     
-    // Calculate vertex count for LOD grid
-    uint32_t lodSkip = 1 << _terrain->lodLevel;
-    uint32_t lodGridSize = (_terrain->gridSize + lodSkip - 1) / lodSkip;
-    const uint32_t vertexCountToDraw = (lodGridSize - 1) * (lodGridSize - 1) * 6;
+    AF_FLOAT numbOfChunks = (AF_FLOAT)_terrain->numChunks;
+    
+    // Ensure VAO is initialized for GPU-generated terrain
+    if(_mesh->meshes[0].vao == 0){
+        AF_RendererBuffer_InitInstancedTerrainMeshBuffer(_terrain->gridSize, _mesh);
+    }
+    
+    glBindVertexArray(_mesh->meshes[0].vao);
 
-    glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
+    // --- OPTIMIZED CHUNK LOOP ---
+    // Instead of looping through ALL chunks, we find the range of chunks visible to the camera.
+    // This prevents performance tanking when numChunks is large.
+    
+    const float visibilityRadius = 8000.0f; // 8km visibility
+    
+    // Calculate which chunk the camera is currently over
+    // Entity position is the center of the total terrain
+    float terrainCenterX = _ecs->transforms[_terrainID].pos.x;
+    float terrainCenterZ = _ecs->transforms[_terrainID].pos.z;
+    
+    // Offset relative to the start of the grid (i=0, j=0)
+    float gridStartOffsetX = - (numbOfChunks / 2.0f) * patchSize;
+    float gridStartOffsetZ = - (numbOfChunks / 2.0f) * patchSize;
+    
+    // Camera position relative to the grid start
+    float relativeCamX = _cameraPos->x - (terrainCenterX + gridStartOffsetX);
+    float relativeCamZ = _cameraPos->z - (terrainCenterZ + gridStartOffsetZ);
+    
+    // Current chunk indices
+    int32_t centerI = (int32_t)(relativeCamX / patchSize);
+    int32_t centerJ = (int32_t)(relativeCamZ / patchSize);
+    
+    // Number of chunks to check in each direction
+    int32_t chunkRadius = (int32_t)(visibilityRadius / patchSize) + 1;
+    
+    int32_t startI = centerI - chunkRadius;
+    int32_t endI = centerI + chunkRadius;
+    int32_t startJ = centerJ - chunkRadius;
+    int32_t endJ = centerJ + chunkRadius;
+    
+    // Clamp to grid boundaries
+    if (startI < 0) startI = 0;
+    if (endI >= (int32_t)numbOfChunks) endI = (int32_t)numbOfChunks - 1;
+    if (startJ < 0) startJ = 0;
+    if (endJ >= (int32_t)numbOfChunks) endJ = (int32_t)numbOfChunks - 1;
+
+    for(int32_t i = startI; i <= endI; i++){
+        for(int32_t j = startJ; j <= endJ; j++){
+            // Centering logic: matches the original coordinate system
+            AF_FLOAT xOffset = ((AF_FLOAT)i - (numbOfChunks / 2.0f)) * patchSize;
+            AF_FLOAT zOffset = ((AF_FLOAT)j - (numbOfChunks / 2.0f)) * patchSize;
+
+			// Calculate chunk center position
+			Vec3 chunkPos = {
+				terrainCenterX + xOffset + (patchSize / 2.0f),
+				_ecs->transforms[_terrainID].pos.y,
+				terrainCenterZ + zOffset + (patchSize / 2.0f)
+			};
+
+            // Double check distance for circular culling
+            float dx = _cameraPos->x - chunkPos.x;
+            float dz = _cameraPos->z - chunkPos.z;
+            float distSq = dx*dx + dz*dz;
+            if (distSq > (visibilityRadius + patchSize) * (visibilityRadius + patchSize)) {
+                continue;
+            }
+
+			// Calculate lod level
+			_terrain->lodLevel = AF_Renderer_CalculateLODInterval(*_cameraPos, chunkPos, patchSize, _terrain->gridSize);
+
+			uint32_t lodSkip = 1 << _terrain->lodLevel;
+			uint32_t lodGridSize = (_terrain->gridSize + lodSkip - 1) / lodSkip;
+			const uint32_t vertexCountToDraw = (lodGridSize - 1) * (lodGridSize - 1) * 6;
+
+            Mat4 finalModelMat = *_modelMat;
+            finalModelMat.rows[0].w += xOffset;
+            finalModelMat.rows[2].w += zOffset;
+            
+            AF_Shader_SetMat4(shaderID, "model", finalModelMat);
+			AF_Shader_SetInt(shaderID, "lodSkipInterval", _terrain->lodLevel);
+            AF_Shader_SetVec2(shaderID, "chunkOffset", (AF_FLOAT)i, (AF_FLOAT)j);
+
+            glDrawArrays(GL_TRIANGLES, 0, vertexCountToDraw);
+        }
+    }
 
     glBindVertexArray(0);
     glUseProgram(0);

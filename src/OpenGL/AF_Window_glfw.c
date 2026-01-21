@@ -83,8 +83,13 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
     // TODO: add for other controllers
     for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
         if(input->keys[0][i].code == key){
-            input->keys[0][i].pressed = (action == GLFW_PRESS);
-            input->keys[0][i].held = (action == GLFW_REPEAT);
+            if (action == GLFW_PRESS) {
+                input->keys[0][i].pressed = 1;
+                input->keys[0][i].held = 1;
+            } else if (action == GLFW_RELEASE) {
+                input->keys[0][i].pressed = 0;
+                input->keys[0][i].held = 0;
+            }
         }
     }
     // Retrieve the pointer to the AF_Input struct from the window user pointer

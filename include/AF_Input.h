@@ -23,24 +23,17 @@ extern "C" {
 #define AF_INPUT_KEYBOARD_KEYS_COUNT 47
 
 typedef enum AF_KeyboardKeyEnum {
-    //AF_KEY_BACKSPACE = 8,
-    AF_KEY_TAB = 9,
-    AF_KEY_ENTER = 13,
-    AF_KEY_SHIFT = 16,
-    AF_KEY_CTRL = 17,
-    AF_KEY_ALT = 18,
-    //AF_KEY_PAUSE = 19,
-    //AF_KEY_CAPS_LOCK = 20,
-    AF_KEY_ESCAPE = 256,//27,
+    AF_KEY_TAB = 258,
+    AF_KEY_ENTER = 257,
+    AF_KEY_SHIFT = 340,
+    AF_KEY_CTRL = 341,
+    AF_KEY_ALT = 342,
+    AF_KEY_ESCAPE = 256,
     AF_KEY_SPACE = 32,
-    //AF_KEY_PAGE_UP = 33,
-    //AF_KEY_PAGE_DOWN = 34,
-    //AF_KEY_END = 35,
-    //AF_KEY_HOME = 36,
-    AF_KEY_LEFT_ARROW = 37,
-    AF_KEY_UP_ARROW = 38,
-    AF_KEY_RIGHT_ARROW = 39,
-    AF_KEY_DOWN_ARROW = 40,
+    AF_KEY_LEFT_ARROW = 263,
+    AF_KEY_UP_ARROW = 265,
+    AF_KEY_RIGHT_ARROW = 262,
+    AF_KEY_DOWN_ARROW = 264,
     //AF_KEY_PRINT_SCREEN = 44,
     //AF_KEY_INSERT = 45,
     //AF_KEY_DELETE = 46,
@@ -230,7 +223,7 @@ AF_Input_GetKey
 Get key by code
 ====================
 */
-static inline AF_Key* AF_Input_GetKey(char _code, AF_Input* _input){
+static inline AF_Key* AF_Input_GetKey(int32_t _code, AF_Input* _input){
     AF_Key* returnKey = NULL;
     for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
         if(_input->keys[0][i].code == _code){
