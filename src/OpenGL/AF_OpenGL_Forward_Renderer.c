@@ -1652,6 +1652,26 @@ void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _
     // 3. Set Lighting Uniforms
     AF_Shader_SetVec3(shaderID, "viewPos", _cameraPos->x, _cameraPos->y, _cameraPos->z);
     //AF_Lighting_RenderForwardPointLights(shaderID, _ecs, _lightingData);
+
+	// Atlas adjustments
+	
+    AF_Shader_SetFloat(shaderID, "paddingPixels", _terrain->paddingPixels);
+	AF_Shader_SetInt(shaderID, "atlasTextureSize", _terrain->atlasTextureSize);
+	AF_Shader_SetInt(shaderID, "texturesPerRow", _terrain->texturesPerRow);
+
+    // Send individual patch coordinates to shader
+    char uniformName[64];
+    for (int i = 0; i < 6; i++) {
+        snprintf(uniformName, sizeof(uniformName), "heightTextureCoords[%d]", i);
+        AF_Shader_SetVec2(shaderID, uniformName, (float)_terrain->heightTextureIndices[i][0], (float)_terrain->heightTextureIndices[i][1]);
+    }
+    for (int i = 0; i < 3; i++) {
+        snprintf(uniformName, sizeof(uniformName), "grassTextureCoords[%d]", i);
+        AF_Shader_SetVec2(shaderID, uniformName, (float)_terrain->grassTextureIndices[i][0], (float)_terrain->grassTextureIndices[i][1]);
+    }
+
+
+
     
     // 4. Set UV adjustments
     AF_Shader_SetVec2(shaderID, "uvOffset", _mesh->material.diffuseTexture.uvOffsetX, _mesh->material.diffuseTexture.uvOffsetY);

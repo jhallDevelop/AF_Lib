@@ -39,6 +39,11 @@ typedef struct AF_CTerrain {
     AF_FLOAT heightMapUVScaleX;
     AF_FLOAT heightMapUVSCaleY;
     uint32_t lodLevel;
+    AF_FLOAT paddingPixels;        // 32.0
+    uint32_t atlasTextureSize;       // 256
+    uint32_t texturesPerRow;         // 2.0
+    uint32_t heightTextureIndices[6][2];
+    uint32_t grassTextureIndices[3][2];
 } AF_CTerrain;
 
 AF_CTerrain AF_CTerrain_ZERO(void);

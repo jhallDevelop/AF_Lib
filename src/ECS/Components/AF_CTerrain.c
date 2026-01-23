@@ -24,7 +24,12 @@ AF_CTerrain AF_CTerrain_ZERO(void){
 	.numChunks = 1024,
 	.heightMapUVScaleX = 0.1f,
 	.heightMapUVSCaleY = 0.1f,
-	.lodLevel = 0
+	.lodLevel = 0,
+	.paddingPixels = 16.0,
+    .atlasTextureSize = 256,
+    .texturesPerRow = 3,
+    .heightTextureIndices = { {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2} },
+    .grassTextureIndices = { {2,0}, {2,1}, {2,2} }
 	};
     return returnTerrain;
 }
@@ -54,7 +59,12 @@ AF_CTerrain AF_CTerrain_ADD(void){
 	.numChunks = 1024,
 	.heightMapUVScaleX = 0.1f,
 	.heightMapUVSCaleY = 0.1f,
-	.lodLevel = 0
+	.lodLevel = 0,
+	.paddingPixels = 16.0,
+    .atlasTextureSize = 256,
+    .texturesPerRow = 3,
+    .heightTextureIndices = { {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2} },
+    .grassTextureIndices = { {2,0}, {2,1}, {2,2} }
 	};
     return returnTerrain;
 }

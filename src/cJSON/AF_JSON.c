@@ -1237,19 +1237,19 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 	// Lod 0
 	cJSON* lod0Size = cJSON_GetObjectItem(_terrainJSON, "lod0Size");
 	if (lod0Size && cJSON_IsNumber(lod0Size)) {
-		_terrain->lod0Size = (uint32_t)lod0Size->valueint;
+		_terrain->lod0Size = (uint8_t)lod0Size->valueint;
 	}
 
 	// Lod 1
 	cJSON* lod1Size = cJSON_GetObjectItem(_terrainJSON, "lod1Size");
 	if (lod1Size && cJSON_IsNumber(lod1Size)) {
-		_terrain->lod1Size = (uint32_t)lod1Size->valueint;
+		_terrain->lod1Size = (uint8_t)lod1Size->valueint;
 	}
 
 	// Lod 2
 	cJSON* lod2Size = cJSON_GetObjectItem(_terrainJSON, "lod2Size");
 	if (lod2Size && cJSON_IsNumber(lod2Size)) {
-		_terrain->lod2Size = (uint32_t)lod2Size->valueint;
+		_terrain->lod2Size = (uint8_t)lod2Size->valueint;
 	}
 
 	// mesh component index
@@ -1297,7 +1297,7 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 	// heightmap gridScale 
 	cJSON* gridScale = cJSON_GetObjectItem(_terrainJSON, "gridScale");
 	if (gridScale && cJSON_IsNumber(gridScale)) {
-		_terrain->gridScale = (uint32_t)gridScale->valueint;
+		_terrain->gridScale = (AF_FLOAT)gridScale->valuedouble;
 	}
 
 	cJSON* heightMapUVScaleX = cJSON_GetObjectItem(_terrainJSON, "heightMapUVScaleX");
@@ -1309,6 +1309,55 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 	if (heightMapUVSCaleY && cJSON_IsNumber(heightMapUVSCaleY)) {
 		_terrain->heightMapUVSCaleY = (AF_FLOAT)heightMapUVSCaleY->valuedouble;
 	}
+
+	cJSON* numChunks = cJSON_GetObjectItem(_terrainJSON, "numChunks");
+	if (numChunks && cJSON_IsNumber(numChunks)) {
+		_terrain->numChunks = (uint32_t)numChunks->valueint;
+	}
+
+	cJSON* lodLevel = cJSON_GetObjectItem(_terrainJSON, "lodLevel");
+	if (lodLevel && cJSON_IsNumber(lodLevel)) {
+		_terrain->lodLevel = (uint32_t)lodLevel->valueint;
+	}
+
+	cJSON* paddingPixels = cJSON_GetObjectItem(_terrainJSON, "paddingPixels");
+	if (paddingPixels && cJSON_IsNumber(paddingPixels)) {
+		_terrain->paddingPixels = (AF_FLOAT)paddingPixels->valuedouble;
+	}
+
+	cJSON* atlasTextureSize = cJSON_GetObjectItem(_terrainJSON, "atlasTextureSize");
+	if (atlasTextureSize && cJSON_IsNumber(atlasTextureSize)) {
+		_terrain->atlasTextureSize = (uint32_t)atlasTextureSize->valueint;
+	}
+
+	cJSON* texturesPerRow = cJSON_GetObjectItem(_terrainJSON, "texturesPerRow");
+	if (texturesPerRow && cJSON_IsNumber(texturesPerRow)) {
+		_terrain->texturesPerRow = (uint32_t)texturesPerRow->valueint;
+	}
+
+    // Height texture indices
+    cJSON* heightTextureIndices = cJSON_GetObjectItem(_terrainJSON, "heightTextureIndices");
+    if (heightTextureIndices && cJSON_IsArray(heightTextureIndices)) {
+        for (int i = 0; i < 6 && i < cJSON_GetArraySize(heightTextureIndices); i++) {
+            cJSON* pair = cJSON_GetArrayItem(heightTextureIndices, i);
+            if (pair && cJSON_IsArray(pair) && cJSON_GetArraySize(pair) == 2) {
+                _terrain->heightTextureIndices[i][0] = cJSON_GetArrayItem(pair, 0)->valueint;
+                _terrain->heightTextureIndices[i][1] = cJSON_GetArrayItem(pair, 1)->valueint;
+            }
+        }
+    }
+
+    // Grass texture indices
+    cJSON* grassTextureIndices = cJSON_GetObjectItem(_terrainJSON, "grassTextureIndices");
+    if (grassTextureIndices && cJSON_IsArray(grassTextureIndices)) {
+        for (int i = 0; i < 3 && i < cJSON_GetArraySize(grassTextureIndices); i++) {
+            cJSON* pair = cJSON_GetArrayItem(grassTextureIndices, i);
+            if (pair && cJSON_IsArray(pair) && cJSON_GetArraySize(pair) == 2) {
+                _terrain->grassTextureIndices[i][0] = cJSON_GetArrayItem(pair, 0)->valueint;
+                _terrain->grassTextureIndices[i][1] = cJSON_GetArrayItem(pair, 1)->valueint;
+            }
+        }
+    }
 }
 
 void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
@@ -2262,6 +2311,38 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
 	// heightMapUVSCaleY;
     cJSON_AddNumberToObject(returnJSON, "heightMapUVSCaleY", _component->heightMapUVSCaleY);
 
+	// numChunks;
+	cJSON_AddNumberToObject(returnJSON, "numChunks", _component->numChunks);
+
+	// lodLevel;
+	cJSON_AddNumberToObject(returnJSON, "lodLevel", _component->lodLevel);
+
+	// paddingPixels;
+	cJSON_AddNumberToObject(returnJSON, "paddingPixels", _component->paddingPixels);
+
+	// atlasTextureSize;
+	cJSON_AddNumberToObject(returnJSON, "atlasTextureSize", _component->atlasTextureSize);
+
+	// texturesPerRow;
+	cJSON_AddNumberToObject(returnJSON, "texturesPerRow", _component->texturesPerRow);
+
+    // heightTextureIndices
+    cJSON* heightIndicesArr = cJSON_AddArrayToObject(returnJSON, "heightTextureIndices");
+    for (int i = 0; i < 6; i++) {
+        cJSON* pair = cJSON_CreateArray();
+        cJSON_AddItemToArray(pair, cJSON_CreateNumber(_component->heightTextureIndices[i][0]));
+        cJSON_AddItemToArray(pair, cJSON_CreateNumber(_component->heightTextureIndices[i][1]));
+        cJSON_AddItemToArray(heightIndicesArr, pair);
+    }
+
+    // grassTextureIndices
+    cJSON* grassIndicesArr = cJSON_AddArrayToObject(returnJSON, "grassTextureIndices");
+    for (int i = 0; i < 3; i++) {
+        cJSON* pair = cJSON_CreateArray();
+        cJSON_AddItemToArray(pair, cJSON_CreateNumber(_component->grassTextureIndices[i][0]));
+        cJSON_AddItemToArray(pair, cJSON_CreateNumber(_component->grassTextureIndices[i][1]));
+        cJSON_AddItemToArray(grassIndicesArr, pair);
+    }
 	
 	return returnJSON;
 }
