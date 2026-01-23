@@ -461,7 +461,6 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         NO_SHARED_SHADER,
         _renderingData
     );
-	AF_RendererFramebuffer_UnBindFrameBuffer();
 
 	// 1.5 Update the render texture cameras
 	
@@ -506,10 +505,12 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 			}
 		}
 	}
-    
-    
 
-	
+    // Ensure the screen FBO is bound for the remaining passes (collision and 2D)
+    AF_RendererFramebuffer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
+    glViewport(0, 0, window->frameBufferWidth, window->frameBufferHeight);
+    
+    glDisable(GL_CULL_FACE);
 
     // --- Debug Collision Hull Drawing (Desktop Only) ---
     #ifndef AF_WEB_BUILD
@@ -538,14 +539,15 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 	// --- 2D Rendering Pass ---
     // Set OpenGL state for 2D rendering once before drawing all 2D elements.
     glDisable(GL_DEPTH_TEST);
-    // glDisable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	AF_Renderer_DrawSpriteMeshes(_ecs, _renderingData);
 	AF_Renderer_DrawTextMeshes(_ecs, _renderingData);
 
 	// Restore OpenGL state for 3D/UI rendering
     glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 	
 
     AF_RendererFramebuffer_UnBindFrameBuffer();
@@ -594,8 +596,8 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
 
     // Set OpenGL state for 2D rendering
     glDisable(GL_DEPTH_TEST);
-    // glDisable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     // Create an orthographic projection matrix once for all sprites
     AF_FLOAT screenWidth = (AF_FLOAT)_renderingData->windowPtr->frameBufferWidth;
@@ -631,24 +633,11 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
         // Set screen size uniform
         AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "screenSize", screenWidth, screenHeight);
 
-		 // Normalize and set frame uniforms. The shader expects values between 0.0 and 1.0.
-        Vec2 normalizedFramePos = {0.0f, 0.0f};
-        Vec2 normalizedFrameSize = {1.0f, 1.0f}; // Default to the full texture
-
-        // Prevent division by zero if the sprite sheet size isn't set
-        if (spriteComp->spriteSheetSize.x > 0.0f && spriteComp->spriteSheetSize.y > 0.0f) {
-            normalizedFramePos.x = spriteComp->spriteFramePos.x / spriteComp->spriteSheetSize.x;
-            normalizedFramePos.y = spriteComp->spriteFramePos.y / spriteComp->spriteSheetSize.y;
-            normalizedFrameSize.x = spriteComp->spriteFrameSize.x / spriteComp->spriteSheetSize.x;
-            normalizedFrameSize.y = spriteComp->spriteFrameSize.y / spriteComp->spriteSheetSize.y;
-        }
-
-        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "spriteFramePos", normalizedFramePos.x, normalizedFramePos.y);
-        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "spriteFrameSize", normalizedFrameSize.x, normalizedFrameSize.y);
+        // Send the shader the normalized frame uniforms. These should already be pre-normalized by the editor.
+        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "spriteFramePos", spriteComp->spriteFramePos.x, spriteComp->spriteFramePos.y);
+        AF_Shader_SetVec2(spriteComp->spriteMesh.shader.shaderID, "spriteFrameSize", spriteComp->spriteFrameSize.x, spriteComp->spriteFrameSize.y);
         
-
-
-		// Tell the shader to use texture unit 0 for the 'text' sampler
+		// Tell the shader to use texture unit 0 for the 'sprite' sampler
         AF_Shader_SetInt(spriteComp->spriteMesh.shader.shaderID, "sprite", 0);
         // Calculate vertex positions based on sprite component data
         float xpos = transform->pos.x;//spriteComp->spritePos.x;

@@ -659,13 +659,55 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 		_sprite->spriteSheetPos.y = cJSON_GetArrayItem(spriteSheetPosJSON, 1)->valuedouble;
 	}	
 
+	// paddingPixels
+	cJSON* paddingPixelsJSON = cJSON_GetObjectItem(_spriteJSON, "paddingPixels");
+	if (paddingPixelsJSON != NULL) {
+		_sprite->paddingPixels = (AF_FLOAT)paddingPixelsJSON->valuedouble;
+	} else {
+		_sprite->paddingPixels = 0.0f;
+	}
+
+	// atlasTextureSize
+	cJSON* atlasTextureSizeJSON = cJSON_GetObjectItem(_spriteJSON, "atlasTextureSize");
+	if (atlasTextureSizeJSON != NULL) {
+		_sprite->atlasTextureSize = (uint32_t)atlasTextureSizeJSON->valueint;
+	} else {
+		_sprite->atlasTextureSize = 0;
+	}
+
+	// texturesPerRow
+	cJSON* texturesPerRowJSON = cJSON_GetObjectItem(_spriteJSON, "texturesPerRow");
+	if (texturesPerRowJSON != NULL) {
+		_sprite->texturesPerRow = (uint32_t)texturesPerRowJSON->valueint;
+	} else {
+		_sprite->texturesPerRow = 0;
+	}
+
+	// atlasIndex
+	cJSON* atlasIndexJSON = cJSON_GetObjectItem(_spriteJSON, "atlasIndex");
+	if (atlasIndexJSON != NULL && cJSON_IsArray(atlasIndexJSON) && cJSON_GetArraySize(atlasIndexJSON) == 2) {
+		_sprite->atlasIndex[0] = (uint32_t)cJSON_GetArrayItem(atlasIndexJSON, 0)->valueint;
+		_sprite->atlasIndex[1] = (uint32_t)cJSON_GetArrayItem(atlasIndexJSON, 1)->valueint;
+	} else {
+		_sprite->atlasIndex[0] = 0;
+		_sprite->atlasIndex[1] = 0;
+	}
+
 	// Sprite Color
 	cJSON* spriteColorJSON = cJSON_GetObjectItem(_spriteJSON, "spriteColor");
 	if (spriteColorJSON != NULL) {
-		_sprite->spriteColor[0] = cJSON_GetArrayItem(spriteColorJSON, 0)->valuedouble;
-		_sprite->spriteColor[1] = cJSON_GetArrayItem(spriteColorJSON, 1)->valuedouble;
-		_sprite->spriteColor[2] = cJSON_GetArrayItem(spriteColorJSON, 2)->valuedouble;
-		_sprite->spriteColor[3] = cJSON_GetArrayItem(spriteColorJSON, 3)->valuedouble;
+		_sprite->spriteColor[0] = (AF_FLOAT)cJSON_GetArrayItem(spriteColorJSON, 0)->valuedouble;
+		_sprite->spriteColor[1] = (AF_FLOAT)cJSON_GetArrayItem(spriteColorJSON, 1)->valuedouble;
+		_sprite->spriteColor[2] = (AF_FLOAT)cJSON_GetArrayItem(spriteColorJSON, 2)->valuedouble;
+		_sprite->spriteColor[3] = (AF_FLOAT)cJSON_GetArrayItem(spriteColorJSON, 3)->valuedouble;
+
+		// If the colors are in the 0-255 range, normalize them to 0-1
+		if (_sprite->spriteColor[0] > 1.0f || _sprite->spriteColor[1] > 1.0f || _sprite->spriteColor[2] > 1.0f || _sprite->spriteColor[3] > 1.0f) {
+			_sprite->spriteColor[0] /= 255.0f;
+			_sprite->spriteColor[1] /= 255.0f;
+			_sprite->spriteColor[2] /= 255.0f;
+			_sprite->spriteColor[3] /= 255.0f;
+		}
 	}
 
 	// Sprite Path
@@ -1909,9 +1951,22 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	Vec2 spriteSheetPos = _sprite->spriteSheetPos;      // 8 bytes
 	AF_JSON_Vec2ToJson("spriteSheetPos", &spriteSheetPos, spriteJSON);
 
-	// sprite color
-	Vec4 spriteColor = { _sprite->spriteColor[0], _sprite->spriteColor[1], _sprite->spriteColor[2],_sprite->spriteColor[3] };
-	AF_JSON_Vec4ToJson("spriteColor", &spriteColor, spriteJSON);
+	// paddingPixels
+	cJSON_AddNumberToObject(spriteJSON, "paddingPixels", _sprite->paddingPixels);
+
+	// atlasTextureSize
+	cJSON_AddNumberToObject(spriteJSON, "atlasTextureSize", _sprite->atlasTextureSize);
+
+	// texturesPerRow
+	cJSON_AddNumberToObject(spriteJSON, "texturesPerRow", _sprite->texturesPerRow);
+
+	// atlasIndex
+	cJSON* atlasIndexArr = cJSON_AddArrayToObject(spriteJSON, "atlasIndex");
+	cJSON_AddItemToArray(atlasIndexArr, cJSON_CreateNumber(_sprite->atlasIndex[0]));
+	cJSON_AddItemToArray(atlasIndexArr, cJSON_CreateNumber(_sprite->atlasIndex[1]));
+
+	// sprite color (0.0 to 1.0 range)
+	AF_JSON_Vec4ToJson("spriteColor", (Vec4*)_sprite->spriteColor, spriteJSON);
 
 	// sprite path
 	const char* spritePath = _sprite->spriteMesh.material.diffuseTexture.path;

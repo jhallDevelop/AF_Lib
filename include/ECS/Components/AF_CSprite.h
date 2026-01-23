@@ -47,7 +47,13 @@ typedef struct {
 	af_bool_t flipY;
 	Vec2 spriteSheetSize;    // 8 bytes
 	Vec2 spriteSheetPos;     // 8 bytes
-	uint8_t spriteColor[4];
+	AF_FLOAT spriteColor[4];
+
+	AF_FLOAT paddingPixels;
+	uint32_t atlasTextureSize;
+	uint32_t texturesPerRow;
+	uint32_t atlasIndex[2];
+
 	// TODO: move strings out to a separate struct or use a string library
 	void* spriteData; // special ptr for sprite data to be cast when known
 	af_bool_t isPlaying;
