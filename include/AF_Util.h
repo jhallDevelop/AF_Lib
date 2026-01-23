@@ -70,7 +70,7 @@ REturn 0 if string is not empty
 */
 static inline af_bool_t AF_STRING_IS_EMPTY(const char* _string){
     // null check the const char*, then see if the first element is a end of line
-    if ((_string != NULL) && (_string[0] == '\0')) {
+    if ((_string == NULL) || (_string[0] == '\0')) {
         return AF_TRUE;
     }else {
         return AF_FALSE;

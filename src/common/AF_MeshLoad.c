@@ -81,6 +81,11 @@ Check the editor assets to see if the shader is already loaded
 ====================*/
 uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets* _assetsLoaded, const char* _vertPath, const char* _fragPath)
 {
+    if(AF_STRING_IS_EMPTY(_vertPath) || AF_STRING_IS_EMPTY(_fragPath)) {
+        AF_Log_Warning("AF_MeshLoad_Shader_LoadFromAssets: shader path is empty\n");
+        return SHADER_FAILED_TO_LOAD;
+    }
+
     uint32_t returnShaderID = SHADER_FAILED_TO_LOAD;
     // get a full texture path to use to compare
     // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture

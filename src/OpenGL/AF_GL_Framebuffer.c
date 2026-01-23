@@ -96,6 +96,7 @@ void AF_GL_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
 	}
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture to avoid state leaking
 	_frameBufferData->textureID = depthMap;
 }
 

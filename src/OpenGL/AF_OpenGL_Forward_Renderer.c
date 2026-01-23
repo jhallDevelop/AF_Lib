@@ -104,6 +104,12 @@ Start function which occurs after everything is loaded in.
 */
 af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight){
 	AF_Log("AF_Renderer_Start\n");
+
+	// Ensure clean state at start to prevent macOS driver warnings during FBO creation
+	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	if(_renderingData == NULL || _screenWidth == NULL || _screenHeight == NULL){}
 	
 	// ==== Setup Screen FBO (for main scene render to ImGui viewport) ====
@@ -611,6 +617,11 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
         if (AF_Component_GetHasEnabled(spriteComp->enabled) == AF_FALSE) {
             continue;
         }
+
+        // Check if the shader is valid before using it
+        if (spriteComp->spriteMesh.shader.shaderID == SHADER_FAILED_TO_LOAD || spriteComp->spriteMesh.shader.shaderID == 0) {
+            continue;
+        }
         
         //glUseProgram(shaderProgram);
 		glUseProgram(spriteComp->spriteMesh.shader.shaderID);
@@ -716,6 +727,11 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
 
         AF_CText* textMeshComp = &_ecs->texts[i];
         if (AF_Component_GetHasEnabled(textMeshComp->enabled) == AF_FALSE) {
+            continue;
+        }
+
+        // Check if the shader is valid before using it
+        if (textMeshComp->mesh.shader.shaderID == SHADER_FAILED_TO_LOAD || textMeshComp->mesh.shader.shaderID == 0) {
             continue;
         }
 
@@ -1270,6 +1286,13 @@ void AF_Renderer_FrameResized(void* _renderingData){
 		AF_Log_Error("AF_Renderer_FrameResized: passed null reference\n");
 		return;
 	}
+
+	// Ensure no shader or textures are bound during resize to prevent macOS driver warnings
+	// about mismatched texture types on Unit 0
+	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	AF_RenderingData* renderingDataPtr = (AF_RenderingData*)_renderingData;
 
 	AF_Window* window = renderingDataPtr->windowPtr;
