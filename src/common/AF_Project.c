@@ -97,8 +97,8 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             // Guard against empty or dummy shader paths
             if (AF_STRING_IS_EMPTY(spriteComponent->spriteMesh.shader.vertPath) || 
                 AF_STRING_IS_EMPTY(spriteComponent->spriteMesh.shader.fragPath) ||
-                strstr(spriteComponent->spriteMesh.shader.vertPath, ".vert") == (spriteComponent->spriteMesh.shader.vertPath + strlen(spriteComponent->spriteMesh.shader.vertPath) - 5) && 
-                (strlen(spriteComponent->spriteMesh.shader.vertPath) < 10)) { // rough check for just ".vert"
+                (strstr(spriteComponent->spriteMesh.shader.vertPath, ".vert") == (spriteComponent->spriteMesh.shader.vertPath + strlen(spriteComponent->spriteMesh.shader.vertPath) - 5) && 
+                 (strlen(spriteComponent->spriteMesh.shader.vertPath) < 10))) { // rough check for just ".vert"
                 spriteComponent->spriteMesh.shader.shaderID = SHADER_FAILED_TO_LOAD;
             } else {
                 spriteComponent->spriteMesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(&_appData->assets, spriteComponent->spriteMesh.shader.vertPath, spriteComponent->spriteMesh.shader.fragPath);

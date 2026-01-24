@@ -895,6 +895,8 @@ AF_CTerrain* AF_Renderer_FindActiveTerrain(AF_ECS* _ecs){
 // Executes the appropriate draw call based on mesh type (instanced vs regular)
 // =================================================================================================
 void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader, uint32_t _indexCount){
+	(void)_ecs;
+	(void)_shader;
 	// TODO: chunk up terrain mesh and render/cull chunks based on camera position for large terrains
 	if(_mesh->isInstanced == AF_TRUE){
 		// GPU-generated terrain rendering
@@ -1624,6 +1626,7 @@ int32_t AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter, AF_
 // Draws a terrain mesh with LOD based on camera distance
 // =================================================================================================
 void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CMesh* _mesh, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
+	(void)_lightingData;
 	// Validate parameters and early exit conditions
     if(_terrain == NULL || _modelMat == NULL || _viewMat == NULL || _projMat == NULL || _mesh == NULL){
         AF_Log_Error("AF_Renderer_DrawTerrain: Passed Null reference \n");
