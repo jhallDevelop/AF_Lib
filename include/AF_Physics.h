@@ -16,6 +16,7 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 #include "ECS/Components/AF_CCollider.h"
 #include "ECS/Components/AF_CTransform3D.h"
 #include "ECS/Components/AF_CTransform2D.h"
+#include "ECS/Components/AF_CTerrain.h"
 #include "ECS/Entities/AF_ECS.h"
 #include "AF_CollisionVolume.h"
 #include "AF_Debug.h"
@@ -77,6 +78,8 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs);
 void AF_Physics_GetInterval(const AF_CTransform3D* transform, const Vec3* halfSize, const Vec3* axis, AF_FLOAT* min, AF_FLOAT* max);
 af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
 af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
+af_bool_t AF_Physics_TerrainTest(AF_ECS* _ecs, uint32_t _entity1ID, AF_CTransform3D* _entity1Transform, AF_CCollider* _collider1, AF_CTerrain* _terrain, AF_CTransform3D* _terrainTransform);
+
 /*
 ====================
 AF_Physics_LateUpdate

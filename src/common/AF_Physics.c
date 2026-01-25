@@ -84,22 +84,22 @@ void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
 	assert(_ecs != NULL && "Physics: AF_Physics_Update pass in a null reference\n");
 	// loop through and update all transforms based on their velocities
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-	AF_CTransform3D* transform = &_ecs->transforms[i];
+		AF_CTransform3D* transform = &_ecs->transforms[i];
 
-	assert(transform != NULL && "Physics: AF_Physics_Update transform is null\n");
-	
-	AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
+		assert(transform != NULL && "Physics: AF_Physics_Update transform is null\n");
+		
+		AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[i];
 
-	
+		
 
-	if((AF_Component_GetHasEnabled(rigidbody->enabled) == AF_TRUE)) {
-	
-		//debgf("Physics: upate: velocity x: %f y: %f z: %f\n", rigidbody->velocity.x, rigidbody->velocity.y, rigidbody->velocity.z);
-		// if the object isn't static
-		if(rigidbody->inverseMass > 0 || rigidbody->isKinematic == AF_TRUE){
+		if((AF_Component_GetHasEnabled(rigidbody->enabled) == AF_TRUE)) {
+		
+			//debgf("Physics: upate: velocity x: %f y: %f z: %f\n", rigidbody->velocity.x, rigidbody->velocity.y, rigidbody->velocity.z);
+			// if the object isn't static
+			if(rigidbody->inverseMass > 0 || rigidbody->isKinematic == AF_TRUE){
 				AF_Physics_IntegrateAccell(transform, rigidbody, _dt);
 				AF_Physics_IntegrateVelocity(transform, rigidbody, _dt);  
-		    }
+			}
 
 		}
 
@@ -216,6 +216,20 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
 	}
 	*/
 	af_bool_t returnValue = AF_FALSE;
+	// Get the terrain if it exists
+	AF_CTerrain* terrain = NULL;
+	uint32_t terrainEntityID = 0;
+	for(uint32_t t = 0; t < AF_ECS_TOTAL_ENTITIES; ++t){
+		AF_CTerrain* terrainCheck = &_ecs->terrains[t];
+		if(AF_Component_GetHasEnabled(terrainCheck->enabled) == AF_TRUE){
+			terrain = terrainCheck;
+			terrainEntityID = t;
+			break;
+		}
+	}
+	
+
+	// Loop through all entities with colliders
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 
 		if(AF_Component_GetHasEnabled(_ecs->colliders[i].enabled) == AF_FALSE){
@@ -225,10 +239,28 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
 		uint32_t entity1ID = i;//AF_ECS_GetID(entity1->id_tag);
 		AF_CCollider* collider1 = &_ecs->colliders[entity1ID];
 		AF_CTransform3D* entity1Transform = &_ecs->transforms[entity1ID];
+
+
+		
+		// Check against terrain
+		if(terrain != NULL){
+			af_bool_t terrainCollision = AF_Physics_TerrainTest(_ecs, entity1ID, entity1Transform, collider1, terrain, &_ecs->transforms[terrainEntityID]);
+			if(terrainCollision == AF_TRUE){
+				//AF_Log("Physics: Collision detected between entity %i and terrain\n", entity1ID);
+				returnValue = AF_TRUE;
+
+				// Resolve the collision with the terrain
+				AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[entity1ID];
+				if(rigidbody->isKinematic == AF_FALSE){
+					AF_Physics_ResolveCollision(_ecs, entity1ID, terrainEntityID, &collider1->collision);
+				}
+			}
+		}
 		
 		
-		// rayIntersectionTest everything
+		// Test all other entities which have colliders
 		for(uint32_t x = i + 1; x < _ecs->entitiesCount; ++x){
+			// only test enabled colliders
 			if(AF_Component_GetHasEnabled(_ecs->colliders[x].enabled) == AF_FALSE){
 				continue;
 			}
@@ -238,6 +270,9 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
 				continue;
 			}
 
+			
+
+			// Check against other colliders
 			AF_Entity* entity2 = &_ecs->entities[x];
 			uint32_t entity2ID = x;//AF_ECS_GetID(entity2->id_tag);
 			AF_CCollider* collider2 = &_ecs->colliders[entity2ID];
@@ -255,6 +290,10 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
 			AF_Collision collisionResult;
             memset(&collisionResult, 0, sizeof(AF_Collision));
 
+			
+
+
+			// OBB vs OBB test
             af_bool_t collisionSuccess = AF_Physics_OBB_Test(_ecs, entity1ID, entity2ID, entity1Transform, collider1, entity2Transform, collider2, &collisionResult);
             if(collisionSuccess == AF_FALSE){
                 continue;
@@ -293,8 +332,6 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
                 // Pass the correct collision data to the resolver.
                 AF_Physics_ResolveCollision(_ecs, entity1ID, entity2ID, &collider1->collision);
             }
-
-			
 		}
 	}
 		
@@ -595,6 +632,103 @@ af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entit
 
     return AF_TRUE;
 }
+
+/*
+====================
+AF_Physics_TerrainTest
+Test the entity against the terrain
+====================
+*/
+af_bool_t AF_Physics_TerrainTest(AF_ECS* _ecs, uint32_t _entity1ID, AF_CTransform3D* _entity1Transform, AF_CCollider* _collider1, AF_CTerrain* _terrain, AF_CTransform3D* _terrainTransform){
+	af_bool_t returnValue = AF_FALSE;
+	
+	if(_terrain == NULL || _terrain->heightMapData == NULL){
+		AF_Log_Warning("AF_Physics_TerrainTest: No terrain or heightmap data found\n");
+		return returnValue;
+	}
+	
+	// 1: Calculate the total world size including transform scale
+	AF_FLOAT terrainWorldSizeX = (AF_FLOAT)_terrain->numChunks * _terrain->gridScale * _terrainTransform->scale.x; 
+	AF_FLOAT terrainWorldSizeZ = (AF_FLOAT)_terrain->numChunks * _terrain->gridScale * _terrainTransform->scale.z; 
+	AF_FLOAT halfSizeX = terrainWorldSizeX * 0.5f;
+	AF_FLOAT halfSizeZ = terrainWorldSizeZ * 0.5f;
+
+
+	// 2: Map the world position (X,Z) to the normalised UV (0.0 to 1.0)
+	AF_FLOAT u = (_entity1Transform->pos.x - (_terrainTransform->pos.x - halfSizeX)) / terrainWorldSizeX;
+	AF_FLOAT v = (_entity1Transform->pos.z - (_terrainTransform->pos.z - halfSizeZ)) / terrainWorldSizeZ;
+
+	// 3: boundary check
+	if(u < 0.0f || u > 1.0f || v < 0.0f || v > 1.0f){
+		return returnValue;
+	}
+
+	// 3: Bilinear Interpolation (Required to match GPU smooth surface)
+    AF_FLOAT fx = u * (AF_FLOAT)(_terrain->heightMapWidth - 1);
+    AF_FLOAT fz = v * (AF_FLOAT)(_terrain->heightMapHeight - 1);
+
+    uint32_t x0 = (uint32_t)fx;
+    uint32_t x1 = (x0 < _terrain->heightMapWidth - 1) ? x0 + 1 : x0;
+    uint32_t z0 = (uint32_t)fz;
+    uint32_t z1 = (z0 < _terrain->heightMapHeight - 1) ? z0 + 1 : z0;
+
+    // NO-FLIP: Using raw heightmap coordinates
+    uint32_t r0 = z0;
+    uint32_t r1 = z1;
+
+    // Sample the 4 surrounding pixels
+    float h00 = (float)_terrain->heightMapData[r0 * _terrain->heightMapWidth + x0];
+    float h10 = (float)_terrain->heightMapData[r0 * _terrain->heightMapWidth + x1];
+    float h01 = (float)_terrain->heightMapData[r1 * _terrain->heightMapWidth + x0];
+    float h11 = (float)_terrain->heightMapData[r1 * _terrain->heightMapWidth + x1];
+
+    // Lerp factors
+    float tx = fx - (float)x0;
+    float tz = fz - (float)z0;
+
+    // Blend the heights
+    float top = h00 * (1.0f - tx) + h10 * tx;
+    float bottom = h01 * (1.0f - tx) + h11 * tx;
+    float blendedRaw = top * (1.0f - tz) + bottom * tz;
+
+    // 4: Final world height calculation
+    AF_FLOAT terrainHeight = (blendedRaw / 255.0f) * _terrain->heightScale * _terrainTransform->scale.y; 
+    terrainHeight += _terrainTransform->pos.y; 
+
+    // Look at the bottom of the entity's collider
+    AF_FLOAT entityBottom = _entity1Transform->pos.y + _collider1->posOffset.y - _collider1->boundingVolume.y;
+
+    if(entityBottom < terrainHeight){
+        returnValue = AF_TRUE;
+
+		// Log detailed collision info
+		AF_Log("TERRAIN COLLISION [Entity %u]\n", _entity1ID);
+		AF_Log("  Position: [%.2f, %.2f, %.2f]\n", _entity1Transform->pos.x, _entity1Transform->pos.y, _entity1Transform->pos.z);
+		AF_Log("  Feet: %.4f | TerrainH: %.4f\n", entityBottom, terrainHeight);
+		AF_Log("  UV Mapping: U:%.4f V:%.4f (Pixel: %.1f, %.1f)\n", u, v, fx, fz);
+		AF_Log("  Samples: h00=%.1f h10=%.1f h01=%.1f h11=%.1f (BlendedRaw: %.2f)\n", h00, h10, h01, h11, blendedRaw);
+		AF_Log("  Penetration: %.4f\n", terrainHeight - entityBottom);
+
+		// populate collision data
+		AF_Collision* collision1 = &_collider1->collision;
+		collision1->collided = AF_TRUE;
+		collision1->entity1ID = _entity1ID;
+		collision1->entity2ID = UINT32_MAX; 
+		// The penetration is the distance to move the ENTITY UP to clear the terrain
+		collision1->penetration = terrainHeight - entityBottom; 
+		collision1->normal = (Vec3){0, -1, 0}; // Normal pointing DOWN so ResolveCollision moves us UP
+		collision1->collisionPoint = (Vec3){_entity1Transform->pos.x, terrainHeight, _entity1Transform->pos.z};
+
+		if(collision1->callback != NULL){
+			collision1->ecsPtr = _ecs;
+			collision1->callback(collision1);
+		}else{
+			AF_Log_Warning("AF_Physics_TerrainTest: collision detected but no callback set on entity id_tag: %i\n", _entity1ID);
+		}
+	}
+	return returnValue;
+}
+
 
 
 

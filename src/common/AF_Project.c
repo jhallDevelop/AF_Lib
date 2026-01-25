@@ -18,6 +18,7 @@ AF_PROJECT_H
 #include "AF_JSON.h"
 #include "AF_TextureLoader.h"
 
+#include "../../../stb/stb_image.h"
 
 
 /*
@@ -83,6 +84,43 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             }
             AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
             AF_RendererBuffer_InitInstancedTerrainMeshBuffer(terrainComponent->gridSize, meshComponent);
+
+            // Generate heightmap data on CPU
+            if (terrainComponent->heightmapTextureID != 0) {
+                // read the texture data, converting it into a heightmap array
+                int width, height, nrComponents;
+	
+                // Force stbi_load to use 1 channel (last argument '1')
+                unsigned char *data = stbi_load(terrainComponent->heightMapPath, &width, &height, &nrComponents, 1);
+                terrainComponent->heightMapWidth = (uint32_t)width;
+                terrainComponent->heightMapHeight = (uint32_t)height;
+                
+
+                // Check if data is loaded
+                if (data != NULL) {
+                    // Allocate memory for heightmap data
+                    size_t dataSize = width * height * sizeof(unsigned char);
+
+
+                    
+                    terrainComponent->heightMapData = (unsigned char*)malloc(dataSize);
+                    if (terrainComponent->heightMapData != NULL) {
+                        //memcpy(terrainComponent->heightMapData, data, dataSize);
+                        // VALIDATION: Find max height once, don't log every pixel
+                        unsigned char maxVal = 0;
+                        for (int z = 0; z < width * height; z++) {
+                            terrainComponent->heightMapData[z] = data[z];
+                            //AF_Log("Heightmap Sync: Height at index %d is %u\n", z, data[z]);
+                        }
+
+                    } else {
+                        AF_Log_Error("AF_Project_Load: Failed to allocate memory for heightmap data for terrain component %u\n", i);
+                    }
+                    stbi_image_free(data); // Free original image data
+                } else {
+                    AF_Log_Error("AF_Project_Load: Failed to load heightmap image %s for terrain component %u\n", terrainComponent->heightMapPath, i);
+                }
+            }
         }   
 
         // Load Sprite Mesh components

@@ -1438,6 +1438,16 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 		// Destroy the mesh buffers
 		AF_RendererBuffer_DestroyMeshBuffers(meshComponent);
 
+		// Special shutdown for terrain as we have heap memory allocated
+		// free and null height map data
+		AF_CTerrain* terrainComponent = &_ecs->terrains[i];
+		if(AF_Component_GetHasEnabled(terrainComponent->enabled) == AF_TRUE){
+			if(terrainComponent->heightMapData != NULL){
+				free(terrainComponent->heightMapData);
+				terrainComponent->heightMapData = NULL;
+			}
+		}
+
 		
 
 		// zero the component

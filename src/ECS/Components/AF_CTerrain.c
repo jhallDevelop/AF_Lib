@@ -29,7 +29,10 @@ AF_CTerrain AF_CTerrain_ZERO(void){
     .atlasTextureSize = 256,
     .texturesPerRow = 3,
     .heightTextureIndices = { {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2} },
-    .grassTextureIndices = { {2,0}, {2,1}, {2,2} }
+    .grassTextureIndices = { {2,0}, {2,1}, {2,2} },
+	.heightMapData = NULL,
+	.heightMapWidth = 0,
+	.heightMapHeight = 0
 	};
     return returnTerrain;
 }
@@ -64,7 +67,10 @@ AF_CTerrain AF_CTerrain_ADD(void){
     .atlasTextureSize = 256,
     .texturesPerRow = 3,
     .heightTextureIndices = { {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2} },
-    .grassTextureIndices = { {2,0}, {2,1}, {2,2} }
+    .grassTextureIndices = { {2,0}, {2,1}, {2,2} },
+	.heightMapData = NULL,
+	.heightMapWidth = 0,
+	.heightMapHeight = 0
 	};
     return returnTerrain;
 }

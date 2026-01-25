@@ -44,6 +44,11 @@ typedef struct AF_CTerrain {
     uint32_t texturesPerRow;         // 2.0
     uint32_t heightTextureIndices[6][2];
     uint32_t grassTextureIndices[3][2];
+
+    // CPU heightmap data
+    unsigned char* heightMapData; // pointer to heightmap data array on CPU
+    uint32_t heightMapWidth;  // width of heightmap
+    uint32_t heightMapHeight; // height of heightmap
 } AF_CTerrain;
 
 AF_CTerrain AF_CTerrain_ZERO(void);
