@@ -25,11 +25,12 @@ typedef struct AF_Collision {
 	af_bool_t collided;
 	uint32_t entity1ID;
 	uint32_t entity2ID;
-	void (*callback)(struct AF_Collision*);
+	Vec3 normal;
 	Vec3 collisionPoint;
 	float rayDistance;
-	Vec3 normal;
+	
 	float penetration;
+	void (*callback)(struct AF_Collision*);
 	void* ecsPtr; // Pointer to the application data, useful for callbacks
 } AF_Collision;
 
@@ -43,11 +44,14 @@ static inline AF_Collision AF_Collision_ZERO(void){
 	collision.collided = AF_FALSE;
 	collision.entity1ID = 0;
 	collision.entity2ID = 0;
-	collision.callback = NULL;
+	
+	collision.normal = Vec3_ZERO();
 	collision.collisionPoint = Vec3_ZERO();
 	collision.rayDistance = 0.0f;
-	collision.normal = Vec3_ZERO();
+	
 	collision.penetration = 0.0f;
+
+	collision.callback = NULL;
 	collision.ecsPtr = NULL;
 	return collision;
 }
@@ -64,11 +68,13 @@ static inline void AF_Collision_Reset(AF_Collision* _collision){
 	_collision->collided = AF_FALSE;
 	_collision->entity1ID = 0;
 	_collision->entity2ID = 0;
-	//_collision->callback = NULL;
+	
+	_collision->normal = Vec3_ZERO();
 	_collision->collisionPoint = Vec3_ZERO();
 	_collision->rayDistance = 0.0f;
-	_collision->normal = Vec3_ZERO();
+	
 	_collision->penetration = 0.0f;
+	//_collision->callback = NULL;
 	_collision->ecsPtr = NULL;
 }
 
