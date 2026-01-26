@@ -9,6 +9,7 @@ Definition of the AF_Time struct
 #ifndef AF_TIME_H
 #define AF_TIME_H
 #include <time.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {    
@@ -31,7 +32,10 @@ typedef struct {
 } AF_Time;
 
 static inline double AF_Time_GetTime(void){
-	return ((double)(clock()) / CLOCKS_PER_SEC);
+	//return ((double)(clock()) / CLOCKS_PER_SEC);	// old incorrect way
+	struct timespec timeSpec;
+	clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+	return (double)(timeSpec.tv_sec) + (double)(timeSpec.tv_nsec) / 1e9;
 }
 
 /*

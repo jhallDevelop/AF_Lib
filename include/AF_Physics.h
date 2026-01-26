@@ -41,7 +41,7 @@ Some code inspired by https://research.ncl.ac.uk/game/mastersdegree/gametechnolo
 extern "C" {
 #endif
 
-#define GRAVITY_SCALE -150.0f  // Balanced gravity for stable physics
+#define GRAVITY_SCALE -9.8f  // Balanced gravity for stable physics
 #define LINEAR_DAMPING 0.995f   // 0.5% linear energy loss per second (frame-rate independent)
 #define ANGULAR_DAMPING 0.99f  // 1% angular energy loss per second (frame-rate independent)
 
