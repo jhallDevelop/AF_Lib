@@ -79,8 +79,8 @@ af_bool_t AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_C
 
 //=====HELPER FUNCTIONS=====
 Vec3 AF_Physics_CalculateBoxInverseInertiaTensor(Vec3 halfExtents, float inverseMass);
-Vec3 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat);
-void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force);
+Mat4 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat);
+void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force, Mat4 _worldInertia);
 void AF_Physics_ApplyLinearImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force);
 AF_LIB_API void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt);
 AF_LIB_API void AF_Physics_IntegrateAccell(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt);

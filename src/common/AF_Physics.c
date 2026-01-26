@@ -22,6 +22,15 @@ typedef struct Mat3{
     float m[3][3];
 } Mat3;
 
+// Helper to multiply Mat4 (treating as 3x3) by Vec3
+static inline Vec3 AF_Mat4_MULT_Vec3(Mat4 m, Vec3 v) {
+    return (Vec3){
+        m.rows[0].x * v.x + m.rows[0].y * v.y + m.rows[0].z * v.z,
+        m.rows[1].x * v.x + m.rows[1].y * v.y + m.rows[1].z * v.z,
+        m.rows[2].x * v.x + m.rows[2].y * v.y + m.rows[2].z * v.z
+    };
+}
+
 typedef struct OBB {
 	AF_FLOAT c[3]; // OBB center point
 	Vec3 u[3]; // Local x-, y-, and z-axes
@@ -257,6 +266,8 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
 				AF_C3DRigidbody* rigidbody = &_ecs->rigidbodies[entity1ID];
 				if(rigidbody->isKinematic == AF_FALSE){
 					AF_Physics_ResolveCollision(_ecs, entity1ID, terrainEntityID, &collider1->collision);
+					// FIX: Re-sync collider position immediately after modification
+					collider1->boundingPos = Vec3_ADD(entity1Transform->pos, collider1->posOffset);
 				}
 			}
 		}
@@ -335,6 +346,9 @@ af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs){
             if(rigidbody->isKinematic == AF_FALSE){
                 // Pass the correct collision data to the resolver.
                 AF_Physics_ResolveCollision(_ecs, entity1ID, entity2ID, &collider1->collision);
+				// FIX: Re-sync collider position immediately after modification
+				collider1->boundingPos = Vec3_ADD(entity1Transform->pos, collider1->posOffset);
+				collider2->boundingPos = Vec3_ADD(entity2Transform->pos, collider2->posOffset);
             }
 		}
 	}
@@ -392,8 +406,7 @@ af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _enti
 			distances[4] = maxB.z - minA.z; // distance of box ’b ’ to ’ far ’ of ’a ’.
 			distances[5] = maxA.z - minB.z;  // distance of box ’b ’ to ’ near ’ of ’a ’.
 			
-			//TODO: where is __FLT_MAX__ defined? may not be portable
-			float penetration = 2147483647.0;//__FLT_MAX__;
+			float penetration = AF_FLOAT_MAX;
 			Vec3 bestAxis = {0,0,0};	// default value
 			for(int j = 0; j < FACES_COUNT; ++j){
 				if(distances[j] < penetration){
@@ -776,38 +789,46 @@ Vec3 AF_Physics_CalculateBoxInverseInertiaTensor(Vec3 halfExtents, float inverse
 ====================
 AF_Physics_TransformInertiaTensorToWorldSpace
 Transform the local-space inverse inertia tensor to world-space.
-For a diagonal tensor, this is: I_world = R * I_local * R^T
-Where R is the rotation matrix extracted from the model matrix.
+I_world = R * I_local * R^T
+Where R is the rotation matrix extracted from the model matrix basis vectors.
 ====================
 */
-Vec3 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat) {
-	// For a diagonal inertia tensor, we can use a simplified formula
-	// Extract rotation basis vectors from model matrix
-	Vec3 right = Mat4_GetDirection(modelMat, 0);   // X-axis
-	Vec3 up = Mat4_GetDirection(modelMat, 1);      // Y-axis  
-	Vec3 forward = Mat4_GetDirection(modelMat, 2); // Z-axis
+Mat4 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat) {
+	// Extract rotation basis from columns 0, 1, 2
+	Vec3 r = Vec3_NORMALIZE(Mat4_GetDirection(modelMat, 0)); // Right (Col 0)
+	Vec3 u = Vec3_NORMALIZE(Mat4_GetDirection(modelMat, 1)); // Up    (Col 1)
+	Vec3 f = Vec3_NORMALIZE(Mat4_GetDirection(modelMat, 2)); // Fwd   (Col 2)
+
+	// I_world = R * I_diag * R_transpose
+	// resulting element M_ij = (r_i*r_j*Ix) + (u_i*u_j*Iy) + (f_i*f_j*Iz)
 	
-	// Normalize to ensure orthonormality (in case of numerical errors)
-	right = Vec3_NORMALIZE(right);
-	up = Vec3_NORMALIZE(up);
-	forward = Vec3_NORMALIZE(forward);
+	Mat4 I; 
+	float x = localInertia.x;
+	float y = localInertia.y;
+	float z = localInertia.z;
+
+	// Row 0
+	I.rows[0].x = r.x * r.x * x + u.x * u.x * y + f.x * f.x * z;
+	I.rows[0].y = r.x * r.y * x + u.x * u.y * y + f.x * f.y * z;
+	I.rows[0].z = r.x * r.z * x + u.x * u.z * y + f.x * f.z * z;
+	I.rows[0].w = 0;
+
+	// Row 1
+	I.rows[1].x = I.rows[0].y; // Symmetric
+	I.rows[1].y = r.y * r.y * x + u.y * u.y * y + f.y * f.y * z;
+	I.rows[1].z = r.y * r.z * x + u.y * u.z * y + f.y * f.z * z;
+	I.rows[1].w = 0;
+
+	// Row 2
+	I.rows[2].x = I.rows[0].z; // Symmetric
+	I.rows[2].y = I.rows[1].z; // Symmetric
+	I.rows[2].z = r.z * r.z * x + u.z * u.z * y + f.z * f.z * z;
+	I.rows[2].w = 0;
 	
-	// Transform diagonal inertia tensor: I_world = R * I_local * R^T
-	// For diagonal tensors, each component is transformed by the corresponding axis
-	Vec3 worldInertia;
-	worldInertia.x = localInertia.x * (right.x * right.x) + 
-	                  localInertia.y * (up.x * up.x) + 
-	                  localInertia.z * (forward.x * forward.x);
-	                  
-	worldInertia.y = localInertia.x * (right.y * right.y) + 
-	                  localInertia.y * (up.y * up.y) + 
-	                  localInertia.z * (forward.y * forward.y);
-	                  
-	worldInertia.z = localInertia.x * (right.z * right.z) + 
-	                  localInertia.y * (up.z * up.z) + 
-	                  localInertia.z * (forward.z * forward.z);
-	
-	return worldInertia;
+	// Row 3 (Homogeneous part not truly needed but kept consistent with Mat4)
+	I.rows[3] = (Vec4){0, 0, 0, 1};
+
+	return I;
 }
 
 
@@ -815,11 +836,11 @@ Vec3 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 model
 ====================
 AF_Physics_ApplyAngularImpulse
 Apply angular impulse to rigidbody object.
-Note: The inertia tensor should already be in world-space when calling this.
+Note: The world-space inverse inertia tensor MUST be provided.
 ====================
 */
-void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force){
-	Vec3 angularForce = Vec3_MULT(_rigidbody->inertiaTensor, _force);
+void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force, Mat4 _worldInertia){
+	Vec3 angularForce = AF_Mat4_MULT_Vec3(_worldInertia, _force);
 	_rigidbody->anglularVelocity = Vec3_ADD(_rigidbody->anglularVelocity, angularForce);
 }
 
@@ -1047,6 +1068,10 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 		float cosr_cosp = 1.0f - 2.0f * (y * y + z * z);
 		_transform->rot.z = atan2f(sinr_cosp, cosr_cosp) * (180.0f / AF_PI);
 	}
+	
+	// FIX: Build the model matrix directly from the quaternion orientation
+	// This prevents Euler-based drift from accumulating during physical simulation
+	_transform->modelMat = Mat4_ToModelMat4_Quaternion(_transform->pos, _transform->orientation, _transform->scale);
 
 	// Apply frame-rate independent damping using exponential decay: damping^dt
 	// This ensures consistent behavior regardless of frame rate
@@ -1109,12 +1134,12 @@ void AF_Physics_IntegrateAccell(AF_CTransform3D* _transform, AF_C3DRigidbody* _r
         }
         _rigidbody->velocity = Vec3_ADD(_rigidbody->velocity, Vec3_MULT_SCALAR(linearAcceleration, _dt));
         
-        // == Angular Acceleration (THE FIX) ==
-        // 1. Transform local inverse inertia tensor to world space
-        Vec3 worldInvInertia = AF_Physics_TransformInertiaTensorToWorldSpace(_rigidbody->inertiaTensor, _transform->modelMat);
+        // == Angular Acceleration (FIXED) ==
+        // 1. Transform local inverse inertia tensor to world space as a full matrix
+        Mat4 worldInvInertia = AF_Physics_TransformInertiaTensorToWorldSpace(_rigidbody->inertiaTensor, _transform->modelMat);
         
-        // 2. Calculate angular acceleration from torque: α = I⁻¹ * τ
-        Vec3 angularAcceleration = Vec3_MULT(worldInvInertia, _rigidbody->torque);
+        // 2. Calculate angular acceleration from torque using matrix-vector multiplication: α = I⁻¹ * τ
+        Vec3 angularAcceleration = AF_Mat4_MULT_Vec3(worldInvInertia, _rigidbody->torque);
         
         // 3. Update angular velocity: ω_new = ω_old + α * Δt
         _rigidbody->anglularVelocity = Vec3_ADD(_rigidbody->anglularVelocity, Vec3_MULT_SCALAR(angularAcceleration, _dt));
@@ -1230,10 +1255,7 @@ Calculate ray intersection hit test against an Axis Aligned Bounding Box
 */
 af_bool_t AF_Physics_AABB_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision){
 	Vec3 boxPos = _collider->boundingPos;
-	Vec3* _size = &_collider->boundingVolume;
-	//Vec3 boxHalfSize = Vec3_MULT_SCALAR(*_size, 0.5f);
-	//Vec3 boxHalfSize = Vec3_DIV_SCALAR(*_size, 2);
-	Vec3 boxHalfSize = Vec3_MULT_SCALAR(*_size, .5f);
+	Vec3 boxHalfSize = _collider->boundingVolume;
 	return AF_Physics_Box_RayIntersection(_ray, boxPos, boxHalfSize, _collision);
 } 
 
@@ -1419,6 +1441,26 @@ Resolve collision between two rigidbodies
 ====================
 */
 void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _entityBID, AF_Collision* _collision){
+	
+	// FIX: Safety check for invalid IDs (like Terrain/World)
+	if(_entityBID >= AF_ECS_TOTAL_ENTITIES) {
+		// Minimal correction for static world - only move A
+		AF_CTransform3D* transformA = &_ecs->transforms[_entityAID];
+		AF_CCollider* colliderA = &_ecs->colliders[_entityAID];
+		float correctionMagnitude = fmaxf(colliderA->collision.penetration - PENETRATION_SLOP, 0.0f);
+		Vec3 correction = Vec3_MULT_SCALAR(colliderA->collision.normal, correctionMagnitude * PENETRATION_PERCENTAGE);
+		transformA->pos = Vec3_MINUS(transformA->pos, correction);
+		
+		// For terrain, we still want to zero out the velocity against the normal
+		AF_C3DRigidbody* rigidbodyA = &_ecs->rigidbodies[_entityAID];
+		float velocityAlongNormal = Vec3_DOT(rigidbodyA->velocity, colliderA->collision.normal);
+		if (velocityAlongNormal > 0.0f) {
+			Vec3 impulse = Vec3_MULT_SCALAR(colliderA->collision.normal, -velocityAlongNormal);
+			rigidbodyA->velocity = Vec3_ADD(rigidbodyA->velocity, impulse);
+		}
+		return; 
+	}
+	
 	AF_C3DRigidbody* rigidbodyA = &_ecs->rigidbodies[_entityAID];
 	AF_C3DRigidbody* rigidbodyB = &_ecs->rigidbodies[_entityBID];
 
@@ -1494,15 +1536,15 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 
 	// Work out the effect of inertia (using world-space transformed inertia tensor)
 	// Transform the local-space inverse inertia tensors to world-space
-	Vec3 worldInertiaTensorA = AF_Physics_TransformInertiaTensorToWorldSpace(rigidbodyA->inertiaTensor, transformA->modelMat);
-	Vec3 worldInertiaTensorB = AF_Physics_TransformInertiaTensorToWorldSpace(rigidbodyB->inertiaTensor, transformB->modelMat);
+	Mat4 worldInertiaTensorA = AF_Physics_TransformInertiaTensorToWorldSpace(rigidbodyA->inertiaTensor, transformA->modelMat);
+	Mat4 worldInertiaTensorB = AF_Physics_TransformInertiaTensorToWorldSpace(rigidbodyB->inertiaTensor, transformB->modelMat);
 	
 	Vec3 crossRelativeNormalA = Vec3_CROSS(relativeA, _collision->normal);
-	Vec3 tensorCrossRelativeNormalA = Vec3_MULT(worldInertiaTensorA, crossRelativeNormalA);
+	Vec3 tensorCrossRelativeNormalA = AF_Mat4_MULT_Vec3(worldInertiaTensorA, crossRelativeNormalA);
 	Vec3 inertiaA = Vec3_CROSS(tensorCrossRelativeNormalA, relativeA);
 
 	Vec3 crossRelativeNormalB = Vec3_CROSS(relativeB, _collision->normal);
-	Vec3 tensorCrossRelativeNormalB = Vec3_MULT(worldInertiaTensorB, crossRelativeNormalB);
+	Vec3 tensorCrossRelativeNormalB = AF_Mat4_MULT_Vec3(worldInertiaTensorB, crossRelativeNormalB);
 	Vec3 inertiaB = Vec3_CROSS(tensorCrossRelativeNormalB, relativeB);
 
 	float angularEffect = Vec3_DOT(Vec3_ADD(inertiaA, inertiaB), _collision->normal);
@@ -1557,7 +1599,7 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 	// Apply impulses
 	if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
 		AF_Physics_ApplyLinearImpulse(rigidbodyA, negativeFullImpulse);
-		AF_Physics_ApplyAngularImpulse(rigidbodyA, angularImpulseA);
+		AF_Physics_ApplyAngularImpulse(rigidbodyA, angularImpulseA, worldInertiaTensorA);
 		
 		// For resting contacts, directly damp angular velocity to stop rotation
 		if (isRestingContact) {
@@ -1567,7 +1609,7 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 
 	if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
 		AF_Physics_ApplyLinearImpulse(rigidbodyB, fullImpulse);
-		AF_Physics_ApplyAngularImpulse(rigidbodyB, angularImpulseB);
+		AF_Physics_ApplyAngularImpulse(rigidbodyB, angularImpulseB, worldInertiaTensorB);
 		
 		// For resting contacts, directly damp angular velocity to stop rotation
 		if (isRestingContact) {
@@ -1597,11 +1639,11 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 
 		// Denominator for friction
 		Vec3 crossRelativeTangentA = Vec3_CROSS(relativeA, tangent);
-		Vec3 tensorCrossTangentA = Vec3_MULT(worldInertiaTensorA, crossRelativeTangentA);
+		Vec3 tensorCrossTangentA = AF_Mat4_MULT_Vec3(worldInertiaTensorA, crossRelativeTangentA);
 		Vec3 inertiaTangentA = Vec3_CROSS(tensorCrossTangentA, relativeA);
 
 		Vec3 crossRelativeTangentB = Vec3_CROSS(relativeB, Vec3_MULT_SCALAR(tangent, -1));
-		Vec3 tensorCrossTangentB = Vec3_MULT(worldInertiaTensorB, crossRelativeTangentB);
+		Vec3 tensorCrossTangentB = AF_Mat4_MULT_Vec3(worldInertiaTensorB, crossRelativeTangentB);
 		Vec3 inertiaTangentB = Vec3_CROSS(tensorCrossTangentB, relativeB);
 
 		float denom = totalMass + Vec3_DOT(Vec3_ADD(inertiaTangentA, inertiaTangentB), tangent);
@@ -1617,12 +1659,12 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 			if (rigidbodyA->inverseMass > 0.0f && hasRigidbodyA == AF_TRUE) {
 				AF_Physics_ApplyLinearImpulse(rigidbodyA, Vec3_MULT_SCALAR(frictionImpulse, -1));
 				Vec3 angularFrictionA = Vec3_CROSS(relativeA, Vec3_MULT_SCALAR(frictionImpulse, -1));
-				AF_Physics_ApplyAngularImpulse(rigidbodyA, angularFrictionA);
+				AF_Physics_ApplyAngularImpulse(rigidbodyA, angularFrictionA, worldInertiaTensorA);
 			}
 			if (rigidbodyB->inverseMass > 0.0f && hasRigidbodyB == AF_TRUE) {
 				AF_Physics_ApplyLinearImpulse(rigidbodyB, frictionImpulse);
 				Vec3 angularFrictionB = Vec3_CROSS(relativeB, frictionImpulse);
-				AF_Physics_ApplyAngularImpulse(rigidbodyB, angularFrictionB);
+				AF_Physics_ApplyAngularImpulse(rigidbodyB, angularFrictionB, worldInertiaTensorB);
 			}
 		}
 	}
