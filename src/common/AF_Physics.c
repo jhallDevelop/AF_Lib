@@ -83,9 +83,10 @@ AF_Physics_Init
 Implementation of Init
 ====================
 */
-void AF_Physics_Init(AF_ECS* _ecs, void* _physicsEngineHandle){
+void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle){
 	assert(_ecs != NULL && "Physics: Physics_Init pass in a null reference\n");
 	AF_Log("Physics_Init: \n");
+	(void)_physicsEngineHandle;
 
 
 	// Setup Broadphase physics
@@ -135,6 +136,7 @@ Implementation of update
 */
 void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt){
 	assert(_ecs != NULL && "Physics: AF_Physics_Update pass in a null reference\n");
+	(void)_physicsEngineHandle;
 	// loop through and update all transforms based on their velocities
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_CTransform3D* transform = &_ecs->transforms[i];
@@ -177,6 +179,7 @@ Implementation of late update
 */
 void AF_Physics_LateUpdate(AF_ECS* _ecs, void* _physicsEngineHandle){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateUpdate pass in a null reference\n");
+	(void)_physicsEngineHandle;
 
 	// Do collision tests
 	AF_Physics_Collision_Test(_ecs);
@@ -195,6 +198,7 @@ Implementation of late render update
 // TODO: figure out if this is still needed or a waste of time
 void AF_Physics_LateRenderUpdate(AF_ECS* _ecs, void* _physicsEngineHandle){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateRenderUpdate pass in a null reference\n");
+	(void)_physicsEngineHandle;
 	/*
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_CCollider* collider = &_ecs->colliders[i];
@@ -1824,7 +1828,8 @@ Returns AF_TRUE if a collision occured, and fills out the collision structure wi
 ====================
 */
 af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngineHandle, AF_Collision* _collision) {
-    af_bool_t foundCollision = AF_FALSE;
+    (void)_physicsEngineHandle;
+	af_bool_t foundCollision = AF_FALSE;
     AF_FLOAT closestDistance = AF_FLOAT_MAX; // Use a very large number
     AF_Collision tempCollision = AF_Collision_ZERO(); // Temporary storage for a potential hit
 
@@ -1907,6 +1912,7 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
 
 
 void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
+	(void)color;
 	// render debug collider
                 //draw all edges
                 //if(collider->type == Plane){
@@ -1936,6 +1942,7 @@ Do shutdown things
 ====================
 */
 AF_FLOAT AF_Physics_TransformToAxis(const AF_CTransform3D* _transform, const Vec3* _halfSize, Vec3 _axis){
+	(void)_transform;
 	Vec3 right = {1.0, 0.0, 0.0};
 	Vec3 up = {0.0, 1.0, 0.0};
 	Vec3 forward = {0.0, 0.0, 1.0};
@@ -1955,6 +1962,9 @@ Build contact manifold for collision between two OBBs
 ====================
 */
 void AF_Physics_DetectBoxAndPoint(AF_CCollider* _boxCollider, const Vec3* _point, AF_Collision* outCollision) {
+	(void)_boxCollider;
+	(void)_point;
+	(void)outCollision;
 	/*
 	From Ian Millingtons book "Game Physics Engine Development" p153, 13.3.5 COLLIDING TWO BOXES
 	const Box &box,
@@ -1991,6 +2001,7 @@ Do shutdown things
 */
 void AF_Physics_Shutdown(void* _physicsEngineHandle){
 	AF_Log("Physics: Shutdown\n");
+	(void)_physicsEngineHandle;
 	// don't need to free anything yet as we have no dynamic allocations
 	
 }

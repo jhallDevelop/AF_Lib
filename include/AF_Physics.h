@@ -69,6 +69,11 @@ AF_LIB_API void AF_Physics_Update_Bounds(AF_ECS* _ecs);
 af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngineHandle, AF_Collision* _collision);
 
 // Math Helpers
+AF_LIB_API Vec4 AF_EulerToQuaternion(Vec3 euler);
+AF_LIB_API Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale);
+AF_LIB_API Mat4 QuaternionToMat4(Vec4 q);
+
+// Math Helpers
 Vec4 AF_EulerToQuaternion(Vec3 euler);
 Vec4 Quat_MULT(Vec4 q1, Vec4 q2);
 Mat4 QuaternionToMat4(Vec4 q);
