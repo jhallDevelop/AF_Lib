@@ -45,6 +45,7 @@ typedef struct AF_AppData {
     // Group boolean values together at the end to minimize padding
     bool isRunning;        // 1 byte
     bool isFullscreen;     // 1 byte
+    void* physicsEngineHandle; // Pointer to internal physics engine handle (e.g., Bullet)
     // Add padding to ensure total struct size is multiple of 8
 } AF_AppData;
 #pragma pack(pop)
@@ -69,6 +70,7 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
 
     _appData->isRunning = AF_FALSE;
     _appData->isFullscreen = AF_FALSE;
+    _appData->physicsEngineHandle = NULL;
 }
 
 

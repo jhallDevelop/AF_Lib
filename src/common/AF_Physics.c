@@ -37,13 +37,53 @@ typedef struct OBB {
 	AF_FLOAT e[3]; // Positive halfwidth extents of OBB along each axis
 } OBB;
 
+// Forward Declareations
+// Physics system functions
+af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs);
+void AF_Physics_GetInterval(const AF_CTransform3D* transform, const Vec3* halfSize, const Vec3* axis, AF_FLOAT* min, AF_FLOAT* max);
+af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
+af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
+af_bool_t AF_Physics_TerrainTest(AF_ECS* _ecs, uint32_t _entity1ID, AF_CTransform3D* _entity1Transform, AF_CCollider* _collider1, AF_CTerrain* _terrain, AF_CTransform3D* _terrainTransform);
+af_bool_t AF_Physics_Point_Inside_Rect(Vec2 _point, AF_Rect _rect);
+af_bool_t AF_Physics_Plane_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision);
+af_bool_t AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_Collision* info2);
+
+
+//=====HELPER FUNCTIONS=====
+Vec3 AF_Physics_CalculateBoxInverseInertiaTensor(Vec3 halfExtents, float inverseMass);
+Mat4 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat);
+void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force, Mat4 _worldInertia);
+void AF_Physics_ApplyLinearImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force);
+AF_LIB_API void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt);
+AF_LIB_API void AF_Physics_IntegrateAccell(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt);
+af_bool_t AF_Physics_Sphere_RayIntersection(const Ray* _ray, const AF_CTransform3D* _transform, const AF_CCollider* _collider, AF_Collision* _collision);
+af_bool_t AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _boxPos, const Vec3 _boxSize, AF_Collision* _collision);
+af_bool_t AF_Physics_AABB_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision);
+af_bool_t AF_Physics_OBB_RayIntersection(const Ray* _ray, const AF_CTransform3D* _worldTransform, const Vec3* _size, AF_Collision* _collision);
+af_bool_t AF_Physics_AABB(AF_Rect* _rect1, AF_Rect* _rect2);
+af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision);
+AF_LIB_API void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _entityBID, AF_Collision* _collision);
+void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider);
+void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t collisionCount, int numCollisionFrames);
+af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngineHandle, AF_Collision* _collision) ;
+void AF_Physics_DrawBox(AF_CCollider* collider, float* color);
+AF_FLOAT AF_Physics_TransformToAxis(const AF_CTransform3D* transform, const Vec3* halfSize, Vec3 axis);
+void AF_Physics_DetectBoxAndPoint(AF_CCollider* _boxCollider, const Vec3* _point, AF_Collision* outCollision);
+
+// Math Helpers for Quaternion integration
+Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt);
+Vec4 Quat_MULT(Vec4 q1, Vec4 q2);
+Mat4 QuaternionToMat4(Vec4 q);
+Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale);
+Vec4 AF_EulerToQuaternion(Vec3 euler);
+
 /*
 ====================
 AF_Physics_Init
 Implementation of Init
 ====================
 */
-void AF_Physics_Init(AF_ECS* _ecs){
+void AF_Physics_Init(AF_ECS* _ecs, void* _physicsEngineHandle){
 	assert(_ecs != NULL && "Physics: Physics_Init pass in a null reference\n");
 	AF_Log("Physics_Init: \n");
 
@@ -93,7 +133,7 @@ AF_Physics_Update
 Implementation of update
 ====================
 */
-void AF_Physics_Update(AF_ECS* _ecs, const float _dt){
+void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt){
 	assert(_ecs != NULL && "Physics: AF_Physics_Update pass in a null reference\n");
 	// loop through and update all transforms based on their velocities
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
@@ -135,7 +175,7 @@ AF_Physics_LateUpdate
 Implementation of late update
 ====================
 */
-void AF_Physics_LateUpdate(AF_ECS* _ecs){
+void AF_Physics_LateUpdate(AF_ECS* _ecs, void* _physicsEngineHandle){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateUpdate pass in a null reference\n");
 
 	// Do collision tests
@@ -153,7 +193,7 @@ Implementation of late render update
 ====================
 */
 // TODO: figure out if this is still needed or a waste of time
-void AF_Physics_LateRenderUpdate(AF_ECS* _ecs){
+void AF_Physics_LateRenderUpdate(AF_ECS* _ecs, void* _physicsEngineHandle){
 	assert(_ecs != NULL && "Physics: AF_Physics_LateRenderUpdate pass in a null reference\n");
 	/*
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
@@ -620,6 +660,10 @@ af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entit
         bestAxis = Vec3_MULT_SCALAR(bestAxis, -1.0f);
     }
 
+	// Build contact manifold (approximate contact point)
+
+
+	
     // Calculate contact point using OBB centers (which include the collider offset)
     Vec3 centerA = (Vec3){a.c[0], a.c[1], a.c[2]};
     Vec3 closestPointOnA = centerA;
@@ -638,6 +682,7 @@ af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entit
         closestPointOnB = Vec3_ADD(closestPointOnB, Vec3_MULT_SCALAR(b.u[i], dist));
     }
     Vec3 contactPoint = Vec3_MULT_SCALAR(Vec3_ADD(closestPointOnA, closestPointOnB), 0.5f);
+	
 
     // Populate the output struct
     outCollision->collided = AF_TRUE;
@@ -1778,7 +1823,7 @@ Calculate ray intersection hit test against an Axis Aligned Bounding Box on all 
 Returns AF_TRUE if a collision occured, and fills out the collision structure with the closest hit
 ====================
 */
-af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Collision* _collision) {
+af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngineHandle, AF_Collision* _collision) {
     af_bool_t foundCollision = AF_FALSE;
     AF_FLOAT closestDistance = AF_FLOAT_MAX; // Use a very large number
     AF_Collision tempCollision = AF_Collision_ZERO(); // Temporary storage for a potential hit
@@ -1881,47 +1926,61 @@ void AF_Physics_DrawBox(AF_CCollider* collider, float* color){
 
 	// TODO: recieved many warnings, disabled for now
 	AF_Log_Warning("AF_Physics_DrawBox: disabled filling in the vertices\n");
+	
+}
+
+/*
+====================
+AF_Physics_TransformToAxis
+Do shutdown things
+====================
+*/
+AF_FLOAT AF_Physics_TransformToAxis(const AF_CTransform3D* _transform, const Vec3* _halfSize, Vec3 _axis){
+	Vec3 right = {1.0, 0.0, 0.0};
+	Vec3 up = {0.0, 1.0, 0.0};
+	Vec3 forward = {0.0, 0.0, 1.0};
+
+	AF_FLOAT projection =
+		_halfSize->x * fabsf(Vec3_DOT(_axis, right)) +
+		_halfSize->y * fabsf(Vec3_DOT(_axis, up)) +
+		_halfSize->z * fabsf(Vec3_DOT(_axis, forward));
+
+	return projection;
+}
+
+/*
+====================
+AF_Physics_BuildContactManifold
+Build contact manifold for collision between two OBBs
+====================
+*/
+void AF_Physics_DetectBoxAndPoint(AF_CCollider* _boxCollider, const Vec3* _point, AF_Collision* outCollision) {
 	/*
-	// Top face vertices
-	vertices[0] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomLeft
-	vertices[1] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topLeft
-
-	vertices[2] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topLeft
-	vertices[3] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topRight
-
-	vertices[4] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topRight
-	vertices[5] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomRight
-
-	vertices[6] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomRight
-	vertices[7] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomLeft
-
-	// Bottom face vertices
-	vertices[8]  = (Vec3){pos.x - bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomLeft
-	vertices[9]  = (Vec3){pos.x - bounds.x/2, pos.y - bounds.y/2, pos.z + bounds.z/2};  // bottom-topLeft
-
-	vertices[10] = (Vec3){pos.x - bounds.x/2, pos.y - bounds.y/2, pos.z + bounds.z/2};  // bottom-topLeft
-	vertices[11] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z + bounds.z/2};  // bottom-topRight
-
-	vertices[12] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z + bounds.z/2};  // bottom-topRight
-	vertices[13] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomRight
-
-	vertices[14] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomRight
-	vertices[15] = (Vec3){pos.x - bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomLeft
-
-	// Vertical edges connecting top and bottom faces
-	vertices[16] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomLeft
-	vertices[17] = (Vec3){pos.x - bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomLeft
-
-	vertices[18] = (Vec3){pos.x - bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topLeft
-	vertices[19] = (Vec3){pos.x - bounds.x/2, pos.y - bounds.y/2, pos.z + bounds.z/2};  // bottom-topLeft
-
-	vertices[20] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z + bounds.z/2};  // top-topRight
-	vertices[21] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z + bounds.z/2};  // bottom-topRight
-
-	vertices[22] = (Vec3){pos.x + bounds.x/2, pos.y + bounds.y/2, pos.z - bounds.z/2};  // top-bottomRight
-	vertices[23] = (Vec3){pos.x + bounds.x/2, pos.y - bounds.y/2, pos.z - bounds.z/2};  // bottom-bottomRight
+	From Ian Millingtons book "Game Physics Engine Development" p153, 13.3.5 COLLIDING TWO BOXES
+	const Box &box,
+	const Vector3 &point,
+	CollisionData *data
+	1. Consider each vertex of object A.
+	2. Calculate the interpenetration of that vertex with object B.
+	3. The deepest such interpenetration is retained.
+	4. Do the same with object B’s vertices against object A.
+	5. The deepest interpenetration overall is retained.
+	The point–face detection code therefore looks like thi
 	*/
-	//AF_Debug_DrawLineArrayWorld(vertices, BOX_VERTEX_COUNT, color, AF_FALSE);
+
+	// Transform the point into box coordinates.
+
+	// Check each axis, looking for the axis on which the
+
+	// penetration is least deep.
+
+	// Compile the contact.
+
+	// Write the appropriate data.
+
+	// Note that we don’t know what rigid body the point
+	// belongs to, so we just use NULL. Where this is called
+	// this value can be left, or filled in.
 }
 
 /*
@@ -1930,8 +1989,10 @@ AF_Physics_Shutdown
 Do shutdown things
 ====================
 */
-void AF_Physics_Shutdown(void){
+void AF_Physics_Shutdown(void* _physicsEngineHandle){
 	AF_Log("Physics: Shutdown\n");
+	// don't need to free anything yet as we have no dynamic allocations
+	
 }
 
 #ifdef __cplusplus

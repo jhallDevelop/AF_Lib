@@ -33,6 +33,7 @@ typedef struct {
 	Vec3 force;
 	Vec3 torque;
 	Vec3 inertiaTensor;
+    void* internalHandle; // Pointer to internal physics engine handle (e.g., Bullet rigidbody)
 
 } AF_C3DRigidbody;
 

@@ -17,7 +17,8 @@ AF_C3DRigidbody AF_C3DRigidbody_ZERO(void){
 		.inverseMass = 1,
 		.force = {0,0,0},
 		.torque = {0,0,0},
-		.inertiaTensor = {0,0,0}
+		.inertiaTensor = {0,0,0},
+		.internalHandle = NULL
 	};
 	return rigidbody;
 }
@@ -43,7 +44,8 @@ AF_C3DRigidbody AF_C3DRigidbody_ADD(void){ //
 		.inverseMass = 1,
 		.force = {0,0,0},
 		.torque = {0,0,0},
-		.inertiaTensor = {0,0,0}
+		.inertiaTensor = {0,0,0},
+		.internalHandle = NULL
 	};
 	return rigidbody;
 }

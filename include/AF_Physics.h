@@ -59,49 +59,22 @@ static const Vec3 AF_PHYSICS_CUBE_COLLISION_FACES [6] =
 
 
 // General collision resolution function
-void AF_Physics_Init(AF_ECS* _ecs);
-AF_LIB_API void AF_Physics_Update(AF_ECS* _ecs, const float _dt);
-void AF_Physics_LateUpdate(AF_ECS* _ecs);
-void AF_Physics_LateRenderUpdate(AF_ECS* _ecs);
-void AF_Physics_Shutdown(void);
+void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle);
+AF_LIB_API void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt);
+void AF_Physics_LateUpdate(AF_ECS* _ecs, void* _physicsEngineHandle);
+void AF_Physics_LateRenderUpdate(AF_ECS* _ecs, void* _physicsEngineHandle);
+void AF_Physics_Shutdown(void* _physicsEngineHandle);
 
-// Physics system functions
 AF_LIB_API void AF_Physics_Update_Bounds(AF_ECS* _ecs);
-af_bool_t AF_Physics_Collision_Test(AF_ECS* _ecs);
-void AF_Physics_GetInterval(const AF_CTransform3D* transform, const Vec3* halfSize, const Vec3* axis, AF_FLOAT* min, AF_FLOAT* max);
-af_bool_t AF_Physics_AABB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
-af_bool_t AF_Physics_OBB_Test(AF_ECS* _ecs, uint32_t _entity1ID, uint32_t _entity2ID, AF_CTransform3D* transformA, AF_CCollider* colliderA, AF_CTransform3D* transformB, AF_CCollider* colliderB, AF_Collision* outCollision);
-af_bool_t AF_Physics_TerrainTest(AF_ECS* _ecs, uint32_t _entity1ID, AF_CTransform3D* _entity1Transform, AF_CCollider* _collider1, AF_CTerrain* _terrain, AF_CTransform3D* _terrainTransform);
-af_bool_t AF_Physics_Point_Inside_Rect(Vec2 _point, AF_Rect _rect);
-af_bool_t AF_Physics_Plane_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision);
-af_bool_t AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_Collision* info2);
+af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngineHandle, AF_Collision* _collision);
 
-
-//=====HELPER FUNCTIONS=====
-Vec3 AF_Physics_CalculateBoxInverseInertiaTensor(Vec3 halfExtents, float inverseMass);
-Mat4 AF_Physics_TransformInertiaTensorToWorldSpace(Vec3 localInertia, Mat4 modelMat);
-void AF_Physics_ApplyAngularImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force, Mat4 _worldInertia);
-void AF_Physics_ApplyLinearImpulse( AF_C3DRigidbody *  _rigidbody, const Vec3 _force);
-AF_LIB_API void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt);
-AF_LIB_API void AF_Physics_IntegrateAccell(AF_CTransform3D* _transform, AF_C3DRigidbody* _rigidbody, const float _dt);
-af_bool_t AF_Physics_Sphere_RayIntersection(const Ray* _ray, const AF_CTransform3D* _transform, const AF_CCollider* _collider, AF_Collision* _collision);
-af_bool_t AF_Physics_Box_RayIntersection(const Ray* _ray, const Vec3 _boxPos, const Vec3 _boxSize, AF_Collision* _collision);
-af_bool_t AF_Physics_AABB_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision);
-af_bool_t AF_Physics_OBB_RayIntersection(const Ray* _ray, const AF_CTransform3D* _worldTransform, const Vec3* _size, AF_Collision* _collision);
-af_bool_t AF_Physics_AABB(AF_Rect* _rect1, AF_Rect* _rect2);
-af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision);
-AF_LIB_API void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _entityBID, AF_Collision* _collision);
-void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider);
-void AF_Physics_NarrowPhase(AF_Collision* broadPhaseCollisions, size_t collisionCount, int numCollisionFrames);
-af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, AF_Collision* _collision) ;
-void AF_Physics_DrawBox(AF_CCollider* collider, float* color);
-
-// Math Helpers for Quaternion integration
-Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt);
+// Math Helpers
+Vec4 AF_EulerToQuaternion(Vec3 euler);
 Vec4 Quat_MULT(Vec4 q1, Vec4 q2);
 Mat4 QuaternionToMat4(Vec4 q);
 Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale);
-Vec4 AF_EulerToQuaternion(Vec3 euler);
+Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt);
+
 
 
 

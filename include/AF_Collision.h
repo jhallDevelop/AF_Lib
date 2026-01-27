@@ -15,6 +15,7 @@ and helper functions
 extern "C" {    
 #endif
 
+#define AF_MAX_COLLISION_CONTACTS 8
 
 /*
 ====================
@@ -26,6 +27,9 @@ typedef struct AF_Collision {
 	uint32_t entity1ID;
 	uint32_t entity2ID;
 	Vec3 normal;
+	uint32_t contactPointCount;
+	Vec3 contactPoints[AF_MAX_COLLISION_CONTACTS];
+	AF_FLOAT contactPenetrations[AF_MAX_COLLISION_CONTACTS];
 	Vec3 collisionPoint;
 	float rayDistance;
 	
@@ -45,8 +49,13 @@ static inline AF_Collision AF_Collision_ZERO(void){
 	collision.entity1ID = 0;
 	collision.entity2ID = 0;
 	
-	collision.normal = Vec3_ZERO();
+	collision.contactPointCount = 0;
+	for(int i = 0; i < AF_MAX_COLLISION_CONTACTS; ++i){
+		collision.contactPoints[i] = Vec3_ZERO();
+		collision.contactPenetrations[i] = 0.0f;
+	}
 	collision.collisionPoint = Vec3_ZERO();
+	collision.normal = Vec3_ZERO();
 	collision.rayDistance = 0.0f;
 	
 	collision.penetration = 0.0f;
@@ -69,6 +78,12 @@ static inline void AF_Collision_Reset(AF_Collision* _collision){
 	_collision->entity1ID = 0;
 	_collision->entity2ID = 0;
 	
+	
+	_collision->contactPointCount = 0;
+	for(int i = 0; i < AF_MAX_COLLISION_CONTACTS; ++i){
+		_collision->contactPoints[i] = Vec3_ZERO();
+		_collision->contactPenetrations[i] = 0.0f;
+	}
 	_collision->normal = Vec3_ZERO();
 	_collision->collisionPoint = Vec3_ZERO();
 	_collision->rayDistance = 0.0f;
