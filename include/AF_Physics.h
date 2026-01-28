@@ -63,6 +63,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle);
 AF_LIB_API void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt);
 void AF_Physics_LateUpdate(AF_ECS* _ecs, void* _physicsEngineHandle);
 void AF_Physics_LateRenderUpdate(AF_ECS* _ecs, void* _physicsEngineHandle);
+void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHandle);
 void AF_Physics_Shutdown(void* _physicsEngineHandle);
 
 AF_LIB_API void AF_Physics_Update_Bounds(AF_ECS* _ecs);
