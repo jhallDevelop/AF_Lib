@@ -34,34 +34,20 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
         return 0;
     }
     FILE* f = NULL;
-    uint32_t err = 0;
-    #ifdef _WIN32
-        err = fopen_s(&f, _path, _writeCommands);
-        if (err == 0) {
-            // flip the success on windows
-            err = 1;
-        }
-    #else
-        f = fopen(_path, _writeCommands);
-        if(f != NULL){
-            err = 1;    // true
-        }
-    #endif
-
-    // A return value of 0 means success. f is now valid.
-    if (err == 0) {
+    int err = 0;
+#ifdef _WIN32
+    err = fopen_s(&f, _path, _writeCommands);
+    if (err != 0) {
         AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s (Error code: %d)\n", _path, err);
         return NULL;
     }
-
+#else
+    f = fopen(_path, _writeCommands);
     if (f == NULL) {
-        AF_Log_Error("AF_File_OpenFile: FAILED: to open file: Null %s\n", _path);
-        return 0;
-    } 
-    if (ferror(f)) {
-        AF_Log_Error("AF_File_OpenFile: Error while opening \n");
-		return 0;
+        AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s\n", _path);
+        return NULL;
     }
+#endif
 
     return f;
 }
