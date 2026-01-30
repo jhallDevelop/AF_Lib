@@ -10,6 +10,7 @@ Definition of the AF_Time struct
 #define AF_TIME_H
 #include <time.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {    
@@ -23,7 +24,7 @@ struct to hold the data needed for monitoring time in the game
 */
 typedef struct {
 	uint32_t currentFrame;		// The current frame.
-	double deltaTime;	// Time in ms since the last frame
+	double deltaTime;	// Time in seconds since the last frame
 	double currentTime;		// Time captured by the system clock. 
     double lastTime;		// record of the previous time captured
 	AF_FLOAT fps; // Frames per second
@@ -45,13 +46,13 @@ Initialise the struct variables. Don't need to take in any variables except the 
 pass back a new copy of initialised data in the struct.
 ====================
 */
-static inline AF_Time AF_Time_ZERO(const float _currentTime){
+static inline AF_Time AF_Time_ZERO(const double _currentTime){
 
 	AF_Time returnTime;
 	returnTime.currentFrame = 0;
 	returnTime.deltaTime = 0;
 	returnTime.currentTime = _currentTime;
-	returnTime.lastTime = 0.0f;
+	returnTime.lastTime = _currentTime;
 	returnTime.fps = 0.0f;
 	returnTime.fpsTimer = 0.0f;
 	returnTime.frameCount = 0;
