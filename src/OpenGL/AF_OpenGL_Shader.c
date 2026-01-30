@@ -14,8 +14,15 @@ This implementation is for OpenGL
 // set to 0 if ignoring shader errors or 1 if logging them
 #define SHADER_ERROR_LOG 0
 
-// Forward Declare
-GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name);
+
+
+// ====================
+// AF_Shader_GetGLUniformLocation
+// Wrapper for glGetUniformLocation used for caching
+// ====================
+int32_t AF_Shader_GetGLUniformLocation(uint32_t ID, const char* name){
+    return glGetUniformLocation(ID, name);
+}
 
 /*
 ====================
@@ -274,7 +281,8 @@ void AF_Shader_SetMat4(uint32_t ID, const char* name, const Mat4 mat)
 
 // Get uniform Location
 GLint AF_Shader_GetUniformLocation(uint32_t ID, const char* name){
-    GLint returnValue = glGetUniformLocation(ID, name);
+    // Check if name hash already exists in cache
+    GLint returnValue = AF_Shader_GetGLUniformLocation(ID, name);
     if(returnValue == -1 && SHADER_ERROR_LOG == 1){
         AF_Log_Error("AF_Shader_GetUniformLocation: Can't find uniform location %s in shader %i\n", name, ID);
     }

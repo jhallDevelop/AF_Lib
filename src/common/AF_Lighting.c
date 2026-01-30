@@ -24,11 +24,11 @@ void AF_Lighting_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_Lig
 	// Ambient/Directional light
 	if(_lightingData->ambientLightEntityIndex > 0){
 		AF_CLight* light = &_ecs->lights[_lightingData->ambientLightEntityIndex];
-		glUniform1f(glGetUniformLocation(_shader, "material.shininess"), 32.0f);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.direction"), light->direction.x, light->direction.y, light->direction.z);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.ambient"),  light->ambientCol.x, light->ambientCol.y, light->ambientCol.z); 
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.diffuse"),  light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "dirLight.specular"),  light->specularCol.x, light->specularCol.y, light->specularCol.z);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, "material.shininess"), 32.0f);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "dirLight.direction"), light->direction.x, light->direction.y, light->direction.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "dirLight.ambient"),  light->ambientCol.x, light->ambientCol.y, light->ambientCol.z); 
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "dirLight.diffuse"),  light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "dirLight.specular"),  light->specularCol.x, light->specularCol.y, light->specularCol.z);
 	}
 	
 	// Spot light
@@ -39,16 +39,16 @@ void AF_Lighting_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_Lig
 		AF_CTransform3D* spotLightTransform = &_ecs->transforms[spotLightEntityID];	
 		Vec3* spotLightPos = &spotLightTransform->pos;
 		
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.ambient"), spotLight->ambientCol.x, spotLight->ambientCol.y, spotLight->ambientCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.diffuse"), spotLight->diffuseCol.x, spotLight->diffuseCol.y, spotLight->diffuseCol.z);
-		glUniform3f(glGetUniformLocation(_shader, "spotLight.specular"), spotLight->specularCol.x, spotLight->specularCol.y, spotLight->specularCol.z);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.constant"), spotLight->constant); 
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.linear"), spotLight->linear);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.quadratic"), spotLight->quadratic);
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.cutoff"), AF_Math_Cos(AF_Math_Radians(spotLight->cutOff)));
-		glUniform1f(glGetUniformLocation(_shader, "spotLight.outerCutOff"), AF_Math_Cos(AF_Math_Radians(spotLight->outerCutoff)));
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "spotLight.position"), spotLightPos->x, spotLightPos->y, spotLightPos->z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "spotLight.direction"), spotLight->direction.x, spotLight->direction.y, spotLight->direction.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "spotLight.ambient"), spotLight->ambientCol.x, spotLight->ambientCol.y, spotLight->ambientCol.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "spotLight.diffuse"), spotLight->diffuseCol.x, spotLight->diffuseCol.y, spotLight->diffuseCol.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, "spotLight.specular"), spotLight->specularCol.x, spotLight->specularCol.y, spotLight->specularCol.z);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, "spotLight.constant"), spotLight->constant); 
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, "spotLight.linear"), spotLight->linear);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, "spotLight.quadratic"), spotLight->quadratic);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, "spotLight.cutoff"), AF_Math_Cos(AF_Math_Radians(spotLight->cutOff)));
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, "spotLight.outerCutOff"), AF_Math_Cos(AF_Math_Radians(spotLight->outerCutoff)));
 	}
 	
 	// Point lights (up to maxLights)
@@ -62,31 +62,31 @@ void AF_Lighting_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_Lig
 		
 		// Position
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].position", i);
-		glUniform3f(glGetUniformLocation(_shader, uniformName), lightPosition->x, lightPosition->y, lightPosition->z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, uniformName), lightPosition->x, lightPosition->y, lightPosition->z);
 		
 		// Ambient
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].ambient", i);
-		glUniform3f(glGetUniformLocation(_shader, uniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, uniformName), light->ambientCol.x, light->ambientCol.y, light->ambientCol.z);
 		
 		// Diffuse
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].diffuse", i);
-		glUniform3f(glGetUniformLocation(_shader, uniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z); 
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, uniformName), light->diffuseCol.x, light->diffuseCol.y, light->diffuseCol.z); 
 		
 		// Specular
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].specular", i);
-		glUniform3f(glGetUniformLocation(_shader, uniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);
+		glUniform3f(AF_Shader_GetUniformLocation(_shader, uniformName), light->specularCol.x, light->specularCol.y, light->specularCol.z);
 		
 		// Constant
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE,"pointLights[%i].constant", i);
-		glUniform1f(glGetUniformLocation(_shader, uniformName), light->constant);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, uniformName), light->constant);
 	
 		// Linear
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].linear", i);
-		glUniform1f(glGetUniformLocation(_shader, uniformName), light->linear);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, uniformName), light->linear);
 
 		// Quadratic
 		snprintf(uniformName, AF_MAX_PATH_CHAR_SIZE, "pointLights[%i].quadratic", i);
-		glUniform1f(glGetUniformLocation(_shader, uniformName), light->quadratic);
+		glUniform1f(AF_Shader_GetUniformLocation(_shader, uniformName), light->quadratic);
 	}
 }
 

@@ -928,7 +928,7 @@ void AF_Renderer_ExecuteDrawCall(AF_CMesh* _mesh, AF_ECS* _ecs, uint32_t _shader
 
 void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName, uint32_t _textureID){
 	glUseProgram(_shaderID); // Bind the shader program
-	glUniform1i(glGetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
+	glUniform1i(AF_Shader_GetUniformLocation(_shaderID, _shaderVarName), _textureID); // Tell the shader to set the "Diffuse_Texture" variable to use texture id 0
 	glUseProgram(0);
 }
 
@@ -1146,15 +1146,9 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
 		AF_Renderer_CheckError("Error binding VBO for drawing!");
 
-		// Send matrices to shader (GL_TRUE = row-major order)
-		int projLocation = glGetUniformLocation(shader, "projection");
-		glUniformMatrix4fv(projLocation, 1, GL_TRUE, (float*)&_projMat->rows);
-		
-		int viewLocation = glGetUniformLocation(shader, "view");
-		glUniformMatrix4fv(viewLocation, 1, GL_TRUE, (float*)&_viewMat->rows);
 
 		
-		int modelLocation = glGetUniformLocation(shader, "model");
+		int modelLocation = AF_Shader_GetUniformLocation(shader, "model");
 		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
 
 		// Prep drawing
