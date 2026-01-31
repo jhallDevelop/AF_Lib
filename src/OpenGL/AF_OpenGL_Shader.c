@@ -9,19 +9,43 @@ This implementation is for OpenGL
 #include <string.h>
 #include <GL/glew.h>
 #include "AF_File.h"
+#include "AF_HashTable.h"
 #define GL_SILENCE_DEPRECATION
 
 // set to 0 if ignoring shader errors or 1 if logging them
 #define SHADER_ERROR_LOG 0
 
-
+static AF_HashTable shaderUniformLocationCache;
 
 // ====================
 // AF_Shader_GetGLUniformLocation
 // Wrapper for glGetUniformLocation used for caching
 // ====================
 int32_t AF_Shader_GetGLUniformLocation(uint32_t ID, const char* name){
-    return glGetUniformLocation(ID, name);
+
+    // check name is not null or empty
+    if(AF_STRING_IS_EMPTY(name)){
+        AF_Log_Error("AF_Shader_GetUniformLocation: Given uniform name is null or empty\n");
+        return -1;
+    }
+
+    char uniqueName[AF_HASHTABLE_KEY_MAX_LENGTH];
+    snprintf(uniqueName, AF_HASHTABLE_KEY_MAX_LENGTH, "%s_%u", name, ID);
+
+    int32_t foundHashID = AF_HashTable_GetIntValue(uniqueName, &shaderUniformLocationCache);
+    // shader location found in cache, exit early
+    if(foundHashID != -1){
+        return foundHashID;
+    }
+
+    int32_t newLocation = glGetUniformLocation(ID, name);
+    if (newLocation != -1 && shaderUniformLocationCache.count < AF_HASHTABLE_MAX_ENTRIES) {
+        AF_Log("AF_Shader_GetGLUniformLocation: Caching %s at %d\n", uniqueName, newLocation);
+        AF_HashTable_NewIntEntry(uniqueName, newLocation, &shaderUniformLocationCache);
+    }
+    
+    // exit with new location
+    return newLocation; 
 }
 
 /*
