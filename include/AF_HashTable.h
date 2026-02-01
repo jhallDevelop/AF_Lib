@@ -5,6 +5,8 @@
 
 #define AF_HASHTABLE_KEY_MAX_LENGTH 64
 #define AF_HASHTABLE_MAX_ENTRIES 512
+#define FNV_OFFSET 14695981039346656037UL
+#define FNV_PRIME 1099511628211UL
 
 union AF_HASHTABLE_VALUE {
     uint32_t uint32Value;
@@ -31,7 +33,9 @@ AF_HashTableEntry* AF_HashTable_NewUIntEntry(const char* _key, uint32_t _value, 
 AF_HashTableEntry* AF_HashTable_NewFloatEntry(const char* _key, AF_FLOAT _value, AF_HashTable* _hashTable);
 
 int32_t AF_HashTable_GetIntValue(const char* _key, AF_HashTable* _hashTable);
-uint32_t AF_HashTable_GetUIntValue(const char* _key, AF_HashTable* _hashTable);
+int32_t AF_HashTable_GetUIntValue(const char* _key, AF_HashTable* _hashTable);
 AF_FLOAT AF_HashTable_GetFloatValue(const char* _key, AF_HashTable* _hashTable);
+uint64_t AF_HashTable_HashKey(const char* _key);
+
 
 #endif  // AF_HASHTABLE_H
