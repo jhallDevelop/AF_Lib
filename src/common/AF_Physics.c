@@ -70,12 +70,6 @@ void AF_Physics_DrawBox(AF_CCollider* collider, float* color);
 AF_FLOAT AF_Physics_TransformToAxis(const AF_CTransform3D* transform, const Vec3* halfSize, Vec3 axis);
 void AF_Physics_DetectBoxAndPoint(AF_CCollider* _boxCollider, const Vec3* _point, AF_Collision* outCollision);
 
-// Math Helpers for Quaternion integration
-Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt);
-Vec4 Quat_MULT(Vec4 q1, Vec4 q2);
-Mat4 QuaternionToMat4(Vec4 q);
-Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale);
-Vec4 AF_EulerToQuaternion(Vec3 euler);
 
 /*
 ====================
@@ -127,6 +121,7 @@ void AF_Physics_Update_Bounds(AF_ECS* _ecs)
 		collider->boundingRot = _ecs->transforms[i].rot;
 	}
 }
+
 
 /*
 ====================
@@ -924,144 +919,6 @@ static void AF_Physics_AddForceAtPosition(AF_CTransform3D* _transform, AF_C3DRig
 	_rigidbody->torque = Vec3_CROSS(localPos, *_addedForce);
 }*/
 
-// TODO move this to vec4
-// Function to create a quaternion from angular velocity and time step
-
-Vec4 createQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
-    // Calculate the scalar component (w) of the quaternion
-    float halfDt = dt * 0.5f; // Half of the time step
-    float angleMagnitude = Vec3_MAGNITUDE(angVel); // Calculate the magnitude of angular velocity
-    
-    // Safety check: if angular velocity is too small, return identity quaternion
-    if (angleMagnitude < 0.0001f) {
-        return Vec4_ZERO(); // Identity quaternion (no rotation)
-    }
-    
-    float halfAngle = angleMagnitude * halfDt;
-    float w = cosf(halfAngle); // Scalar part
-    float sinHalfAngle = sinf(halfAngle);
-
-    // Calculate the vector part of the quaternion (normalize the axis first)
-    float scale = sinHalfAngle / angleMagnitude;
-    Vec3 vectorPart = Vec3_MULT_SCALAR(angVel, scale);
-
-    // Create and return the quaternion
-    Vec4 q = {
-        vectorPart.x,
-        vectorPart.y,
-        vectorPart.z,
-        w
-    };
-    return q;
-}
-
-// Quaternion multiplication (Hamilton product)
-// q1 * q2 where q = (x, y, z, w)
-Vec4 Quat_MULT(Vec4 q1, Vec4 q2) {
-    Vec4 result;
-    result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
-    result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
-    result.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
-    result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
-    return result;
-}
-
-
-// Convert Euler angles (in radians) to quaternion
-// Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
-Vec4 AF_EulerToQuaternion(Vec3 euler) {
-    float cp = cosf(euler.x * 0.5f);  // pitch
-    float sp = sinf(euler.x * 0.5f);
-    float cy = cosf(euler.y * 0.5f);  // yaw
-    float sy = sinf(euler.y * 0.5f);
-    float cr = cosf(euler.z * 0.5f);  // roll
-    float sr = sinf(euler.z * 0.5f);
-
-    Vec4 q;
-    q.w = cr * cp * cy + sr * sp * sy;
-    q.x = sr * cp * cy - cr * sp * sy;
-    q.y = cr * sp * cy + sr * cp * sy;
-    q.z = cr * cp * sy - sr * sp * cy;
-    
-    return q;
-}
-
-// Convert quaternion to 4x4 rotation matrix
-Mat4 QuaternionToMat4(Vec4 q) {
-    // Normalize the quaternion first
-    float mag = sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-    if (mag > 0.0001f) {
-        q.x /= mag;
-        q.y /= mag;
-        q.z /= mag;
-        q.w /= mag;
-    }
-    
-    float xx = q.x * q.x;
-    float yy = q.y * q.y;
-    float zz = q.z * q.z;
-    float xy = q.x * q.y;
-    float xz = q.x * q.z;
-    float yz = q.y * q.z;
-    float wx = q.w * q.x;
-    float wy = q.w * q.y;
-    float wz = q.w * q.z;
-
-    Mat4 mat;
-    mat.rows[0].x = 1.0f - 2.0f * (yy + zz);
-    mat.rows[0].y = 2.0f * (xy - wz);
-    mat.rows[0].z = 2.0f * (xz + wy);
-    mat.rows[0].w = 0.0f;
-
-    mat.rows[1].x = 2.0f * (xy + wz);
-    mat.rows[1].y = 1.0f - 2.0f * (xx + zz);
-    mat.rows[1].z = 2.0f * (yz - wx);
-    mat.rows[1].w = 0.0f;
-
-    mat.rows[2].x = 2.0f * (xz - wy);
-    mat.rows[2].y = 2.0f * (yz + wx);
-    mat.rows[2].z = 1.0f - 2.0f * (xx + yy);
-    mat.rows[2].w = 0.0f;
-
-    mat.rows[3].x = 0.0f;
-    mat.rows[3].y = 0.0f;
-    mat.rows[3].z = 0.0f;
-    mat.rows[3].w = 1.0f;
-
-    return mat;
-}
-
-
-// Build model matrix from position, quaternion rotation, and scale
-Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale) {
-    // Get rotation matrix from quaternion
-    Mat4 rot = QuaternionToMat4(quat);
-    
-    // Apply scale and position
-    Mat4 result;
-    result.rows[0].x = rot.rows[0].x * scale.x;
-    result.rows[0].y = rot.rows[0].y * scale.y;
-    result.rows[0].z = rot.rows[0].z * scale.z;
-    result.rows[0].w = 0.0f;
-
-    result.rows[1].x = rot.rows[1].x * scale.x;
-    result.rows[1].y = rot.rows[1].y * scale.y;
-    result.rows[1].z = rot.rows[1].z * scale.z;
-    result.rows[1].w = 0.0f;
-
-    result.rows[2].x = rot.rows[2].x * scale.x;
-    result.rows[2].y = rot.rows[2].y * scale.y;
-    result.rows[2].z = rot.rows[2].z * scale.z;
-    result.rows[2].w = 0.0f;
-
-    result.rows[3].x = pos.x;
-    result.rows[3].y = pos.y;
-    result.rows[3].z = pos.z;
-    result.rows[3].w = 1.0f;
-
-    return result;
-}
-
 /*
 ====================
 AF_PHYSICS_INTEGRATEVELOCITY
@@ -1090,9 +947,9 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 	float angVelMag = Vec3_MAGNITUDE(angVel);
 	if (angVelMag > 0.0001f) {
 		// Create a quaternion representing the rotation from angular velocity
-		Vec4 quatAngVel = createQuaternionFromAngularVelocity(angVel, _dt);
+		Vec4 quatAngVel = AF_Vec4_CreateQuaternionFromAngularVelocity(angVel, _dt);
 		// Apply the rotation: new_orientation = delta_rotation * current_orientation
-		orientation = Quat_MULT(quatAngVel, orientation);
+		orientation = AF_Vec4_Quat_MULT(quatAngVel, orientation);
 		orientation = Vec4_NORMALIZE(orientation);
 		_transform->orientation = orientation;
 		

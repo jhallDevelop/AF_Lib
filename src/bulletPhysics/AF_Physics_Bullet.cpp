@@ -79,7 +79,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 			btTrans.setIdentity();
 			btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
 			
-			Vec4 q = AF_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+			Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
 			btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
 
 			btScalar mass = 0.0f;
@@ -177,7 +177,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 				btTransform btTrans;
 				btTrans.setIdentity();
 				btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
-				Vec4 q = AF_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+				Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
 				btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
 
 				if (body->getMotionState()) {
@@ -231,6 +231,24 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 			// Reset collisions
 			AF_Collision_Reset(&_ecs->colliders[i].collision);
 		}
+	}
+}
+
+/*
+====================
+AF_Physics_Update_Bounds
+Update the physics bounds
+====================
+*/
+void AF_Physics_Update_Bounds(AF_ECS* _ecs)
+{
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+	AF_CCollider* collider = &_ecs->colliders[i];
+		// update the bounds position
+		// update the bounding Pos
+		
+		collider->boundingPos = Vec3_ADD(_ecs->transforms[i].pos, collider->posOffset);
+		collider->boundingRot = _ecs->transforms[i].rot;
 	}
 }
 
@@ -353,7 +371,7 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 
 		// 3. Reset Transform
 		btVector3 initialPosition(trans->pos.x, trans->pos.y, trans->pos.z);
-		Vec4 q = AF_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+		Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
 		btQuaternion initialOrientation(q.x, q.y, q.z, q.w);
 
 		btTransform initialTransform;

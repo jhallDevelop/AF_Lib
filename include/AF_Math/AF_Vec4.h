@@ -25,6 +25,7 @@
 #define VEC4_H
 #include "AF_Math/AF_Math_Define.h"
 #include "AF_Math/AF_Math.h"
+#include "AF_Math/AF_Vec3.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -287,6 +288,76 @@ typedef struct {
         Vec4 proj = Vec4_PROJECTION(v1, v2);
         Vec4 orthogonal = Vec4_MINUS(v1, proj);
         return orthogonal;
+    }
+
+    // =======================================
+    // AF_Mat4_Quat_MULT
+    // Quaternion multiplication (Hamilton product)
+    // =======================================
+    static inline Vec4 AF_Mat4_Quat_MULT(Vec4 q1, Vec4 q2) {
+        Vec4 result;
+        result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+        result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+        result.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
+        result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+        return result;
+    }
+
+    // =======================================
+    // AF_Vec4_EulerToQuaternion
+    // Convert Euler angles (in radians) to quaternion
+    // Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
+    // =======================================
+    static inline Vec4 AF_Vec4_EulerToQuaternion(Vec3 euler) {
+        float cp = cosf(euler.x * 0.5f);
+        float sp = sinf(euler.x * 0.5f);
+        float cy = cosf(euler.y * 0.5f);
+        float sy = sinf(euler.y * 0.5f);
+        float cr = cosf(euler.z * 0.5f);
+        float sr = sinf(euler.z * 0.5f);
+
+        Vec4 q;
+        q.w = cr * cp * cy + sr * sp * sy;
+        q.x = sr * cp * cy - cr * sp * sy;
+        q.y = cr * sp * cy + sr * cp * sy;
+        q.z = cr * cp * sy - sr * sp * cy;
+        return q;
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_MULT
+    // Quaternion multiplication (Hamilton product)
+    // =======================================
+    static inline Vec4 AF_Vec4_Quat_MULT(Vec4 q1, Vec4 q2) {
+        Vec4 result;
+        result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+        result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+        result.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
+        result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+        return result;
+    }
+
+    // =======================================
+    // createQuaternionFromAngularVelocity
+    // Create a quaternion representing rotation from angular velocity vector over time delta
+    // =======================================
+    static inline Vec4 AF_Vec4_CreateQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
+        float halfDt = dt * 0.5f;
+        float angleMagnitude = Vec3_MAGNITUDE(angVel);
+        
+        if (angleMagnitude < 0.0001f) {
+            return Vec4_ZERO();
+        }
+        
+        float halfAngle = angleMagnitude * halfDt;
+        float w = cosf(halfAngle);
+        float sinHalfAngle = sinf(halfAngle);
+
+        float scale = sinHalfAngle / angleMagnitude;
+        Vec3 vectorPart = Vec3_MULT_SCALAR(angVel, scale);
+
+        Vec4 q = { vectorPart.x, vectorPart.y, vectorPart.z, w };
+        return q;
     }
 
 #ifdef __cplusplus

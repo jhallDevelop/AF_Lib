@@ -20,7 +20,7 @@ Handles ambient, point, and spot lights
 // Update shaders with lighting data for forward rendering
 // =================================================================================================
 void AF_Lighting_RenderForwardPointLights(uint32_t _shader, AF_ECS* _ecs, AF_LightingData* _lightingData){
-	
+	// TODO: lights should use a UBO for performance
 	// Ambient/Directional light
 	if(_lightingData->ambientLightEntityIndex > 0){
 		AF_CLight* light = &_ecs->lights[_lightingData->ambientLightEntityIndex];

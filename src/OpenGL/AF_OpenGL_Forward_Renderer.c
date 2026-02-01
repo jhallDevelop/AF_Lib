@@ -1076,27 +1076,31 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 
-		// --- FEEDBACK LOOP DETECTION ---
-		// TODO this is likely slow. need a faster solution if we want to support many FBOs and textures
-        // Query the currently bound framebuffer's color attachment texture id.
-        // If the mesh's diffuse texture is the same texture attached to the FBO we are rendering to,
-        // drawing would create a feedback loop. Skip drawing this mesh in that case.
-        GLint currentFBO = 0;
-        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFBO);
-        if (currentFBO != 0) {
-            GLint attachmentType = 0;
-            glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentType);
-            if (attachmentType == GL_TEXTURE) {
-                GLint attachedTex = 0;
-                glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &attachedTex);
-                // Compare attached texture with mesh diffuse texture id (if any)
-                if (_mesh->material.diffuseTexture.id != 0 && (GLuint)attachedTex == _mesh->material.diffuseTexture.id) {
-                    //AF_Log_Warning("AF_Renderer_DrawMesh: Skipping draw to avoid feedback loop (mesh uses framebuffer's attached texture)\n");
-                    continue;
-                }
-                // Also check shadow/depth texture or other bound textures if you want to be thorough
-            }
-        }
+		
+		// This is only used for render-to-texture scenarios.
+		if(_mesh->material.diffuseTexture.type == AF_Texture_TypeMappings[AF_TEXTURE_TYPE_RENDER_TEXTURE].type){
+			// --- FEEDBACK LOOP DETECTION ---
+			// TODO this is likely slow. need a faster solution if we want to support many FBOs and textures
+			// Query the currently bound framebuffer's color attachment texture id.
+			// If the mesh's diffuse texture is the same texture attached to the FBO we are rendering to,
+			// drawing would create a feedback loop. Skip drawing this mesh in that case.
+			GLint currentFBO = 0;
+			glGetIntegerv(GL_FRAMEBUFFER_BINDING, &currentFBO);
+			if (currentFBO != 0) {
+				GLint attachmentType = 0;
+				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentType);
+				if (attachmentType == GL_TEXTURE) {
+					GLint attachedTex = 0;
+					glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &attachedTex);
+					// Compare attached texture with mesh diffuse texture id (if any)
+					if (_mesh->material.diffuseTexture.id != 0 && (GLuint)attachedTex == _mesh->material.diffuseTexture.id) {
+						//AF_Log_Warning("AF_Renderer_DrawMesh: Skipping draw to avoid feedback loop (mesh uses framebuffer's attached texture)\n");
+						continue;
+					}
+					// Also check shadow/depth texture or other bound textures if you want to be thorough
+				}
+			}
+		}	
 
 		// TODO: Render based on shader type 
 		// Does the shader use Textures?
@@ -1143,11 +1147,12 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 
 		// If you want to explicitly bind the VBO (usually not necessary if VBOs are part of the VAO):
 		
-		glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
-		AF_Renderer_CheckError("Error binding VBO for drawing!");
+		// Don't need to bind VBO if using VAO as its done automatically
+		//glBindBuffer(GL_ARRAY_BUFFER, _mesh->meshes[i].vbo);
+		//AF_Renderer_CheckError("Error binding VBO for drawing!");
 
 
-		
+		// TODO: check if dirty flag is set before updating matrices
 		int modelLocation = AF_Shader_GetUniformLocation(shader, "model");
 		glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&_modelMat->rows);
 

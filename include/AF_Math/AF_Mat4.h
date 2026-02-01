@@ -767,6 +767,73 @@ static inline Vec3 Mat4_GetRotation(const Mat4* mat) {
     return euler;
 }
 
+// ====================
+// AF_Mat4_QuaternionToMat4
+// Convert a quaternion to a 4x4 rotation matrix
+// ====================
+static inline Mat4 AF_Mat4_QuaternionToMat4(Vec4 q) {
+    float mag = sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+    if (mag > 0.0001f) {
+        q.x /= mag; q.y /= mag; q.z /= mag; q.w /= mag;
+    }
+    
+    float xx = q.x * q.x; float yy = q.y * q.y; float zz = q.z * q.z;
+    float xy = q.x * q.y; float xz = q.x * q.z; float yz = q.y * q.z;
+    float wx = q.w * q.x; float wy = q.w * q.y; float wz = q.w * q.z;
+
+    Mat4 mat;
+    mat.rows[0].x = 1.0f - 2.0f * (yy + zz);
+    mat.rows[0].y = 2.0f * (xy - wz);
+    mat.rows[0].z = 2.0f * (xz + wy);
+    mat.rows[0].w = 0.0f;
+
+    mat.rows[1].x = 2.0f * (xy + wz);
+    mat.rows[1].y = 1.0f - 2.0f * (xx + zz);
+    mat.rows[1].z = 2.0f * (yz - wx);
+    mat.rows[1].w = 0.0f;
+
+    mat.rows[2].x = 2.0f * (xz - wy);
+    mat.rows[2].y = 2.0f * (yz + wx);
+    mat.rows[2].z = 1.0f - 2.0f * (xx + yy);
+    mat.rows[2].w = 0.0f;
+
+    mat.rows[3].x = 0.0f; mat.rows[3].y = 0.0f; mat.rows[3].z = 0.0f; mat.rows[3].w = 1.0f;
+
+    return mat;
+}
+
+// ====================
+// Mat4_ToModelMat4_Quaternion
+// Create a model matrix from position, quaternion rotation and scale
+// ====================
+static inline Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale) {
+    Mat4 rot = AF_Mat4_QuaternionToMat4(quat);
+    Mat4 result;
+    result.rows[0].x = rot.rows[0].x * scale.x;
+    result.rows[0].y = rot.rows[0].y * scale.y;
+    result.rows[0].z = rot.rows[0].z * scale.z;
+    result.rows[0].w = 0.0f;
+
+    result.rows[1].x = rot.rows[1].x * scale.x;
+    result.rows[1].y = rot.rows[1].y * scale.y;
+    result.rows[1].z = rot.rows[1].z * scale.z;
+    result.rows[1].w = 0.0f;
+
+    result.rows[2].x = rot.rows[2].x * scale.x;
+    result.rows[2].y = rot.rows[2].y * scale.y;
+    result.rows[2].z = rot.rows[2].z * scale.z;
+    result.rows[2].w = 0.0f;
+
+    result.rows[3].x = pos.x;
+    result.rows[3].y = pos.y;
+    result.rows[3].z = pos.z;
+    result.rows[3].w = 1.0f;
+
+    return result;
+}
+
+
+
 #ifdef __cplusplus
 }
 #endif
