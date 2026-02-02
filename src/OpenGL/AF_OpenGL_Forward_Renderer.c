@@ -1617,7 +1617,9 @@ int32_t AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter, AF_
 	// Base LOD on chunk size (patchSize)
 	// Switch LOD every 2 chunks (256m if chunk is 128m) - Harsher drop-off
 	int32_t lodLevel = (int32_t)(distance / (patchSize * 2.0f)); 
-	if (lodLevel < 0) lodLevel = 0;
+	if (lodLevel < 0) {
+		lodLevel = 0;
+	}
 
     // Clamp LOD level based on gridSize to prevent quadsPerRow < 1
     // e.g. if gridSize is 17, max lodSkip is 16 (LOD 4)
@@ -1625,7 +1627,9 @@ int32_t AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter, AF_
     while (((gridSize - 1) >> (maxLOD + 1)) > 0) {
         maxLOD++;
     }
-	if (lodLevel > (int32_t)maxLOD) lodLevel = (int32_t)maxLOD;
+	if (lodLevel > (int32_t)maxLOD) {
+		lodLevel = (int32_t)maxLOD;
+	}
 	
 	return lodLevel;
 }
