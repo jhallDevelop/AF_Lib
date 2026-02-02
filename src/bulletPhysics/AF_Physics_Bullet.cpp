@@ -339,15 +339,12 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 		AF_Log_Error("AF_Physics_Reset: _physics Engine handle is null\n");
 	}
 
+	
 	AF_BulletInternalData* bulletInternalData = (AF_BulletInternalData*)_physicsEngineHandle;
 
 	btVector3 zeroVector(0,0,0);
 
 	for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
-		// 1. Sync current ECS state from backup
-		_ecs->transforms[i] = _backupECS->transforms[i];
-		_ecs->rigidbodies[i] = _backupECS->rigidbodies[i];
-		_ecs->colliders[i] = _backupECS->colliders[i];
 
 		AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
 		AF_CTransform3D* trans = &_ecs->transforms[i];
@@ -359,12 +356,14 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 			continue;
 		}
 
+		
 		// 2. Reset velocities and forces in both Bullet and ECS
 		rb->velocity = Vec3_ZERO();
 		rb->anglularVelocity = Vec3_ZERO();
 		rb->force = Vec3_ZERO();
 		rb->torque = Vec3_ZERO();
 
+		
 		rigidbody->clearForces();
 		rigidbody->setLinearVelocity(zeroVector);
 		rigidbody->setAngularVelocity(zeroVector);
@@ -374,6 +373,7 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 		Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
 		btQuaternion initialOrientation(q.x, q.y, q.z, q.w);
 
+		
 		btTransform initialTransform;
 		initialTransform.setIdentity();
 		initialTransform.setOrigin(initialPosition);
