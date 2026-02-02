@@ -44,7 +44,67 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 
 	// Initialize body array
 	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
+		AF_CCollider* col = &_ecs->colliders[i];
+		AF_CTransform3D* trans = &_ecs->transforms[i];
+
+		af_bool_t isEnabled = AF_Component_GetHasEnabled(rb->enabled);
+
+		if (isEnabled == AF_FALSE){
+			continue;	
+		}
+
 		bulletData->bodies[i] = nullptr;
+		btCollisionShape* shape = nullptr;
+		if (col->type == Sphere) {
+			shape = new btSphereShape(col->boundingVolume.x);
+		} else {
+			// Bullet box extents are half-extents
+			shape = new btBoxShape(btVector3(col->boundingVolume.x, col->boundingVolume.y, col->boundingVolume.z));
+		}
+
+		btTransform btTrans;
+		btTrans.setIdentity();
+		btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
+		
+		Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+		btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
+
+		btScalar mass = 0.0f;
+		if (rb->inverseMass > 0.0f) {
+			mass = 1.0f / rb->inverseMass;
+		}
+
+		if (rb->isKinematic) {
+			mass = 0.0f;
+		}
+
+		
+		btVector3 localInertia(0, 0, 0);
+		if (mass > 0) {
+			shape->calculateLocalInertia(mass, localInertia);
+		}
+
+		btDefaultMotionState* motionState = new btDefaultMotionState(btTrans);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
+		btRigidBody* body = new btRigidBody(rbInfo);
+		
+		// Simple user pointer to store ECS ID for reconstruction during raycasts
+		body->setUserIndex(i);
+
+		if (rb->isKinematic) {
+			body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			body->setActivationState(DISABLE_DEACTIVATION);
+		}
+
+		bulletData->dynamicsWorld->addRigidBody(body);
+		bulletData->bodies[i] = body;
+
+		
+		// Set gravity
+		if (rb->gravity == AF_FALSE) {
+			body->setGravity(btVector3(0, 0, 0));
+		}
 	}
 }
 
@@ -64,147 +124,104 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 		AF_CCollider* col = &_ecs->colliders[i];
 		AF_CTransform3D* trans = &_ecs->transforms[i];
 
-		bool isEnabled = AF_Component_GetHasEnabled(rb->enabled);
+		af_bool_t isEnabled = AF_Component_GetHasEnabled(rb->enabled);
 
-		if (isEnabled && bulletData->bodies[i] == nullptr) {
-			btCollisionShape* shape = nullptr;
-			if (col->type == Sphere) {
-				shape = new btSphereShape(col->boundingVolume.x);
-			} else {
-				// Bullet box extents are half-extents
-				shape = new btBoxShape(btVector3(col->boundingVolume.x, col->boundingVolume.y, col->boundingVolume.z));
-			}
+		if (isEnabled == AF_FALSE){
+			continue;	
+		}
+		
+		if (bulletData->bodies[i] == nullptr) {
+			continue;
+		}
+		btRigidBody* body = bulletData->bodies[i];
+		
+		// Check Kinematic state change
+		bool wasKinematic = body->isKinematicObject();
+		bool isKinematic = rb->isKinematic;
 
-			btTransform btTrans;
-			btTrans.setIdentity();
-			btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
-			
-			Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
-			btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
-
-			btScalar mass = 0.0f;
-			if (rb->inverseMass > 0.0f) {
-				mass = 1.0f / rb->inverseMass;
-			}
-
-			if (rb->isKinematic) {
-				mass = 0.0f;
-			}
-
-			btVector3 localInertia(0, 0, 0);
-			if (mass > 0) {
-				shape->calculateLocalInertia(mass, localInertia);
-			}
-
-			btDefaultMotionState* motionState = new btDefaultMotionState(btTrans);
-			btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionState, shape, localInertia);
-			btRigidBody* body = new btRigidBody(rbInfo);
-			
-			// Simple user pointer to store ECS ID for reconstruction during raycasts
-			body->setUserIndex(i);
-
-			if (rb->isKinematic) {
+		// WAKE UP the body if there is velocity to apply
+        if (Vec3_MAGNITUDE(rb->velocity) > 0.0001f || Vec3_MAGNITUDE(rb->torque) > 0.0001f) {
+            body->activate(true);
+            body->applyImpulse(
+                btVector3(rb->velocity.x * _dt, rb->velocity.y * _dt, rb->velocity.z * _dt),
+                btVector3(rb->torque.x * _dt, rb->torque.y * _dt, rb->torque.z * _dt)
+            );
+        }
+		
+		if (wasKinematic != isKinematic) {
+			if (isKinematic) {
+				// Changed to Kinematic
 				body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 				body->setActivationState(DISABLE_DEACTIVATION);
-			}
+				body->setMassProps(0.0f, btVector3(0, 0, 0));
+				body->updateInertiaTensor();
+			} else {
+				// Changed to Dynamic
+				body->setCollisionFlags(body->getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
+				body->setActivationState(ISLAND_SLEEPING);
+				body->activate(true);
 
-			bulletData->dynamicsWorld->addRigidBody(body);
-			bulletData->bodies[i] = body;
-
-			
-			// Set gravity
-			if (rb->gravity == AF_FALSE) {
-				body->setGravity(btVector3(0, 0, 0));
-			}
-		} 
-		else if (isEnabled && bulletData->bodies[i] != nullptr) {
-			btRigidBody* body = bulletData->bodies[i];
-			
-			// Check Kinematic state change
-			bool wasKinematic = body->isKinematicObject();
-			bool isKinematic = rb->isKinematic;
-			
-			if (wasKinematic != isKinematic) {
-				if (isKinematic) {
-					// Changed to Kinematic
-					body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-					body->setActivationState(DISABLE_DEACTIVATION);
-					body->setMassProps(0.0f, btVector3(0, 0, 0));
-					body->updateInertiaTensor();
-				} else {
-					// Changed to Dynamic
-					body->setCollisionFlags(body->getCollisionFlags() & ~btCollisionObject::CF_KINEMATIC_OBJECT);
-					body->setActivationState(ISLAND_SLEEPING);
-					body->activate(true);
-
-					// Recalculate mass
-					btScalar mass = 0.0f;
-					if (rb->inverseMass > 0.0f) {
-						mass = 1.0f / rb->inverseMass;
-					}
-					btVector3 localInertia(0, 0, 0);
-					if (mass > 0) {
-						body->getCollisionShape()->calculateLocalInertia(mass, localInertia);
-					}
-					body->setMassProps(mass, localInertia);
-					body->updateInertiaTensor();
-				}
-			} else if (!isKinematic) {
-				// Regular mass update
+				// Recalculate mass
 				btScalar mass = 0.0f;
 				if (rb->inverseMass > 0.0f) {
 					mass = 1.0f / rb->inverseMass;
 				}
-				
-				// Update mass if it changed
-				btScalar currentMass = 0.0f;
-				if (body->getInvMass() > 0.0f) {
-					currentMass = 1.0f / body->getInvMass();
+				btVector3 localInertia(0, 0, 0);
+				if (mass > 0) {
+					body->getCollisionShape()->calculateLocalInertia(mass, localInertia);
 				}
-
-				if (mass != currentMass) {
-					btVector3 localInertia(0, 0, 0);
-					if (mass > 0) {
-						body->getCollisionShape()->calculateLocalInertia(mass, localInertia);
-					}
-					body->setMassProps(mass, localInertia);
-					body->updateInertiaTensor();
-				}
+				body->setMassProps(mass, localInertia);
+				body->updateInertiaTensor();
+			}
+		} else if (!isKinematic) {
+			// Regular mass update
+			btScalar mass = 0.0f;
+			if (rb->inverseMass > 0.0f) {
+				mass = 1.0f / rb->inverseMass;
+			}
+			
+			// Update mass if it changed
+			btScalar currentMass = 0.0f;
+			if (body->getInvMass() > 0.0f) {
+				currentMass = 1.0f / body->getInvMass();
 			}
 
-			// If isKinematic is true, sync the transform FROM ECS TO Bullet
-			if (isKinematic) {
-				btTransform btTrans;
-				btTrans.setIdentity();
-				btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
-				Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
-				btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
-
-				if (body->getMotionState()) {
-					body->getMotionState()->setWorldTransform(btTrans);
+			if (mass != currentMass) {
+				btVector3 localInertia(0, 0, 0);
+				if (mass > 0) {
+					body->getCollisionShape()->calculateLocalInertia(mass, localInertia);
 				}
-				body->setWorldTransform(btTrans);
-			}
-
-			// Sync Gravity
-			btVector3 currentGravity = body->getGravity();
-			btVector3 targetGravity(0, 0, 0);
-			if (rb->gravity != AF_FALSE) {
-				targetGravity.setValue(0, GRAVITY_SCALE, 0);
-			}
-
-			if (currentGravity != targetGravity) {
-				body->setGravity(targetGravity);
-				body->activate(true);
+				body->setMassProps(mass, localInertia);
+				body->updateInertiaTensor();
 			}
 		}
-		else if (!isEnabled && bulletData->bodies[i] != nullptr) {
-			bulletData->dynamicsWorld->removeRigidBody(bulletData->bodies[i]);
-			delete bulletData->bodies[i]->getMotionState();
-			delete bulletData->bodies[i]->getCollisionShape();
-			delete bulletData->bodies[i];
-			bulletData->bodies[i] = nullptr;
+
+		// If isKinematic is true, sync the transform FROM ECS TO Bullet
+		if (isKinematic) {
+			btTransform btTrans;
+			btTrans.setIdentity();
+			btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
+			Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+			btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
+
+			if (body->getMotionState()) {
+				body->getMotionState()->setWorldTransform(btTrans);
+			}
+			body->setWorldTransform(btTrans);
 		}
+
+		// Sync Gravity
+		btVector3 currentGravity = body->getGravity();
+		btVector3 targetGravity(0, 0, 0);
+		if (rb->gravity != AF_FALSE) {
+			targetGravity.setValue(0, GRAVITY_SCALE, 0);
+		}
+
+		if (currentGravity != targetGravity) {
+			body->setGravity(targetGravity);
+			body->activate(true);
+		}
+		
 	}
 
 	// 2. Step simulation
