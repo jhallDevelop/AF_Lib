@@ -22,9 +22,12 @@ enum CollisionVolumeType {
 	OBB_Type = 2, 
 	Plane = 3,
 	Sphere = 4, 
-	Mesh = 8, 
-	Compound = 16, 
-	Invalid = 256
+	Mesh = 5,
+	Capsule = 6,
+	Terrain = 7,
+	ConvexHull = 8,
+	Compound = 9,
+	Invalid = 256	// end of valid types
 };
 
 /*

@@ -1001,8 +1001,8 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 	angVel = Vec3_MULT_SCALAR(angVel, angularDampingFactor);
 	
 	// Sleep very slow objects to prevent endless micro-movements
-	const float sleepLinearThreshold = 0.01f;  // Very low - only stop truly stationary objects
-	const float sleepAngularThreshold = 0.02f; // Slightly higher to stop slow rotation sooner
+	const float sleepLinearThreshold = 0.0001f;  // Very low - only stop truly stationary objects
+	const float sleepAngularThreshold = 0.0001f; // Slightly higher to stop slow rotation sooner
 	
 	float linearSpeed = Vec3_MAGNITUDE(linearVelocity);
 	
@@ -1328,6 +1328,13 @@ af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_CCollider* _collider, A
 
 		case Compound:
 			printf("AF_Physics_RayIntersection: Compound ray interaction not implemented\n");
+			return AF_FALSE;
+		break;
+
+		case Capsule:
+		case Terrain:
+		case ConvexHull:
+			// Not implemented for now
 			return AF_FALSE;
 		break;
 
@@ -1725,9 +1732,14 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
             case Mesh:
                 // TODO: Implement Mesh intersection
                 break;
-			case Compound:
+            case Compound:
 				// TODO: Implement Compound intersection
 			break;
+            case Capsule:
+            case Terrain:
+            case ConvexHull:
+                // Not implemented
+                break;
 			case Invalid:
 				AF_Log("AF_Physics_Raycast: Invalid collider type for entity ID: %i\n", i);
 				break;

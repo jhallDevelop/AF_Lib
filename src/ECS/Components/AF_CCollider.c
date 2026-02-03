@@ -205,8 +205,18 @@ AF_CCollider AF_CCollider_ADD_TYPE(enum CollisionVolumeType _volumeType){
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case Compound:
-			// TODO: add compound collider type
+		case Capsule:
+			// TODO: add capsule collider type
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case Terrain:
+			// TODO: add terrain collider type
+			return AF_CCollider_Box_ADD();
+		break;
+
+		case ConvexHull:
+			// TODO: add convex hull collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
