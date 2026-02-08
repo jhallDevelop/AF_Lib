@@ -1616,7 +1616,9 @@ int32_t AF_Renderer_CalculateLODInterval(Vec3 cameraPos, Vec3 terrainCenter, AF_
 	// Convert distance to LOD level directly
 	// Base LOD on chunk size (patchSize)
 	// Switch LOD every 2 chunks (256m if chunk is 128m) - Harsher drop-off
-	int32_t lodLevel = (int32_t)(distance / (patchSize * 2.0f)); 
+	AF_FLOAT switchEveryChunks = 0.25f; // LOD level increases every 0.5 chunks of distance
+	AF_FLOAT lodBaseDistance = patchSize * switchEveryChunks; // Distance at which we switch to next LOD level
+	int32_t lodLevel = (int32_t)(distance / lodBaseDistance);  
 	if (lodLevel < 0) {
 		lodLevel = 0;
 	}
