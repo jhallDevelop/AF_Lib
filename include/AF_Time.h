@@ -11,7 +11,7 @@ Definition of the AF_Time struct
 #include <time.h>
 #include <unistd.h>
 #include <stdint.h>
-
+#include "AF_Lib_Define.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif
@@ -67,24 +67,7 @@ Update the time variables
 ====================
 */
 
-static inline void AF_Time_Update(AF_Time* _time){
-	_time->currentTime = AF_Time_GetTime();
-    _time->deltaTime = _time->currentTime -_time->lastTime;
-    _time->lastTime = _time->currentTime;
-
-    _time->frameCount += 1;
-    _time->fpsTimer += _time->deltaTime;
-    
-    // When one second has passed...
-    if(_time->fpsTimer >= 1.0f){
-        // Calculate and STORE the FPS in your new variable.
-        _time->fps = (float)_time->frameCount / _time->fpsTimer;
-
-        // Reset the counters for the next second.
-        _time->fpsTimer = 0.0f;
-        _time->frameCount = 0;
-    }
-}
+void AF_Time_Update(AF_Time* _time);
 
 
 
