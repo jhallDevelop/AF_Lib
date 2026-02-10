@@ -854,7 +854,7 @@ void AF_JSON_JsonToCollider(cJSON* _colliderJSON, AF_CCollider* _collider) {
 	// Enabled
 	_collider->enabled = AF_Component_SetEnabled(_collider->enabled, cJSON_GetObjectItem(_colliderJSON, "enabled")->valueint);
 	// Type
-	_collider->type = (enum CollisionVolumeType)cJSON_GetObjectItem(_colliderJSON, "type")->valueint;
+	_collider->type = (enum AF_CollisionVolumeType_e)cJSON_GetObjectItem(_colliderJSON, "type")->valueint;
 	// Bounding Volume
 	cJSON* boundingVolumeJSON = cJSON_GetObjectItem(_colliderJSON, "boundingVolume");
 	if (boundingVolumeJSON != NULL) {

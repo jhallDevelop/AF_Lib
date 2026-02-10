@@ -26,7 +26,7 @@ AF_CCollider Struct used for physics
 */
 typedef struct {
     PACKED_CHAR enabled;
-    enum CollisionVolumeType type;
+    enum AF_CollisionVolumeType_e type;
     Vec3 boundingVolume;
 	Vec3 posOffset;
     Vec3 boundingPos;
@@ -44,7 +44,7 @@ AF_CCollider AF_CCollider_ADD(void);
 AF_CCollider AF_CCollider_Sphere_ADD(void);
 AF_CCollider AF_CCollider_Box_ADD(void);
 AF_CCollider AF_CCollider_Plane_ADD(void);
-AF_CCollider AF_CCollider_ADD_TYPE(enum CollisionVolumeType _volumeType);
+AF_CCollider AF_CCollider_ADD_TYPE(enum AF_CollisionVolumeType_e _volumeType);
 
 #ifdef __cplusplus
 }

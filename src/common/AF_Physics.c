@@ -1302,43 +1302,43 @@ Calculate ray intersection hit test
 */
 af_bool_t AF_Physics_RayIntersection(const Ray* _ray, AF_CCollider* _collider, AF_Collision* _collision){
 	//const AF_CTransform3D* transform = _entity->transform;
-	enum CollisionVolumeType type = _collider->type;
+	enum AF_CollisionVolumeType_e type = _collider->type;
 
 	switch(type){
-		case Plane:
+		case AF_COLLISION_TYPE_Plane:
 			return AF_Physics_Plane_RayIntersection(_ray, _collider, _collision);
 		break;
-		case AABB:
+		case AF_COLLISION_TYPE_AABB:
 			return AF_Physics_AABB_RayIntersection(_ray, _collider, _collision);
 		break;
 		
-		case OBB_Type:
+		case AF_COLLISION_TYPE_OBB:
 			printf("AF_Physics_RayIntersection: OBB ray interaction not implemented\n");
 			return AF_FALSE;
 		break;
 
-		case Sphere:
+		case AF_COLLISION_TYPE_Sphere:
 			return AF_FALSE;//AF_Physics_Sphere_RayIntersection(_ray, _entity->transform, _entity->collider, _collision);
 		break;
 
-		case Mesh:
+		case AF_COLLISION_TYPE_Mesh:
 			printf("AF_Physics_RayIntersection: Mesh ray interaction not implemented\n");
 			return AF_FALSE;
 		break;
 
-		case Compound:
+		case AF_COLLISION_TYPE_Compound:
 			printf("AF_Physics_RayIntersection: Compound ray interaction not implemented\n");
 			return AF_FALSE;
 		break;
 
-		case Capsule:
-		case Terrain:
-		case ConvexHull:
+		case AF_COLLISION_TYPE_Capsule:
+		case AF_COLLISION_TYPE_Terrain:
+		case AF_COLLISION_TYPE_ConvexHull:
 			// Not implemented for now
 			return AF_FALSE;
 		break;
 
-		case Invalid:
+		case AF_COLLISION_TYPE_Invalid:
 			printf("AF_Physics_RayIntersection: Invalid collider type\n");
 			return AF_FALSE;
 		break;
@@ -1651,7 +1651,7 @@ af_bool_t AF_Physics_CollisionInfoLessThan(const AF_Collision* info1, const AF_C
 
 /**/
 void AF_Physics_UpdateBroadphaseAABB(AF_CCollider* _collider){
-	if(_collider->type == AABB){
+	if(_collider->type == AF_COLLISION_TYPE_AABB){
 		Vec3 boundingVolumeHalfDimensions = {_collider->boundingVolume.x*0.5f, _collider->boundingVolume.y*0.5f, _collider->boundingVolume.z*0.5f};
 		_collider->broadphaseAABB = boundingVolumeHalfDimensions;
 	}
@@ -1717,30 +1717,30 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
         currentCollision.collided = AF_FALSE;
 
         switch (collider->type) {
-            case AABB:
+            case AF_COLLISION_TYPE_AABB:
                 currentCollision.collided = AF_Physics_AABB_RayIntersection(_ray, collider, &currentCollision);
                 break;
-            case OBB_Type:
+            case AF_COLLISION_TYPE_OBB:
                 currentCollision.collided = AF_Physics_OBB_RayIntersection(_ray, transform, &collider->boundingVolume, &currentCollision);
                 break;
-            case Plane:
+            case AF_COLLISION_TYPE_Plane:
                 currentCollision.collided = AF_Physics_Plane_RayIntersection(_ray, collider, &currentCollision);
                 break;
-            case Sphere:
+            case AF_COLLISION_TYPE_Sphere:
                 currentCollision.collided = AF_Physics_Sphere_RayIntersection(_ray, transform, collider, &currentCollision);
                 break;
-            case Mesh:
+            case AF_COLLISION_TYPE_Mesh:
                 // TODO: Implement Mesh intersection
                 break;
-            case Compound:
+            case AF_COLLISION_TYPE_Compound:
 				// TODO: Implement Compound intersection
 			break;
-            case Capsule:
-            case Terrain:
-            case ConvexHull:
+            case AF_COLLISION_TYPE_Capsule:
+            case AF_COLLISION_TYPE_Terrain:
+            case AF_COLLISION_TYPE_ConvexHull:
                 // Not implemented
                 break;
-			case Invalid:
+			case AF_COLLISION_TYPE_Invalid:
 				AF_Log("AF_Physics_Raycast: Invalid collider type for entity ID: %i\n", i);
 				break;
         }

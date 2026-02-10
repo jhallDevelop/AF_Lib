@@ -71,9 +71,9 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
         btCollisionShape* shape = nullptr;
 
 
-		if (col->type == Sphere) {
+		if (col->type == AF_COLLISION_TYPE_Sphere) {
 			shape = new btSphereShape(col->boundingVolume.x);
-		} else if (col->type == Terrain) {
+		} else if (col->type == AF_COLLISION_TYPE_Terrain) {
 			if(terrain == NULL){
 				continue;
 			}
@@ -169,7 +169,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 
 	
 		btScalar mass = 0.0f;
-		if (col->type != Terrain && rb->inverseMass > 0.0f) {
+		if (col->type != AF_COLLISION_TYPE_Terrain && rb->inverseMass > 0.0f) {
 			mass = 1.0f / rb->inverseMass;
 		}
 
@@ -383,7 +383,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 		if (bulletData->bodies[i]) {
 			AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
 			AF_CCollider* col = &_ecs->colliders[i];
-			if (rb->isKinematic ||  bulletData->bodies[i]->isStaticObject() || col->type == Terrain) {
+			if (rb->isKinematic ||  bulletData->bodies[i]->isStaticObject() || col->type == AF_COLLISION_TYPE_Terrain) {
 				continue;
 			} 
 			
@@ -515,6 +515,9 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 	}
 	if(_physicsEngineHandle == NULL){
 		AF_Log_Error("AF_Physics_Reset: _physics Engine handle is null\n");
+	}
+	if(_backupECS == NULL){
+		AF_Log_Error("AF_Physics_Reset: backupECS is null\n");
 	}
 
 	

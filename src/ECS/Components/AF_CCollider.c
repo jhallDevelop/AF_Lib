@@ -19,7 +19,7 @@ AF_CCollider AF_CCollider_ZERO(void){
 	component = AF_Component_SetEnabled(component, AF_FALSE);
 	AF_CCollider collider = {
 		.enabled = component,
-		.type = AABB,
+		.type = AF_COLLISION_TYPE_AABB,
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
@@ -54,7 +54,7 @@ AF_CCollider AF_CCollider_ADD(void){
 	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
-		.type = AABB,
+		.type = AF_COLLISION_TYPE_AABB,
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
@@ -88,7 +88,7 @@ AF_CCollider AF_CCollider_Sphere_ADD(void){
 	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
-		.type = Sphere,
+		.type = AF_COLLISION_TYPE_Sphere,
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
@@ -120,7 +120,7 @@ AF_CCollider AF_CCollider_Box_ADD(void){
 	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
-		.type = AABB,
+		.type = AF_COLLISION_TYPE_AABB,
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
@@ -152,7 +152,7 @@ AF_CCollider AF_CCollider_Plane_ADD(void){
 	component = AF_Component_SetEnabled(component, AF_TRUE);
 	AF_CCollider collider = {
 		.enabled = component,
-		.type = Plane,
+		.type = AF_COLLISION_TYPE_Plane,
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
@@ -180,47 +180,47 @@ enable the component and set some values to default values.
 ====================
 */
 
-AF_CCollider AF_CCollider_ADD_TYPE(enum CollisionVolumeType _volumeType){
+AF_CCollider AF_CCollider_ADD_TYPE(enum AF_CollisionVolumeType_e _volumeType){
 	switch(_volumeType){
-		case  AABB:
+		case  AF_COLLISION_TYPE_AABB:
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case OBB_Type:
+		case AF_COLLISION_TYPE_OBB:
 			// TODO add OBB collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case Plane:
+		case AF_COLLISION_TYPE_Plane:
 			return AF_CCollider_Plane_ADD();
 		break;
 
-		case Sphere:
+		case AF_COLLISION_TYPE_Sphere:
 			// todo, add sphere collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case Mesh:
+		case AF_COLLISION_TYPE_Mesh:
 			// todo, add mesh collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case Capsule:
+		case AF_COLLISION_TYPE_Capsule:
 			// TODO: add capsule collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case Terrain:
+		case AF_COLLISION_TYPE_Terrain:
 			// TODO: add terrain collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case ConvexHull:
+		case AF_COLLISION_TYPE_ConvexHull:
 			// TODO: add convex hull collider type
 			return AF_CCollider_Box_ADD();
 		break;
 
-		case Invalid:
+		case AF_COLLISION_TYPE_Invalid:
 			return AF_CCollider_Box_ADD();
 		break;
 
