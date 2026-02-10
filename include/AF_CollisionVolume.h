@@ -17,6 +17,8 @@ Types of collision volumes include AABB, OBB, Mesh, Sphere and compound
 extern "C" {    
 #endif
 
+#define AF_COLLIDER_TYPE_COUNT 9
+
 enum CollisionVolumeType {
 	AABB = 1, 
 	OBB_Type = 2, 
