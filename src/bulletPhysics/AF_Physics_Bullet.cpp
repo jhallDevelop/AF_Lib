@@ -110,15 +110,15 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
            
             // FIXED: Use gridScale to determine vertex spacing if available.
             // Using boundingVolume forces the terrain into a specific box size, which squashes it if the volume is default (1.0).
-            float scaleX, scaleZ;
+            AF_FLOAT scaleX, scaleZ;
             
             // If the terrain is composed of patches (chunks), gridScale is usually the size of ONE chunk.
             // The total world size = gridScale * numChunks.
             // The Bullet Heightfield needs to stretch the 256x256 image data across this TOTAL world size.
             
-            float totalWorldSize = terrain->gridScale; // Start with patch size
+            AF_FLOAT totalWorldSize = terrain->gridScale; // Start with patch size
             if (terrain->numChunks > 1) {
-                totalWorldSize = terrain->gridScale * (float)terrain->numChunks;
+                totalWorldSize = terrain->gridScale * (AF_FLOAT)terrain->numChunks;
             }
 
             if (totalWorldSize > 0.0001f) {
@@ -126,12 +126,12 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
                 // Size = (Vertices - 1) * Scale
                 // Scale = Size / (Vertices - 1)
                 
-                scaleX = totalWorldSize / (float)(width > 1 ? width - 1 : 1);
-                scaleZ = totalWorldSize / (float)(length > 1 ? length - 1 : 1);
+                scaleX = totalWorldSize / (AF_FLOAT)(width > 1 ? width - 1 : 1);
+                scaleZ = totalWorldSize / (AF_FLOAT)(length > 1 ? length - 1 : 1);
             } else {
                  AF_Log("AF_Physics_Init: Warning - Terrain gridScale is 0, falling back to Collider BoundingVolume for scaling.\n");
-                 scaleX = (col->boundingVolume.x * 2.0f) / (float)(width > 1 ? width - 1 : 1);
-                 scaleZ = (col->boundingVolume.z * 2.0f) / (float)(length > 1 ? length - 1 : 1);
+                 scaleX = (col->boundingVolume.x * 2.0f) / (AF_FLOAT)(width > 1 ? width - 1 : 1);
+                 scaleZ = (col->boundingVolume.z * 2.0f) / (AF_FLOAT)(length > 1 ? length - 1 : 1);
             }
 
             heightfield->setLocalScaling(btVector3(scaleX, 1.0f, scaleZ));
@@ -141,8 +141,8 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
             btScalar middleHeight = (minH + maxH) * 0.5f;
             
             // Calculate the half-extents based on the ACTUAL scale used
-            float terrainHalfWidth = ((width - 1) * scaleX) * 0.5f;
-            float terrainHalfLength = ((length - 1) * scaleZ) * 0.5f;
+            AF_FLOAT terrainHalfWidth = ((width - 1) * scaleX) * 0.5f;
+            AF_FLOAT terrainHalfLength = ((length - 1) * scaleZ) * 0.5f;
 
             // Calculate where we are placing the body
             // Visual Terrain is Centered at trans->pos (Render uses (i - numChunks/2) offset).
@@ -220,7 +220,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 // ========================================================================
 // AF_Physics_Update
 // ========================================================================
-void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt) {
+void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT _dt) {
 	if (_ecs == nullptr || _physicsEngineHandle == nullptr) {
 		return;
 	}
@@ -319,15 +319,29 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 				body->setMassProps(mass, localInertia);
 				body->updateInertiaTensor();
 			}
+
+			// Add angular velocity
+			btVector3 currentBulletAnglVel = body->getAngularVelocity();
+			Vec3 ecsAngVel = rb->anglularVelocity;
+
+			AF_FLOAT dAngX = ecsAngVel.x - currentBulletAnglVel.x();
+			AF_FLOAT dAngY = ecsAngVel.y - currentBulletAnglVel.y();
+			AF_FLOAT dAngZ = ecsAngVel.z - currentBulletAnglVel.z();
+
+			if(dAngX*dAngX + dAngY*dAngY + dAngZ*dAngZ > 0.0001f) {
+				btVector3 newAngVel(ecsAngVel.x, ecsAngVel.y, ecsAngVel.z);
+				body->setAngularVelocity(newAngVel);
+				body->activate(true);
+			}
             
             // Check if ECS velocity differs from Bullet velocity (User changed it via script like KeyMove.c)
              btVector3 currentBulletVel = body->getLinearVelocity();
              Vec3 ecsVel = rb->velocity;
              
              // Check difference with epsilon
-             float dX = ecsVel.x - currentBulletVel.x();
-             float dY = ecsVel.y - currentBulletVel.y();
-             float dZ = ecsVel.z - currentBulletVel.z();
+             AF_FLOAT dX = ecsVel.x - currentBulletVel.x();
+             AF_FLOAT dY = ecsVel.y - currentBulletVel.y();
+             AF_FLOAT dZ = ecsVel.z - currentBulletVel.z();
              
              if (dX*dX + dY*dY + dZ*dZ > 0.0001f) {
                  // User changed velocity in ECS. Override Bullet velocity.
@@ -350,6 +364,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 			btTransform btTrans;
 			btTrans.setIdentity();
 			btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
+			
 			Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
 			btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
 
@@ -395,17 +410,27 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const float _dt
 			_ecs->transforms[i].pos.z = btTrans.getOrigin().getZ();
 
 			btQuaternion q = btTrans.getRotation();
-			_ecs->transforms[i].orientation = { (float)q.x(), (float)q.y(), (float)q.z(), (float)q.w() };
+			_ecs->transforms[i].orientation = { 
+				-(AF_FLOAT)q.x(), 
+				(AF_FLOAT)q.y(), 
+				-(AF_FLOAT)q.z(), 
+				(AF_FLOAT)q.w() };
 			
             // SYNC BACK VELOCITY
             const btVector3& vel = bulletData->bodies[i]->getLinearVelocity();
-             _ecs->rigidbodies[i].velocity = { (float)vel.x(), (float)vel.y(), (float)vel.z() };
+             _ecs->rigidbodies[i].velocity = { (AF_FLOAT)vel.x(), (AF_FLOAT)vel.y(), (AF_FLOAT)vel.z() };
 
              const btVector3& angVel = bulletData->bodies[i]->getAngularVelocity();
-             _ecs->rigidbodies[i].anglularVelocity = { (float)angVel.x(), (float)angVel.y(), (float)angVel.z() };
+             _ecs->rigidbodies[i].anglularVelocity = { (AF_FLOAT)angVel.x(), (AF_FLOAT)angVel.y(), (AF_FLOAT)angVel.z() };
 
 			// Update collider bounds
-			
+
+			// convert quaternion-to-euler conversion can cause gimbal lock and is not ideal, but for bounds update it should be sufficient.
+
+			_ecs->transforms[i].rot = AF_Vec4_QuaternionToEuler({ (AF_FLOAT)q.x(), (AF_FLOAT)q.y(), (AF_FLOAT)q.z(), (AF_FLOAT)q.w() });	
+
+			// convert from radians to degrees
+			_ecs->transforms[i].rot = Vec3_MULT_SCALAR(_ecs->transforms[i].rot, 180.0f / AF_PI);
 			// Reset collisions
 			AF_Collision_Reset(&_ecs->colliders[i].collision);
 		}
@@ -449,16 +474,16 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
 
 	if (rayCallback.hasHit()) {
 		_collision->collided = AF_TRUE;
-		_collision->rayDistance = (float)rayCallback.m_closestHitFraction * 1000.0f;
+		_collision->rayDistance = (AF_FLOAT)rayCallback.m_closestHitFraction * 1000.0f;
 		_collision->collisionPoint = { 
-			(float)rayCallback.m_hitPointWorld.getX(), 
-			(float)rayCallback.m_hitPointWorld.getY(), 
-			(float)rayCallback.m_hitPointWorld.getZ() 
+			(AF_FLOAT)rayCallback.m_hitPointWorld.getX(), 
+			(AF_FLOAT)rayCallback.m_hitPointWorld.getY(), 
+			(AF_FLOAT)rayCallback.m_hitPointWorld.getZ() 
 		};
 		_collision->normal = {
-			(float)rayCallback.m_hitNormalWorld.getX(),
-			(float)rayCallback.m_hitNormalWorld.getY(),
-			(float)rayCallback.m_hitNormalWorld.getZ()
+			(AF_FLOAT)rayCallback.m_hitNormalWorld.getX(),
+			(AF_FLOAT)rayCallback.m_hitNormalWorld.getY(),
+			(AF_FLOAT)rayCallback.m_hitNormalWorld.getZ()
 		};
 
 		// Recover entity ID from user index

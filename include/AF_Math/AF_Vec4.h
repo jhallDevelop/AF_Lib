@@ -309,19 +309,48 @@ typedef struct {
     // Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
     // =======================================
     static inline Vec4 AF_Vec4_EulerToQuaternion(Vec3 euler) {
-        float cp = cosf(euler.x * 0.5f);
-        float sp = sinf(euler.x * 0.5f);
-        float cy = cosf(euler.y * 0.5f);
-        float sy = sinf(euler.y * 0.5f);
-        float cr = cosf(euler.z * 0.5f);
-        float sr = sinf(euler.z * 0.5f);
+        AF_FLOAT cy = cosf(euler.y * 0.5f);  // Yaw
+        AF_FLOAT sy = sinf(euler.y * 0.5f);
+        AF_FLOAT cp = cosf(euler.x * 0.5f);  // Pitch
+        AF_FLOAT sp = sinf(euler.x * 0.5f);
+        AF_FLOAT cr = cosf(euler.z * 0.5f);  // Roll
+        AF_FLOAT sr = sinf(euler.z * 0.5f);
 
         Vec4 q;
-        q.w = cr * cp * cy + sr * sp * sy;
-        q.x = sr * cp * cy - cr * sp * sy;
-        q.y = cr * sp * cy + sr * cp * sy;
-        q.z = cr * cp * sy - sr * sp * cy;
+        q.w = cy * cp * cr + sy * sp * sr;
+        q.x = cy * sp * cr + sy * cp * sr;
+        q.y = sy * cp * cr - cy * sp * sr;
+        q.z = cy * cp * sr - sy * sp * cr;
         return q;
+    }
+
+    // =======================================
+    // AF_Vec4_QuaternionToEuler
+    // Convert quaternion to Euler angles (in radians)
+    // Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
+    // =======================================
+    static inline Vec3 AF_Vec4_QuaternionToEuler(Vec4 q) {
+        Vec3 euler = Vec3_ZERO();
+    
+        // Pitch (X-axis rotation)
+        AF_FLOAT sinp = 2.0f * (q.w * q.x - q.z * q.y);
+        if (fabsf(sinp) >= 1.0f) {
+            euler.x = copysignf(AF_PI / 2.0f, sinp); // Use 90 degrees if out of range
+        } else {
+            euler.x = asinf(sinp);
+        }
+        
+        // Yaw (Y-axis rotation)
+        AF_FLOAT siny_cosp = 2.0f * (q.w * q.y + q.x * q.z);
+        AF_FLOAT cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.x * q.x);
+        euler.y = atan2f(siny_cosp, cosy_cosp);
+        
+        // Roll (Z-axis rotation)
+        AF_FLOAT sinr_cosp = 2.0f * (q.w * q.z + q.y * q.x);
+        AF_FLOAT cosr_cosp = 1.0f - 2.0f * (q.z * q.z + q.x * q.x);
+        euler.z = atan2f(sinr_cosp, cosr_cosp);
+        
+        return euler;
     }
 
     // =======================================
@@ -341,19 +370,19 @@ typedef struct {
     // createQuaternionFromAngularVelocity
     // Create a quaternion representing rotation from angular velocity vector over time delta
     // =======================================
-    static inline Vec4 AF_Vec4_CreateQuaternionFromAngularVelocity(Vec3 angVel, float dt) {
-        float halfDt = dt * 0.5f;
-        float angleMagnitude = Vec3_MAGNITUDE(angVel);
+    static inline Vec4 AF_Vec4_CreateQuaternionFromAngularVelocity(Vec3 angVel, AF_FLOAT dt) {
+        AF_FLOAT halfDt = dt * 0.5f;
+        AF_FLOAT angleMagnitude = Vec3_MAGNITUDE(angVel);
         
         if (angleMagnitude < 0.0001f) {
             return Vec4_ZERO();
         }
         
-        float halfAngle = angleMagnitude * halfDt;
-        float w = cosf(halfAngle);
-        float sinHalfAngle = sinf(halfAngle);
+        AF_FLOAT halfAngle = angleMagnitude * halfDt;
+        AF_FLOAT w = cosf(halfAngle);
+        AF_FLOAT sinHalfAngle = sinf(halfAngle);
 
-        float scale = sinHalfAngle / angleMagnitude;
+        AF_FLOAT scale = sinHalfAngle / angleMagnitude;
         Vec3 vectorPart = Vec3_MULT_SCALAR(angVel, scale);
 
         Vec4 q = { vectorPart.x, vectorPart.y, vectorPart.z, w };
