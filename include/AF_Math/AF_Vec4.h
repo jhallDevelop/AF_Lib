@@ -23,7 +23,6 @@
 
 #ifndef VEC4_H
 #define VEC4_H
-#include "AF_Math/AF_Math_Define.h"
 #include "AF_Math/AF_Math.h"
 #include "AF_Math/AF_Vec3.h"
 #ifdef __cplusplus

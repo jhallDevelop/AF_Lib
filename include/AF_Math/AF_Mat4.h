@@ -9,7 +9,6 @@ division, normalization, and distance calculations.
 */
 #ifndef MAT4_H
 #define MAT4_H
-#include "AF_Math/AF_Math_Define.h"
 #include "AF_Math/AF_Math.h"
 #include "AF_Math/AF_Vec3.h"
 #include "AF_Math/AF_Vec4.h"

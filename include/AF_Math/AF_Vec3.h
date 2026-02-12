@@ -10,7 +10,6 @@
 */
 #ifndef VEC3_H
 #define VEC3_H
-#include "AF_Math/AF_Math_Define.h"
 #include "AF_Math/AF_Math.h"
 #ifdef __cplusplus
 extern "C" {
@@ -23,33 +22,30 @@ extern "C" {
     #ifndef AF_MIN
     #define AF_MIN(a, b) (((a) < (b)) ? (a) : (b))
     #endif
-    /*
-    ====================
-    Vec3 Struct
-    Defines a 3D vector with x, y, and z components.
-    ====================
-    */
+    
+    // ====================
+    // Vec3 Struct
+    // Defines a 3D vector with x, y, and z components.
+    // ====================
     typedef struct {
         AF_FLOAT x, y, z;
     } Vec3;
 
-    /*
-    ====================
-    Vec3_ZERO
-    Function for creating a zero vector (0, 0, 0).
-    ====================
-    */
+    
+    // ====================
+    // Vec3_ZERO
+    // Function for creating a zero vector (0, 0, 0).
+    // ====================
     static inline Vec3 Vec3_ZERO(void){
         Vec3 returnVec = {0, 0, 0};
         return returnVec;
     }
 
-    /*
-    ====================
-    Vec3_ADD
-    Function for adding two 3D vectors.
-    ====================
-    */
+    
+    // ====================
+    // Vec3_ADD
+    // Function for adding two 3D vectors.
+    // ====================
     static inline Vec3 Vec3_ADD(Vec3 v1, Vec3 v2) {
         Vec3 result;
         result.x = v1.x + v2.x;
@@ -323,8 +319,11 @@ extern "C" {
     // Convert Angles (in degrees) to Euler Angles in radians
     // =======================================
     static inline Vec3 AF_Vec3_DegreeToRadians(Vec3 _degree) {
-        
-        return (Vec3){AF_Math_Radians(_degree.x),AF_Math_Radians(_degree.y),AF_Math_Radians(_degree.z)};
+        Vec3 result;
+        result.x = (AF_FLOAT)_degree.x * AF_PI_DIV_180;
+        result.y = (AF_FLOAT)_degree.y * AF_PI_DIV_180;
+        result.z = (AF_FLOAT)_degree.z * AF_PI_DIV_180;
+        return result;
     }
 
     // =======================================
@@ -332,8 +331,11 @@ extern "C" {
     // Convert Euler Angles (in radians) to Angles in degrees
     // =======================================
     static inline Vec3 AF_Vec3_RadiansToDegrees(Vec3 _radians) {
-        
-        return (Vec3){AF_Math_Degrees(_radians.x),AF_Math_Degrees(_radians.y),AF_Math_Degrees(_radians.z)};
+        Vec3 result;
+        result.x = (AF_FLOAT)_radians.x * AF_180_DIV_PI;
+        result.y = (AF_FLOAT)_radians.y * AF_180_DIV_PI;
+        result.z = (AF_FLOAT)_radians.z * AF_180_DIV_PI;
+        return result;
     }
 
 

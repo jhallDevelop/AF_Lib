@@ -10,7 +10,6 @@ division, normalization, and distance calculations.
 
 #ifndef VEC2_H
 #define VEC2_H
-#include "AF_Math/AF_Math_Define.h"
 #include "AF_Math/AF_Math.h"
 #ifdef __cplusplus
 extern "C" {

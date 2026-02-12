@@ -16,12 +16,7 @@ Fixed operations are not implemented yet.
 extern "C" {
 #endif
 
-#define AF_PI 3.14159265358979323846  // Define the value of Pi
-#define AF_PI_DIV_180  0.01745329251994329576923690768489 // PI / 180
-#define AF_180_DIV_PI 57.295779513082320876798154814105 // 180 / PI
-#define AF_PI_MUL_2 6.28318530717958647692  // 2 * PI
-
-/// @brief Interpolates between two angles (radians) by 't', from T3D
+/// Interpolates between two angles (radians) by 't', from T3D
 static inline float AF_Math_Lerp_Angle(float a, float b, float t) {
   float angleDiff = fmodf((b - a), AF_PI_MUL_2);
   float shortDist = fmodf(angleDiff*2, AF_PI_MUL_2) - angleDiff;
@@ -31,107 +26,19 @@ static inline float AF_Math_Lerp_Angle(float a, float b, float t) {
 
 
 
-// Conditional compilation for fixed-point arithmetic
-#ifdef USE_FIXED
-
-
-
-/*
-=========================
-AF_Math_Sqrt
-Calculates the square root of a given value using fixed-point arithmetic.
-Currently a placeholder implementation that needs to be completed.
-=========================
-*/
-static inline AF_FLOAT AF_Math_Sqrt(AF_FLOAT _value){
-    printf("AF_Math_Sqrt: TODO\n");
-    AF_FLOAT returnValue = _value * _value / _value;	
-    return returnValue;
-}
-
-/*
-=========================
-AF_Math_Atan2
-Calculates the arctangent of two values, returning the angle in radians.
-Currently a placeholder implementation that needs to be completed.
-=========================
-*/
-static inline AF_FLOAT AF_Math_Atan2(AF_FLOAT _value1, AF_FLOAT _value2){
-    printf("AF_Math_Atan2: TODO\n");	
-    return _value1 + _value2;
-}
-
-/*
-=========================
-AF_Math_Tan
-Calculates the tangent of a given angle in radians.
-Currently a placeholder implementation that needs to be completed.
-=========================
-*/
-static inline AF_FLOAT AF_Math_Tan(AF_FLOAT _value1){
-    printf("AF_Math_Tan: TODO\n");	
-    return _value1 + _value1;
-}
-
-/*
-=========================
-AF_Math_Sin
-Calculates the sine of a given angle in radians.
-Currently a placeholder implementation that needs to be completed.
-=========================
-*/
-static inline AF_FLOAT AF_Math_Sin(AF_FLOAT _value){
-    printf("AF_Math_Sin: TODO\n");
-    return _value + _value;
-}
-
-/*
-=========================
-AF_Math_Cos
-Calculates the cosine of a given angle in radians.
-Currently a placeholder implementation that needs to be completed.
-=========================
-*/
-static inline AF_FLOAT AF_Math_Cos(AF_FLOAT _value){
-    printf("AF_Math_Cos: TODO\n");
-    return _value + _value;
-}
-
-/*
-=========================
-AF_Math_Radians
-Converts degrees to radians.
-Currently a placeholder implementation that needs to be completed.
-=========================
-*/
-static inline AF_FLOAT AF_Math_Radians(AF_FLOAT _degrees){
-    printf("AF_Math_Radians: TODO \n");
-    return _degrees + _degrees; 
-}
-
-#else
-
-
-
-
-#include "math.h"  // Standard math library
-
-/*
-=========================
-AF_Math_Sqrt
-Calculates the square root of a given value using floating-point arithmetic.
-=========================
-*/
+// =========================
+// AF_Math_Sqrt
+// Calculates the square root of a given value using floating-point arithmetic.
+// =========================
 static inline AF_FLOAT AF_Math_Sqrt(AF_FLOAT _value){
     return sqrt(_value);
 }
 
-/*
-=========================
-AF_Math_Atan2
-Calculates the arctangent of two values, returning the angle in radians using floating-point arithmetic.
-=========================
-*/
+
+// =========================
+// AF_Math_Atan2
+// Calculates the arctangent of two values, returning the angle in radians using floating-point arithmetic.
+// =========================
 static inline AF_FLOAT AF_Math_Atan2(AF_FLOAT _value1, AF_FLOAT _value2){
     return atan2(_value1, _value2);
 }
@@ -166,11 +73,7 @@ static inline AF_FLOAT AF_Math_Cos(AF_FLOAT _value){
     return cos(_value);
 }
 
-/*
-inline static AF_FLOAT AF_Math_DegreesToRadians(AF_FLOAT degrees) {
-    return degrees * 3.14159265358979323846f / 180.0f;
-}
-*/
+
 
 /*
 =========================
@@ -192,9 +95,6 @@ static inline AF_FLOAT AF_Math_Degrees(AF_FLOAT _radians){
     return _radians * AF_180_DIV_PI;
 }
 
-
-
-#endif
 
 #ifdef __cplusplus
 }

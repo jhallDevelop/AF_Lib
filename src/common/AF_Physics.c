@@ -977,7 +977,7 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 	
 	// FIX: Build the model matrix directly from the quaternion orientation
 	// This prevents Euler-based drift from accumulating during physical simulation
-	_transform->modelMat = Mat4_ToModelMat4_Quaternion(_transform->pos, _transform->rot, _transform->scale);
+	_transform->modelMat = Mat4_ToModelMat4(_transform->pos, _transform->rot, _transform->scale);
 
 	// Apply frame-rate independent damping using exponential decay: damping^dt
 	// This ensures consistent behavior regardless of frame rate
