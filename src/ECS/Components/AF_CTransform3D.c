@@ -12,12 +12,8 @@ AF_CTransform3D AF_CTransform3D_ZERO(void){ //
         //.has = AF_FALSE,
         .enabled = AF_FALSE,
         .pos = {0, 0, 0},
-        .localPos = {0, 0, 0},
-        .rot = {0, 0, 0},
-        .localRot = {0, 0, 0},
+        .rot = {0, 0, 0, 1}, // Identity quaternion
         .scale = {1, 1, 1},
-        .localScale = {1, 1, 1},
-        .orientation = {0,0,0,0},
         .modelMat = Mat4_ZERO()
     };
 	return returnTransform;
@@ -34,12 +30,8 @@ AF_CTransform3D AF_CTransform3D_ADD(void){
         //.has = AF_TRUE,
         .enabled = AF_TRUE,
         .pos = {0, 0, 0},
-        .localPos = {0, 0, 0},
-        .rot = {0, 0, 0},
-        .localRot = {0, 0, 0},
+        .rot = {0, 0, 0, 1}, // Identity quaternion
         .scale = {1, 1, 1},
-        .localScale = {1, 1, 1},
-        .orientation = {0,0,0,0},
         .modelMat = Mat4_ZERO()
 	// Default position matrix
     };

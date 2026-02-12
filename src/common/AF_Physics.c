@@ -940,7 +940,7 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 	
 
 	// Angular velocity and orientation
-	Vec4 orientation = _transform->orientation;
+	Vec4 orientation = _transform->rot;
 	Vec3 angVel = _rigidbody->anglularVelocity;
 
 	// Only integrate if there's significant angular velocity
@@ -951,7 +951,7 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 		// Apply the rotation: new_orientation = delta_rotation * current_orientation
 		orientation = AF_Vec4_Quat_MULT(quatAngVel, orientation);
 		orientation = Vec4_NORMALIZE(orientation);
-		_transform->orientation = orientation;
+		_transform->rot = orientation;
 		
 		// ONLY convert quaternion back to Euler when the object actually rotates
 		// This prevents fighting with other systems (like camera controllers) that set Euler angles directly
@@ -977,7 +977,7 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 	
 	// FIX: Build the model matrix directly from the quaternion orientation
 	// This prevents Euler-based drift from accumulating during physical simulation
-	_transform->modelMat = Mat4_ToModelMat4_Quaternion(_transform->pos, _transform->orientation, _transform->scale);
+	_transform->modelMat = Mat4_ToModelMat4_Quaternion(_transform->pos, _transform->rot, _transform->scale);
 
 	// Apply frame-rate independent damping using exponential decay: damping^dt
 	// This ensures consistent behavior regardless of frame rate
@@ -1593,7 +1593,7 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 		
 		// Calculate the "up" vector from current orientation
 		// Correctly calculate the world-space "up" vector from the object's orientation
-		Vec4 quat = transformA->orientation; // or transformB->orientation
+		Vec4 quat = transformA->rot; // or transformB->orientation
 		Vec3 localUp = {
 			2.0f * (quat.x * quat.y - quat.w * quat.z),
 			1.0f - 2.0f * (quat.x * quat.x + quat.z * quat.z),
@@ -1619,7 +1619,7 @@ void AF_Physics_ResolveCollision(AF_ECS* _ecs, uint32_t _entityAID, uint32_t _en
 	    rigidbodyB->gravity == AF_TRUE && angVelMagB < 3.0f) {
 		
 		// For object B:
-		Vec4 quat = transformB->orientation;
+		Vec4 quat = transformB->rot;
 		Vec3 localUp = {
 			2.0f * (quat.x * quat.y - quat.w * quat.z),
 			1.0f - 2.0f * (quat.x * quat.x + quat.z * quat.z),

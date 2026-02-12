@@ -976,9 +976,9 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
-		Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
+		//Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
 		// Update the model matrix
-		Mat4 modelMatColumn = Mat4_ToModelMat4(modelTransform->pos, rotationToRadians, modelTransform->scale);
+		Mat4 modelMatColumn = Mat4_ToModelMat4(modelTransform->pos, modelTransform->rot, modelTransform->scale);
 		modelTransform->modelMat = modelMatColumn;
 
 		// Special case for terrain to bind heightmap texture
@@ -1043,10 +1043,10 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 		// update the transform based on the position offset
 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
-		Vec3 rotationToRadians = {AF_Math_Radians(trans->rot.x),AF_Math_Radians(trans->rot.y), AF_Math_Radians(trans->rot.z)};
+		//Vec3 rotationToRadians = {AF_Math_Radians(trans->rot.x),AF_Math_Radians(trans->rot.y), AF_Math_Radians(trans->rot.z)};
 		// Update the model matrix
 		// Bounding volume is measured as half extents, so scale by 2
-		Mat4 modelMatColumn = Mat4_ToModelMat4(collider->boundingPos, rotationToRadians,  collider->boundingVolume);//_ecs->transforms[i].scale);
+		Mat4 modelMatColumn = Mat4_ToModelMat4(collider->boundingPos, trans->rot,  collider->boundingVolume);//_ecs->transforms[i].scale);
 
 
 		

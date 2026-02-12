@@ -318,7 +318,23 @@ extern "C" {
         return result;
     }
 
+    // =======================================
+    // AF_Vec3_DegreeToRadians
+    // Convert Angles (in degrees) to Euler Angles in radians
+    // =======================================
+    static inline Vec3 AF_Vec3_DegreeToRadians(Vec3 _degree) {
+        
+        return (Vec3){AF_Math_Radians(_degree.x),AF_Math_Radians(_degree.y),AF_Math_Radians(_degree.z)};
+    }
 
+    // =======================================
+    // AF_Vec3_RadiansToDegrees
+    // Convert Euler Angles (in radians) to Angles in degrees
+    // =======================================
+    static inline Vec3 AF_Vec3_RadiansToDegrees(Vec3 _radians) {
+        
+        return (Vec3){AF_Math_Degrees(_radians.x),AF_Math_Degrees(_radians.y),AF_Math_Degrees(_radians.z)};
+    }
 
 
 #ifdef __cplusplus

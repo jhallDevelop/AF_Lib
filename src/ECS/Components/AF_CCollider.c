@@ -23,7 +23,7 @@ AF_CCollider AF_CCollider_ZERO(void){
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
-		.boundingRot = {0,0,0},
+		.boundingRot = {0,0,0, 1}, // Identity quaternion
 		.showDebug = AF_FALSE,
 		.collisionMeshData = AF_MeshData_ZERO(),
 		.broadphaseAABB = {0,0,0}
@@ -58,7 +58,7 @@ AF_CCollider AF_CCollider_ADD(void){
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
-		.boundingRot = {0,0,0},
+		.boundingRot = {0,0,0, 1},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -92,7 +92,7 @@ AF_CCollider AF_CCollider_Sphere_ADD(void){
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
-		.boundingRot = {0,0,0},
+		.boundingRot = {0,0,0,1},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -124,7 +124,7 @@ AF_CCollider AF_CCollider_Box_ADD(void){
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
-		.boundingRot = {0,0,0},
+		.boundingRot = {0,0,0,1},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};
@@ -156,7 +156,7 @@ AF_CCollider AF_CCollider_Plane_ADD(void){
 		.boundingVolume = {1,1,1},
 		.posOffset = {0,0,0},
 		.boundingPos = {0,0,0},
-		.boundingRot = {0,0,0},
+		.boundingRot = {0,0,0,1},
 		.showDebug = AF_FALSE,
 		.broadphaseAABB = {0,0,0}
 	};

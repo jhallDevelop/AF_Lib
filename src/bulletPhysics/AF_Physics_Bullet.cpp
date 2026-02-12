@@ -62,7 +62,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 
 		// init bt trans to be used
 		btTransform btTrans;
-        Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, (AF_PI / 180.0f)));
+        Vec4 q = trans->rot; // quaternion (x, y, z, w)
         btTrans.setIdentity();
         btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
         btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
@@ -365,7 +365,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 			btTrans.setIdentity();
 			btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
 			
-			Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+			Vec4 q = trans->rot; // quaternion (x, y, z, w)
 			btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
 
 			if (body->getMotionState()) {
@@ -410,7 +410,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 			_ecs->transforms[i].pos.z = btTrans.getOrigin().getZ();
 
 			btQuaternion q = btTrans.getRotation();
-			_ecs->transforms[i].orientation = { 
+			_ecs->transforms[i].rot = { 
 				-(AF_FLOAT)q.x(), 
 				(AF_FLOAT)q.y(), 
 				-(AF_FLOAT)q.z(), 
@@ -427,10 +427,8 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 
 			// convert quaternion-to-euler conversion can cause gimbal lock and is not ideal, but for bounds update it should be sufficient.
 
-			_ecs->transforms[i].rot = AF_Vec4_QuaternionToEuler({ (AF_FLOAT)q.x(), (AF_FLOAT)q.y(), (AF_FLOAT)q.z(), (AF_FLOAT)q.w() });	
 
 			// convert from radians to degrees
-			_ecs->transforms[i].rot = Vec3_MULT_SCALAR(_ecs->transforms[i].rot, 180.0f / AF_PI);
 			// Reset collisions
 			AF_Collision_Reset(&_ecs->colliders[i].collision);
 		}
@@ -576,7 +574,7 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 
 		// 3. Reset Transform
 		btVector3 initialPosition(trans->pos.x, trans->pos.y, trans->pos.z);
-		Vec4 q = AF_Vec4_EulerToQuaternion(Vec3_MULT_SCALAR(trans->rot, AF_PI / 180.0f));
+		Vec4 q = trans->rot;
 		btQuaternion initialOrientation(q.x, q.y, q.z, q.w);
 
 		

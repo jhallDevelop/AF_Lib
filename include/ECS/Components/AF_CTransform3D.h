@@ -30,15 +30,9 @@ basic struct for the transform component
 // Size is 64 bytes
 typedef struct {
     PACKED_CHAR enabled;
-    //af_bool_t has;// = AF_FALSE;
-    //af_bool_t enabled;// = AF_FALSE;
-    Vec3 pos;// = {0.0f, 0.0f, 0.0f};
-    Vec3 localPos;
-    Vec3 rot;// = {0.0f, 0.0f, 0.0f};
-    Vec3 localRot;
-    Vec3 scale;// = {1.0f, 1.0f, 1.0f};
-    Vec3 localScale;
-    Vec4 orientation;   // rotation represented as a quaternion
+    Vec3 pos;
+    Vec4 rot;       // Represented as Quaternion (x, y, z, w)
+    Vec3 scale;
     Mat4 modelMat;
 } AF_CTransform3D;
 

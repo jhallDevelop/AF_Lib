@@ -505,13 +505,6 @@ void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform)
 		_transform->pos.z = cJSON_GetArrayItem(posJSON, 2)->valuedouble;
 	}
 
-	// Local Pos
-	cJSON* localPosJSON = cJSON_GetObjectItem(_transformJSON, "localPos");
-	if (localPosJSON != NULL) {
-		_transform->localPos.x = cJSON_GetArrayItem(localPosJSON, 0)->valuedouble;
-		_transform->localPos.y = cJSON_GetArrayItem(localPosJSON, 1)->valuedouble;
-		_transform->localPos.z = cJSON_GetArrayItem(localPosJSON, 2)->valuedouble;
-	}
 
 	// Rot
 	cJSON* rotJSON = cJSON_GetObjectItem(_transformJSON, "rot");
@@ -521,13 +514,6 @@ void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform)
 		_transform->rot.z = cJSON_GetArrayItem(rotJSON, 2)->valuedouble;
 	}
 
-	// Local Rot
-	cJSON* localRotJSON = cJSON_GetObjectItem(_transformJSON, "localRot");
-	if (localRotJSON != NULL) {
-		_transform->localRot.x = cJSON_GetArrayItem(localRotJSON, 0)->valuedouble;
-		_transform->localRot.y = cJSON_GetArrayItem(localRotJSON, 1)->valuedouble;
-		_transform->localRot.z = cJSON_GetArrayItem(localRotJSON, 2)->valuedouble;
-	}
 	// Scale
 	cJSON* scaleJSON = cJSON_GetObjectItem(_transformJSON, "scale");
 	if (scaleJSON != NULL) {
@@ -535,21 +521,7 @@ void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform)
 		_transform->scale.y = cJSON_GetArrayItem(scaleJSON, 1)->valuedouble;
 		_transform->scale.z = cJSON_GetArrayItem(scaleJSON, 2)->valuedouble;
 	}
-	// Local Scale
-	cJSON* localScaleJSON = cJSON_GetObjectItem(_transformJSON, "localScale");
-	if (localScaleJSON != NULL) {
-		_transform->localScale.x = cJSON_GetArrayItem(localScaleJSON, 0)->valuedouble;
-		_transform->localScale.y = cJSON_GetArrayItem(localScaleJSON, 1)->valuedouble;
-		_transform->localScale.z = cJSON_GetArrayItem(localScaleJSON, 2)->valuedouble;
-	}
-	// Orientation
-	cJSON* orientationJSON = cJSON_GetObjectItem(_transformJSON, "orientation");
-	if (orientationJSON != NULL) {
-		_transform->orientation.x = cJSON_GetArrayItem(orientationJSON, 0)->valuedouble;
-		_transform->orientation.y = cJSON_GetArrayItem(orientationJSON, 1)->valuedouble;
-		_transform->orientation.z = cJSON_GetArrayItem(orientationJSON, 2)->valuedouble;
-		_transform->orientation.w = cJSON_GetArrayItem(orientationJSON, 3)->valuedouble;
-	}
+
 
 	// model matrix
 	cJSON* modelMatrixJSON = cJSON_GetObjectItem(_transformJSON, "modelMatrix");
@@ -1846,29 +1818,16 @@ cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _transform) {
 	Vec3 pos = _transform->pos;
 	AF_JSON_Vec3ToJson("pos", &pos, transformJSON);
 
-	// Local Pos
-	Vec3 localPos = _transform->localPos;
-	AF_JSON_Vec3ToJson("localPos", &localPos, transformJSON);
-
+	
 	// Rot
-	Vec3 rot = _transform->rot;
-	AF_JSON_Vec3ToJson("rot", &rot, transformJSON);
+	Vec4 rot = _transform->rot;
+	AF_JSON_Vec4ToJson("rot", &rot, transformJSON);
 
-	// LocalRot
-	Vec3 localRot = _transform->localRot;
-	AF_JSON_Vec3ToJson("localRot", &localRot, transformJSON);
 
 	// Scale
 	Vec3 scale = _transform->scale;
 	AF_JSON_Vec3ToJson("scale", &scale, transformJSON);
 
-	// LocalScale
-	Vec3 localScale = _transform->localScale;
-	AF_JSON_Vec3ToJson("localScale", &localScale, transformJSON);
-
-	// Orientation
-	Vec4 orientation = _transform->orientation;
-	AF_JSON_Vec4ToJson("orientation", &orientation, transformJSON);
 
 	// Model Mat
 	Mat4 modelMat = _transform->modelMat;

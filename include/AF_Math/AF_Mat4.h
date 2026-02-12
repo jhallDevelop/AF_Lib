@@ -448,7 +448,7 @@ Mat4_ToMat4
 Create a model matrix from a position, rotation and scale
 ====================
 */
-static inline Mat4 Mat4_ToModelMat4(Vec3 _pos, Vec3 _rot, Vec3 _scale) {
+static inline Mat4 Mat4_ToModelMat4(Vec3 _pos, Vec4 _rot, Vec3 _scale) {
 
     /**/
     // Identity matrix (column-major initialization)
@@ -801,38 +801,6 @@ static inline Mat4 AF_Mat4_QuaternionToMat4(Vec4 q) {
 
     return mat;
 }
-
-// ====================
-// Mat4_ToModelMat4_Quaternion
-// Create a model matrix from position, quaternion rotation and scale
-// ====================
-static inline Mat4 Mat4_ToModelMat4_Quaternion(Vec3 pos, Vec4 quat, Vec3 scale) {
-    Mat4 rot = AF_Mat4_QuaternionToMat4(quat);
-    Mat4 result;
-    result.rows[0].x = rot.rows[0].x * scale.x;
-    result.rows[0].y = rot.rows[0].y * scale.y;
-    result.rows[0].z = rot.rows[0].z * scale.z;
-    result.rows[0].w = 0.0f;
-
-    result.rows[1].x = rot.rows[1].x * scale.x;
-    result.rows[1].y = rot.rows[1].y * scale.y;
-    result.rows[1].z = rot.rows[1].z * scale.z;
-    result.rows[1].w = 0.0f;
-
-    result.rows[2].x = rot.rows[2].x * scale.x;
-    result.rows[2].y = rot.rows[2].y * scale.y;
-    result.rows[2].z = rot.rows[2].z * scale.z;
-    result.rows[2].w = 0.0f;
-
-    result.rows[3].x = pos.x;
-    result.rows[3].y = pos.y;
-    result.rows[3].z = pos.z;
-    result.rows[3].w = 1.0f;
-
-    return result;
-}
-
-
 
 #ifdef __cplusplus
 }

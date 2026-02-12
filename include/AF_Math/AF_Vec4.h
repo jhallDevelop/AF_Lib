@@ -306,14 +306,15 @@ typedef struct {
     // =======================================
     // AF_Vec4_EulerToQuaternion
     // Convert Euler angles (in radians) to quaternion
-    // Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
+    // Convention: euler.x=pitch (X-axis), euler.y=yaw (Y-axis), euler.z=roll (Z-axis)
+    // Using YXZ intrinsic rotation order: Yaw -> Pitch -> Roll
     // =======================================
     static inline Vec4 AF_Vec4_EulerToQuaternion(Vec3 euler) {
-        AF_FLOAT cy = cosf(euler.y * 0.5f);  // Yaw
+        AF_FLOAT cy = cosf(euler.y * 0.5f);  // Yaw (Y-axis)
         AF_FLOAT sy = sinf(euler.y * 0.5f);
-        AF_FLOAT cp = cosf(euler.x * 0.5f);  // Pitch
+        AF_FLOAT cp = cosf(euler.x * 0.5f);  // Pitch (X-axis)
         AF_FLOAT sp = sinf(euler.x * 0.5f);
-        AF_FLOAT cr = cosf(euler.z * 0.5f);  // Roll
+        AF_FLOAT cr = cosf(euler.z * 0.5f);  // Roll (Z-axis)
         AF_FLOAT sr = sinf(euler.z * 0.5f);
 
         Vec4 q;
@@ -327,28 +328,34 @@ typedef struct {
     // =======================================
     // AF_Vec4_QuaternionToEuler
     // Convert quaternion to Euler angles (in radians)
-    // Standard game engine convention: euler.x=pitch, euler.y=yaw, euler.z=roll
+    // Convention: euler.x=pitch (X-axis), euler.y=yaw (Y-axis), euler.z=roll (Z-axis)
+    // Using YXZ intrinsic rotation order: Yaw -> Pitch -> Roll
+    // Extraction formulas derived from rotation matrix M = Ry * Rx * Rz
     // =======================================
     static inline Vec3 AF_Vec4_QuaternionToEuler(Vec4 q) {
         Vec3 euler = Vec3_ZERO();
     
-        // Pitch (X-axis rotation)
-        AF_FLOAT sinp = 2.0f * (q.w * q.x - q.z * q.y);
+        // Convert quaternion to rotation matrix elements we need
+        // For YXZ order: M[2][1] = -sin(pitch), M[2][0] = sin(yaw)*cos(pitch), M[2][2] = cos(yaw)*cos(pitch)
+        AF_FLOAT m21 = 2.0f * (q.y * q.z - q.w * q.x);  // -sin(pitch)
+        AF_FLOAT m20 = 2.0f * (q.x * q.z - q.w * q.y);  // sin(yaw)*cos(pitch) 
+        AF_FLOAT m22 = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);  // cos(yaw)*cos(pitch)
+        AF_FLOAT m01 = 2.0f * (q.x * q.y + q.w * q.z);  // cos(pitch)*sin(roll)
+        AF_FLOAT m11 = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);  // cos(pitch)*cos(roll)
+        
+        // Pitch (X-axis rotation) - can have gimbal lock at ±90 degrees
+        AF_FLOAT sinp = -m21;
         if (fabsf(sinp) >= 1.0f) {
-            euler.x = copysignf(AF_PI / 2.0f, sinp); // Use 90 degrees if out of range
+            euler.x = copysignf(AF_PI / 2.0f, sinp); // Gimbal lock at ±90 degrees
         } else {
             euler.x = asinf(sinp);
         }
         
         // Yaw (Y-axis rotation)
-        AF_FLOAT siny_cosp = 2.0f * (q.w * q.y + q.x * q.z);
-        AF_FLOAT cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.x * q.x);
-        euler.y = atan2f(siny_cosp, cosy_cosp);
+        euler.y = atan2f(m20, m22);
         
         // Roll (Z-axis rotation)
-        AF_FLOAT sinr_cosp = 2.0f * (q.w * q.z + q.y * q.x);
-        AF_FLOAT cosr_cosp = 1.0f - 2.0f * (q.z * q.z + q.x * q.x);
-        euler.z = atan2f(sinr_cosp, cosr_cosp);
+        euler.z = atan2f(m01, m11);
         
         return euler;
     }

@@ -30,7 +30,7 @@ typedef struct {
     Vec3 boundingVolume;
 	Vec3 posOffset;
     Vec3 boundingPos;
-    Vec3 boundingRot;
+    Vec4 boundingRot;
     //AF_Rect bounds;
     AF_Collision collision; //TODO: why do we need this?
     af_bool_t showDebug;
