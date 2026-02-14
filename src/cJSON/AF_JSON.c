@@ -895,10 +895,6 @@ void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera) {
 	// Enabled
 	_camera->enabled = AF_Component_SetEnabled(_camera->enabled, cJSON_GetObjectItem(_cameraJSON, "enabled")->valueint);
 
-	// yaw
-	_camera->yaw = (AF_FLOAT)cJSON_GetObjectItem(_cameraJSON, "yaw")->valuedouble;
-	// pitch
-	_camera->pitch = (AF_FLOAT)cJSON_GetObjectItem(_cameraJSON, "pitch")->valuedouble;
 
 	// FOV
 	cJSON* fovJSON = cJSON_GetObjectItem(_cameraJSON, "fov");
@@ -2088,12 +2084,6 @@ cJSON* AF_JSON_CameraToJson(AF_CCamera* _component) {
 
 	// camera world up
 	AF_JSON_Vec3ToJson("cameraWorldUp", &_component->cameraWorldUp, returnJSON);
-
-	// yaw
-	cJSON_AddNumberToObject(returnJSON, "yaw", _component->yaw);
-
-	// pitch
-	cJSON_AddNumberToObject(returnJSON, "pitch", _component->pitch);
 
 	// pov
 	cJSON_AddNumberToObject(returnJSON, "fov", _component->fov);

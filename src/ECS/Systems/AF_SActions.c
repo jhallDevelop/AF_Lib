@@ -31,24 +31,6 @@ void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _m
     cameraTransform->rot.x += yoffset;
     cameraTransform->rot.y += xoffset;
 
-    if(cameraTransform->rot.x > 89.0f){
-        cameraTransform->rot.x = 89.0f;
-    }
-    if(cameraTransform->rot.x < -89.0f){
-        cameraTransform->rot.x = -89.0f;
-    }
-    /*
-    _camera->yaw += xoffset;
-    _camera->pitch += yoffset;
-
-    // stop look flip
-    if(_camera->pitch > 89.0f){
-        _camera->pitch = 89.0f;
-    }
-    if(_camera->pitch < -89.0f){
-        _camera->pitch = -89.0f;
-    }
-    */
 
     
     //_camera->cameraFront = AF_Camera_CalculateFront(cameraTransform->rot.y, cameraTransform->rot.x);

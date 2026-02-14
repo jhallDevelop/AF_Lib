@@ -25,6 +25,7 @@
 #define VEC4_H
 #include "AF_Math/AF_Math.h"
 #include "AF_Math/AF_Vec3.h"
+#include "AF_Log.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -290,76 +291,6 @@ typedef struct {
     }
 
     // =======================================
-    // AF_Mat4_Quat_MULT
-    // Quaternion multiplication (Hamilton product)
-    // =======================================
-    static inline Vec4 AF_Mat4_Quat_MULT(Vec4 q1, Vec4 q2) {
-        Vec4 result;
-        result.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
-        result.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
-        result.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
-        result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
-        return result;
-    }
-
-    // =======================================
-    // AF_Vec4_EulerToQuaternion
-    // Convert Euler angles (in radians) to quaternion
-    // Convention: euler.x=pitch (X-axis), euler.y=yaw (Y-axis), euler.z=roll (Z-axis)
-    // Using YXZ intrinsic rotation order: Yaw -> Pitch -> Roll
-    // =======================================
-    static inline Vec4 AF_Vec4_EulerToQuaternion(Vec3 euler) {
-        AF_FLOAT cy = cosf(euler.y * 0.5f);  // Yaw (Y-axis)
-        AF_FLOAT sy = sinf(euler.y * 0.5f);
-        AF_FLOAT cp = cosf(euler.x * 0.5f);  // Pitch (X-axis)
-        AF_FLOAT sp = sinf(euler.x * 0.5f);
-        AF_FLOAT cr = cosf(euler.z * 0.5f);  // Roll (Z-axis)
-        AF_FLOAT sr = sinf(euler.z * 0.5f);
-
-        Vec4 q;
-        q.w = cy * cp * cr + sy * sp * sr;
-        q.x = cy * sp * cr + sy * cp * sr;
-        q.y = sy * cp * cr - cy * sp * sr;
-        q.z = cy * cp * sr - sy * sp * cr;
-        return q;
-    }
-
-    // =======================================
-    // AF_Vec4_QuaternionToEuler
-    // Convert quaternion to Euler angles (in radians)
-    // Convention: euler.x=pitch (X-axis), euler.y=yaw (Y-axis), euler.z=roll (Z-axis)
-    // Using YXZ intrinsic rotation order: Yaw -> Pitch -> Roll
-    // Extraction formulas derived from rotation matrix M = Ry * Rx * Rz
-    // =======================================
-    static inline Vec3 AF_Vec4_QuaternionToEuler(Vec4 q) {
-        Vec3 euler = Vec3_ZERO();
-    
-        // Convert quaternion to rotation matrix elements we need
-        // For YXZ order: M[2][1] = -sin(pitch), M[2][0] = sin(yaw)*cos(pitch), M[2][2] = cos(yaw)*cos(pitch)
-        AF_FLOAT m21 = 2.0f * (q.y * q.z - q.w * q.x);  // -sin(pitch)
-        AF_FLOAT m20 = 2.0f * (q.x * q.z - q.w * q.y);  // sin(yaw)*cos(pitch) 
-        AF_FLOAT m22 = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);  // cos(yaw)*cos(pitch)
-        AF_FLOAT m01 = 2.0f * (q.x * q.y + q.w * q.z);  // cos(pitch)*sin(roll)
-        AF_FLOAT m11 = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);  // cos(pitch)*cos(roll)
-        
-        // Pitch (X-axis rotation) - can have gimbal lock at ±90 degrees
-        AF_FLOAT sinp = -m21;
-        if (fabsf(sinp) >= 1.0f) {
-            euler.x = copysignf(AF_PI / 2.0f, sinp); // Gimbal lock at ±90 degrees
-        } else {
-            euler.x = asinf(sinp);
-        }
-        
-        // Yaw (Y-axis rotation)
-        euler.y = atan2f(m20, m22);
-        
-        // Roll (Z-axis rotation)
-        euler.z = atan2f(m01, m11);
-        
-        return euler;
-    }
-
-    // =======================================
     // AF_Vec4_Quat_MULT
     // Quaternion multiplication (Hamilton product)
     // =======================================
@@ -371,6 +302,131 @@ typedef struct {
         result.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
         return result;
     }
+
+    // =======================================
+    // AF_Vec4_Quat_ADD
+    // Quaternion Add
+    // =======================================
+    static inline Vec4 AF_Vec4_Quat_ADD(Vec4 q1, Vec4 q2) {
+        q1.x += q2.x;
+        q1.y += q2.y;
+        q1.z += q2.z;
+        q1.w += q2.w;
+        return q1;
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_Minus
+    // Quaternion Minus
+    // =======================================
+    static inline Vec4 AF_Vec4_Quat_MINUS(Vec4 q1, Vec4 q2) {
+        q1.x -= q2.x;
+        q1.y -= q2.y;
+        q1.z -= q2.z;
+        q1.w -= q2.w;
+        return q1;
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_GetAxis
+    // Normalise the vector component of the quaternion to get the rotation axis. Returns a Vec3.
+    // =======================================
+    static inline Vec3 AF_Vec4_Quat_GetAxis(Vec4 q) {
+       
+        Vec3 axis = {q.x, q.y, q.z};
+        return Vec3_NORMALIZE(axis);
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_GetAngleDegrees
+    // Get the angle of rotation in degrees from a quaternion
+    // =======================================
+    static inline AF_FLOAT AF_Vec4_Quat_GetAngleDegrees(Vec4 q) {
+       
+        return 2.0f * (acosf(q.w) * AF_180_DIV_PI_d);
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_GetAngleEuler
+    // Get the angle of rotation in Euler radians from a quaternion
+    // =======================================
+    static inline AF_FLOAT AF_Vec4_Quat_GetAngleEuler(Vec4 q) {
+       
+        return 2.0f * (acosf(q.w));
+    }
+
+
+
+    // =======================================
+    // AF_Vec4_EulerToQuaternion
+    // Convert Euler angles (in radians) to quaternion
+    // Convention: euler.x=pitch (X-axis), euler.y=yaw (Y-axis), euler.z=roll (Z-axis)
+    // Using YXZ intrinsic rotation order: Yaw -> Pitch -> Roll
+    //https://gabormakesgames.com/blog_quats_create.html
+    // =======================================
+    static inline Vec4 AF_Vec4_EulerToQuaternion(Vec3 _euler) {
+        // construct the quaternion for each component
+        Vec4 xResult = {0, 0, 0, 0};
+        // X-axis rotation (pitch)
+        xResult.x = sinf(_euler.x * 0.5f);
+        xResult.w = cosf(_euler.x * 0.5f);
+
+        // Y-axis rotation (yaw)
+        Vec4 yResult = {0, 0, 0, 0};
+        yResult.y = sinf(_euler.y * 0.5f);
+        yResult.w = cosf(_euler.y * 0.5f);
+
+        // Z-axis rotation (roll)
+        Vec4 zResult = {0, 0, 0, 0};
+        zResult.z = sinf(_euler.z * 0.5f);
+        zResult.w = cosf(_euler.z * 0.5f);
+
+
+        // combine the components back into a Vec4
+        Vec4 q = AF_Vec4_Quat_MULT(AF_Vec4_Quat_MULT(xResult, yResult), zResult);
+
+        return q;
+    }
+
+
+
+    // =======================================
+    // AF_Vec4_QuaternionToEuler
+    // Convert quaternion to Euler angles (in radians)
+    // https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/index.htm
+    // =======================================
+    static inline Vec3 AF_Vec4_QuaternionToEuler(Vec4 q) {
+        
+        Vec3 euler = {0, 0, 0};
+        // Up/Down Test for Gimbal Lock
+        AF_FLOAT test = (q.x * q.y) + (q.z * q.w);
+        // Stright up/down gimbal lock cases
+        if(test > 0.499f) { 
+            euler.x = 0.0f;
+            euler.y = 2.0f * atan2f(q.x, q.w);
+            euler.z = AF_PI_DIV_2_d;
+            return euler;
+        }
+        // Stright up/down gimbal lock cases
+        if( test < -0.499f) { // South Pole
+            euler.x = 0.0f;
+            euler.y = -2.0f * atan2f(q.x, q.w);
+            euler.z = -AF_PI_DIV_2_d;
+            return euler;
+        }
+        // X-Axis
+        euler.x = atan2f(2.0f * ((q.w * q.x) + (q.y * q.z)), 1.0f - 2.0f * ((q.x * q.x) + (q.y * q.y)));
+
+        // Yaw (Y-axis rotation)
+        euler.y = atan2f(2.0f * ((q.y * q.w) - (q.x * q.z)), 1.0f - 2.0f * ((q.y * q.y) + (q.z * q.z)));
+
+        // Pitch (X-axis rotation)
+        euler.z = asinf(2.0f * ((q.x * q.y) + (q.z * q.w)));
+        
+        return euler;
+    }
+
+    
 
     // =======================================
     // createQuaternionFromAngularVelocity
@@ -394,6 +450,113 @@ typedef struct {
         Vec4 q = { vectorPart.x, vectorPart.y, vectorPart.z, w };
         return q;
     }
+
+    // =======================================
+    // AF_Vec4_Quat_FromToRotation
+    // Create a quaternion that rotates from a rotation towards a given rotation using halfway method
+    // https://gabormakesgames.com/blog_quats_create.html
+    // =======================================
+    static inline Vec4 AF_Vec4_Quat_FromToRotation(Vec3 _from, Vec3 _to){
+        Vec3 p0 = Vec3_NORMALIZE(_from);
+        Vec3 p1 = Vec3_NORMALIZE(_to);
+        Vec4 result = Vec4_ZERO();
+        
+        // Get the axis
+        if(Vec3_DOT(p0, p1) < -0.9999f){
+            Vec3 mostOrthoganal = {1, 0, 0};
+
+            if(fabsf(p0.y) < fabsf(p0.x)) {
+                mostOrthoganal = (Vec3){0, 1, 0};
+            }
+
+            if(fabsf(p0.z) < fabsf(p0.y) && fabsf(p0.z) < fabsf(p0.x)){
+                mostOrthoganal = (Vec3){0, 0, 1};
+            }
+
+            Vec3 axis = Vec3_NORMALIZE(Vec3_CROSS(p0, mostOrthoganal));
+            result = (Vec4){axis.x, axis.y, axis.z, 0};
+            return Vec4_NORMALIZE(result);
+        }
+
+        Vec3 half = Vec3_NORMALIZE(Vec3_ADD(p0, p1));
+        Vec3 axis = Vec3_CROSS(p0, half);
+
+        result.x = axis.x;
+        result.y = axis.y;
+        result.z = axis.z;
+        result.w = Vec3_DOT(p0, half);
+
+        return Vec4_NORMALIZE(result);
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_RotateVec3
+    // rotate a quaternion using a vec3
+    // =======================================
+    static inline Vec3 AF_Vec4_Quat_RotateVec3(Vec4 _quat, Vec3 _vec3){
+        // Extract quaternion components
+        Vec3 u = {_quat.x, _quat.y, _quat.z};
+        AF_FLOAT s = _quat.w;
+
+        // v = 2.0f * dot(u, v) * u + (s*s - dot(u, u))
+        Vec3 result = Vec3_ADD(Vec3_ADD(Vec3_MULT_SCALAR(u, 2.0f * Vec3_DOT(u, _vec3)),
+        Vec3_MULT_SCALAR(_vec3, s * s - Vec3_DOT(u, u))), 
+        Vec3_MULT_SCALAR(Vec3_CROSS(u, _vec3), 
+        2.0f * s));
+        return result;
+    }
+
+    // =======================================
+    // AF_Vec4_Quat_LookAt
+    // Given a direct, and up, return a new quaternian representing look at.
+    // https://gabormakesgames.com/blog_quats_create.html
+    // =======================================
+    static inline Vec4 AF_Vec4_Quat_LookAt(Vec3 _direction, Vec3 _up){
+        // Normalise input data
+        _direction = Vec3_NORMALIZE(_direction);
+        AF_Log("Normalized Direction: %.2f, %.2f, %.2f\n", _direction.x, _direction.y, _direction.z);
+        _up = Vec3_NORMALIZE(_up);
+
+        // Step 1: find quaternion that rotates from forward to direction
+        Vec3 forwardVec = {0, 0, -1};
+        Vec4 fromFrorwardtoDirection = AF_Vec4_Quat_FromToRotation(forwardVec, _direction);
+        AF_Log("From Forward To Direction Quaternion: %.2f, %.2f, %.2f, %.2f\n", 
+               fromFrorwardtoDirection.x,
+               fromFrorwardtoDirection.y,
+               fromFrorwardtoDirection.z,
+               fromFrorwardtoDirection.w);
+        // Step 2: Make sure up is perpendicular to desired direction
+        Vec3 right = Vec3_CROSS(_direction, _up);
+        _up = Vec3_CROSS(right, _direction);
+        AF_Log("Perpendicular Up: %.2f, %.2f, %.2f\n", _up.x, _up.y, _up.z);
+
+
+        // Step 3: find the up vector of the quaternion from step 1
+        Vec3 fromFrorwardtoDirectionVec3 = {fromFrorwardtoDirection.x, fromFrorwardtoDirection.y, fromFrorwardtoDirection.z};
+        Vec3 objectUp = AF_Vec4_Quat_RotateVec3(fromFrorwardtoDirection, (Vec3) {0, 1, 0});//Vec3_MULT(_up, fromFrorwardtoDirectionVec3);
+         AF_Log("Object Up: %.2f, %.2f, %.2f\n", objectUp.x, objectUp.y, objectUp.z);
+
+
+        // Step 4: create quaternion from object up to desired up
+        Vec4 fromObjectUpToDesiredUp = AF_Vec4_Quat_FromToRotation(objectUp, _up);
+        AF_Log("From Object Up To Desired Up: %.2f, %.2f, %.2f, %.2f\n", 
+           fromObjectUpToDesiredUp.x,
+           fromObjectUpToDesiredUp.y,
+           fromObjectUpToDesiredUp.z,
+           fromObjectUpToDesiredUp.w);
+
+        // Step 5: combine rotations in revese ! forward applied first, then up
+       Vec4 result = AF_Vec4_Quat_MULT(fromObjectUpToDesiredUp, fromFrorwardtoDirection);
+       AF_Log("Result Before Normalize: %.2f, %.2f, %.2f, %.2f\n", 
+           result.x, result.y, result.z, result.w);
+
+
+        return Vec4_NORMALIZE(result);
+    }
+
+
+
+    
 
 #ifdef __cplusplus
 }

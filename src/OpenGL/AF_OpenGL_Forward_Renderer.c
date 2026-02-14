@@ -410,7 +410,8 @@ Simple render command to perform forward rendering steps
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
     AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
     AF_CCamera* camera = &_ecs->cameras[_cameraID];
-    AF_CTransform3D* cameraTransform = &_ecs->transforms[_cameraID];
+	AF_CTransform3D*cameraTransform = &_ecs->transforms[_cameraID];
+	// update camera front
 
     AF_Window* window = _renderingData->windowPtr;
     if(window == NULL){

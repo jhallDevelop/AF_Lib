@@ -18,8 +18,8 @@ extern "C" {
 
 /// Interpolates between two angles (radians) by 't', from T3D
 static inline float AF_Math_Lerp_Angle(float a, float b, float t) {
-  float angleDiff = fmodf((b - a), AF_PI_MUL_2);
-  float shortDist = fmodf(angleDiff*2, AF_PI_MUL_2) - angleDiff;
+  float angleDiff = fmodf((b - a), AF_PI_MUL_2_d);
+  float shortDist = fmodf(angleDiff*2, AF_PI_MUL_2_d) - angleDiff;
   return a + shortDist * t;
 }
 
@@ -82,7 +82,7 @@ Converts degrees to radians using floating-point arithmetic.
 =========================
 */
 static inline AF_FLOAT AF_Math_Radians(AF_FLOAT _degrees){
-    return _degrees * AF_PI_DIV_180;
+    return _degrees * AF_PI_DIV_180_d;
 }
 
 /*
@@ -92,7 +92,7 @@ Converts radians to degrees using floating-point arithmetic.
 =========================
 */
 static inline AF_FLOAT AF_Math_Degrees(AF_FLOAT _radians){
-    return _radians * AF_180_DIV_PI;
+    return _radians * AF_180_DIV_PI_d;
 }
 
 

@@ -962,17 +962,17 @@ void AF_Physics_IntegrateVelocity(AF_CTransform3D* _transform, AF_C3DRigidbody* 
 		float sinp = 2.0f * (w * x + y * z);
 		// Clamp to prevent NaN from asinf
 		sinp = (sinp > 1.0f) ? 1.0f : ((sinp < -1.0f) ? -1.0f : sinp);
-		_transform->rot.x = asinf(sinp) * (180.0f / AF_PI);
+		_transform->rot.x = asinf(sinp) * AF_180_DIV_PI_d;
 		
 		// Yaw (y-axis rotation) - turning left/right
 		float siny_cosp = 2.0f * (w * y - z * x);
 		float cosy_cosp = 1.0f - 2.0f * (x * x + y * y);
-		_transform->rot.y = atan2f(siny_cosp, cosy_cosp) * (180.0f / AF_PI);
+		_transform->rot.y = atan2f(siny_cosp, cosy_cosp) * AF_180_DIV_PI_d;
 		
 		// Roll (z-axis rotation) - tilting side to side
 		float sinr_cosp = 2.0f * (w * z + x * y);
 		float cosr_cosp = 1.0f - 2.0f * (y * y + z * z);
-		_transform->rot.z = atan2f(sinr_cosp, cosr_cosp) * (180.0f / AF_PI);
+		_transform->rot.z = atan2f(sinr_cosp, cosr_cosp) * AF_180_DIV_PI_d;
 	}
 	
 	// FIX: Build the model matrix directly from the quaternion orientation

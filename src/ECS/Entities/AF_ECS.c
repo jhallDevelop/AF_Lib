@@ -337,8 +337,7 @@ void AF_ECS_CreateCamera(AF_ECS* _ecs, Vec3 _pos){
 	AF_CEditorData* cameraEditorData = &_ecs->editorData[cameraEntityID];
 	// let the editor viewport know about the camera
 	
-	// start the camera looking down the negative z
-	camera->yaw = 90.0f;
+	// start the camera looking down the negative z=
 
 	cameraTransform->pos = _pos;
 	*camera = AF_CCamera_ADD(AF_FALSE);
