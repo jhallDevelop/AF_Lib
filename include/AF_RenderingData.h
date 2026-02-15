@@ -111,6 +111,12 @@ typedef struct AF_RenderingData{
     af_bool_t     viewportSizeDirty;     // Flag if it needs to be recreated
 	void* specialRenderData; // Pointer to the device context (e.g., for DirectX or Vulkan)
     uint32_t cameraUBO;
+    // Physics debug draw data
+    uint32_t physicsDebugVAO;
+    uint32_t physicsDebugVBO;
+    const float* physicsDebugLineVertices;
+    uint32_t physicsDebugLineVertexCount;
+    af_bool_t showPhysicsDebug;
     // Add any other rendering specific data here
 } AF_RenderingData;
 
@@ -162,6 +168,11 @@ static inline AF_RenderingData AF_RenderingData_ZERO(void){
     returnRenderingData.viewportSizeDirty = AF_FALSE;    // Flag if it needs to be recreated
     returnRenderingData.specialRenderData = NULL;
     returnRenderingData.cameraUBO = 0;
+    returnRenderingData.physicsDebugVAO = 0;
+    returnRenderingData.physicsDebugVBO = 0;
+    returnRenderingData.physicsDebugLineVertices = NULL;
+    returnRenderingData.physicsDebugLineVertexCount = 0;
+    returnRenderingData.showPhysicsDebug = AF_FALSE;
 	return returnRenderingData;
 }
 

@@ -4,7 +4,51 @@
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <vector>
 
+// =================================================================================================
+// AF_BulletDebugDraw
+// Bullet debug drawer that collects line segments into a CPU buffer for later GL rendering
+// =================================================================================================
+class AF_BulletDebugDraw : public btIDebugDraw {
+public:
+	std::vector<float> lineVertices; // x,y,z per vertex, 2 vertices per line
+	int _debugMode;
 
+	AF_BulletDebugDraw() : _debugMode(DBG_DrawWireframe) {}
+
+	void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override {
+		(void)color;
+		lineVertices.push_back((float)from.getX());
+		lineVertices.push_back((float)from.getY());
+		lineVertices.push_back((float)from.getZ());
+		lineVertices.push_back((float)to.getX());
+		lineVertices.push_back((float)to.getY());
+		lineVertices.push_back((float)to.getZ());
+	}
+
+	void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override {
+		(void)PointOnB; (void)normalOnB; (void)distance; (void)lifeTime; (void)color;
+	}
+
+	void reportErrorWarning(const char* warningString) override {
+		AF_Log_Warning("Bullet: %s\n", warningString);
+	}
+
+	void draw3dText(const btVector3& location, const char* textString) override {
+		(void)location; (void)textString;
+	}
+
+	void setDebugMode(int debugMode) override {
+		_debugMode = debugMode;
+	}
+
+	int getDebugMode() const override {
+		return _debugMode;
+	}
+
+	void clearLines() override {
+		lineVertices.clear();
+	}
+};
 
 // Bullet data management struct
 struct AF_BulletInternalData {
@@ -16,6 +60,9 @@ struct AF_BulletInternalData {
 
 	// Map ECS entity index to Bullet rigid body handles
 	btRigidBody* bodies[AF_ECS_TOTAL_ENTITIES];
+
+	// Debug drawer for visualizing physics shapes
+	AF_BulletDebugDraw* debugDrawer;
 };
 
 extern "C" {
@@ -45,7 +92,11 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 	);
 
 	bulletData->dynamicsWorld->setGravity(btVector3(0, GRAVITY_SCALE, 0));
-	
+
+	// Setup debug drawer
+	bulletData->debugDrawer = new AF_BulletDebugDraw();
+	bulletData->debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+	bulletData->dynamicsWorld->setDebugDrawer(bulletData->debugDrawer);
 
 	// Initialize body array
 	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
@@ -536,6 +587,7 @@ void AF_Physics_Shutdown(void* _physicsEngineHandle) {
 	delete bulletData->broadphase;
 	delete bulletData->dispatcher;
 	delete bulletData->collisionConfiguration;
+	delete bulletData->debugDrawer;
 	delete bulletData;
 }
 
@@ -545,6 +597,117 @@ void AF_Physics_LateUpdate(AF_ECS* _ecs, void* _physicsEngineHandle) {
 }
 void AF_Physics_LateRenderUpdate(AF_ECS* _ecs, void* _physicsEngineHandle) { 
 	(void)_ecs; (void)_physicsEngineHandle; 
+}
+
+// =================================================================================================
+// AF_DebugDrawTriangleCallback
+// Triangle callback that draws wireframe edges through the debug drawer
+// =================================================================================================
+class AF_DebugDrawTriangleCallback : public btTriangleCallback {
+public:
+	btIDebugDraw* debugDrawer;
+	btTransform worldTransform;
+	btVector3 color;
+
+	AF_DebugDrawTriangleCallback(btIDebugDraw* _drawer, const btTransform& _transform, const btVector3& _color)
+		: debugDrawer(_drawer), worldTransform(_transform), color(_color) {}
+
+	void processTriangle(btVector3* triangle, int partId, int triangleIndex) override {
+		(void)partId; (void)triangleIndex;
+		btVector3 v0 = worldTransform * triangle[0];
+		btVector3 v1 = worldTransform * triangle[1];
+		btVector3 v2 = worldTransform * triangle[2];
+		debugDrawer->drawLine(v0, v1, color);
+		debugDrawer->drawLine(v1, v2, color);
+		debugDrawer->drawLine(v2, v0, color);
+	}
+};
+
+// =================================================================================================
+// AF_Physics_DebugDraw
+// Custom debug draw that uses AABB-limited triangle processing for terrain shapes.
+// For a 2048x2048 heightfield, debugDrawWorld() iterates ALL ~8M triangles.
+// This version only processes triangles within _radius of _cameraPos.
+// =================================================================================================
+void AF_Physics_DebugDraw(void* _physicsEngineHandle, Vec3 _cameraPos, float _radius) {
+	if (_physicsEngineHandle == nullptr) {
+		return;
+	}
+	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(_physicsEngineHandle);
+	if (bulletData->debugDrawer == nullptr || bulletData->dynamicsWorld == nullptr) {
+		return;
+	}
+	bulletData->debugDrawer->clearLines();
+
+	btCollisionObjectArray& objects = bulletData->dynamicsWorld->getCollisionObjectArray();
+	btVector3 color(0, 1, 0); // green wireframe
+	btVector3 camBt(_cameraPos.x, _cameraPos.y, _cameraPos.z);
+
+	for (int i = 0; i < objects.size(); ++i) {
+		btCollisionObject* obj = objects[i];
+		btCollisionShape* shape = obj->getCollisionShape();
+		btTransform worldTransform = obj->getWorldTransform();
+
+		if (shape->getShapeType() == TERRAIN_SHAPE_PROXYTYPE) {
+			// Terrain: only process triangles within _radius of camera
+			// Transform camera position into the terrain's local space for the AABB query
+			btVector3 localCam = worldTransform.inverse() * camBt;
+			btVector3 localMin(localCam.x() - _radius, localCam.y() - _radius, localCam.z() - _radius);
+			btVector3 localMax(localCam.x() + _radius, localCam.y() + _radius, localCam.z() + _radius);
+
+			btConcaveShape* concaveShape = static_cast<btConcaveShape*>(shape);
+			AF_DebugDrawTriangleCallback triCallback(bulletData->debugDrawer, worldTransform, color);
+			concaveShape->processAllTriangles(&triCallback, localMin, localMax);
+		} else {
+			// Non-terrain: use Bullet's built-in debug draw (cheap for boxes/spheres)
+			bulletData->dynamicsWorld->debugDrawObject(worldTransform, shape, color);
+		}
+	}
+}
+
+// =================================================================================================
+// AF_Physics_GetDebugLineCount
+// Returns the number of float vertices (3 floats per vertex, 2 vertices per line)
+// =================================================================================================
+uint32_t AF_Physics_GetDebugLineCount(void* _physicsEngineHandle) {
+	if (_physicsEngineHandle == nullptr) {
+		return 0;
+	}
+	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(_physicsEngineHandle);
+	if (bulletData->debugDrawer == nullptr) {
+		return 0;
+	}
+	// Each line = 2 vertices = 6 floats. Vertex count = total floats / 3
+	return (uint32_t)(bulletData->debugDrawer->lineVertices.size() / 3);
+}
+
+// =================================================================================================
+// AF_Physics_GetDebugLineVertices
+// Returns pointer to raw float vertex data (x,y,z per vertex)
+// =================================================================================================
+const float* AF_Physics_GetDebugLineVertices(void* _physicsEngineHandle) {
+	if (_physicsEngineHandle == nullptr) {
+		return nullptr;
+	}
+	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(_physicsEngineHandle);
+	if (bulletData->debugDrawer == nullptr || bulletData->debugDrawer->lineVertices.empty()) {
+		return nullptr;
+	}
+	return bulletData->debugDrawer->lineVertices.data();
+}
+
+// =================================================================================================
+// AF_Physics_DebugDrawClear
+// Clears the debug line buffer
+// =================================================================================================
+void AF_Physics_DebugDrawClear(void* _physicsEngineHandle) {
+	if (_physicsEngineHandle == nullptr) {
+		return;
+	}
+	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(_physicsEngineHandle);
+	if (bulletData->debugDrawer != nullptr) {
+		bulletData->debugDrawer->clearLines();
+	}
 }
 
 

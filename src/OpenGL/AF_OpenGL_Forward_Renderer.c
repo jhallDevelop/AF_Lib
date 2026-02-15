@@ -534,6 +534,9 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         glPolygonMode(GL_FRONT_AND_BACK, previousPolygonMode[0]);
     #endif
 
+    // --- Physics Debug Line Drawing ---
+    AF_Renderer_DrawPhysicsDebugLines(_renderingData, &cameraTransform->pos);
+
 	// == Draw Text Meshes ==
 	// Render text and UI
 	//
@@ -1057,6 +1060,64 @@ void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ec
 }
 
 // =================================================================================================
+// AF_Renderer_DrawPhysicsDebugLines
+// Renders physics debug wireframe lines using a dynamic VBO and the debugGeometry shader.
+// Data is already distance-culled by the physics module, so we upload and draw directly.
+// =================================================================================================
+void AF_Renderer_DrawPhysicsDebugLines(AF_RenderingData* _renderingData, Vec3* _cameraPos) {
+	(void)_cameraPos;
+	if (_renderingData == NULL) {
+		return;
+	}
+	if (_renderingData->showPhysicsDebug == AF_FALSE) {
+		return;
+	}
+	if (_renderingData->physicsDebugLineVertexCount == 0 || _renderingData->physicsDebugLineVertices == NULL) {
+		return;
+	}
+	if (_renderingData->guizmoDebugShaderID == 0) {
+		return;
+	}
+
+	// Create VAO/VBO on first use
+	if (_renderingData->physicsDebugVAO == 0) {
+		glGenVertexArrays(1, &_renderingData->physicsDebugVAO);
+		glGenBuffers(1, &_renderingData->physicsDebugVBO);
+
+		glBindVertexArray(_renderingData->physicsDebugVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, _renderingData->physicsDebugVBO);
+		// Position attribute: 3 floats, no interleaving
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	uint32_t vertexCount = _renderingData->physicsDebugLineVertexCount;
+	const float* vertices = _renderingData->physicsDebugLineVertices;
+
+	// Upload vertex data directly (already distance-culled by physics debug draw)
+	glBindBuffer(GL_ARRAY_BUFFER, _renderingData->physicsDebugVBO);
+	glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(vertexCount * 3 * sizeof(float)), vertices, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// Use the debug geometry shader (uses CameraData UBO for view/projection)
+	glUseProgram(_renderingData->guizmoDebugShaderID);
+
+	// Set model matrix to identity (lines are already in world space)
+	Mat4 identity = Mat4_IDENTITY();
+	int modelLocation = AF_Shader_GetUniformLocation(_renderingData->guizmoDebugShaderID, "model");
+	glUniformMatrix4fv(modelLocation, 1, GL_TRUE, (float*)&identity.rows);
+
+	// Draw as lines
+	glBindVertexArray(_renderingData->physicsDebugVAO);
+	glDrawArrays(GL_LINES, 0, (GLsizei)vertexCount);
+	glBindVertexArray(0);
+
+	glUseProgram(0);
+}
+
+// =================================================================================================
 // AF_Renderer_DrawMesh
 // Loop through the meshes in a component and draw using opengl
 // =================================================================================================
@@ -1471,6 +1532,17 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 
 	// Screen Quad
 	AF_RendererBuffer_DeleteScreenQuadBuffers(_renderingData);
+
+	// Physics debug buffers
+	if (_renderingData->physicsDebugVAO != 0) {
+		glDeleteVertexArrays(1, &_renderingData->physicsDebugVAO);
+		_renderingData->physicsDebugVAO = 0;
+	}
+	if (_renderingData->physicsDebugVBO != 0) {
+		glDeleteBuffers(1, &_renderingData->physicsDebugVBO);
+		_renderingData->physicsDebugVBO = 0;
+	}
+
 	// Delete textures
 
 	// Delete Shaders

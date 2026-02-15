@@ -69,8 +69,11 @@ void AF_Physics_Shutdown(void* _physicsEngineHandle);
 AF_LIB_API void AF_Physics_Update_Bounds(AF_ECS* _ecs);
 af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngineHandle, AF_Collision* _collision);
 
-
-
+// Debug draw functions
+void AF_Physics_DebugDraw(void* _physicsEngineHandle, Vec3 _cameraPos, float _radius);
+uint32_t AF_Physics_GetDebugLineCount(void* _physicsEngineHandle);
+const float* AF_Physics_GetDebugLineVertices(void* _physicsEngineHandle);
+void AF_Physics_DebugDrawClear(void* _physicsEngineHandle);
 
 
 
