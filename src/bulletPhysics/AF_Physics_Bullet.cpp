@@ -328,7 +328,7 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 			AF_FLOAT dAngY = ecsAngVel.y - currentBulletAnglVel.y();
 			AF_FLOAT dAngZ = ecsAngVel.z - currentBulletAnglVel.z();
 
-			if(dAngX*dAngX + dAngY*dAngY + dAngZ*dAngZ > 0.0001f) {
+			if(dAngX*dAngX + dAngY*dAngY + dAngZ*dAngZ > 0.0001f || Vec3_MAGNITUDE(ecsAngVel) < 0.0001f) {
 				btVector3 newAngVel(ecsAngVel.x, ecsAngVel.y, ecsAngVel.z);
 				body->setAngularVelocity(newAngVel);
 				body->activate(true);
