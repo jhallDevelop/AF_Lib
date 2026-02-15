@@ -514,17 +514,19 @@ typedef struct {
     static inline Vec4 AF_Vec4_Quat_LookAt(Vec3 _direction, Vec3 _up){
         // Normalise input data
         _direction = Vec3_NORMALIZE(_direction);
-        AF_Log("Normalized Direction: %.2f, %.2f, %.2f\n", _direction.x, _direction.y, _direction.z);
+        //AF_Log("Normalized Direction: %.2f, %.2f, %.2f\n", _direction.x, _direction.y, _direction.z);
         _up = Vec3_NORMALIZE(_up);
 
         // Step 1: find quaternion that rotates from forward to direction
         Vec3 forwardVec = {0, 0, -1};
         Vec4 fromFrorwardtoDirection = AF_Vec4_Quat_FromToRotation(forwardVec, _direction);
+        /*
         AF_Log("From Forward To Direction Quaternion: %.2f, %.2f, %.2f, %.2f\n", 
                fromFrorwardtoDirection.x,
                fromFrorwardtoDirection.y,
                fromFrorwardtoDirection.z,
                fromFrorwardtoDirection.w);
+               */
         // Step 2: Make sure up is perpendicular to desired direction
         Vec3 right = Vec3_CROSS(_direction, _up);
         // If direction and up are parallel (e.g. looking straight up), this fails (zero vector).
@@ -534,7 +536,7 @@ typedef struct {
         }
         _up = Vec3_CROSS(right, _direction);
         _up = Vec3_NORMALIZE(_up);
-        AF_Log("Perpendicular Up: %.2f, %.2f, %.2f\n", _up.x, _up.y, _up.z);
+        //AF_Log("Perpendicular Up: %.2f, %.2f, %.2f\n", _up.x, _up.y, _up.z);
 
         Vec3 worldUp = {0, 1, 0};
         Vec3 objectUp = AF_Vec4_Quat_RotateVec3(fromFrorwardtoDirection, worldUp);//Vec3_MULT(_up, fromFrorwardtoDirectionVec3);
@@ -542,16 +544,18 @@ typedef struct {
 
         // Step 4: create quaternion from object up to desired up
         Vec4 fromObjectUpToDesiredUp = AF_Vec4_Quat_FromToRotation(objectUp, _up);
+        /*
         AF_Log("From Object Up To Desired Up: %.2f, %.2f, %.2f, %.2f\n", 
            fromObjectUpToDesiredUp.x,
            fromObjectUpToDesiredUp.y,
            fromObjectUpToDesiredUp.z,
            fromObjectUpToDesiredUp.w);
-
+        */
         // Step 5: combine rotations in revese ! forward applied first, then up
        Vec4 result = AF_Vec4_Quat_MULT(fromObjectUpToDesiredUp, fromFrorwardtoDirection);
-       AF_Log("Result Before Normalize: %.2f, %.2f, %.2f, %.2f\n", 
+       /*AF_Log("Result Before Normalize: %.2f, %.2f, %.2f, %.2f\n", 
            result.x, result.y, result.z, result.w);
+           */
 
 
         return Vec4_NORMALIZE(result);
