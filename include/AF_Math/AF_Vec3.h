@@ -369,6 +369,18 @@ extern "C" {
         return acosf(cosTheta);
     }
 
+    // =======================================
+    // AF_Vec3_GetForwardFromEuler
+    // Get the forward vector from Euler angles (in radians)
+    // =======================================
+    static inline Vec3 AF_Vec3_GetForwardFromEuler(Vec3 eulerRadians) {
+        Vec3 forward;
+        forward.x =cosf(eulerRadians.x) * sinf(eulerRadians.y);
+        forward.y = sinf(eulerRadians.x);
+        forward.z = cosf(eulerRadians.x) * cosf(eulerRadians.y);
+        return forward;
+    }
+
 
 #ifdef __cplusplus
 }

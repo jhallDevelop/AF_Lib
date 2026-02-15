@@ -328,7 +328,7 @@ extern "C" {
     This function uses the axis-angle representation for rotation.
     ====================
     */
-    static inline Mat4 Mat4_ROTATE_V4(Mat4 _matrix, Vec4 _axis, AF_FLOAT _angle)
+    static inline Mat4 Mat4_ROTATE_EulerV4(Mat4 _matrix, Vec4 _axis, AF_FLOAT _angle)
     {
         // Normalize the rotation axis
         Vec4 normalizedAxis = Mat4_NORMALIZE(_axis);
@@ -374,24 +374,43 @@ extern "C" {
         return result;
     }
 
-    /*
-    =========================
-    AF_Math_Lookat
-    Creates a view matrix that transforms coordinates from world space to view space.
-    Parameters:
-        _target: The target position to look at.
-        _position: The position of the camera.
-        _up: The up direction vector.
-    Returns:
-        A 4x4 view matrix.
-    =========================
-    */
+    // ====================
+    // AF_Mat4_QuaternionToMat4
+    // Convert a quaternion to a 4x4 rotation matrix.
+    // https://gabormakesgames.com/blog_quats_to_matrix.html
+    // using the Shoemake method for conversion
+    // ====================
+    static inline Mat4 AF_Mat4_QuaternionToMat4(Vec4 q){
+        AF_FLOAT ww = q.w * q.w;
+        AF_FLOAT xx = q.x * q.x;
+        AF_FLOAT yy = q.y * q.y;
+        AF_FLOAT zz = q.z * q.z;
+
+        AF_FLOAT wx = q.w * q.x;
+        AF_FLOAT wy = q.w * q.y;
+        AF_FLOAT wz = q.w * q.z;
+
+        AF_FLOAT xy = q.x * q.y;
+        AF_FLOAT xz = q.x * q.z;
+
+        AF_FLOAT yz = q.y * q.z;
+
+        Mat4 result = {{
+            {ww + xx - yy - zz, 2.0f * xy - 2.0f * wz, 2.0f * xz + 2.0f * wy, 0},
+            {2.0f * xy + 2.0f * wz, ww - xx + yy - zz, 2.0f * yz - 2.0f * wx, 0},
+            {2.0f * xz - 2.0f * wy, 2.0f * yz + 2.0f * wx, ww -xx - yy + zz, 0},
+            {0, 0, 0, 1.0f}
+        }};
+        return result;
+    }
+
+    
+    // =========================
+    // AF_Math_Lookat
+    // Creates a view matrix that transforms coordinates from world space to view space.
+    // =========================
     static inline Mat4 Mat4_Lookat(Vec3 _viewPosition, Vec3 _targetPosition, Vec3 _up){
-
-
         Vec3 forward = Vec3_NORMALIZE(Vec3_MINUS(_targetPosition, _viewPosition));
-        //Vec3 forward = Vec3_NORMALIZE(Vec3_MINUS(_viewPosition, _targetPosition));    // incorrect
-        //Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(_up, forward));                        // incorrect
         Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(forward, _up));
         Vec3 up = Vec3_CROSS(forward, right);
 
@@ -404,39 +423,6 @@ extern "C" {
             {-forward.x,    -forward.y, -forward.z,  Vec3_DOT(forward, _viewPosition)},
             {0,             0,          0,           1}
         }};
-/*
-        // Column Major variant
-        Mat4 returnMatrix = {{
-            {right.x,       up.x,       -forward.x,     0},
-            {right.y,       up.y,       -forward.y,     0},
-            {right.z,       up.z,       -forward.z,     0},
-            {-Vec3_DOT(right, _viewPosition), -Vec3_DOT(up, _viewPosition), Vec3_DOT(forward, _viewPosition), 1}
-        }};
-        */
-
-        /*
-        Vec3 normZ = Vec3_NORMALIZE(Vec3_MINUS(_target, _position));
-        Vec3 xaxis = Vec3_NORMALIZE(Vec3_CROSS(normZ, _up));
-        Vec3 yaxis = Vec3_CROSS(xaxis, normZ);
-        Vec3 zaxis = {-normZ.x, -normZ.y, -normZ.z};
-
-        Vec4 row1 = {xaxis.x, yaxis.x, zaxis.x, 0};
-        Vec4 row2 = {xaxis.y, yaxis.y, zaxis.y, 0};
-        Vec4 row3 = {xaxis.z, yaxis.z, zaxis.z, 0};
-
-        AF_FLOAT dotX = -Vec3_DOT(xaxis, _position);
-        AF_FLOAT dotY = -Vec3_DOT(yaxis, _position);
-        AF_FLOAT dotZ = -Vec3_DOT(zaxis, _position);
-
-        Vec4 row4 = {dotX, dotY, dotZ, 1};
-
-        Mat4 viewMatrix;
-        viewMatrix.rows[0] = row1;
-        viewMatrix.rows[1] = row2;
-        viewMatrix.rows[2] = row3;
-        viewMatrix.rows[3] = row4;
-        */
-
 
         return returnMatrix;
     }
@@ -464,33 +450,7 @@ static inline Mat4 Mat4_ToModelMat4(Vec3 _pos, Vec4 _rot, Vec3 _scale) {
     returnMatrix.rows[2].w = _pos.z;
 
     // Rotation (ZYX order)
-    float cx = cosf(_rot.x), sx = sinf(_rot.x);
-    float cy = cosf(_rot.y), sy = sinf(_rot.y);
-    float cz = cosf(_rot.z), sz = sinf(_rot.z);
-
-    Mat4 rotationX = {{
-        {1, 0, 0, 0},  // Column 0
-        {0, cx, sx, 0}, // Column 1
-        {0, -sx, cx, 0}, // Column 2
-        {0, 0, 0, 1}   // Column 3
-    }};
-
-    Mat4 rotationY = {{
-        {cy, 0, -sy, 0},  // Column 0
-        {0, 1, 0, 0},     // Column 1
-        {sy, 0, cy, 0},   // Column 2
-        {0, 0, 0, 1}      // Column 3
-    }};
-
-    Mat4 rotationZ = {{
-        {cz, sz, 0, 0},    // Column 0
-        {-sz, cz, 0, 0},   // Column 1
-        {0, 0, 1, 0},      // Column 2
-        {0, 0, 0, 1}       // Column 3
-    }};
-
-    // Combine rotations in ZYX order
-    Mat4 rotation = Mat4_MULT_M4(Mat4_MULT_M4(rotationZ, rotationY), rotationX);
+   Mat4 rotation = AF_Mat4_QuaternionToMat4(_rot);
 
     // Scale (diagonal matrix, applied first)
     Mat4 scaling = {{
@@ -766,40 +726,6 @@ static inline Vec3 Mat4_GetRotation(const Mat4* mat) {
     return euler;
 }
 
-// ====================
-// AF_Mat4_QuaternionToMat4
-// Convert a quaternion to a 4x4 rotation matrix
-// ====================
-static inline Mat4 AF_Mat4_QuaternionToMat4(Vec4 q) {
-    float mag = sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-    if (mag > 0.0001f) {
-        q.x /= mag; q.y /= mag; q.z /= mag; q.w /= mag;
-    }
-    
-    float xx = q.x * q.x; float yy = q.y * q.y; float zz = q.z * q.z;
-    float xy = q.x * q.y; float xz = q.x * q.z; float yz = q.y * q.z;
-    float wx = q.w * q.x; float wy = q.w * q.y; float wz = q.w * q.z;
-
-    Mat4 mat;
-    mat.rows[0].x = 1.0f - 2.0f * (yy + zz);
-    mat.rows[0].y = 2.0f * (xy - wz);
-    mat.rows[0].z = 2.0f * (xz + wy);
-    mat.rows[0].w = 0.0f;
-
-    mat.rows[1].x = 2.0f * (xy + wz);
-    mat.rows[1].y = 1.0f - 2.0f * (xx + zz);
-    mat.rows[1].z = 2.0f * (yz - wx);
-    mat.rows[1].w = 0.0f;
-
-    mat.rows[2].x = 2.0f * (xz - wy);
-    mat.rows[2].y = 2.0f * (yz + wx);
-    mat.rows[2].z = 1.0f - 2.0f * (xx + yy);
-    mat.rows[2].w = 0.0f;
-
-    mat.rows[3].x = 0.0f; mat.rows[3].y = 0.0f; mat.rows[3].z = 0.0f; mat.rows[3].w = 1.0f;
-
-    return mat;
-}
 
 #ifdef __cplusplus
 }

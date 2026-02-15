@@ -411,9 +411,9 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 
 			btQuaternion q = btTrans.getRotation();
 			_ecs->transforms[i].rot = { 
-				-(AF_FLOAT)q.x(), 
+				(AF_FLOAT)q.x(), 
 				(AF_FLOAT)q.y(), 
-				-(AF_FLOAT)q.z(), 
+				(AF_FLOAT)q.z(), 
 				(AF_FLOAT)q.w() };
 			
             // SYNC BACK VELOCITY
