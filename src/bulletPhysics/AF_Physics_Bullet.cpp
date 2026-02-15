@@ -5,6 +5,47 @@
 #include <vector>
 
 // =================================================================================================
+// AF_Physics_BilinearUpsampleHeightmap
+// Upsamples a heightmap from srcW x srcH to dstW x dstH using bilinear interpolation.
+// Matches GPU texture sampling behavior for accurate physics alignment.
+// =================================================================================================
+static unsigned char* AF_Physics_BilinearUpsampleHeightmap(
+	const unsigned char* src, uint32_t srcW, uint32_t srcH,
+	uint32_t dstW, uint32_t dstH)
+{
+	unsigned char* dst = new unsigned char[dstW * dstH];
+
+	for (uint32_t dz = 0; dz < dstH; ++dz) {
+		for (uint32_t dx = 0; dx < dstW; ++dx) {
+			float sx = (float)dx / (float)(dstW - 1) * (float)(srcW - 1);
+			float sz = (float)dz / (float)(dstH - 1) * (float)(srcH - 1);
+
+			uint32_t x0 = (uint32_t)sx;
+			uint32_t z0 = (uint32_t)sz;
+			uint32_t x1 = (x0 < srcW - 1) ? x0 + 1 : x0;
+			uint32_t z1 = (z0 < srcH - 1) ? z0 + 1 : z0;
+
+			float fx = sx - (float)x0;
+			float fz = sz - (float)z0;
+
+			float h00 = (float)src[z0 * srcW + x0];
+			float h10 = (float)src[z0 * srcW + x1];
+			float h01 = (float)src[z1 * srcW + x0];
+			float h11 = (float)src[z1 * srcW + x1];
+
+			float h = h00 * (1.0f - fx) * (1.0f - fz)
+					 + h10 * fx * (1.0f - fz)
+					 + h01 * (1.0f - fx) * fz
+					 + h11 * fx * fz;
+
+			dst[dz * dstW + dx] = (unsigned char)(h + 0.5f);
+		}
+	}
+
+	return dst;
+}
+
+// =================================================================================================
 // AF_BulletDebugDraw
 // Bullet debug drawer that collects line segments into a CPU buffer for later GL rendering
 // =================================================================================================
@@ -63,6 +104,9 @@ struct AF_BulletInternalData {
 
 	// Debug drawer for visualizing physics shapes
 	AF_BulletDebugDraw* debugDrawer;
+
+	// Per-entity upsampled heightmap buffers (owned by physics, freed on shutdown)
+	unsigned char* upsampledHeightMaps[AF_ECS_TOTAL_ENTITIES];
 };
 
 extern "C" {
@@ -98,6 +142,11 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 	bulletData->debugDrawer->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
 	bulletData->dynamicsWorld->setDebugDrawer(bulletData->debugDrawer);
 
+	// Initialize arrays
+	for (int j = 0; j < AF_ECS_TOTAL_ENTITIES; ++j) {
+		bulletData->upsampledHeightMaps[j] = nullptr;
+	}
+
 	// Initialize body array
 	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
 		AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
@@ -112,10 +161,15 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 
 
 		// init bt trans to be used
+		// Apply posOffset so the physics body is placed at the collider center
 		btTransform btTrans;
         Vec4 q = trans->rot; // quaternion (x, y, z, w)
         btTrans.setIdentity();
-        btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
+        btTrans.setOrigin(btVector3(
+            trans->pos.x + col->posOffset.x,
+            trans->pos.y + col->posOffset.y,
+            trans->pos.z + col->posOffset.z
+        ));
         btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
         
         bulletData->bodies[i] = nullptr;
@@ -134,9 +188,32 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
                 continue;
             }
 
-            int width = (int)terrain->heightMapWidth;
-            int length = (int)terrain->heightMapWidth; // heightmaps are always square for now 
+            int srcWidth = (int)terrain->heightMapWidth;
+            int srcHeight = (int)terrain->heightMapWidth; // heightmaps are always square for now
 
+            AF_Log("AF_Physics_Init: Entity %u terrain heightmap is %dx%d, physicsResolution=%u\n",
+                   i, srcWidth, srcHeight, terrain->physicsResolution);
+
+            // Determine physics grid resolution (upsample if needed)
+            const unsigned char* physicsData = terrain->heightMapData;
+            int width = srcWidth;
+            int length = srcHeight;
+
+            if (terrain->physicsResolution > 0
+                && (int)terrain->physicsResolution != srcWidth) {
+                int dstRes = (int)terrain->physicsResolution;
+                unsigned char* upsampled = AF_Physics_BilinearUpsampleHeightmap(
+                    terrain->heightMapData,
+                    (uint32_t)srcWidth, (uint32_t)srcHeight,
+                    (uint32_t)dstRes, (uint32_t)dstRes
+                );
+                bulletData->upsampledHeightMaps[i] = upsampled;
+                physicsData = upsampled;
+                width = dstRes;
+                length = dstRes;
+                AF_Log("AF_Physics_Init: Upsampled heightmap %dx%d -> %dx%d for entity %u\n",
+                       srcWidth, srcHeight, dstRes, dstRes, i);
+            }
 
             // The visual shader samples the texture as 0.0-1.0 and multiplies by heightScale.
             // So if pixel is 255 (1.0), height is 1.0 * 32.0 = 32.0.
@@ -149,7 +226,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
             btScalar maxH = 255.0f * physicsHeightScale; // Should equal terrain->heightScale
 			shape = new btHeightfieldTerrainShape(
                 width, length,
-                terrain->heightMapData,
+                physicsData,
                 physicsHeightScale,
                 minH, maxH,
                 1,
@@ -430,7 +507,11 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 		if (isKinematic) {
 			btTransform btTrans;
 			btTrans.setIdentity();
-			btTrans.setOrigin(btVector3(trans->pos.x, trans->pos.y, trans->pos.z));
+			btTrans.setOrigin(btVector3(
+				trans->pos.x + col->posOffset.x,
+				trans->pos.y + col->posOffset.y,
+				trans->pos.z + col->posOffset.z
+			));
 			
 			Vec4 q = trans->rot; // quaternion (x, y, z, w)
 			btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
@@ -472,9 +553,10 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 			btTransform btTrans;
 			bulletData->bodies[i]->getMotionState()->getWorldTransform(btTrans);
 
-			_ecs->transforms[i].pos.x = btTrans.getOrigin().getX();
-			_ecs->transforms[i].pos.y = btTrans.getOrigin().getY();
-			_ecs->transforms[i].pos.z = btTrans.getOrigin().getZ();
+			// Subtract posOffset so we store the entity position, not the collider center
+			_ecs->transforms[i].pos.x = btTrans.getOrigin().getX() - col->posOffset.x;
+			_ecs->transforms[i].pos.y = btTrans.getOrigin().getY() - col->posOffset.y;
+			_ecs->transforms[i].pos.z = btTrans.getOrigin().getZ() - col->posOffset.z;
 
 			btQuaternion q = btTrans.getRotation();
 			_ecs->transforms[i].rot = { 
@@ -579,6 +661,10 @@ void AF_Physics_Shutdown(void* _physicsEngineHandle) {
 			delete bulletData->bodies[i]->getMotionState();
 			delete bulletData->bodies[i]->getCollisionShape();
 			delete bulletData->bodies[i];
+		}
+		if (bulletData->upsampledHeightMaps[i]) {
+			delete[] bulletData->upsampledHeightMaps[i];
+			bulletData->upsampledHeightMaps[i] = nullptr;
 		}
 	}
 
@@ -731,6 +817,7 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 
 		AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
 		AF_CTransform3D* trans = &_ecs->transforms[i];
+		AF_CCollider* col = &_ecs->colliders[i];
 		bool isEnabled = AF_Component_GetHasEnabled(rb->enabled);
 		btRigidBody* rigidbody = bulletInternalData->bodies[i];
 
@@ -751,8 +838,12 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 		rigidbody->setLinearVelocity(zeroVector);
 		rigidbody->setAngularVelocity(zeroVector);
 
-		// 3. Reset Transform
-		btVector3 initialPosition(trans->pos.x, trans->pos.y, trans->pos.z);
+		// 3. Reset Transform (apply posOffset so Bullet body matches collider bounds)
+		btVector3 initialPosition(
+			trans->pos.x + col->posOffset.x,
+			trans->pos.y + col->posOffset.y,
+			trans->pos.z + col->posOffset.z
+		);
 		Vec4 q = trans->rot;
 		btQuaternion initialOrientation(q.x, q.y, q.z, q.w);
 

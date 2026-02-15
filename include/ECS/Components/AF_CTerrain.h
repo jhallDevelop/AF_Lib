@@ -45,6 +45,8 @@ typedef struct AF_CTerrain {
     uint32_t heightTextureIndices[6][2];
     uint32_t grassTextureIndices[3][2];
 
+    uint32_t physicsResolution; // target resolution for physics heightfield (0 = use raw heightmap)
+
     // CPU heightmap data
     unsigned char* heightMapData; // pointer to heightmap data array on CPU
     uint32_t heightMapWidth;  // width of heightmap

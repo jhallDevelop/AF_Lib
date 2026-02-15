@@ -30,6 +30,7 @@ AF_CTerrain AF_CTerrain_ZERO(void){
     .texturesPerRow = 3,
     .heightTextureIndices = { {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2} },
     .grassTextureIndices = { {2,0}, {2,1}, {2,2} },
+	.physicsResolution = 0,
 	.heightMapData = NULL,
 	.heightMapWidth = 0,
 	.heightMapHeight = 0
@@ -68,6 +69,7 @@ AF_CTerrain AF_CTerrain_ADD(void){
     .texturesPerRow = 3,
     .heightTextureIndices = { {0,0}, {0,1}, {0,2}, {1,0}, {1,1}, {1,2} },
     .grassTextureIndices = { {2,0}, {2,1}, {2,2} },
+	.physicsResolution = 0,
 	.heightMapData = NULL,
 	.heightMapWidth = 0,
 	.heightMapHeight = 0

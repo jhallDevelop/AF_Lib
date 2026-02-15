@@ -1361,6 +1361,11 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
 		_terrain->texturesPerRow = (uint32_t)texturesPerRow->valueint;
 	}
 
+	cJSON* physicsResolution = cJSON_GetObjectItem(_terrainJSON, "physicsResolution");
+	if (physicsResolution && cJSON_IsNumber(physicsResolution)) {
+		_terrain->physicsResolution = (uint32_t)physicsResolution->valueint;
+	}
+
     // Height texture indices
     cJSON* heightTextureIndices = cJSON_GetObjectItem(_terrainJSON, "heightTextureIndices");
     if (heightTextureIndices && cJSON_IsArray(heightTextureIndices)) {
@@ -2351,6 +2356,9 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
 
 	// texturesPerRow;
 	cJSON_AddNumberToObject(returnJSON, "texturesPerRow", _component->texturesPerRow);
+
+	// physicsResolution;
+	cJSON_AddNumberToObject(returnJSON, "physicsResolution", _component->physicsResolution);
 
     // heightTextureIndices
     cJSON* heightIndicesArr = cJSON_AddArrayToObject(returnJSON, "heightTextureIndices");
