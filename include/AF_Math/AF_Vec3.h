@@ -300,6 +300,15 @@ extern "C" {
         return fabs((_v1.x * (_v2.y - _v3.y) + _v2.x * (_v3.y - _v1.y) + _v3.x * (_v1.y - _v2.y)) / 2);
     }
 
+    // =========================
+    // Vec3_Length_Sqr
+    // Calculates the squared length of a vector, which is more efficient than calculating the actual length
+    // when only relative lengths are needed (e.g., for comparisons).
+    static inline AF_FLOAT Vec3_LEN_SQ(Vec3 v) {
+        return (v.x * v.x) + (v.y * v.y) + (v.z * v.z);
+    }
+
+
     /*
     ====================
     Vec3_Clamp
@@ -336,6 +345,28 @@ extern "C" {
         result.y = (AF_FLOAT)_radians.y * AF_180_DIV_PI_d;
         result.z = (AF_FLOAT)_radians.z * AF_180_DIV_PI_d;
         return result;
+    }
+
+    // =======================================
+    // AF_Vec3_AngleBetween
+    // Calculate the angle in radians between two vectors
+    // =======================================
+    static inline AF_FLOAT AF_Vec3_AngleBetween(Vec3 v1, Vec3 v2) {
+        AF_FLOAT lenSq1 = Vec3_LEN_SQ(v1);
+        AF_FLOAT lenSq2 = Vec3_LEN_SQ(v2);
+
+        // Prevent division by zero if a vector has no direction
+        if (lenSq1 < AF_EPSILON || lenSq2 < AF_EPSILON) {
+            return 0.0f; 
+        }
+        // normalise the vectors
+        Vec3 normV1 = Vec3_NORMALIZE(v1);
+        Vec3 normV2 = Vec3_NORMALIZE(v2);
+        AF_FLOAT dot = Vec3_DOT(normV1, normV2);
+        AF_FLOAT cosTheta = dot ;
+        // Clamp cosTheta to the range [-1, 1] to avoid NaN results
+        cosTheta = AF_MAX(-1.0f, AF_MIN(1.0f, cosTheta));
+        return acosf(cosTheta);
     }
 
 

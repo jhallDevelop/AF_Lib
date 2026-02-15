@@ -361,14 +361,18 @@ void AF_ECS_UpdateCameraVectors(AF_ECS* _ecs, uint32_t _cameraID, AF_FLOAT _wind
         AF_Log_Error("AF_Camera_UpdateCameraVectors: Can't update camera vectors, passed entity has no camera component\n");
         return;
     }
-    Vec3 front = camera->cameraFront;
+
+	// Derive the front from the transformms quaternion
+	Vec3 forwardVec = {0, 0, -1};
+	Vec3 front = AF_Vec4_Quat_RotateVec3(cameraTransform->rot, forwardVec);
+	camera->cameraFront = front;
 
 
     // calculate Right
     Vec3 right = Vec3_NORMALIZE(Vec3_CROSS(front, camera->cameraWorldUp));
 	
     // calculate up
-    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(right, front));
+    Vec3 up = Vec3_NORMALIZE(Vec3_CROSS(right, camera->cameraFront ));
     // Calculate view matrix:vs
     Mat4 viewMatrix = Mat4_Lookat(cameraTransform->pos, Vec3_ADD(cameraTransform->pos,front), up);
     camera->viewMatrix = viewMatrix;

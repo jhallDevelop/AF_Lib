@@ -28,10 +28,34 @@ void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _m
     yoffset *= _mouseLookSensitivity;
     AF_CTransform3D* cameraTransform = &ecs->transforms[_cameraID];
     
-    cameraTransform->rot.x += yoffset;
-    cameraTransform->rot.y += xoffset;
+    _camera->yaw -= xoffset;
+    _camera->pitch += yoffset;
 
+    if(_camera->yaw > 180.0f){
+        _camera->yaw -= 360.0f;
+    }
+    if(_camera->yaw < -180.0f){
+        _camera->yaw += 360.0f;
+    }
+
+    // clamp pitch to avoid gimbal lock
+    if(_camera->pitch > 89.0f){
+        _camera->pitch = 89.0f; 
+    }
+
+    if(_camera->pitch < -89.0f){
+        _camera->pitch = -89.0f; 
+    }
+
+    // convert yaw/pitch to quaternion
+    Vec3 rotRadians = {
+        AF_Math_Radians(_camera->pitch),  // pitch
+        AF_Math_Radians(_camera->yaw),  // yaw
+        0.0f   // roll (always 0 for FPS camera)
+    };
+
+    cameraTransform->rot = AF_Vec4_EulerToQuaternion(rotRadians);
 
     
-    //_camera->cameraFront = AF_Camera_CalculateFront(cameraTransform->rot.y, cameraTransform->rot.x);
+    
 }

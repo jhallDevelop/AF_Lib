@@ -527,14 +527,17 @@ typedef struct {
                fromFrorwardtoDirection.w);
         // Step 2: Make sure up is perpendicular to desired direction
         Vec3 right = Vec3_CROSS(_direction, _up);
+        // If direction and up are parallel (e.g. looking straight up), this fails (zero vector).
+        // Fallback or precision check might be needed here, but for now standard logic:
+        if (Vec3_MAGNITUDE_SQ(right) < 0.0001f) {
+           right = (Vec3){1, 0, 0}; // Fallback right vector
+        }
         _up = Vec3_CROSS(right, _direction);
+        _up = Vec3_NORMALIZE(_up);
         AF_Log("Perpendicular Up: %.2f, %.2f, %.2f\n", _up.x, _up.y, _up.z);
 
-
-        // Step 3: find the up vector of the quaternion from step 1
-        Vec3 fromFrorwardtoDirectionVec3 = {fromFrorwardtoDirection.x, fromFrorwardtoDirection.y, fromFrorwardtoDirection.z};
-        Vec3 objectUp = AF_Vec4_Quat_RotateVec3(fromFrorwardtoDirection, (Vec3) {0, 1, 0});//Vec3_MULT(_up, fromFrorwardtoDirectionVec3);
-         AF_Log("Object Up: %.2f, %.2f, %.2f\n", objectUp.x, objectUp.y, objectUp.z);
+        Vec3 worldUp = {0, 1, 0};
+        Vec3 objectUp = AF_Vec4_Quat_RotateVec3(fromFrorwardtoDirection, worldUp);//Vec3_MULT(_up, fromFrorwardtoDirectionVec3);
 
 
         // Step 4: create quaternion from object up to desired up
