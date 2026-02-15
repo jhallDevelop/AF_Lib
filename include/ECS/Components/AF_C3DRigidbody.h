@@ -28,7 +28,9 @@ typedef struct {
     af_bool_t isKinematic;
     af_bool_t  gravity;
     Vec3 velocity;
+    Vec3 freezVelocity;  // if we want to freeze movement on certain axis, we can set the corresponding component to 1, otherwise 0
 	Vec3 anglularVelocity;
+    Vec3 freezAngularVelocity;  // if we want to freeze rotation on certain axis, we can set the corresponding component to 1, otherwise 0
 	float inverseMass;
 	Vec3 force;
 	Vec3 torque;

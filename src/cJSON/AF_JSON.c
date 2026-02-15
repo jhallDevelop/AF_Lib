@@ -767,12 +767,28 @@ void AF_JSON_JsonToRigidbody(cJSON* _rigidbodyJSON, AF_C3DRigidbody* _rigidbody)
 		_rigidbody->velocity.z = cJSON_GetArrayItem(velocityJSON, 2)->valuedouble;
 	}
 
+	// Freeze Velocity
+	cJSON* freezeVelocityJSON = cJSON_GetObjectItem(_rigidbodyJSON, "freezVelocity");
+	if (freezeVelocityJSON != NULL) {
+		_rigidbody->freezVelocity.x = cJSON_GetArrayItem(freezeVelocityJSON, 0)->valueint;
+		_rigidbody->freezVelocity.y = cJSON_GetArrayItem(freezeVelocityJSON, 1)->valueint;
+		_rigidbody->freezVelocity.z = cJSON_GetArrayItem(freezeVelocityJSON, 2)->valueint;
+	}
+
 	// Angular Velocity
 	cJSON* angularVelocityJSON = cJSON_GetObjectItem(_rigidbodyJSON, "angularVelocity");
 	if (angularVelocityJSON != NULL) {
 		_rigidbody->anglularVelocity.x = cJSON_GetArrayItem(angularVelocityJSON, 0)->valuedouble;
 		_rigidbody->anglularVelocity.y = cJSON_GetArrayItem(angularVelocityJSON, 1)->valuedouble;
 		_rigidbody->anglularVelocity.z = cJSON_GetArrayItem(angularVelocityJSON, 2)->valuedouble;
+	}
+
+	// Freeze Angular Velocity
+	cJSON* freezeAngularVelocityJSON = cJSON_GetObjectItem(_rigidbodyJSON, "freezAngularVelocity");
+	if (freezeAngularVelocityJSON != NULL) {
+		_rigidbody->freezAngularVelocity.x = cJSON_GetArrayItem(freezeAngularVelocityJSON, 0)->valueint;
+		_rigidbody->freezAngularVelocity.y = cJSON_GetArrayItem(freezeAngularVelocityJSON, 1)->valueint;
+		_rigidbody->freezAngularVelocity.z = cJSON_GetArrayItem(freezeAngularVelocityJSON, 2)->valueint;
 	}
 
 	// Inverse Mass
@@ -1980,8 +1996,14 @@ cJSON* AF_JSON_RigidbodyToJson(AF_C3DRigidbody* _component) {
 	// velocity
 	AF_JSON_Vec3ToJson("velocity", &_component->velocity, returnJSON);
 
+	// freeze velocity
+	AF_JSON_Vec3ToJson("freezVelocity", &_component->freezVelocity, returnJSON);
+
 	// angular velocity
 	AF_JSON_Vec3ToJson("anglularVelocity", &_component->anglularVelocity, returnJSON);
+
+	// freeze angular velocity	
+	AF_JSON_Vec3ToJson("freezAngularVelocity", &_component->freezAngularVelocity, returnJSON);
 
 	// inverse mass
 	cJSON_AddNumberToObject(returnJSON, "inverseMass", _component->inverseMass);

@@ -13,7 +13,9 @@ AF_C3DRigidbody AF_C3DRigidbody_ZERO(void){
 		.isKinematic = AF_FALSE,
 		.gravity = AF_TRUE,
 		.velocity = {0, 0, 0},
+		.freezVelocity = {0,0,0},
 		.anglularVelocity = {0,0,0},
+		.freezAngularVelocity = {0,0,0},
 		.inverseMass = 1,
 		.force = {0,0,0},
 		.torque = {0,0,0},
@@ -40,7 +42,9 @@ AF_C3DRigidbody AF_C3DRigidbody_ADD(void){ //
 		.isKinematic = AF_FALSE,			// isKinematic means to be controlled by script rather than the velocity
 		.gravity = AF_FALSE,				// gravity off by default
 		.velocity = {0, 0, 0},		// zero velocity 
+		.freezVelocity = {0,0,0},
 		.anglularVelocity = {0,0,0},
+		.freezAngularVelocity = {0,0,0},
 		.inverseMass = 1,
 		.force = {0,0,0},
 		.torque = {0,0,0},

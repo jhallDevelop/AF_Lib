@@ -333,6 +333,22 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 				body->setAngularVelocity(newAngVel);
 				body->activate(true);
 			}
+
+			// Handle Rotation Constraints (Freeze Rotation)
+            // ECS: 1.0 = Freeze, 0.0 = Free
+            // Bullet: 0.0 = Freeze, 1.0 = Free
+            btVector3 targetAngularFactor(
+                rb->freezAngularVelocity.x > 0.0001f ? 0.0f : 1.0f,
+                rb->freezAngularVelocity.y > 0.0001f ? 0.0f : 1.0f,
+                rb->freezAngularVelocity.z > 0.0001f ? 0.0f : 1.0f
+            );
+
+            // Only update if the factor has changed to avoid unnecessary overhead
+            if (body->getAngularFactor() != targetAngularFactor) {
+                body->setAngularFactor(targetAngularFactor);
+                // Wake up body so the freeze/unfreeze takes effect immediately
+                body->activate(true);
+            }
             
             // Check if ECS velocity differs from Bullet velocity (User changed it via script like KeyMove.c)
              btVector3 currentBulletVel = body->getLinearVelocity();
