@@ -40,7 +40,7 @@ int32_t AF_Shader_GetGLUniformLocation(uint32_t ID, const char* name){
 
     int32_t newLocation =  glGetUniformLocation(ID, name);
     if (newLocation != -1 && shaderUniformLocationCache.count < AF_HASHTABLE_MAX_ENTRIES) {
-        AF_Log("AF_Shader_GetGLUniformLocation: Caching %s at %d\n", uniqueName, newLocation);
+        //AF_Log("AF_Shader_GetGLUniformLocation: Caching %s at %d\n", uniqueName, newLocation);
         AF_HashTable_NewIntEntry(uniqueName, newLocation, &shaderUniformLocationCache);
     }
 

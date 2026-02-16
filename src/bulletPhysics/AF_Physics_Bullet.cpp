@@ -1,7 +1,14 @@
 #include "AF_Physics.h"
+// Suppress warnings from Bullet headers
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc99-extensions"
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-copy"
+
 #include <btBulletDynamicsCommon.h>
 #include <btBulletCollisionCommon.h>
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+
+#pragma clang diagnostic pop
 #include <vector>
 
 // =================================================================================================
@@ -145,6 +152,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 	// Initialize arrays
 	for (int j = 0; j < AF_ECS_TOTAL_ENTITIES; ++j) {
 		bulletData->upsampledHeightMaps[j] = nullptr;
+		bulletData->bodies[j] = nullptr;	
 	}
 
 	// Initialize body array
@@ -172,7 +180,6 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
         ));
         btTrans.setRotation(btQuaternion(q.x, q.y, q.z, q.w));
         
-        bulletData->bodies[i] = nullptr;
         btCollisionShape* shape = nullptr;
 
 
@@ -648,33 +655,77 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
 // ========================================================================
 // AF_Physics_Shutdown
 // ========================================================================
-void AF_Physics_Shutdown(void* _physicsEngineHandle) {
+af_bool_t AF_Physics_Shutdown(void* _physicsEngineHandle) {
+	AF_Log("AF_Physics_Shutdown: Shutting down Bullet physics engine.\n");
 	if (_physicsEngineHandle == nullptr) {
-		return;
+		AF_Log_Error("AF_Physics_Shutdown: Physics engine handle is null during shutdown.\n");
+		return AF_FALSE;
 	}
-
+	
 	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(_physicsEngineHandle);
 
-	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
-		if (bulletData->bodies[i]) {
-			bulletData->dynamicsWorld->removeRigidBody(bulletData->bodies[i]);
-			delete bulletData->bodies[i]->getMotionState();
-			delete bulletData->bodies[i]->getCollisionShape();
-			delete bulletData->bodies[i];
-		}
-		if (bulletData->upsampledHeightMaps[i]) {
-			delete[] bulletData->upsampledHeightMaps[i];
-			bulletData->upsampledHeightMaps[i] = nullptr;
-		}
+	if(bulletData == nullptr) {
+		AF_Log_Error("AF_Physics_Shutdown: Failed Shutting down Bullet physics engine. Probably causing a mem leak\n");
+		return AF_FALSE;
 	}
 
+	if(bulletData->dynamicsWorld == nullptr) {
+		AF_Log_Error("AF_Physics_Shutdown: Bullet dynamics world is null during shutdown. Probably causing a mem leak\n");
+		return AF_FALSE;
+	}
+	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		if (bulletData->bodies[i] != nullptr) {
+			bulletData->dynamicsWorld->removeRigidBody(bulletData->bodies[i]);
+		}
+	}
+	
+	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+        if (bulletData->bodies[i] != nullptr) {
+            
+            // Delete Motion State
+            btMotionState* ms = bulletData->bodies[i]->getMotionState();
+            if(ms) {
+                delete ms;
+            }
+
+            // Delete Collision Shape
+            btCollisionShape* shape = bulletData->bodies[i]->getCollisionShape();
+            if (shape) {
+                delete shape;
+            }
+            
+            // Delete Rigid Body
+            delete bulletData->bodies[i];
+            bulletData->bodies[i] = nullptr;
+        }
+        if (bulletData->upsampledHeightMaps[i] != nullptr) {
+            delete[] bulletData->upsampledHeightMaps[i];
+            bulletData->upsampledHeightMaps[i] = nullptr;
+        }
+    }
+	
 	delete bulletData->dynamicsWorld;
+	bulletData->dynamicsWorld = nullptr;
+
 	delete bulletData->solver;
+	bulletData->solver = nullptr;
+
 	delete bulletData->broadphase;
+	bulletData->broadphase = nullptr;
+
 	delete bulletData->dispatcher;
+	bulletData->dispatcher = nullptr;
+
 	delete bulletData->collisionConfiguration;
+	bulletData->collisionConfiguration = nullptr;
+
 	delete bulletData->debugDrawer;
+	bulletData->dynamicsWorld = nullptr;
+
 	delete bulletData;
+	bulletData = nullptr;
+	AF_Log("AF_Physics_Shutdown: Physics engine handle is valid, proceeding with shutdown.\n");
+	return AF_TRUE;
 }
 
 void AF_Physics_LateUpdate(AF_ECS* _ecs, void* _physicsEngineHandle) { 

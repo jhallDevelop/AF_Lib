@@ -12,7 +12,7 @@ AF_Shader* AF_Assets_AddShader(AF_Assets* _assets){
         AF_Log_Warning("AF_Assets_AddShader: passed null assets\n");
         return NULL;
     }
-    AF_Log("next available shader: %i MAX: %i \n",_assets->nextAvailableShader, AF_ASSETS_MAX_SHADERS);
+    //AF_Log("next available shader: %i MAX: %i \n",_assets->nextAvailableShader, AF_ASSETS_MAX_SHADERS);
     if(_assets->nextAvailableShader < AF_ASSETS_MAX_SHADERS){
         _assets->nextAvailableShader++;
         return &_assets->shaders[_assets->nextAvailableShader - 1];

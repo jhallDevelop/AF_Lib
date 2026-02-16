@@ -95,7 +95,7 @@ Platform/library dependent. Likely using glfw
 
 ====================
 */
-void AF_Window_Terminate(AF_Window* _window);
+af_bool_t AF_Window_Terminate(AF_Window* _window);
 
 Vec2 AF_Window_GetFramebufferSize(AF_Window* _window);
 

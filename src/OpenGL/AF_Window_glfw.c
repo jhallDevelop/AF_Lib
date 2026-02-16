@@ -404,24 +404,26 @@ AF_Window_TerminateWindow
 Destroy the window
 ====================
 */
-void AF_Window_Terminate(AF_Window* _window){
+af_bool_t AF_Window_Terminate(AF_Window* _window){
     // null check the struct
-    if(!_window){
+    if(_window == NULL){
         AF_Log_Error("%s TerminateWindow: failed to destroy window, argment passed in a null AF_Window struct\n", glfwWindowFileTitle);
-        return;
+        return AF_FALSE;
     }
 
     // Null check the window pointer
-    if(!_window->window){
+    if(_window->window == NULL){
         AF_Log_Error("%s TerminateWindow: failed to destroy window, argment passed in a null window ptr\n", glfwWindowFileTitle);
-        return;
+        return AF_FALSE;
     }
 
     AF_Log("%s TerminateWindow:\n", glfwWindowFileTitle);
 
      // Destory the wndow
-    glfwDestroyWindow(_window->window);
+    glfwDestroyWindow((GLFWwindow*)_window->window);
+    _window->window = NULL;
     glfwTerminate();
+    return AF_TRUE;
 }
 
 

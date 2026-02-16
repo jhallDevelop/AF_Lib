@@ -460,21 +460,24 @@ typedef struct {
         Vec3 p0 = Vec3_NORMALIZE(_from);
         Vec3 p1 = Vec3_NORMALIZE(_to);
         Vec4 result = Vec4_ZERO();
+        Vec3 upVector = {0, 1, 0};
+        Vec3 forwardVector = {0, 0, 1};
         
         // Get the axis
         if(Vec3_DOT(p0, p1) < -0.9999f){
             Vec3 mostOrthoganal = {1, 0, 0};
 
             if(fabsf(p0.y) < fabsf(p0.x)) {
-                mostOrthoganal = (Vec3){0, 1, 0};
+                mostOrthoganal = upVector;
             }
 
             if(fabsf(p0.z) < fabsf(p0.y) && fabsf(p0.z) < fabsf(p0.x)){
-                mostOrthoganal = (Vec3){0, 0, 1};
+                mostOrthoganal = forwardVector;
             }
 
             Vec3 axis = Vec3_NORMALIZE(Vec3_CROSS(p0, mostOrthoganal));
-            result = (Vec4){axis.x, axis.y, axis.z, 0};
+            Vec4 axisQuat = {axis.x, axis.y, axis.z, 0};
+            result = axisQuat;
             return Vec4_NORMALIZE(result);
         }
 
@@ -532,7 +535,8 @@ typedef struct {
         // If direction and up are parallel (e.g. looking straight up), this fails (zero vector).
         // Fallback or precision check might be needed here, but for now standard logic:
         if (Vec3_MAGNITUDE_SQ(right) < 0.0001f) {
-           right = (Vec3){1, 0, 0}; // Fallback right vector
+            Vec3 rightVector = {1, 0, 0};
+            right = rightVector; // Fallback right vector
         }
         _up = Vec3_CROSS(right, _direction);
         _up = Vec3_NORMALIZE(_up);
