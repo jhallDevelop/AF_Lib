@@ -493,8 +493,10 @@ typedef struct {
     }
 
     // =======================================
-    // AF_Vec4_Quat_RotateVec3
-    // rotate a quaternion using a vec3
+    // AF_Vec4_Quat_RotateAxis
+    // Rotate a 3D vector using a quaternion. Returns the rotated vector 3
+    // Often used to get the forward, up, or right vector of an object based on its rotation quaternion. 
+    // e.g. pass in the world forward vector (0, 0, -1) to get the forward direction of an object.
     // =======================================
     static inline Vec3 AF_Vec4_Quat_RotateVec3(Vec4 _quat, Vec3 _vec3){
         // Extract quaternion components

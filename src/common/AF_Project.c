@@ -53,6 +53,41 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         transform->modelMat = Mat4_ToModelMat4(transform->pos, transform->rot, transform->scale);
     }       
 
+    // Update the camera vectors for all cameras
+    for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
+        AF_CCamera* cam = &_appData->ecs.cameras[i];
+        AF_CTransform3D*cameraTransform = &_appData->ecs.transforms[i];
+        if(AF_Component_GetHasEnabled(cam->enabled) == AF_TRUE){
+            // update the yaw and pitch of the camera from the front vector
+            AF_Log("AF_Project: Yaw: %f Pitch: %f\n", cam->yaw, cam->pitch);
+            // initialise the yaw and pitch from the camera front vector
+            Vec3 front = {0, 0, -1};
+            front = AF_Vec4_Quat_RotateVec3(cameraTransform->rot, front);
+            // normalise the front vector to ensure it's a unit vector before calculating angles
+            front = Vec3_NORMALIZE(front);
+
+            // clamp the pitch 
+            AF_FLOAT pitchInput = front.y;
+            if(pitchInput > 1.0f){
+                pitchInput = 1.0f;
+            }
+            if(pitchInput < -1.0f){
+                pitchInput = -1.0f;
+            }
+
+            // convert the pitch and yaw to degrees 
+            cam->pitch = AF_Math_Degrees(asinf(front.y)); // Calculate pitch from the y component of the front vector
+
+            // safely calulate yaw
+            if(fabsf(pitchInput) < 0.9999f){ // avoid gimbal lock singularity
+                cam->yaw = AF_Math_Degrees(atan2f(-front.x, -front.z)); 
+            }
+
+            AF_Log("AF_Project: Initial Yaw: %f Pitch: %f\n", cam->yaw, cam->pitch);
+
+        }
+    }
+
     // Reset the assets loaded,
     _appData->assets = AF_Assets_ZERO();
 

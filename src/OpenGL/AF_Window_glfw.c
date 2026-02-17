@@ -192,12 +192,7 @@ static void cursor_position_callback(GLFWwindow* _window, double _xpos, double _
         return;
     }
 
-    // Reset the last mouse position if this is the first movement after pressing the right mouse button
-    if (appData->input.firstMouse == AF_TRUE && appData->input.mouse2Down == AF_TRUE) {
-        appData->input.lastMouseX = _xpos;
-        appData->input.lastMouseY = _ypos;
-        appData->input.firstMouse = AF_FALSE; // Prevent resetting on subsequent movements
-    }
+  
 
     // Update current mouse position
     appData->input.mouseX = _xpos;
@@ -230,7 +225,7 @@ static void mouse_button_callback(GLFWwindow* _window, int button, int action, i
             appData->input.firstMouse = AF_TRUE; // Ensure reset for next cursor movement
         } else if (action == GLFW_RELEASE) {
             appData->input.mouse2Down = AF_FALSE;
-            appData->input.firstMouse = AF_TRUE; // Prepare for future presses
+            //appData->input.firstMouse = AF_TRUE; // Prepare for future presses
         }
     }
 }

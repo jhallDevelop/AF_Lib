@@ -41,8 +41,8 @@ typedef struct  {
     AF_FrameBufferData renderTextureData;
 
     // Floats next
-    AF_FLOAT yaw;
-    AF_FLOAT pitch;
+    AF_FLOAT yaw;   // horizontal rotation in degrees
+    AF_FLOAT pitch; // vertical rotation in degrees
     AF_FLOAT fov;
     AF_FLOAT nearPlane;
     AF_FLOAT farPlane;

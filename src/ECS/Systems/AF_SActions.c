@@ -9,12 +9,14 @@ void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _m
     // update the camera based on the pitch and yaw of the mouse;
     float xPos = input->mouseX;
     float yPos = input->mouseY;
-    
+    AF_CTransform3D* cameraTransform = &ecs->transforms[_cameraID];
     // Check if this is the first frame of holding down the right mouse button
     if (input->firstMouse == AF_TRUE) {
         input->lastMouseX = xPos;
         input->lastMouseY = yPos;
-        input->firstMouse = AF_FALSE; // Mark as initialized to avoid resetting on subsequent frames
+        input->firstMouse = AF_FALSE; // Mark as initialised to avoid resetting on subsequent frames
+
+        AF_Log("AF_Project: Yaw: %f Pitch: %f\n", _camera->yaw, _camera->pitch);
         return; // Skip this frame to prevent any snapping
     }
 
@@ -26,7 +28,7 @@ void AF_SActions_MouseLook(AF_AppData* _appData, uint32_t _cameraID, AF_FLOAT _m
 
     xoffset *= _mouseLookSensitivity;
     yoffset *= _mouseLookSensitivity;
-    AF_CTransform3D* cameraTransform = &ecs->transforms[_cameraID];
+    
     
     _camera->yaw -= xoffset;
     _camera->pitch += yoffset;
