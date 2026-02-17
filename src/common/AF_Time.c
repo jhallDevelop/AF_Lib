@@ -1,27 +1,57 @@
 #include "AF_Time.h"
-#include "AF_Log.h"
-/*
-====================
-AF_Time_Update
-Update the time variables
-====================
-*/
+#include <time.h>   // for clock_gettime
 
+
+// ====================
+// AF_Time_Init
+// Initialise the struct variables. 
+// Don't need to take in any variables except the current time, 
+// pass back a new copy of initialised data in the struct.
+// ====================
+AF_Time AF_Time_Init(void){
+	AF_Time t = { .startTick = 0};						// Zero-initialize the struct
+	t.startTick = AF_GetRawTicks();
+	t.lastTick = t.startTick;
+	return t;
+}
+
+// ====================
+// AF_Time_Update
+// Update the time variables
+// ====================
 void AF_Time_Update(AF_Time* _time){
-	_time->currentTime = AF_Time_GetTime();
-    _time->deltaTime = _time->currentTime -_time->lastTime;
-    _time->lastTime = _time->currentTime;
-
-    _time->frameCount += 1;
-    _time->fpsTimer += _time->deltaTime;
+    assert(_time != NULL && "AF_Time_Update: _time is NULL");
     
-    // When one second has passed...
-    if(_time->fpsTimer >= 1.0f){
-        // Calculate and STORE the FPS in your new variable.
-        _time->fps = (float)_time->frameCount / _time->fpsTimer;
+	uint64_t currentTick = AF_GetRawTicks(); 			// Get current time in tick
 
-        // Reset the counters for the next second.
-        _time->fpsTimer = 0.0f;
-        _time->frameCount = 0;
-    }
+	// Integer math for precise delta in nanoseconds
+	uint64_t deltaNS = currentTick - _time->lastTick;	// Delta time in nanoseconds
+	_time->lastTick = currentTick;							// Update last tick to current tick
+
+	// convert to seconds only when needed for game logic
+	// use reciprocal for FPS to avoid division in critical path
+	_time->deltaTime = (double)deltaNS * 1.0e-9;		// Convert delta to seconds
+	_time->totalTime = (double)(currentTick - _time->startTick) * 1.0e-9; // Total time in seconds
+}
+
+// ====================
+// AF_GetRawTicks
+// Helper function to get the current time in ticks using clock_gettime for better precision
+// ====================
+uint64_t AF_GetRawTicks(void){
+	struct timespec timeSpec;
+    // use CLOCK_MONOTONIC_RAW for the most precise timer available, unaffected by NTP adjustments
+	clock_gettime(CLOCK_MONOTONIC_RAW, &timeSpec);
+	return (uint64_t)timeSpec.tv_sec * 1000000000ULL + (uint64_t)timeSpec.tv_nsec;
+}	
+
+// ====================
+// AF_Time_GetTime
+// Helper function to get the current time in seconds using clock_gettime for better precision
+// ====================
+double AF_Time_GetTime(void){
+	//return ((double)(clock()) / CLOCKS_PER_SEC);	// old incorrect way
+	struct timespec timeSpec;
+	clock_gettime(CLOCK_MONOTONIC, &timeSpec);
+	return (double)(timeSpec.tv_sec) + (double)(timeSpec.tv_nsec) * 1.0e-9; // multiply nanoseconds by 1e-9 to convert to seconds
 }

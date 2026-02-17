@@ -17,6 +17,7 @@ extern "C" {
 #include "ECS/Entities/AF_ECS.h"
 #include "AF_Lib_API.h"
 #include "AF_Time.h"
+#include "AF_ProfileTimer.h"
 #include "AF_Window.h"
 //#include "AF_ViewportData.h"
 #include "AF_Input.h"
@@ -34,6 +35,7 @@ typedef struct AF_AppData {
     // Place larger structs next
     AF_ECS ecs;            // Struct size depends on definition
     AF_Time time;          // Struct size depends on definition
+    AF_ProfileTimer profileTimer; // Struct size depends on definition
     AF_Window window;      // We know this is 40 bytes
     AF_Input input;        // Struct size depends on definition
     AF_Assets assets;      // Struct size depends on definition
@@ -55,7 +57,8 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
 		AF_Log_Error("AF_AppData_ZERO: _appData is NULL");
         return;
     }
-    _appData->time = AF_Time_ZERO(0);
+    _appData->time = (AF_Time){ .startTick = 0};                // Zero-initialize the time struct
+    _appData->profileTimer = (AF_ProfileTimer){ .fps = 0};        // Zero-initialize the profile timer struct
     _appData->window = AF_Window_ZERO("", 0, 0);
     _appData->input = AF_Input_ZERO();
     _appData->assets = AF_Assets_ZERO();

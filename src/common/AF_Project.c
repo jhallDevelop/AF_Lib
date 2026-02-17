@@ -1,11 +1,16 @@
 #include "AF_Project.h"
-/*
-===============================================================================
-AF_PROJECT_H
 
+// ===============================================================================
+// AF_PROJECT_H
+// This file contains the implementation of the AF_Project functions, 
+// which are responsible for managing project-related operations such as syncing entities, 
+// loading and saving project data, and handling project assets. 
+// The functions in this file interact with various components of the application, 
+// including the ECS (Entity Component System), asset management, 
+// and rendering systems to ensure that the project data is correctly 
+// loaded and synchronized across different parts of the application.
+// ===============================================================================
 
-===============================================================================
-*/
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -21,12 +26,10 @@ AF_PROJECT_H
 #include "../../../stb/stb_image.h"
 
 
-/*
-================
-AF_Project_SyncEntities
-Sync the entities loaded
-================
-*/
+// ================
+// AF_Project_SyncEntities
+// Sync the entities loaded
+// ================
 void AF_Project_SyncEntities(AF_AppData* _appData) {
 
     // TODO: maybe put this back in
@@ -223,12 +226,11 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
     }
 }
 
-/*
-================
-AF_Project_Load
-Take a file path and open the game.proj file if it can be found.
-================
-*/
+
+// ================
+// AF_Project_Load
+// Take a file path and open the game.proj file if it can be found.
+// ================
 af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
 
 
