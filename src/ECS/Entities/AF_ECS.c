@@ -93,6 +93,9 @@ void AF_ECS_Init(AF_ECS* _ecs){
 		// Input Controller
 		_ecs->inputControllers[i] = AF_CInputController_ZERO();
 
+		// terrain
+		_ecs->terrains[i] = AF_CTerrain_ZERO();
+
 		// Scripts
 		for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
 			_ecs->scripts[(i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j] = AF_CScript_ZERO();
@@ -197,6 +200,10 @@ void AF_ECS_DuplicateEntity(AF_ECS* _ecs, AF_Entity* _entity){
 
 	// Editor Data
 	_ecs->editorData[dstID] = _ecs->editorData[srcID];
+
+	// terrain
+	_ecs->terrains[dstID] = _ecs->terrains[srcID];
+	
 	// give it a unique name
 	snprintf(_ecs->editorData[srcID].name, AF_MAX_PATH_CHAR_SIZE, "%s_copy", _ecs->editorData[srcID].name);
 
