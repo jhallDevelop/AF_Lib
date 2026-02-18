@@ -62,7 +62,6 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         AF_CTransform3D*cameraTransform = &_appData->ecs.transforms[i];
         if(AF_Component_GetHasEnabled(cam->enabled) == AF_TRUE){
             // update the yaw and pitch of the camera from the front vector
-            AF_Log("AF_Project: Yaw: %f Pitch: %f\n", cam->yaw, cam->pitch);
             // initialise the yaw and pitch from the camera front vector
             Vec3 front = {0, 0, -1};
             front = AF_Vec4_Quat_RotateVec3(cameraTransform->rot, front);
@@ -86,7 +85,6 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
                 cam->yaw = AF_Math_Degrees(atan2f(-front.x, -front.z)); 
             }
 
-            AF_Log("AF_Project: Initial Yaw: %f Pitch: %f\n", cam->yaw, cam->pitch);
 
         }
     }

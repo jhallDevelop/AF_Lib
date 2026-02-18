@@ -313,7 +313,7 @@ extern const AF_KeyMap AF_Input_KeyMappings[];
 #define PRESSED_MASK 0x80  // Pressed bit mask (8th bit)
 #define KEYCODE_MASK 0x7F  // Keycode bit mask (lower 7 bits)
 #define CONTROLLER_COUNT 4
-
+#define AF_INPUT_MOUSE_BUTTON_COUNT 8
 
 
 
@@ -324,163 +324,87 @@ Input struct to store the registered keys
 ====================
 */
 typedef struct {
-    // input buffer que
-    // TODO: make array for size CONTROLLER_COUNT
     AF_Key keys[CONTROLLER_COUNT][AF_INPUT_KEYBOARD_KEYS_COUNT];
-
     Vec2 controlSticks[CONTROLLER_COUNT];
-
     // Mouse
-    af_bool_t mouse1Down;
-    af_bool_t mouse2Down;
-    af_bool_t firstMouse;
     float lastMouseX;
     float lastMouseY;
     float mouseX;
     float mouseY;
 
+    af_bool_t mouseDownArray[AF_INPUT_MOUSE_BUTTON_COUNT]; // 0: left button, 1: right button
+    af_bool_t firstMouse;
+
 } AF_Input;
 
-/*
-====================
-AF_Input_MapKeys
-map keys
-====================
-*/
-static inline void AF_Input_MapKeyMappings(AF_Input* _input, const AF_KeyMap* _keymappings){
-    
-    for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
-        _input->keys[0][i].code = _keymappings[i].key;
-    }
-}
-
-/*
-====================
-AF_Input_GetKey
-Get key by code
-====================
-*/
-static inline AF_Key* AF_Input_GetKey(int32_t _code, AF_Input* _input){
-    return &_input->keys[0][_code];
-}
-
-/*
-====================
-AF_Input_ZERO
-Input struct Initialise to zero
-====================
-*/
-static inline AF_Input AF_Input_ZERO(void){
-    AF_Input input;
-    
-    // Initialise the keys
-    for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; ++i){
-        AF_Key key = {0, 0, 0};
-        input.keys[0][i] = key; // Player 1
-        input.keys[1][i] = key; // Player 2
-        input.keys[2][i] = key; // Player 3
-        input.keys[3][i] = key; // Player 4
-        
-       // map the keymappings to input keys
-    }
-    
-    //AF_Input_MapKeyMappings(&input, AF_Input_KeyMappings);
-    
-    for(int i = 0; i < CONTROLLER_COUNT; ++i){
-        Vec2 controlStick = {0, 0};
-        input.controlSticks[i] = controlStick;
-    }
-    input.firstMouse = AF_TRUE;
-    input.mouse1Down = AF_FALSE;
-    input.mouse2Down = AF_FALSE;
-    input.mouseX = 0;
-    input.mouseY = 0;
-    return input;
-}
+// ====================
+// AF_Input_MapKeys
+// map keys
+// ====================
+void AF_Input_MapKeyMappings(AF_Input* _input, const AF_KeyMap* _keymappings);
 
 
+// ====================
+// AF_Input_GetKey
+// Get key by code
+// ====================
+AF_Key* AF_Input_GetKey(int32_t _code, AF_Input* _input);
 
 
-/*
-====================
-AF_Input_Input
-Init definition
-====================
-*/
+// ====================
+// AF_Input_ZERO
+// Input struct Initialise to zero
+// ====================
+AF_Input AF_Input_ZERO(void);
+
+// ====================
+// AF_Input_Input
+// Init definition
+// ====================
 void AF_Input_Init(void);
 
-/*
-====================
-AF_Input_Update
-Update definition
-====================
-*/
+
+// ====================
+// AF_Input_Update
+// Update definition
+// ====================
+
 AF_LIB_API void AF_Input_Update(AF_Input* _input);
 
 
-/*
-====================
-AF_Input_Shutdown
-Shutdown definition
-====================
-*/
+// ====================
+// AF_Input_Shutdown
+// Shutdown definition
+// ====================
 void AF_Input_Shutdown(void);
 
 
-/*
-====================
-AF_Input_EncodeKey
-Function to encode the key into a pressed state
-====================
-*/
-static inline char AF_Input_EncodeKey(PACKED_CHAR _keyCode, af_bool_t _isPressed) {
-    char returnedChar = _keyCode & KEYCODE_MASK; // Ensure only lower 7 bits are used for keycode
-
-    if (_isPressed) {
-        returnedChar |= PRESSED_MASK; // Set the 8th bit if the key is pressed
-    }
-
-    return returnedChar;
-}
+// ====================
+// AF_Input_EncodeKey
+// Function to encode the key into a pressed state
+// ====================
+char AF_Input_EncodeKey(PACKED_CHAR _keyCode, af_bool_t _isPressed);
 
 
-
-/*
-====================
-AF_Input_GetKeyCode
-Function to decode the key value
-====================
-*/
-static inline PACKED_CHAR AF_Input_GetKeyCode(PACKED_CHAR _encodedKey) {
-    return _encodedKey & KEYCODE_MASK;  // Return the lower 7 bits as the keycode
-}
-
-/*
-====================
-AF_Input_IsKeyPressed
-Function to check if the key is pressed
-====================
-*/
-static inline af_bool_t AF_Input_IsKeyPressed(PACKED_CHAR _encodedKey) {
-    return (_encodedKey & PRESSED_MASK) != 0;  // Check if the 8th bit is set
-}
+// ====================
+// AF_Input_GetKeyCode
+// Function to decode the key value
+// ====================
+PACKED_CHAR AF_Input_GetKeyCode(PACKED_CHAR _encodedKey);
 
 
-/*
-================
-AF_Input_Keymappings_ConvertToCharArray
+// ====================
+// AF_Input_IsKeyPressed
+// Function to check if the key is pressed
+// ====================
+af_bool_t AF_Input_IsKeyPressed(PACKED_CHAR _encodedKey);
+
+
+// ================
+// AF_Input_Keymappings_ConvertToCharArray
 // Construct and return the keys as an array of chars
-================
-*/
-inline static void AF_Input_Keymappings_ConvertToCharArray(const AF_KeyMap* _keyMappings, const char** _charArray, uint32_t _size) {
-    if (!_keyMappings || !_charArray) return;  // Null pointer check
-
-    for (uint32_t i = 0; i < _size; i++) {
-        _charArray[i] = _keyMappings[i].name;
-    }
-
-    _charArray[_size] = NULL;  // Null-terminate the array
-}
+// ================
+void AF_Input_Keymappings_ConvertToCharArray(const AF_KeyMap* _keyMappings, const char** _charArray, uint32_t _size);
 
 
 #ifdef __cplusplus
