@@ -1,6 +1,6 @@
 #include "AF_Time.h"
 #include <time.h>   // for clock_gettime
-
+#include <assert.h>
 
 // ====================
 // AF_Time_Init
@@ -21,12 +21,12 @@ AF_Time AF_Time_Init(void){
 // ====================
 void AF_Time_Update(AF_Time* _time){
     assert(_time != NULL && "AF_Time_Update: _time is NULL");
-    
+
 	uint64_t currentTick = AF_GetRawTicks(); 			// Get current time in tick
 
 	// Integer math for precise delta in nanoseconds
 	uint64_t deltaNS = currentTick - _time->lastTick;	// Delta time in nanoseconds
-	_time->lastTick = currentTick;							// Update last tick to current tick
+	_time->lastTick = currentTick;						// Update last tick to current tick
 
 	// convert to seconds only when needed for game logic
 	// use reciprocal for FPS to avoid division in critical path
@@ -50,7 +50,6 @@ uint64_t AF_GetRawTicks(void){
 // Helper function to get the current time in seconds using clock_gettime for better precision
 // ====================
 double AF_Time_GetTime(void){
-	//return ((double)(clock()) / CLOCKS_PER_SEC);	// old incorrect way
 	struct timespec timeSpec;
 	clock_gettime(CLOCK_MONOTONIC, &timeSpec);
 	return (double)(timeSpec.tv_sec) + (double)(timeSpec.tv_nsec) * 1.0e-9; // multiply nanoseconds by 1e-9 to convert to seconds

@@ -1,11 +1,9 @@
-/*
-===============================================================================
-AF_Window_glfw implementation
+// ===============================================================================
+// AF_Window_glfw implementation
+// Implementation for AF_Window using GLFW
+// Calls GLFW library to handling window creation and input handling
+// ===============================================================================
 
-Implementation for AF_Window using GLFW
-Calls GLFW library to handling window creation and input handling
-===============================================================================
-*/
 #include "AF_Window.h"
 
 #include <stdio.h>
@@ -23,25 +21,22 @@ const char* glfwWindowFileTitle = "AF_Window_GLFW:";
 
 
 
-/*
-====================
-error_callback
-General Error callback used by glfw
-====================
-*/
-void error_callback(int error, const char* description)
+
+// ====================
+// AF_Window_ErrorCallback
+// General Error callback used by glfw
+// ====================
+// 
+void AF_Window_ErrorCallback(int error, const char* description)
 {
     AF_Log_Error("%s %s %i\n", glfwWindowFileTitle, description, error);
 }
 
-
-/*
-====================
-key_callback
-Key callback used by glfw
-====================
-*/
-static void key_callback (GLFWwindow* _window, int key, int scancode, int action, int mods)
+// ====================
+// AF_Window_KeyCallback
+// Key callback used by glfw
+// ====================
+static void AF_Window_KeyCallback (GLFWwindow* _window, int key, int scancode, int action, int mods)
 {
 	// TODO: https://www.reddit.com/r/opengl/comments/i8lv8u/how_can_i_optimize_my_key_handling_and_make_it/
     if(scancode){}
@@ -58,52 +53,32 @@ static void key_callback (GLFWwindow* _window, int key, int scancode, int action
         return;
     }
 
-    /*
-    if(action == GLFW_PRESS){
-	// find the key and set it to pressed
-	//for(int i = 0; i < AF_INPUT_KEYS_MAPPED; i++){
-    // TODO: work for multiple controllers
-    for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
-		if(AF_Input_GetKeyCode(input->keys[0][i].code) == key){
-			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, AF_TRUE); 
-		}
-	}
-    }else if(action == GLFW_RELEASE){
-	// find the key and set it to release
-	for(int i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
-		if(AF_Input_GetKeyCode(input->keys[0][i].code) == key){
-			input->keys[0][i].code = AF_Input_EncodeKey(input->keys[0][i].code, AF_FALSE); 
-		}
-	}
-
-    }*/
 
     // TODO better match this 
     //AF_Input* input = &editorAppData->appData.input;
     // TODO: add for other controllers
-    for(uint32_t i = 0; i < AF_INPUT_KEYBOARD_KEYS_COUNT; i++){
-        if(input->keys[0][i].code == key){
-            if (action == GLFW_PRESS) {
-                input->keys[0][i].pressed = 1;
-                input->keys[0][i].held = 1;
-            } else if (action == GLFW_RELEASE) {
-                input->keys[0][i].pressed = 0;
-                input->keys[0][i].held = 0;
-            }
-        }
+    if( key < 0 && key >= AF_INPUT_KEYBOARD_KEYS_COUNT) {
+        return;
     }
+
+    if (action == GLFW_PRESS) {
+        input->keys[0][key].pressed = 1;
+        input->keys[0][key].held = 1;
+    } else if (action == GLFW_RELEASE) {
+        input->keys[0][key].pressed = 0;
+        input->keys[0][key].held = 0;
+    }
+    
     // Retrieve the pointer to the AF_Input struct from the window user pointer
     // increment the buffer to position the next key, rollover if at the end of the array
-   
 }
 
-/*
-====================
-window_pos_callback
-Move window callback
-====================
-*/
-void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
+
+// ====================
+// AF_Window_Pos_Callback
+// Move window callback
+// ====================
+void AF_Window_Pos_Callback(GLFWwindow* _window, int _xpos, int _ypos){
     if(_xpos || _ypos){}
     // if the window is moved, update the glviewport
     int width = 0;
@@ -127,24 +102,21 @@ void window_pos_callback(GLFWwindow* _window, int _xpos, int _ypos){
     //AF_Log("window_pos_callback: Window moved to position (%d, %d)\n", _xpos, _ypos);
 }
 
-/*
-====================
-framebuffer_size_callback
-when the framebuffer size changes, update the glViewport
-====================
-*/
-void framebuffer_size_callback(GLFWwindow* _window, int _width, int _height)
+
+// ====================
+// AF_Window_Framebuffer_Size_Callback
+// when the framebuffer size changes, update the glViewport
+// ====================
+void AF_Window_Framebuffer_Size_Callback(GLFWwindow* _window, int _width, int _height)
 {
     if (_width == 0 || _height == 0 || _window == NULL) return; // Avoid issues with minimized windows
 }
 
-/*
-====================
-window_size_callback
-when the window  size changes, update the glViewport
-====================
-*/
-void window_size_callback(GLFWwindow* _window, int _width, int _height)
+// ====================
+// AF_Window_Size_Callback
+// when the window  size changes, update the glViewport
+// ====================
+void AF_Window_Size_Callback(GLFWwindow* _window, int _width, int _height)
 {
     if(_width || _height){}
     int width = 0;
@@ -177,14 +149,11 @@ void window_size_callback(GLFWwindow* _window, int _width, int _height)
 }
 
 
-
-/*
-====================
-cursor_position_callback
-when the cursor changes, update the input data
-====================
-*/
-static void cursor_position_callback(GLFWwindow* _window, double _xpos, double _ypos) {
+// ====================
+// AF_Window_Cursor_Position_Callback
+// when the cursor changes, update the input data
+// ====================
+static void AF_Window_Cursor_Position_Callback(GLFWwindow* _window, double _xpos, double _ypos) {
     //Editor_AppData* editorAppData = (Editor_AppData*)glfwGetWindowUserPointer(_window);
     AF_AppData* appData = (AF_AppData*)glfwGetWindowUserPointer(_window);
     if(appData == NULL){
@@ -199,13 +168,12 @@ static void cursor_position_callback(GLFWwindow* _window, double _xpos, double _
     appData->input.mouseY = _ypos;
 }
 
-/*
-====================
-mouse_button_callback
-when the mouse button changes, update the input data
-====================
-*/
-static void mouse_button_callback(GLFWwindow* _window, int button, int action, int mods) {
+
+// ====================
+// AF_Window_Mouse_Button_Callback
+// when the mouse button changes, update the input data
+// ====================
+static void AF_Window_Mouse_Button_Callback(GLFWwindow* _window, int button, int action, int mods) {
     if(mods){}
     AF_AppData* appData = (AF_AppData*)glfwGetWindowUserPointer(_window);
     if(appData == NULL){
@@ -231,12 +199,11 @@ static void mouse_button_callback(GLFWwindow* _window, int button, int action, i
 }
 
 
-/*
-====================
-AF_Window_CreateWindow
-Create a window using GLFW
-====================
-*/
+
+// ====================
+// AF_Window_CreateWindow
+// Create a window using GLFW
+// ====================
 af_bool_t AF_Window_Create(void* _appData) {
     
     if(!_appData){
@@ -246,7 +213,7 @@ af_bool_t AF_Window_Create(void* _appData) {
     }
 
     AF_Log("%s AF_Window_Create\n", glfwWindowFileTitle);
-    glfwSetErrorCallback(error_callback);
+    glfwSetErrorCallback(AF_Window_ErrorCallback);
 
     if (!glfwInit())
     {
@@ -311,20 +278,20 @@ af_bool_t AF_Window_Create(void* _appData) {
     glfwSetWindowUserPointer(glfwWindow, _appData);
 
     // Set window size callback 
-    glfwSetWindowSizeCallback(glfwWindow, window_size_callback);
+    glfwSetWindowSizeCallback(glfwWindow, AF_Window_Size_Callback);
 
     // Set callback
-    glfwSetKeyCallback(glfwWindow, key_callback);
+    glfwSetKeyCallback(glfwWindow, AF_Window_KeyCallback);
 
      // cursor callback
-    glfwSetCursorPosCallback(glfwWindow, cursor_position_callback);
-    glfwSetMouseButtonCallback(glfwWindow, mouse_button_callback);
+    glfwSetCursorPosCallback(glfwWindow, AF_Window_Cursor_Position_Callback);
+    glfwSetMouseButtonCallback(glfwWindow, AF_Window_Mouse_Button_Callback);
 
     // set window move callpack
-    glfwSetWindowPosCallback(glfwWindow, window_pos_callback);
+    glfwSetWindowPosCallback(glfwWindow, AF_Window_Pos_Callback);
 
     // Set the window size correctly, needed for OSX retina displays
-    glfwSetFramebufferSizeCallback(glfwWindow, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(glfwWindow, AF_Window_Framebuffer_Size_Callback);
 
     // Set the user ptr of the window to 
     glfwSetWindowTitle((GLFWwindow*) appData->window.window, appData->projectData.name);
@@ -333,12 +300,10 @@ af_bool_t AF_Window_Create(void* _appData) {
 }
 
 
-/*
-====================
-AF_Window_UpdateWindow
-Update the window
-====================
-*/
+// ====================
+// AF_Window_UpdateWindow
+// Update the window
+// ====================
 af_bool_t AF_Window_Update(AF_Window* _window){
     // while
     if (glfwWindowShouldClose(_window->window))
@@ -352,12 +317,11 @@ af_bool_t AF_Window_Update(AF_Window* _window){
     return AF_TRUE;
 }
 
-/*
-====================
-AF_Window_RenderWindow
-Render the window by calling glfw swap buffers
-====================
-*/
+
+// ====================
+// AF_Window_RenderWindow
+// Render the window by calling glfw swap buffers
+// ====================
 void AF_Window_Render(AF_Window* _window){
     // Set the framebuffer sies
     int width, height;
@@ -377,13 +341,12 @@ void AF_Window_Render(AF_Window* _window){
     glfwPollEvents();
 }
 
-/*====================
-AF_Window_GetFramebufferSize
-Window size callback
-Get the framebuffer size of the window
-Returns a Vec2 with the width and height of the framebuffer
-====================
-*/
+// ====================
+// AF_Window_GetFramebufferSize
+// Window size callback
+// Get the framebuffer size of the window
+// Returns a Vec2 with the width and height of the framebuffer
+// ====================
 Vec2 AF_Window_GetFramebufferSize(AF_Window* _window) {
     if (_window == NULL || _window->window == NULL) {
         AF_Log_Error("%s GetFramebufferSize: _window or _window->window is NULL\n", glfwWindowFileTitle);
@@ -394,11 +357,10 @@ Vec2 AF_Window_GetFramebufferSize(AF_Window* _window) {
     return size;
 }
 
-/*====================
-AF_Window_TerminateWindow
-Destroy the window
-====================
-*/
+// ====================
+// AF_Window_TerminateWindow
+// Destroy the window
+// ====================
 af_bool_t AF_Window_Terminate(AF_Window* _window){
     // null check the struct
     if(_window == NULL){
