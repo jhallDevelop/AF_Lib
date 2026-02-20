@@ -29,7 +29,6 @@ void AF_Time_Update(AF_Time* _time){
 	_time->lastTick = currentTick;						// Update last tick to current tick
 
 	// convert to seconds only when needed for game logic
-	// use reciprocal for FPS to avoid division in critical path
 	_time->deltaTime = (double)deltaNS * 1.0e-9;		// Convert delta to seconds
 	_time->totalTime = (double)(currentTick - _time->startTick) * 1.0e-9; // Total time in seconds
 }
