@@ -200,6 +200,9 @@ af_bool_t AF_Window_Create(void* _appData) {
     // make current context
     glfwMakeContextCurrent(glfwWindow);
 
+    // This would disable the 120 FPS cap 
+    glfwSwapInterval(0); 
+
     /**/
     // Set the user ptr to that of type AF_Window struct.
     //_app data is a void* so care should be used and ensure its always cast to AF_AppData checked before used a
