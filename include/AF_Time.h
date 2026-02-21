@@ -51,7 +51,10 @@ void AF_Time_Update(AF_Time* _time);
 // ====================
 double AF_Time_GetTime(void);
 
-
+static inline AF_Time AF_Time_ZERO(void){
+	AF_Time time = { .startTick = 0};
+	return time;
+}
 
 #ifdef __cplusplus
 }

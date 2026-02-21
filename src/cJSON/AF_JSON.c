@@ -347,6 +347,11 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		// Entity
 		AF_Entity* entity = &_ecs->entities[i];
 
+		// only save entities that have the "has" flag set to true
+		if (AF_Component_GetHas(entity->flags) == AF_FALSE) {
+			continue;
+		}
+
 		// Entity json
 		cJSON* entityJSON = cJSON_AddObjectToObject(rootJSON, "entity");
 		uint32_t entityID = AF_ECS_GetID(entity->id_tag);

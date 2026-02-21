@@ -57,8 +57,10 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
 		AF_Log_Error("AF_AppData_ZERO: _appData is NULL");
         return;
     }
-    _appData->time = (AF_Time){ .startTick = 0};                // Zero-initialize the time struct
-    _appData->profileTimer = (AF_ProfileTimer){ .fps = 0};        // Zero-initialize the profile timer struct
+    
+    _appData->time = AF_Time_ZERO();  // Use the function to initialize the time struct
+    _appData->profileTimer = AF_ProfileTimer_ZERO();  // Use the function to initialize the profile timer
+
     _appData->window = AF_Window_ZERO("", 0, 0);
     _appData->input = AF_Input_ZERO();
     _appData->assets = AF_Assets_ZERO();

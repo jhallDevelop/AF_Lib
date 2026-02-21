@@ -49,7 +49,7 @@ typedef struct {
 // Return a zero-initialized AF_Window struct with the given title and dimensions
 // ====================
 inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth, uint16_t _windowHeight){
-    AF_Window window = (AF_Window){ .frameBufferWidth = 0};  // Zero-initialize the struct
+    AF_Window window = { .frameBufferWidth = 0};  // Zero-initialize the struct
     // assign the provided values
     window.windowWidth = _windowWidth;
     window.windowHeight = _windowHeight;

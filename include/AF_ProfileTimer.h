@@ -43,6 +43,11 @@ static inline void AF_ProfileTimer_Update(AF_ProfileTimer* _time, AF_FLOAT _delt
 	}
 }
 
+static inline AF_ProfileTimer AF_ProfileTimer_ZERO(void){
+	AF_ProfileTimer timer = { .fps = 0 };
+	return timer;
+}	
+
 #ifdef __cplusplus
 }
 #endif
