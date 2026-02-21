@@ -36,6 +36,7 @@ typedef struct {
     Mat4 modelMat;
 } AF_CTransform3D;
 
+
 AF_CTransform3D AF_CTransform3D_ZERO(void);
 AF_CTransform3D AF_CTransform3D_ADD(void);
 

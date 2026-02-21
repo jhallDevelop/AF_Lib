@@ -949,15 +949,11 @@ Loop through the entities and draw the meshes that have components attached
 */
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
 	
-	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
-		AF_Entity* entity = &_ecs->entities[i];
-		if(!AF_Component_GetHas(entity->flags)){
-			continue;
-		}
-
-		AF_CMesh* mesh = &_ecs->meshes[i];
+	for(uint32_t i = 0; i < _ecs->meshSparseSet.count; ++i){
+		
+		AF_CMesh* mesh = &_ecs->meshSparseSet.denseComponent[i];
 		// Skip if there is no rendering component
-		if(!AF_Component_GetHas(mesh->enabled)){ // || hasEnabled == AF_FALSE){
+		if(AF_Component_GetHas(mesh->enabled) == AF_FALSE){ // || hasEnabled == AF_FALSE){
 			continue;
 		}
 
@@ -976,8 +972,8 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 			}
 		}
 
-		
-		AF_CTransform3D* modelTransform = &_ecs->transforms[i];
+		uint32_t entityID = _ecs->meshSparseSet.denseToSparse[i];
+		AF_CTransform3D* modelTransform = &_ecs->transforms[entityID];
 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
 		//Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
@@ -986,7 +982,7 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		modelTransform->modelMat = modelMatColumn;
 
 		// Special case for terrain to bind heightmap texture
-		AF_CTerrain* terrain = &_ecs->terrains[i];
+		AF_CTerrain* terrain = &_ecs->terrains[entityID];
 		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){	
 			
 			AF_Renderer_DrawTerrain(i, terrain, &modelTransform->modelMat, _viewMat, _projMat, mesh, _ecs, _cameraPos, _lightingData, _shaderOverride, _renderingData);
@@ -1127,18 +1123,16 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 		AF_Log_Error("AF_Renderer_DrawMesh: Passed Null reference \n");
 		return;
 	}
-	
+
 	if(!AF_Component_GetHasEnabled(_mesh->enabled)){
 		return;
 	}
-	
+
 	// Setup shader
 	uint32_t shader = (_shaderOverride == NO_SHARED_SHADER) ? _mesh->shader.shaderID : _shaderOverride;
 	glUseProgram(shader);
 
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
-
-		
 		// This is only used for render-to-texture scenarios.
 		if(_mesh->material.diffuseTexture.type == AF_Texture_TypeMappings[AF_TEXTURE_TYPE_RENDER_TEXTURE].type){
 			// --- FEEDBACK LOOP DETECTION ---
@@ -1476,8 +1470,8 @@ void AF_Renderer_DestroyRenderer(AF_RenderingData* _renderingData, AF_ECS* _ecs)
 		return;
 	}
 	// Destroy the meshes
-    for(uint32_t i  = 0; i < _ecs->entitiesCount; i++){
-		AF_CMesh* meshComponent = &_ecs->meshes[i];
+    for(uint32_t i  = 0; i < _ecs->meshSparseSet.count; i++){
+		AF_CMesh* meshComponent = &_ecs->meshSparseSet.denseComponent[i];
 		if(meshComponent == NULL){
 			AF_Log_Error("AF_Renderer_DestroyRenderer: MeshComponent is NULL\n");
 			continue;

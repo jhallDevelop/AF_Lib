@@ -73,8 +73,26 @@ typedef struct AF_CMesh {
 	uint32_t instanceVBO;
 } AF_CMesh;
 
+// ====================
+// AF_CMesh_SparseSet
+// Sparse set for the Mesh component
+// ====================
+typedef struct AF_CMesh_SparseSet {
+    // List of entity IDs that have this component, indexed by the dense array index
+    uint32_t sparseEntityIDs[AF_ECS_TOTAL_ENTITIES]; // Maps sparse index to entity ID
+
+    // Dense array of components for iteration
+    AF_CMesh denseComponent[AF_ECS_TOTAL_ENTITIES];  // Maps dense index to entity ID
+
+    // reverse mapping from entity ID to dense index for O(1) access
+    uint32_t denseToSparse[AF_ECS_TOTAL_ENTITIES]; // Maps dense index to sparse index
+    uint32_t count; // Number of active components
+} AF_CMesh_SparseSet;
+
+
 AF_CMesh AF_CMesh_ZERO(void);
 AF_CMesh AF_CMesh_ADD(void);
+
 
 #ifdef __cplusplus
 }

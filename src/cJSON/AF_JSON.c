@@ -9,7 +9,7 @@ void AF_JSON_JsonToRigidbody(cJSON* _rigidbodyJSON, AF_C3DRigidbody* _rigidbody)
 void AF_JSON_JsonToCollider(cJSON* _colliderJSON, AF_CCollider* _collider);
 void AF_JSON_JsonToAnimation(cJSON* _animationJSON, AF_CAnimation* _animation);
 void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera);
-void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh);
+void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_ECS* _ecs, uint32_t _entityID);
 void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain);
 void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text);
 void AF_JSON_JsonToAudioSource(cJSON* _audioSourceJSON, AF_CAudioSource* _audioSource);
@@ -197,8 +197,9 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 
 		// Create a new entity in the ECS
 		AF_ECS* ecs = &_appData->ecs;
-		AF_Entity* newEntity = &_appData->ecs.entities[ecs->currentEntity];
 		uint32_t id = cJSON_GetObjectItem(entityJSON, "id")->valueint;
+		AF_Entity* newEntity = &_appData->ecs.entities[id];
+		
 		uint32_t tagID = cJSON_GetObjectItem(entityJSON, "tag")->valueint;
 		newEntity->id_tag = AF_ECS_AssignID(newEntity->id_tag, id); // Get ID tag from JSON
 		newEntity->id_tag = AF_ECS_AssignTag(newEntity->id_tag, tagID); // Get tag from JSON
@@ -207,46 +208,45 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		newEntity->flags = AF_Component_SetHas(newEntity->flags, cJSON_GetObjectItem(entityJSON, "has")->valueint); // Get has flag from JSON
 
 		if (AF_Component_GetHas(newEntity->flags) == AF_FALSE) {
-			//AF_Log("AF_JSON_LoadJson: Entity %d is not enabled, skipping.\n", ecs->currentEntity);
 			continue; // Skip entities that are not enabled
 		}
 
 		// Transform Component
 		cJSON* transformJSON = cJSON_GetObjectItem(entityJSON, "transform");
-		AF_CTransform3D* transform = &ecs->transforms[ecs->currentEntity]; // Initialize with default values
+		AF_CTransform3D* transform = &ecs->transforms[id]; // Initialize with default values
 		AF_JSON_JsonToTransform(transformJSON, transform);
 
 		// Sprite Component
 		cJSON* spriteJSON = cJSON_GetObjectItem(entityJSON, "sprite");
-		AF_JSON_JsonToSprite(spriteJSON, &ecs->sprites[ecs->currentEntity]);
+		AF_JSON_JsonToSprite(spriteJSON, &ecs->sprites[id]);
 
 		// Rigidbody Component
 		cJSON* rigidbodyJSON = cJSON_GetObjectItem(entityJSON, "rigidbody");
-		AF_JSON_JsonToRigidbody(rigidbodyJSON, &ecs->rigidbodies[ecs->currentEntity]);
+		AF_JSON_JsonToRigidbody(rigidbodyJSON, &ecs->rigidbodies[id]);
 
 		// Collider Component
 		cJSON* colliderJSON = cJSON_GetObjectItem(entityJSON, "collider");
-		AF_JSON_JsonToCollider(colliderJSON, &ecs->colliders[ecs->currentEntity]);
+		AF_JSON_JsonToCollider(colliderJSON, &ecs->colliders[id]);
 
 		// Animation Component
 		cJSON* animationJSON = cJSON_GetObjectItem(entityJSON, "animation");
-		AF_JSON_JsonToAnimation(animationJSON, &ecs->animations[ecs->currentEntity]);
+		AF_JSON_JsonToAnimation(animationJSON, &ecs->animations[id]);
 
 		// Camera Component
 		cJSON* cameraJSON = cJSON_GetObjectItem(entityJSON, "camera");
-		AF_JSON_JsonToCamera(cameraJSON, &ecs->cameras[ecs->currentEntity]);
+		AF_JSON_JsonToCamera(cameraJSON, &ecs->cameras[id]);
 
 		// Mesh Component
 		cJSON* meshJSON = cJSON_GetObjectItem(entityJSON, "mesh");
-		AF_JSON_JsonToMesh(meshJSON, &ecs->meshes[ecs->currentEntity]);
+		AF_JSON_JsonToMesh(meshJSON, ecs, id); // Get pointer to mesh component for current entity
 
 		// Terrain Component
 		cJSON* terrainJSON = cJSON_GetObjectItem(entityJSON, "terrain");
-		AF_JSON_JsonToTerrain(terrainJSON, &ecs->terrains[ecs->currentEntity]);
+		AF_JSON_JsonToTerrain(terrainJSON, &ecs->terrains[id]);
 
 		// Text Component
 		cJSON* textJSON = cJSON_GetObjectItem(entityJSON, "text");
-		AF_JSON_JsonToText(textJSON, &ecs->texts[ecs->currentEntity]);
+		AF_JSON_JsonToText(textJSON, &ecs->texts[id]);
 
 		// Audio Source Component
 		cJSON* audioSourceJSON = cJSON_GetObjectItem(entityJSON, "audioSource");
@@ -270,7 +270,7 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 
 		// Editor Data Component
 		cJSON* editorDataJSON = cJSON_GetObjectItem(entityJSON, "editorData");
-		AF_JSON_JsonToEditorData(editorDataJSON, &ecs->editorData[ecs->currentEntity]);
+		AF_JSON_JsonToEditorData(editorDataJSON, &ecs->editorData[id]);
 
 		// Scripts Component
 		
@@ -279,14 +279,14 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 			snprintf(scriptJSONName, AF_MAX_PATH_CHAR_SIZE, "%s%i", AF_JSON_SCRIPT_JSON_NAME_PREFIX, i);
 			cJSON* scriptsJSON = cJSON_GetObjectItem(entityJSON, scriptJSONName);
 			// We use a flat array so need to stride through to get an index
-			uint32_t scriptID = (ecs->currentEntity * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + i;
+			uint32_t scriptID = (id * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + i;
 			AF_JSON_JsonToScripts(scriptsJSON, &ecs->scripts[scriptID]);
 		}
 		
 
 		// Light Component
 		cJSON* lightJSON = cJSON_GetObjectItem(entityJSON, "light");
-		AF_JSON_JsonToLight(lightJSON, &ecs->lights[ecs->currentEntity]);
+		AF_JSON_JsonToLight(lightJSON, &ecs->lights[id]);
 
 
 		ecs->currentEntity++; // Increment entity index for each entity found
@@ -399,9 +399,9 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		cJSON_AddItemToObject(entityJSON, "camera", cameraJSON);
 
 		// Mesh
-		AF_CMesh* mesh = &_ecs->meshes[entityID];		// mesh component 	
+		AF_CMesh* mesh = AF_ECS_GetMeshComponent(_ecs, entityID);
 		char meshTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* meshJSON = AF_JSON_MeshToJson(&_ecs->meshes[entityID]);
+		cJSON* meshJSON = AF_JSON_MeshToJson(mesh);
 		cJSON_AddItemToObject(entityJSON, "mesh", meshJSON);
 
 		// Terrain
@@ -491,9 +491,15 @@ void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform)
 		return;
 	}
 
+	*_transform = AF_CTransform3D_ZERO(); // Initialize with default values
+
 	// Has
 	_transform->enabled = AF_Component_SetHas(_transform->enabled, cJSON_GetObjectItem(_transformJSON, "has")->valueint);
 
+	if(AF_Component_GetHas(_transform->enabled) == AF_FALSE) {
+
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
 	// Enabled
 	_transform->enabled = AF_Component_SetEnabled(_transform->enabled, cJSON_GetObjectItem(_transformJSON, "enabled")->valueint);
 
@@ -546,9 +552,15 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 		AF_Log_Error("AF_JSON_JsonToSprite: Invalid JSON or sprite pointer.\n");
 		return;
 	}
+	*_sprite = AF_CSprite_ZERO(); // Initialize with default values
 
 	// Has
 	_sprite->enabled = AF_Component_SetHas(_sprite->enabled, cJSON_GetObjectItem(_spriteJSON, "has")->valueint);
+
+	if(AF_Component_GetHas(_sprite->enabled) == AF_FALSE) {
+
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
 
 	// Enabled
 	_sprite->enabled = AF_Component_SetEnabled(_sprite->enabled, cJSON_GetObjectItem(_spriteJSON, "enabled")->valueint);
@@ -747,8 +759,15 @@ void AF_JSON_JsonToRigidbody(cJSON* _rigidbodyJSON, AF_C3DRigidbody* _rigidbody)
 		return;
 	}
 
+	*_rigidbody = AF_C3DRigidbody_ZERO(); // Initialize with default values
+
 	// Has
 	_rigidbody->enabled = AF_Component_SetHas(_rigidbody->enabled, cJSON_GetObjectItem(_rigidbodyJSON, "has")->valueint);
+
+	if(AF_Component_GetHas(_rigidbody->enabled) == AF_FALSE) {
+
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
 
 	// Enabled
 	_rigidbody->enabled = AF_Component_SetEnabled(_rigidbody->enabled, cJSON_GetObjectItem(_rigidbodyJSON, "enabled")->valueint);
@@ -837,8 +856,16 @@ void AF_JSON_JsonToCollider(cJSON* _colliderJSON, AF_CCollider* _collider) {
 		return;
 	}
 
+	*_collider = AF_CCollider_ZERO(); // Initialize with default values
+
 	// Has
 	_collider->enabled = AF_Component_SetHas(_collider->enabled, cJSON_GetObjectItem(_colliderJSON, "has")->valueint);
+
+	if(AF_Component_GetHas(_collider->enabled) == AF_FALSE) {
+
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
+
 	// Enabled
 	_collider->enabled = AF_Component_SetEnabled(_collider->enabled, cJSON_GetObjectItem(_colliderJSON, "enabled")->valueint);
 	// Type
@@ -881,8 +908,18 @@ void AF_JSON_JsonToAnimation(cJSON* _animationJSON, AF_CAnimation* _animation) {
 		AF_Log_Error("AF_JSON_JsonToAnimation: Invalid JSON or animation pointer.\n");
 		return;
 	}
+
+	*_animation = AF_CAnimation_ZERO(); // Initialize with default values
+
 	// Has
 	_animation->enabled = AF_Component_SetHas(_animation->enabled, cJSON_GetObjectItem(_animationJSON, "has")->valueint);
+
+	if(AF_Component_GetHas(_animation->enabled) == AF_FALSE) {
+
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
+
+
 	// Enabled
 	_animation->enabled = AF_Component_SetEnabled(_animation->enabled, cJSON_GetObjectItem(_animationJSON, "enabled")->valueint);
 	// Animation Speed
@@ -905,8 +942,15 @@ void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera) {
 		return;
 	}
 
+	*_camera = AF_CCamera_ZERO(); // Initialize with default values
+
 	// Has
 	_camera->enabled = AF_Component_SetHas(_camera->enabled, cJSON_GetObjectItem(_cameraJSON, "has")->valueint);
+
+	if(AF_Component_GetHas(_camera->enabled) == AF_FALSE) {
+
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
 
 	// Enabled
 	_camera->enabled = AF_Component_SetEnabled(_camera->enabled, cJSON_GetObjectItem(_cameraJSON, "enabled")->valueint);
@@ -989,19 +1033,35 @@ void AF_JSON_JsonToCamera(cJSON* _cameraJSON, AF_CCamera* _camera) {
 }
 
 // mesh
-void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_CMesh* _mesh) {
-    if (_meshJSON == NULL || _mesh == NULL) {
-        AF_Log_Error("AF_JSON_JsonToMesh: Invalid JSON or mesh pointer.\n");
+void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_ECS* _ecs, uint32_t _entityID) {
+    if (_meshJSON == NULL) {
+        AF_Log_Error("AF_JSON_JsonToMesh: Invalid JSON\n");
         return;
     }
 
     cJSON *item = NULL; // Re-usable pointer for getting items
+
+	// check if this json has a mesh component, if not, skip it
+	item = cJSON_GetObjectItem(_meshJSON, "has");
+	if (item == NULL || !cJSON_IsNumber(item) || item->valueint == 0) {
+		return; // No mesh component, skip
+	}
+
+	// we have a mesh component, let's parse it and add it to the ECS
+	// create a new mesh component for this entity
+	AF_Log("AF_JSON_JsonToMesh: Adding mesh component to entity %u\n", _entityID);
+	AF_CMesh* _mesh = AF_ECS_AddMeshComponent(_ecs, _entityID);
+
 
     // Has
     item = cJSON_GetObjectItem(_meshJSON, "has");
     if (item && cJSON_IsNumber(item)) {
         _mesh->enabled = AF_Component_SetHas(_mesh->enabled, item->valueint);
     }
+
+	if(AF_Component_GetHas(_mesh->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
 
     // Enabled
     item = cJSON_GetObjectItem(_meshJSON, "enabled");
@@ -1246,6 +1306,8 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
         return;
     }
 
+	*_terrain = AF_CTerrain_ZERO(); // Initialize with default values
+
     cJSON *item = NULL; // Re-usable pointer for getting items
 
     // Has
@@ -1253,6 +1315,10 @@ void AF_JSON_JsonToTerrain(cJSON* _terrainJSON, AF_CTerrain* _terrain) {
     if (item && cJSON_IsNumber(item)) {
         _terrain->enabled = AF_Component_SetHas(_terrain->enabled, item->valueint);
     }
+
+	if(AF_Component_GetHas(_terrain->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
 
     // Enabled
     item = cJSON_GetObjectItem(_terrainJSON, "enabled");
@@ -1396,12 +1462,18 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 		AF_Log_Error("AF_JSON_JsonToText: Invalid JSON or text pointer.\n");
 		return;
 	}
+
+	*_text = AF_CText_ZERO(); // Initialize with default values
 	
 	// Has
 	cJSON* hasJSON = cJSON_GetObjectItem(_textJSON, "has");
 	if (hasJSON != NULL) {
 		_text->enabled = AF_Component_SetHas(_text->enabled, hasJSON->valueint);
 	}
+
+	if(AF_Component_GetHas(_text->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}	
 	
 	// Enabled
 	cJSON* enabledJSON = cJSON_GetObjectItem(_textJSON, "enabled");
@@ -1514,8 +1586,16 @@ void AF_JSON_JsonToAudioSource(cJSON* _audioSourceJSON, AF_CAudioSource* _audioS
 		AF_Log_Error("AF_JSON_JsonToAudioSource: Invalid JSON or audio source pointer.\n");
 		return;
 	}
+
+	*_audioSource = AF_CAudioSource_ZERO(); // Initialize with default values
+
 	// Has
 	_audioSource->enabled = AF_Component_SetHas(_audioSource->enabled, cJSON_GetObjectItem(_audioSourceJSON, "has")->valueint);
+	
+	if(AF_Component_GetHas(_audioSource->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
+	
 	// Enabled
 	_audioSource->enabled = AF_Component_SetEnabled(_audioSource->enabled, cJSON_GetObjectItem(_audioSourceJSON, "enabled")->valueint);
 	// Clip skipp for now
@@ -1534,8 +1614,16 @@ void AF_JSON_JsonToPlayerData(cJSON* _playerDataJSON, AF_CPlayerData* _playerDat
 		AF_Log_Error("AF_JSON_JsonToPlayerData: Invalid JSON or player data pointer.\n");
 		return;
 	}
+	
+	*_playerData = AF_CPlayerData_ZERO(); // Initialize with default values
+	
 	// Has
 	_playerData->enabled = AF_Component_SetHas(_playerData->enabled, cJSON_GetObjectItem(_playerDataJSON, "has")->valueint);
+	
+	if(AF_Component_GetHas(_playerData->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
+
 	// Enabled
 	_playerData->enabled = AF_Component_SetEnabled(_playerData->enabled, cJSON_GetObjectItem(_playerDataJSON, "enabled")->valueint);
 	// isHuman
@@ -1586,11 +1674,17 @@ void AF_JSON_JsonToSkeletalAnimation(cJSON* _skeletalAnimationJSON, AF_CSkeletal
 		return;
 	}
 
+	*_skeletalAnimation = AF_CSkeletalAnimation_ZERO(); // Initialize with default values
+
 	// Has
 	_skeletalAnimation->enabled = AF_Component_SetHas(_skeletalAnimation->enabled, cJSON_GetObjectItem(_skeletalAnimationJSON, "has")->valueint);
+	
+	if(AF_Component_GetHas(_skeletalAnimation->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}	
+	
 	// Enabled
 	_skeletalAnimation->enabled = AF_Component_SetEnabled(_skeletalAnimation->enabled, cJSON_GetObjectItem(_skeletalAnimationJSON, "enabled")->valueint);
-
 
 	// Animation Paths
 	cJSON* animIdlePathJSON = cJSON_GetObjectItem(_skeletalAnimationJSON, "animIdlePath");
@@ -1631,8 +1725,16 @@ void AF_JSON_JsonToAIBehaviour(cJSON* _aiBehaviourJSON, AF_CAI_Behaviour* _aiBeh
 		AF_Log_Error("AF_JSON_JsonToAIBehaviour: Invalid JSON or AI Behaviour pointer.\n");
 		return;
 	}
+
+	*_aiBehaviour = AF_CAI_Behaviour_ZERO(); // Initialize with default values
+
 	// Has
 	_aiBehaviour->enabled = AF_Component_SetHas(_aiBehaviour->enabled, cJSON_GetObjectItem(_aiBehaviourJSON, "has")->valueint);
+	
+	if(AF_Component_GetHas(_aiBehaviour->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
+	
 	// Enabled
 	_aiBehaviour->enabled = AF_Component_SetEnabled(_aiBehaviour->enabled, cJSON_GetObjectItem(_aiBehaviourJSON, "enabled")->valueint);
 
@@ -1650,6 +1752,8 @@ void AF_JSON_JsonToInputController(cJSON* _inputControllerJSON, AF_CInputControl
 		return;
 	}
 
+	*_inputController = AF_CInputController_ZERO(); // Initialize with default values
+
 	// not implementing as this is depricated
 }
 
@@ -1659,10 +1763,18 @@ void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
 		AF_Log_Error("AF_JSON_JsonToScripts: Invalid JSON or script pointer.\n");
 		return;
 	}
+
+	*_scripts = AF_CScript_ZERO(); // Initialize with default values
+
 	// Has
 	uint32_t jsonHasValue = cJSON_GetObjectItem(_scriptsJSON, "has")->valueint;
 	if(jsonHasValue == 1){
 		_scripts->enabled = AF_Component_SetHas(_scripts->enabled, AF_TRUE);
+	}
+
+	if(AF_Component_GetHas(_scripts->enabled) == AF_FALSE) {
+		//AF_Log_Warn("AF_JSON_JsonToScripts: Script component is not enabled, skipping further processing.\n");
+		return; // If the component is not enabled, we can skip the rest of the data
 	}
 	
 	// Enabled
@@ -1710,12 +1822,22 @@ void AF_JSON_JsonToLight(cJSON* _lightJSON, AF_CLight* _light) {
 		AF_Log_Error("AF_JSON_JsonToLight: Invalid JSON or light pointer.\n");
 		return;
 	}
+
+	*_light = AF_CLight_ZERO(); // Initialize with default values
+
 	// Has
 	_light->enabled = AF_Component_SetHas(_light->enabled, cJSON_GetObjectItem(_lightJSON, "has")->valueint);
+
+	if(AF_Component_GetHas(_light->enabled) == AF_FALSE) {
+		return; // If the component is not enabled, we can skip the rest of the data
+	}
+
 	// Enabled
 	_light->enabled = AF_Component_SetEnabled(_light->enabled, cJSON_GetObjectItem(_lightJSON, "enabled")->valueint);
+
 	// Light Type
 	_light->lightType = (enum AF_Light_Type_e)cJSON_GetObjectItem(_lightJSON, "lightType")->valueint;
+
 	// Direction
 	cJSON* directionJSON = cJSON_GetObjectItem(_lightJSON, "direction");
 	if (directionJSON != NULL) {
@@ -1805,6 +1927,8 @@ void AF_JSON_JsonToLight(cJSON* _lightJSON, AF_CLight* _light) {
 // editor data component
 void AF_JSON_JsonToEditorData(cJSON* _editorDataJSON, AF_CEditorData* _editorData) {
 
+	*_editorData = AF_CEditorData_ZERO(); // Initialize with default values
+
 	if (_editorDataJSON != NULL) {
 		// Populate editor data from JSON
 		_editorData->enabled = AF_Component_SetEnabled(_editorData->enabled, cJSON_GetObjectItem(_editorDataJSON, "enabled")->valueint);
@@ -1821,164 +1945,172 @@ void AF_JSON_JsonToEditorData(cJSON* _editorDataJSON, AF_CEditorData* _editorDat
 // COMPONENTS TO JSON CONVERTERS
 
 cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _transform) {
-	cJSON* transformJSON = cJSON_CreateObject();
+	cJSON* returnJSON = cJSON_CreateObject();
 
 	// Has
 	af_bool_t has = AF_Component_GetHas(_transform->enabled);
-	cJSON_AddNumberToObject(transformJSON, "has", has);
+	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// Enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_transform->enabled);
-	cJSON_AddNumberToObject(transformJSON, "enabled", enabled);
+	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
 
 	// Pos
 	Vec3 pos = _transform->pos;
-	AF_JSON_Vec3ToJson("pos", &pos, transformJSON);
+	AF_JSON_Vec3ToJson("pos", &pos, returnJSON);
 
 	
 	// Rot
 	Vec4 rot = _transform->rot;
-	AF_JSON_Vec4ToJson("rot", &rot, transformJSON);
+	AF_JSON_Vec4ToJson("rot", &rot, returnJSON);
 
 
 	// Scale
 	Vec3 scale = _transform->scale;
-	AF_JSON_Vec3ToJson("scale", &scale, transformJSON);
+	AF_JSON_Vec3ToJson("scale", &scale, returnJSON);
 
 
 	// Model Mat
 	Mat4 modelMat = _transform->modelMat;
-	AF_JSON_Mat4ToJson("modelMatrix", &modelMat, transformJSON);
+	AF_JSON_Mat4ToJson("modelMatrix", &modelMat, returnJSON);
 
-	return transformJSON;
+	return returnJSON;
 }
 
 cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	// sprite json
-	cJSON* spriteJSON = cJSON_CreateObject();
+	cJSON* returnJSON = cJSON_CreateObject();
 
 	// has
 	af_bool_t has = AF_Component_GetHas(_sprite->enabled);
-	cJSON_AddNumberToObject(spriteJSON, "has", has);
+	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_sprite->enabled);
-	cJSON_AddNumberToObject(spriteJSON, "enabled", enabled);
+	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
 
 	// loop
 	af_bool_t loop = _sprite->loop;
-	cJSON_AddNumberToObject(spriteJSON, "loop", loop);
+	cJSON_AddNumberToObject(returnJSON, "loop", loop);
 
 	// current frame
 	char currentFrame = _sprite->currentFrame;
-	cJSON_AddNumberToObject(spriteJSON, "currentFrame", currentFrame);
+	cJSON_AddNumberToObject(returnJSON, "currentFrame", currentFrame);
 
 	// animation frames
 	char animtionFrames = _sprite->animationFrames;
-	cJSON_AddNumberToObject(spriteJSON, "animationFrames", animtionFrames);
+	cJSON_AddNumberToObject(returnJSON, "animationFrames", animtionFrames);
 
 	// current frame time
 	AF_FLOAT currentFrameTime = _sprite->currentFrameTime;
-	cJSON_AddNumberToObject(spriteJSON, "currentFrameTime", currentFrameTime);
+	cJSON_AddNumberToObject(returnJSON, "currentFrameTime", currentFrameTime);
 
 	// next frame time
 	AF_FLOAT nextFrameTime = _sprite->nextFrameTime;     // 4 bytes
-	cJSON_AddNumberToObject(spriteJSON, "nextFrameTime", nextFrameTime);
+	cJSON_AddNumberToObject(returnJSON, "nextFrameTime", nextFrameTime);
 
 	// animation speed
 	AF_FLOAT animationSpeed = _sprite->animationSpeed;    // 4 bytes
-	cJSON_AddNumberToObject(spriteJSON, "animationSpeed", animationSpeed);
+	cJSON_AddNumberToObject(returnJSON, "animationSpeed", animationSpeed);
 
 	// sprite pos
 	Vec2 spritePos = _sprite->spritePos;		    // 8 bytes
-	AF_JSON_Vec2ToJson("spritePos", &spritePos, spriteJSON);
+	AF_JSON_Vec2ToJson("spritePos", &spritePos, returnJSON);
 
 	// sprite size
 	Vec2 spriteSize = _sprite->spriteSize;    	// size of sprite in pixels
-	AF_JSON_Vec2ToJson("spriteSize", &spriteSize, spriteJSON);
+	AF_JSON_Vec2ToJson("spriteSize", &spriteSize, returnJSON);
 
 	// sprite frame pos
 	Vec2 spriteFramePos = _sprite->spriteFramePos;    	// frame pos of sprite in pixels
-	AF_JSON_Vec2ToJson("spriteFramePos", &spriteFramePos, spriteJSON);
+	AF_JSON_Vec2ToJson("spriteFramePos", &spriteFramePos, returnJSON);
 
 	// sprite frame size
 	Vec2 spriteFrameSize = _sprite->spriteFrameSize;    	// frame size of sprite in pixels
-	AF_JSON_Vec2ToJson("spriteFrameSize", &spriteFrameSize, spriteJSON);
+	AF_JSON_Vec2ToJson("spriteFrameSize", &spriteFrameSize, returnJSON);
 
 
 	// sprite scale
 	Vec2 spriteScale = _sprite->spriteScale;		// transform scale
-	AF_JSON_Vec2ToJson("spriteScale", &spriteScale, spriteJSON);
+	AF_JSON_Vec2ToJson("spriteScale", &spriteScale, returnJSON);
 
 	// sprite rotations
 	float spriteRotation = _sprite->spriteRotation;	// rotation
-	cJSON_AddNumberToObject(spriteJSON, "spriteRotation", spriteRotation);
+	cJSON_AddNumberToObject(returnJSON, "spriteRotation", spriteRotation);
 
 	// flip
 	af_bool_t flipX = _sprite->flipX;
-	cJSON_AddNumberToObject(spriteJSON, "flipX", flipX);
+	cJSON_AddNumberToObject(returnJSON, "flipX", flipX);
 	af_bool_t flipY = _sprite->flipY;
-	cJSON_AddNumberToObject(spriteJSON, "flipY", flipY);
+	cJSON_AddNumberToObject(returnJSON, "flipY", flipY);
 
 	// sprite sheet size
 	Vec2 spriteSheetSize = _sprite->spriteSheetSize;    // 8 bytes
-	AF_JSON_Vec2ToJson("spriteSheetSize", &spriteSheetSize, spriteJSON);
+	AF_JSON_Vec2ToJson("spriteSheetSize", &spriteSheetSize, returnJSON);
 
 	Vec2 spriteSheetPos = _sprite->spriteSheetPos;      // 8 bytes
-	AF_JSON_Vec2ToJson("spriteSheetPos", &spriteSheetPos, spriteJSON);
+	AF_JSON_Vec2ToJson("spriteSheetPos", &spriteSheetPos, returnJSON);
 
 	// paddingPixels
-	cJSON_AddNumberToObject(spriteJSON, "paddingPixels", _sprite->paddingPixels);
+	cJSON_AddNumberToObject(returnJSON, "paddingPixels", _sprite->paddingPixels);
 
 	// atlasTextureSize
-	cJSON_AddNumberToObject(spriteJSON, "atlasTextureSize", _sprite->atlasTextureSize);
+	cJSON_AddNumberToObject(returnJSON, "atlasTextureSize", _sprite->atlasTextureSize);
 
 	// texturesPerRow
-	cJSON_AddNumberToObject(spriteJSON, "texturesPerRow", _sprite->texturesPerRow);
+	cJSON_AddNumberToObject(returnJSON, "texturesPerRow", _sprite->texturesPerRow);
 
 	// atlasIndex
-	cJSON* atlasIndexArr = cJSON_AddArrayToObject(spriteJSON, "atlasIndex");
+	cJSON* atlasIndexArr = cJSON_AddArrayToObject(returnJSON, "atlasIndex");
 	cJSON_AddItemToArray(atlasIndexArr, cJSON_CreateNumber(_sprite->atlasIndex[0]));
 	cJSON_AddItemToArray(atlasIndexArr, cJSON_CreateNumber(_sprite->atlasIndex[1]));
 
 	// sprite color (0.0 to 1.0 range)
-	AF_JSON_Vec4ToJson("spriteColor", (Vec4*)_sprite->spriteColor, spriteJSON);
+	AF_JSON_Vec4ToJson("spriteColor", (Vec4*)_sprite->spriteColor, returnJSON);
 
 	// sprite path
 	const char* spritePath = _sprite->spriteMesh.material.diffuseTexture.path;
-	cJSON_AddStringToObject(spriteJSON, "spriteTexturePath", spritePath);
+	cJSON_AddStringToObject(returnJSON, "spriteTexturePath", spritePath);
 
 	// save the sprite mesh path
 	const char* spriteMeshPath = _sprite->spriteMesh.meshPath;
-	cJSON_AddStringToObject(spriteJSON, "spriteMeshPath", spriteMeshPath);
+	cJSON_AddStringToObject(returnJSON, "spriteMeshPath", spriteMeshPath);
 
 	// save the sprite shader name
 	const char* spriteShaderName = _sprite->spriteMesh.shader.name;
-	cJSON_AddStringToObject(spriteJSON, "spriteShaderName", spriteShaderName);	
+	cJSON_AddStringToObject(returnJSON, "spriteShaderName", spriteShaderName);	
 
 	// save the sprite shader paths
 	const char* spriteShaderVertPath = _sprite->spriteMesh.shader.vertPath;
-	cJSON_AddStringToObject(spriteJSON, "spriteShaderVertPath", spriteShaderVertPath);
+	cJSON_AddStringToObject(returnJSON, "spriteShaderVertPath", spriteShaderVertPath);
 	const char* spriteShaderFragPath = _sprite->spriteMesh.shader.fragPath;
-	cJSON_AddStringToObject(spriteJSON, "spriteShaderFragPath", spriteShaderFragPath);
+	cJSON_AddStringToObject(returnJSON, "spriteShaderFragPath", spriteShaderFragPath);
 
 	// sprite data
 	void* spriteData = _sprite->spriteData; // special ptr for sprite data to be cast when known
-	cJSON_AddNullToObject(spriteJSON, "spriteData");
+	cJSON_AddNullToObject(returnJSON, "spriteData");
 
 	// is playing
 	af_bool_t isPlaying = _sprite->isPlaying;
-	cJSON_AddNumberToObject(spriteJSON, "isPlaying", isPlaying);
+	cJSON_AddNumberToObject(returnJSON, "isPlaying", isPlaying);
 
 	// filtering
 	af_bool_t filtering = _sprite->filtering;
-	cJSON_AddNumberToObject(spriteJSON, "filtering", filtering);
+	cJSON_AddNumberToObject(returnJSON, "filtering", filtering);
 
 
 	// Save the sprite mesh data
 	
 
-	return spriteJSON;
+	return returnJSON;
 }
 
 cJSON* AF_JSON_RigidbodyToJson(AF_C3DRigidbody* _component) {
@@ -1987,6 +2119,10 @@ cJSON* AF_JSON_RigidbodyToJson(AF_C3DRigidbody* _component) {
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
@@ -2032,6 +2168,10 @@ cJSON* AF_JSON_ColliderToJson(AF_CCollider* _component) {
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2066,6 +2206,13 @@ cJSON* AF_JSON_AnimationToJson(AF_CAnimation* _component) {
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2095,6 +2242,10 @@ cJSON* AF_JSON_CameraToJson(AF_CCamera* _component) {
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
@@ -2161,9 +2312,19 @@ cJSON* AF_JSON_CameraToJson(AF_CCamera* _component) {
 cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
     cJSON* returnJSON = cJSON_CreateObject();
 
+	AF_CMesh defaultMesh = AF_CMesh_ZERO();
+	if(_component == NULL) {
+		// just make mesh an empty object if the component is null to avoid crashes and allow for error checking when deserializing
+		_component = &defaultMesh;
+	}
+
     // has
     af_bool_t has = AF_Component_GetHas(_component->enabled);
     cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
     // enabled
     af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
@@ -2298,6 +2459,10 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
     af_bool_t has = AF_Component_GetHas(_component->enabled);
     cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
     // enabled
     af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
     cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2388,6 +2553,10 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
     af_bool_t has = AF_Component_GetHas(_component->enabled);
     cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
     // enabled
     af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
     cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2447,6 +2616,10 @@ cJSON* AF_JSON_AudioSourceToJson(AF_CAudioSource* _component) {
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2475,6 +2648,10 @@ cJSON* AF_JSON_PlayerDataToJson(AF_CPlayerData* _component) {
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
@@ -2531,6 +2708,10 @@ cJSON* AF_JSON_SkeletalAnimationToJson(AF_CSkeletalAnimation* _component) {
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
@@ -2596,6 +2777,10 @@ cJSON* AF_JSON_AIBehaviourToJson(AF_CAI_Behaviour* _component) {
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2636,6 +2821,10 @@ cJSON* AF_JSON_InputControllerToJson(AF_CInputController* _component) {
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
 
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
+
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
@@ -2658,6 +2847,10 @@ cJSON* AF_JSON_ScriptsToJson(AF_CScript* _component) {
 		cJSON_AddNumberToObject(returnJSON, "has", 1);
 	} else{
 		cJSON_AddNumberToObject(returnJSON, "has", 0);
+	}
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
 	}
 	
 
@@ -2695,6 +2888,10 @@ cJSON* AF_JSON_LightToJson(AF_CLight* _component) {
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
+
+	if(has == AF_FALSE) {
+		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
+	}
 
 	// enabled
 	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);

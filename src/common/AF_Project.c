@@ -84,8 +84,6 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             if(fabsf(pitchInput) < 0.9999f){ // avoid gimbal lock singularity
                 cam->yaw = AF_Math_Degrees(atan2f(-front.x, -front.z)); 
             }
-
-
         }
     }
 
@@ -93,23 +91,36 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
     _appData->assets = AF_Assets_ZERO();
 
     // Load Reload meshes
-    for (uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i) {
+    for (uint32_t i = 0; i < _appData->ecs.meshSparseSet.count; ++i) {
         // Load Mesh
-        af_bool_t hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
-        if (hasMesh == AF_TRUE) {
-            
-            // init the mesh
-            AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
-            af_bool_t meshLoadSuccess = AF_MeshLoad_InitMesh(&_appData->assets, meshComponent, meshComponent->meshPath);
-            if (meshComponent->material.diffuseTexture.path[0] != '\0') {
-                 AF_TextureLoader_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
-            }
-            //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
-            if (meshLoadSuccess == false) {
-                AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", _appData->ecs.meshes[i].meshPath);
-                continue;
-            }
+        AF_CMesh* meshComponent = &_appData->ecs.meshSparseSet.denseComponent[i];
+        if(meshComponent == NULL){
+             AF_Log_Error("AF_Project_SyncEntities: Failed to get mesh component for entity %u\n", i);
+             continue;
         }
+        if(AF_Component_GetHas(meshComponent->enabled) == AF_FALSE){
+            continue;
+        }
+        
+        af_bool_t meshLoadSuccess = AF_MeshLoad_InitMesh(&_appData->assets, meshComponent, meshComponent->meshPath);
+        if(meshLoadSuccess == AF_FALSE){
+            AF_Log_Error("AF_Project_SyncEntities: Failed to load mesh for entity %u from path %s\n", i, meshComponent->meshPath);
+            continue;
+        }
+        if (meshComponent->material.diffuseTexture.path[0] != '\0') {
+                AF_TextureLoader_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
+        }
+        AF_Log("AF_Project_SyncEntities: Loaded mesh for entity %u from path %s\n", i, meshComponent->meshPath);
+        //af_bool_t meshLoadSuccess = AF_MeshLoad_Load(&_appData->assets, &_appData->ecs.meshes[i], _appData->ecs.meshes[i].meshPath);
+        if (meshLoadSuccess == false) {
+            AF_Log_Error("AF_Project_Load: Failed to load mesh %s\n", meshComponent->meshPath);
+            continue;
+        }
+        
+    }
+    
+    // Other components to sync:
+    for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
 
         // Terrain textures
         af_bool_t hasTerrain = AF_Component_GetHas(_appData->ecs.terrains[i].enabled);
@@ -118,7 +129,19 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             if (terrainComponent->heightMapPath[0] != '\0') {
                 terrainComponent->heightmapTextureID = AF_TextureLoader_LoadTexture(terrainComponent->heightMapPath);
             }
-            AF_CMesh* meshComponent = &_appData->ecs.meshes[i];
+            // Get the mesh component for this entity to init the terrain mesh buffer
+            // check 
+            uint32_t meshDenseIndex = _appData->ecs.meshSparseSet.sparseEntityIDs[i];
+            if(meshDenseIndex == AF_ECS_INVALID_INDEX){
+                 AF_Log_Error("AF_Project_SyncEntities: No mesh component found for terrain entity %u\n", i);
+                 continue;
+            }
+            
+            AF_CMesh* meshComponent = &_appData->ecs.meshSparseSet.denseComponent[_appData->ecs.meshSparseSet.sparseEntityIDs[i]];
+             if(meshComponent == NULL){
+                 AF_Log_Error("AF_Project_SyncEntities: Failed to get mesh component for terrain entity %u\n", i);
+                 continue;
+             }
             AF_RendererBuffer_InitInstancedTerrainMeshBuffer(terrainComponent->gridSize, meshComponent);
 
             // Generate heightmap data on CPU

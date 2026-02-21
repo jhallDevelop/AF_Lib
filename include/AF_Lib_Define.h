@@ -11,6 +11,8 @@ define extra types e.g. af_bool_t which doesn't exist in c
 
 // Define value often used
 #define AF_MAX_PATH_CHAR_SIZE 1024    // Max path size for file paths
+#define AF_ECS_TOTAL_ENTITIES 65	
+#define AF_ECS_INVALID_INDEX 0xFFFFFFFF
 
 // Define Static
 

@@ -31,12 +31,11 @@ void AF_Log_Error(const char* _message,...) {
     
 }
 
-/*
-====================
-AF_Log
-Normal log to console
-====================
-*/
+
+// ====================
+// AF_Log
+// Normal log to console
+// ====================
 void AF_Log(const char* _message,...){
     printf(COLOR_GREEN);  // Set color to cyan for regular logs
     va_list args;
