@@ -523,6 +523,7 @@ void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform)
 		_transform->rot.x = cJSON_GetArrayItem(rotJSON, 0)->valuedouble;
 		_transform->rot.y = cJSON_GetArrayItem(rotJSON, 1)->valuedouble;
 		_transform->rot.z = cJSON_GetArrayItem(rotJSON, 2)->valuedouble;
+		_transform->rot.w = cJSON_GetArrayItem(rotJSON, 3)->valuedouble;
 	}
 
 	// Scale
