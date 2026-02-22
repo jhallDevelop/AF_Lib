@@ -78,7 +78,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             }
 
             // convert the pitch and yaw to degrees 
-            cam->pitch = AF_Math_Degrees(asinf(front.y)); // Calculate pitch from the y component of the front vector
+            cam->pitch = AF_Math_Degrees(asinf(pitchInput)); // Calculate pitch from the y component of the front vector
 
             // safely calulate yaw
             if(fabsf(pitchInput) < 0.9999f){ // avoid gimbal lock singularity
