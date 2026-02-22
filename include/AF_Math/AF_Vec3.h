@@ -329,9 +329,9 @@ extern "C" {
     // =======================================
     static inline Vec3 AF_Vec3_DegreeToRadians(Vec3 _degree) {
         Vec3 result;
-        result.x = (AF_FLOAT)_degree.x * AF_180_DIV_PI_d;
-        result.y = (AF_FLOAT)_degree.y * AF_180_DIV_PI_d;
-        result.z = (AF_FLOAT)_degree.z * AF_180_DIV_PI_d;
+        result.x = (AF_FLOAT)_degree.x * AF_PI_DIV_180_d;
+        result.y = (AF_FLOAT)_degree.y * AF_PI_DIV_180_d;
+        result.z = (AF_FLOAT)_degree.z * AF_PI_DIV_180_d;
         return result;
     }
 
