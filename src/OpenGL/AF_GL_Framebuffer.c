@@ -60,7 +60,7 @@ void AF_GL_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
 	glBindTexture(GL_TEXTURE_2D, depthMap);
 	
 	#ifdef AF_WEB_BUILD
-		AF_Log("AF_GL_CreateDepthFrameBuffer: WEB\n");
+		//AF_Log("AF_GL_CreateDepthFrameBuffer: WEB\n");
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
 			_frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, 
 			GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, NULL);
@@ -70,7 +70,7 @@ void AF_GL_CreateDepthFrameBuffer(AF_FrameBufferData* _frameBufferData) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	#else
-		AF_Log("AF_GL_CreateDepthFrameBuffer: Desktop\n");
+		//AF_Log("AF_GL_CreateDepthFrameBuffer: Desktop\n");
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 
 			_frameBufferData->textureWidth, _frameBufferData->textureHeight, 0, 
 			GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
