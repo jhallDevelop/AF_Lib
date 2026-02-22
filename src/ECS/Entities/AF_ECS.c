@@ -1,4 +1,5 @@
 #include "ECS/Entities/AF_ECS.h"
+#include "AF_RendererBuffer.h"
 
 // ====================
 // AF_ECS_ReSyncComponents
@@ -128,7 +129,44 @@ void AF_ECS_DuplicateEntity(AF_ECS* _ecs, AF_Entity* _entity){
 	AF_CMesh* srcMeshComponent = AF_ECS_GetMeshComponent(_ecs, srcID);
 	AF_CMesh* dstMeshComponent = AF_ECS_GetMeshComponent(_ecs, dstID);
 
+	if(srcMeshComponent != NULL){
+		if(dstMeshComponent == NULL){
+			dstMeshComponent = AF_ECS_AddMeshComponent(_ecs, dstID);
+		}
+	}
+	else{
+		AF_Log_Warning("AF_ECS_DuplicateEntity: Source entity does not have a mesh component\n");
+	}
 	*dstMeshComponent = *srcMeshComponent;	// copy the mesh component data across
+
+	// deep copy the mesh data
+	// Deep copy mesh data to prevent double-free on destruction
+    for (uint32_t i = 0; i < srcMeshComponent->meshCount; ++i) {
+        AF_MeshData* srcData = &srcMeshComponent->meshes[i];
+        AF_MeshData* dstData = &dstMeshComponent->meshes[i];
+
+        if (srcData->vertices != NULL && srcData->vertexCount > 0) {
+            dstData->vertices = (AF_Vertex*)malloc(sizeof(AF_Vertex) * srcData->vertexCount);
+            if (dstData->vertices) {
+                memcpy(dstData->vertices, srcData->vertices, sizeof(AF_Vertex) * srcData->vertexCount);
+            }
+        }
+
+        if (srcData->indices != NULL && srcData->indexCount > 0) {
+            dstData->indices = (uint32_t*)malloc(sizeof(uint32_t) * srcData->indexCount);
+            if (dstData->indices) {
+                memcpy(dstData->indices, srcData->indices, sizeof(uint32_t) * srcData->indexCount);
+            }
+        }
+
+        // Reset GPU buffer IDs so we generate new independent buffers
+        dstData->vao = 0;
+        dstData->vbo = 0;
+        dstData->ibo = 0;
+
+        // Generate new GPU buffers for the duplicate
+        AF_RendererBuffer_CreateMeshBuffer(dstData);
+    }
 
 	// Text
 	_ecs->texts[dstID] = _ecs->texts[srcID];
@@ -232,6 +270,8 @@ AF_CMesh* AF_ECS_AddMeshComponent(AF_ECS* _ecs, uint32_t entityID){
 	AF_CMesh_SparseSet* meshSparseSet = &_ecs->meshSparseSet;
 	// mesh component to be added at the end of the dense array
 	AF_CMesh* meshComponent = &_ecs->meshSparseSet.denseComponent[meshSparseSet->count];
+
+	*meshComponent = AF_CMesh_ZERO();	// set the default values for the mesh component
 	// just check if its already enabled, if it is then we have a problem
 	if(AF_Component_GetHas(meshComponent->enabled)){
 		AF_Log_Error("AF_CMesh_AddMeshComponent: Mesh component already exists for this entity\n");
@@ -241,6 +281,13 @@ AF_CMesh* AF_ECS_AddMeshComponent(AF_ECS* _ecs, uint32_t entityID){
 	meshComponent->enabled = AF_Component_SetEnabled(meshComponent->enabled, AF_TRUE);
 	meshSparseSet->sparseEntityIDs[entityID] = meshSparseSet->count;
 	meshSparseSet->denseToSparse[meshSparseSet->count] = entityID;
+
+	// set the default mesh data
+	meshComponent->recieveLights = AF_TRUE;
+	meshComponent->recieveShadows = AF_TRUE;
+	meshComponent->castShadows = AF_TRUE;
+	meshComponent->textured = AF_TRUE;
+
 	AF_Log("AF_ECS_AddMeshComponent: Added mesh component to entity %u, dense index %u\n", entityID, meshSparseSet->count);
 	meshSparseSet->count++;
 	return meshComponent;
