@@ -288,7 +288,7 @@ AF_CMesh* AF_ECS_AddMeshComponent(AF_ECS* _ecs, uint32_t entityID){
 	meshComponent->castShadows = AF_TRUE;
 	meshComponent->textured = AF_TRUE;
 
-	AF_Log("AF_ECS_AddMeshComponent: Added mesh component to entity %u, dense index %u\n", entityID, meshSparseSet->count);
+	//AF_Log("AF_ECS_AddMeshComponent: Added mesh component to entity %u, dense index %u\n", entityID, meshSparseSet->count);
 	meshSparseSet->count++;
 	return meshComponent;
 }

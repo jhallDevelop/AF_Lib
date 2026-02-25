@@ -11,7 +11,8 @@
 #pragma clang diagnostic pop
 #include <vector>
 
-// =================================================================================================
+
+
 // AF_Physics_BilinearUpsampleHeightmap
 // Upsamples a heightmap from srcW x srcH to dstW x dstH using bilinear interpolation.
 // Matches GPU texture sampling behavior for accurate physics alignment.
@@ -350,6 +351,8 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 			body->setGravity(btVector3(0, 0, 0));
 		}
 	}
+
+	// collision resolution
 }
 
 // ========================================================================
@@ -547,8 +550,6 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 	bulletData->dynamicsWorld->stepSimulation(_dt, 10, 1.0f / 60.0f); // Fixed time step
 
 	// 3. Sync Bullet state back to ECS
-
-	// 3. Sync Bullet state back to ECS
 	for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
 		if (bulletData->bodies[i]) {
 			AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
@@ -574,10 +575,10 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 			
             // SYNC BACK VELOCITY
             const btVector3& vel = bulletData->bodies[i]->getLinearVelocity();
-             _ecs->rigidbodies[i].velocity = { (AF_FLOAT)vel.x(), (AF_FLOAT)vel.y(), (AF_FLOAT)vel.z() };
+            _ecs->rigidbodies[i].velocity = { (AF_FLOAT)vel.x(), (AF_FLOAT)vel.y(), (AF_FLOAT)vel.z() };
 
-             const btVector3& angVel = bulletData->bodies[i]->getAngularVelocity();
-             _ecs->rigidbodies[i].anglularVelocity = { (AF_FLOAT)angVel.x(), (AF_FLOAT)angVel.y(), (AF_FLOAT)angVel.z() };
+            const btVector3& angVel = bulletData->bodies[i]->getAngularVelocity();
+            _ecs->rigidbodies[i].anglularVelocity = { (AF_FLOAT)angVel.x(), (AF_FLOAT)angVel.y(), (AF_FLOAT)angVel.z() };
 
 			// Update collider bounds
 
@@ -587,6 +588,34 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 			// convert from radians to degrees
 			// Reset collisions
 			AF_Collision_Reset(&_ecs->colliders[i].collision);
+		}
+	}
+
+	// loop over all contact manifolds
+	//https://andysomogyi.github.io/mechanica/bullet.html
+	uint32_t numManifolds = bulletData->dynamicsWorld->getDispatcher()->getNumManifolds();
+	for (uint32_t i = 0; i < numManifolds; ++i) {
+		btPersistentManifold* contactManifold = bulletData->dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+		const btCollisionObject* obA = contactManifold->getBody0();
+		const btCollisionObject* obB = contactManifold->getBody1();
+
+		uint32_t numContacts = contactManifold->getNumContacts();
+		for(uint32_t j = 0; j < numContacts; ++j){
+			btManifoldPoint& pt = contactManifold->getContactPoint(j);
+			if(pt.getDistance() < 0.0f){
+				const btVector3& ptA = pt.getPositionWorldOnA();
+				const btVector3& ptB = pt.getPositionWorldOnB();
+				const btVector3& normalOnB = pt.m_normalWorldOnB;
+				if(((obA->getUserIndex() == 48) && (obB->getUserIndex() == 49)) || ((obB->getUserIndex() == 48) && (obA->getUserIndex() == 49))){
+					AF_Log("Collision detected between Entity %d and Entity %d at point A(%.2f, %.2f, %.2f) and point B(%.2f, %.2f, %.2f) with normal (%.2f, %.2f, %.2f)\n",
+					obA->getUserIndex(), obB->getUserIndex(),
+					ptA.getX(), ptA.getY(), ptA.getZ(),
+					ptB.getX(), ptB.getY(), ptB.getZ(),
+					normalOnB.getX(), normalOnB.getY(), normalOnB.getZ()
+					);
+				}
+				
+			}
 		}
 	}
 }
@@ -926,6 +955,11 @@ void AF_Physics_Reset(AF_ECS* _ecs, AF_ECS* _backupECS, void* _physicsEngineHand
 		// 5. Ensure the body is active so it starts falling/moving again
 		rigidbody->activate(true);
 	}
+}
+
+void AF_Collision_Callback()
+{
+	
 }
 
 } // extern "C"

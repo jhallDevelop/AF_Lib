@@ -976,7 +976,6 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 		AF_CTransform3D* modelTransform = &_ecs->transforms[entityID];
 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians
-		//Vec3 rotationToRadians = {AF_Math_Radians(modelTransform->rot.x),AF_Math_Radians(modelTransform->rot.y), AF_Math_Radians(modelTransform->rot.z)};
 		// Update the model matrix
 		Mat4 modelMatColumn = Mat4_ToModelMat4(modelTransform->pos, modelTransform->rot, modelTransform->scale);
 		modelTransform->modelMat = modelMatColumn;

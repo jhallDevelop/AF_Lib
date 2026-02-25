@@ -1055,7 +1055,7 @@ void AF_JSON_JsonToMesh(cJSON* _meshJSON, AF_ECS* _ecs, uint32_t _entityID) {
 
 	// we have a mesh component, let's parse it and add it to the ECS
 	// create a new mesh component for this entity
-	AF_Log("AF_JSON_JsonToMesh: Adding mesh component to entity %u\n", _entityID);
+	//AF_Log("AF_JSON_JsonToMesh: Adding mesh component to entity %u\n", _entityID);
 	AF_CMesh* _mesh = AF_ECS_AddMeshComponent(_ecs, _entityID);
 
 
