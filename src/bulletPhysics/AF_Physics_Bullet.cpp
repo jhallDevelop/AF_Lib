@@ -606,6 +606,38 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 				const btVector3& ptA = pt.getPositionWorldOnA();
 				const btVector3& ptB = pt.getPositionWorldOnB();
 				const btVector3& normalOnB = pt.m_normalWorldOnB;
+				// setup the collision data
+				AF_Collision* collisionA = &_ecs->colliders[obA->getUserIndex()].collision;
+				AF_Collision* collisionB = &_ecs->colliders[obB->getUserIndex()].collision;
+
+				// Set collided to true for both entities
+				collisionA->collided = AF_TRUE;
+				collisionB->collided = AF_TRUE;
+
+				// Store the other entity's ID in the collision data
+				collisionA->collisionPoint = { (AF_FLOAT)ptA.getX(), (AF_FLOAT)ptA.getY(), (AF_FLOAT)ptA.getZ() };
+				collisionB->collisionPoint = { (AF_FLOAT)ptB.getX(), (AF_FLOAT)ptB.getY(), (AF_FLOAT)ptB.getZ() };
+
+
+				// Store the normal (same for both, but we can store in A for reference)
+				collisionA->normal = { (AF_FLOAT)normalOnB.getX(), (AF_FLOAT)normalOnB.getY(), (AF_FLOAT)normalOnB.getZ() };
+				collisionB->normal = { (AF_FLOAT)normalOnB.getX(), (AF_FLOAT)normalOnB.getY(), (AF_FLOAT)normalOnB.getZ() };
+
+				// Store the other entity's ID in the collision data
+				collisionA->entity2ID = obB->getUserIndex();
+				collisionB->entity1ID = obA->getUserIndex();
+
+				// assign ecs ptr
+				if(collisionA->ecsPtr == nullptr){
+					collisionA->ecsPtr = _ecs;
+				}
+				if(collisionB->ecsPtr == nullptr){
+					collisionB->ecsPtr = _ecs;
+				}
+
+				
+
+
 				if(((obA->getUserIndex() == 48) && (obB->getUserIndex() == 49)) || ((obB->getUserIndex() == 48) && (obA->getUserIndex() == 49))){
 					AF_Log("Collision detected between Entity %d and Entity %d at point A(%.2f, %.2f, %.2f) and point B(%.2f, %.2f, %.2f) with normal (%.2f, %.2f, %.2f)\n",
 					obA->getUserIndex(), obB->getUserIndex(),
@@ -616,6 +648,21 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 				}
 				
 			}
+		}
+	}
+
+	// Update physics contact callbacks in ECS colliders
+	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
+		AF_CCollider* collider = &_ecs->colliders[i];
+		af_bool_t colEnabled = AF_Component_GetHasEnabled(collider->enabled);
+		if(colEnabled == AF_FALSE){
+			continue;	
+		}
+		if(collider->collision.collided){
+			if(collider->collision.callback == nullptr){
+				continue;
+			}
+			collider->collision.callback(&collider->collision);
 		}
 	}
 }
