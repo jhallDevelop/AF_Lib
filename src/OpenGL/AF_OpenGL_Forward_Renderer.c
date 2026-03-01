@@ -520,15 +520,17 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
         glGetIntegerv(GL_POLYGON_MODE, previousPolygonMode);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        AF_Renderer_DrawCollisionMeshes(
-            &camera->viewMatrix,
-            &camera->projectionMatrix,
-            _ecs,
-            &cameraTransform->pos,
-            _lightingData,
-            _renderingData->guizmoDebugShaderID,
-            _renderingData
-        );
+		// TODO: i don't like that we conditional in the render loop
+		//if(_renderingData->showPhysicsDebug == AF_TRUE){
+		AF_Renderer_DrawCollisionMeshes(
+			&camera->viewMatrix,
+			&camera->projectionMatrix,
+			_ecs,
+			&cameraTransform->pos,
+			_lightingData,
+			_renderingData->guizmoDebugShaderID,
+			_renderingData
+		);
 
         // Switch back to the previous polygon mode.
         glPolygonMode(GL_FRONT_AND_BACK, previousPolygonMode[0]);
@@ -1000,6 +1002,9 @@ Loop through the entities and draw the meshes that have components attached
 ====================
 */
 void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
+	if (_renderingData->showPhysicsDebug == AF_FALSE) {
+		return;
+	}
 	for(uint32_t i = 0; i < _ecs->entitiesCount; ++i){
 		AF_Entity* entity = &_ecs->entities[i];
 		if(!AF_Component_GetHas(entity->flags)){
