@@ -10,8 +10,10 @@ Designed to suport custom scripts being loaded onto an object.
 #define AF_CSCRIPT_H
 #include "AF_Lib_Define.h"
 #include "AF_Component.h"
+#include "AF_Pre_Processor.h"
 
 #define MAX_CSCRIPT_PATH 1024
+#define MAX_EDITOR_VARS_PER_SCRIPT 32
 
 // Define the correct function pointer type
 typedef void (*ScriptFuncPtr)(uint32_t, void*);
@@ -19,7 +21,7 @@ typedef void (*ScriptFuncPtr)(uint32_t, void*);
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#define MAX_EDITOR_VAR_STORAGE 1024
 
 /*
 ====================
@@ -38,6 +40,9 @@ typedef struct AF_CScript {
 	ScriptFuncPtr lateUpdateFuncPtr;
 	ScriptFuncPtr destroyFuncPtr;
 	void* loadedScriptPtr;
+	uint32_t scriptEditorVarCount;
+	AF_PropertyMetaData_s scriptEditorVarData[MAX_EDITOR_VARS_PER_SCRIPT];
+	uint8_t scriptEditorVarStorage[MAX_EDITOR_VAR_STORAGE];
 } AF_CScript;
 
 AF_CScript AF_CScript_ZERO(void);

@@ -17,7 +17,9 @@ AF_CScript AF_CScript_ZERO(void){
 		.startFuncPtr = NULL,
 		.updateFuncPtr = NULL,
 		.destroyFuncPtr = NULL,
-		.loadedScriptPtr = NULL
+		.loadedScriptPtr = NULL,
+		.scriptEditorVarCount = 0,
+		.scriptEditorVarData = {0}
     };
 
     return returnComponent;
@@ -42,7 +44,9 @@ AF_CScript AF_CScript_ADD(void){
 		.startFuncPtr = NULL,
 		.updateFuncPtr = NULL,
 		.destroyFuncPtr = NULL,
-		.loadedScriptPtr = NULL
+		.loadedScriptPtr = NULL,
+		.scriptEditorVarCount = 0,
+		.scriptEditorVarData = {0}
     };
 
     return returnComponent;

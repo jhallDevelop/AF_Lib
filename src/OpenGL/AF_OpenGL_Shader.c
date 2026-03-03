@@ -140,7 +140,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     }
 
 	// Read the shader source code from the files
-    af_bool_t vertShaderLoadSuccess = AF_File_ReadFile(vertexShaderSource, vertShaderFileSize, _vertexShaderPath, "r");
+    af_bool_t vertShaderLoadSuccess = AF_File_ReadFile(vertexShaderSource, vertShaderFileSize + 1, _vertexShaderPath, "r");
     if(vertShaderLoadSuccess == AF_FALSE) {
         AF_Log_Error("AF_Shader: Failed to load vertex shader source from path: %s\n", _vertexShaderPath);
         AF_Shader_FreeCharBuffer(vertexShaderSource);
@@ -148,7 +148,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
         return SHADER_FAILED_TO_LOAD;
 	}
 
-    af_bool_t fragShaderLoadSuccess = AF_File_ReadFile(framgentShaderSource, fragShaderFileSize, _fragmentShaderPath, "r");
+    af_bool_t fragShaderLoadSuccess = AF_File_ReadFile(framgentShaderSource, fragShaderFileSize + 1, _fragmentShaderPath, "r");
     if (fragShaderLoadSuccess == AF_FALSE) {
         AF_Log_Error("AF_Shader: Failed to load fragment shader source from path: %s\n", _fragmentShaderPath);
         AF_Shader_FreeCharBuffer(vertexShaderSource);

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #ifdef _WIN32   // Windows-specific includes
 #include <windows.h> // Main Windows header
@@ -371,12 +372,11 @@ uint32_t AF_File_GetFileSize(const char* _filePath) {
     return (uint32_t)st.st_size; // Return the size of the file in bytes
 }
 
-/*
-====================
-AF_File_ReadFile
-Read file from path into a provided buffer
-====================
-*/
+
+// ====================
+// AF_File_ReadFile
+// Read file from path into a provided buffer
+// ====================
 af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _filePath, const char* _readCommand) {
 
     FILE* _fileOpen = fopen(_filePath, _readCommand);
@@ -387,15 +387,17 @@ af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _fil
 
 	//char* buffer = (char*)malloc(fileSize + 1); // +1 for null terminator   
     if(!_buffer) {
+        
         AF_Log_Error("AF_Util: Read File: Memory allocation failed\n");
         fclose(_fileOpen);
+        assert(_bufferSize > 0 && "AF_Util: Read File: Buffer size must be greater than 0\n");
         return AF_FALSE;
 	}
 
+    // Read the file contents into the buffer and record the size
 	size_t bytesRead = fread(_buffer, 1, _bufferSize, _fileOpen);
-    if (bytesRead < (size_t)_bufferSize && ferror(_fileOpen)) {
+    if (ferror(_fileOpen)) {
         AF_Log_Error("AF_Util: Read File: Error reading file \n%s\n", _filePath);
-        free(_buffer);
         fclose(_fileOpen);
         return AF_FALSE;
     }
@@ -404,7 +406,6 @@ af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _fil
 
 	fclose(_fileOpen);
 	return AF_TRUE; // Return the buffer containing the file contents
-    
 }
 
 /*
