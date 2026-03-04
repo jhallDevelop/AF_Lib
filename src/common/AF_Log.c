@@ -37,12 +37,12 @@ void AF_Log_Error(const char* _message,...) {
 // Normal log to console
 // ====================
 void AF_Log(const char* _message,...){
-    printf(COLOR_GREEN);  // Set color to cyan for regular logs
+    printf(COLOR_CYAN);  // Set color to cyan for regular logs
     va_list args;
     va_start(args, _message);
     vfprintf(stdout, _message, args);
-    //AFSaveLog(_message, "LOG: ", args);
     va_end(args);
+    fflush(stdout);
 }
 
 
@@ -57,8 +57,8 @@ void AF_Game_Log(const char* _message,...){
     va_list args;
     va_start(args, _message);
     vfprintf(stdout, _message, args);
-    //AFSaveLog(_message, "LOG: ", args);
     va_end(args);
+    fflush(stdout);
 }
 
 
@@ -74,4 +74,5 @@ void AF_Log_Warning(const char* _message,...){
     va_start(args, _message);
     vfprintf(stdout, _message, args);
     va_end(args);
+    fflush(stdout);
 }

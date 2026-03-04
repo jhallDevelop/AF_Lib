@@ -1818,6 +1818,71 @@ void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
 		_scripts->scriptFullPath[0] = '\0'; // Set to empty string if not found or not a string
 	}
 
+	// load the editor vars
+	// for each editor var in the array
+	cJSON* editorVarsJSON = cJSON_GetObjectItem(_scriptsJSON, "editorVars");
+	if (editorVarsJSON != NULL && cJSON_IsArray(editorVarsJSON)) {
+		int editorVarCount = cJSON_GetArraySize(editorVarsJSON);
+		_scripts->scriptEditorVarCount = 0; // Reset count
+		for (int i = 0; i < editorVarCount && i < MAX_EDITOR_VARS_PER_SCRIPT; i++) {
+			cJSON* editorVarJSON = cJSON_GetArrayItem(editorVarsJSON, i);
+			if (editorVarJSON != NULL) {
+				// Editor Var Name
+				cJSON* editorVarNameJSON = cJSON_GetObjectItem(editorVarJSON, "name");
+				if (editorVarNameJSON != NULL && cJSON_IsString(editorVarNameJSON)) {
+					snprintf(_scripts->scriptEditorVarData[i].name, sizeof(_scripts->scriptEditorVarData[i].name) - 1, "%s", editorVarNameJSON->valuestring);
+					_scripts->scriptEditorVarData[i].name[sizeof(_scripts->scriptEditorVarData[i].name) - 1] = '\0'; // Ensure null termination
+				}
+				else {
+					_scripts->scriptEditorVarData[i].name[0] = '\0'; // Set to empty string if not found or not a string
+				}	
+				// Editor Var Type
+				cJSON* editorVarTypeJSON = cJSON_GetObjectItem(editorVarJSON, "type");
+				if (editorVarTypeJSON != NULL && cJSON_IsNumber(editorVarTypeJSON)){
+					_scripts->scriptEditorVarData[i].type = (enum AF_EDITOR_VAR_TYPE_e)editorVarTypeJSON->valueint;
+				}
+				else {
+					_scripts->scriptEditorVarData[i].type = 0; // Set to default value if not found or not a number
+				}
+
+				cJSON* editorVarValueJSON = cJSON_GetObjectItem(editorVarJSON, "value");
+				if (editorVarValueJSON != NULL) {
+					switch(_scripts->scriptEditorVarData[i].type) {
+						case AF_EDITOR_VAR_TYPE_INT:
+							_scripts->scriptEditorVarData[i].data.intValue = (uint32_t)editorVarValueJSON->valueint; 
+							break;
+						case AF_EDITOR_VAR_TYPE_FLOAT:
+							_scripts->scriptEditorVarData[i].data.floatValue = (AF_FLOAT)editorVarValueJSON->valuedouble;
+							break;
+						case AF_EDITOR_VAR_TYPE_STRING:
+							snprintf(_scripts->scriptEditorVarData[i].data.strValue, AF_MAX_PATH_CHAR_SIZE, "%s", editorVarValueJSON->valuestring ? editorVarValueJSON->valuestring : ""); 
+							break;
+
+						case AF_EDITOR_VAR_TYPE_BOOL:
+							_scripts->scriptEditorVarData[i].data.boolValue = cJSON_IsTrue(editorVarValueJSON) || (cJSON_IsNumber(editorVarValueJSON) && editorVarValueJSON->valueint) ? AF_TRUE : AF_FALSE;
+							break;
+
+						case AF_EDITOR_VAR_TYPE_VEC3:
+							if (cJSON_IsArray(editorVarValueJSON) && cJSON_GetArraySize(editorVarValueJSON) == 3) {
+								_scripts->scriptEditorVarData[i].data.vec3Value[0] = (AF_FLOAT)cJSON_GetArrayItem(editorVarValueJSON, 0)->valuedouble;
+								_scripts->scriptEditorVarData[i].data.vec3Value[1] = (AF_FLOAT)cJSON_GetArrayItem(editorVarValueJSON, 1)->valuedouble;
+								_scripts->scriptEditorVarData[i].data.vec3Value[2] = (AF_FLOAT)cJSON_GetArrayItem(editorVarValueJSON, 2)->valuedouble;
+							}
+							break;
+						case AF_EDITOR_VAR_TYPE_EVENT:
+							_scripts->scriptEditorVarData[i].data.eventTypeValue = (uint32_t)editorVarValueJSON->valueint;
+							break;
+						default:
+							break;
+					}
+				}
+				_scripts->scriptEditorVarCount++;
+			}
+		}
+	}
+
+	
+
 	// function pointer skipped as we setup this automatically
 }
 
@@ -2873,17 +2938,44 @@ cJSON* AF_JSON_ScriptsToJson(AF_CScript* _component) {
 	//char scriptFullPath[MAX_CSCRIPT_PATH];
 	cJSON_AddStringToObject(returnJSON, "scriptFullPath", _component->scriptFullPath);
 
-	//ScriptFuncPtr startFuncPtr;
-	//cJSON_AddNullToObject(returnJSON, "startFuncPtr");
+	
+	// store the script editor vars
+	cJSON* editorVarsArrayJSON = cJSON_AddArrayToObject(returnJSON, "editorVars");
+	for(uint32_t i = 0; i < _component->scriptEditorVarCount; i++) {
+		AF_PropertyMetaData_s* propertyMetaData = &_component->scriptEditorVarData[i];
+		cJSON* varObj = cJSON_CreateObject();
+		 
+		cJSON_AddStringToObject(varObj, "name", propertyMetaData->name);
+		cJSON_AddNumberToObject(varObj, "type", propertyMetaData->type);
 
-	//ScriptFuncPtr updateFuncPtr;
-	//cJSON_AddNullToObject(returnJSON, "updateFuncPtr");
-
-	//ScriptFuncPtr destroyFuncPtr;
-	//cJSON_AddNullToObject(returnJSON, "destroyFuncPtr");
-
-	//void* loadedScriptPtr;
-	//cJSON_AddNullToObject(returnJSON, "loadedScriptPtr");
+		switch (propertyMetaData->type) {
+			case AF_EDITOR_VAR_TYPE_INT:
+				cJSON_AddNumberToObject(varObj, "value", propertyMetaData->data.intValue);
+				break;
+			case AF_EDITOR_VAR_TYPE_FLOAT:
+				cJSON_AddNumberToObject(varObj, "value", propertyMetaData->data.floatValue);
+				break;
+			case AF_EDITOR_VAR_TYPE_STRING:
+				cJSON_AddStringToObject(varObj, "value", propertyMetaData->data.strValue);
+				break;
+			case AF_EDITOR_VAR_TYPE_BOOL:
+				cJSON_AddBoolToObject(varObj, "value", propertyMetaData->data.boolValue == AF_TRUE);
+				break;
+			case AF_EDITOR_VAR_TYPE_VEC3:
+			{
+				cJSON* vec3Array = cJSON_CreateFloatArray(propertyMetaData->data.vec3Value, 3);
+				cJSON_AddItemToObject(varObj, "value", vec3Array);
+			}
+				break;
+			case AF_EDITOR_VAR_TYPE_EVENT:
+				cJSON_AddNumberToObject(varObj, "value", propertyMetaData->data.eventTypeValue);
+				break;
+			default:
+				cJSON_AddNumberToObject(varObj, "value", 0);
+				break;
+		}
+		cJSON_AddItemToArray(editorVarsArrayJSON, varObj);
+	}
 
 	return returnJSON;
 }

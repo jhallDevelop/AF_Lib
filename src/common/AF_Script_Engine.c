@@ -242,6 +242,10 @@ ScriptFuncPtr AF_GetScriptFuncPtr(void* _sharedObjectPtr, const char* _funcName)
 // Loop through all script components that have valid script func pointers and call start
 // ===============================================================================
 void AF_Script_Call_Start(AF_AppData* _appData){
+	if (_appData == NULL) {
+		AF_Log_Error("AF_Script_Call_Start: _appData is NULL\n");
+		return;
+	}
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         
@@ -254,7 +258,7 @@ void AF_Script_Call_Start(AF_AppData* _appData){
             }
             
             if(script->startFuncPtr == NULL){
-                AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
+                //AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
                 continue;
             }
 
@@ -272,6 +276,9 @@ void AF_Script_Call_Start(AF_AppData* _appData){
 // Loop through all script components that have valid script func pointers and call Update
 // ===============================================================================
 void AF_Script_Call_Update(AF_AppData* _appData){
+	if (_appData == NULL) {
+		return;
+	}
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         // Run all the scripts
@@ -301,6 +308,9 @@ void AF_Script_Call_Update(AF_AppData* _appData){
 // Loop through all script components that have valid script func pointers and call Update
 // ===============================================================================
 void AF_Script_Call_LateUpdate(AF_AppData* _appData){
+	if (_appData == NULL) {
+		return;
+	}
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         // Run all the scripts
@@ -331,6 +341,9 @@ void AF_Script_Call_LateUpdate(AF_AppData* _appData){
 // Loop through all script components that have valid script func pointers and call Destroy
 // ===============================================================================
 void AF_Script_Call_Destroy(AF_AppData* _appData){
+	if (_appData == NULL) {
+		return;
+	}
 	AF_ECS* ecs = &_appData->ecs;
     for(uint32_t i = 0; i < _appData->ecs.entitiesCount; i++){
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
@@ -349,7 +362,7 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
             // Call it
-            scriptFunctPtr(j, _appData);
+            scriptFunctPtr(i, _appData);
         }
     }
 }
@@ -360,7 +373,6 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
 // ===============================================================================
 void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptComponent)
 {       
-    (void) _scriptComponent;
     uint32_t scriptSize = AF_File_GetFileSize(_scriptPath);
     if(scriptSize == 0){
         AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get script file size for path: %s\n", _scriptPath);
@@ -383,6 +395,14 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
         return;
     }
 
+    // Capture existing values from JSON before we scan the file for the layout
+    AF_PropertyMetaData_s existingVars[MAX_EDITOR_VARS_PER_SCRIPT];
+    uint32_t existingVarCount = _scriptComponent->scriptEditorVarCount;
+    memcpy(existingVars, _scriptComponent->scriptEditorVarData, sizeof(AF_PropertyMetaData_s) * existingVarCount);
+
+    // Reset the component's var count as we are about to rebuild the list from the file
+    _scriptComponent->scriptEditorVarCount = 0;
+
     // If found Tag, line under EDITOR_VAR is the variable. 
     // space delimiter
     char delimiter[] = " \t\r\n";
@@ -393,14 +413,11 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
     // Get the first token
     token = strtok(scriptBuffer, delimiter);
 
-    af_bool_t foundEditorVar = AF_FALSE;
     // continue upto the last token
     while(token != NULL){
             
-        //AF_Log("AF_Script_SerialiseEditorVars: Token: %s\n", token);
         // pass null to get next token
         token = strtok(NULL, delimiter);
-        //AF_Log("AF_Script_SerialiseEditorVars: Token: %s\n", token);
         if (token != NULL && strcmp(token, "AF_EDITOR_VAR") == 0) {
             // Get the NEXT token which should be the type (int, float, etc)
             token = strtok(NULL, delimiter); 
@@ -413,46 +430,93 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
                     continue;   
                 }
 
-                if(token == NULL){
-                    AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get var type token\n");
-                    continue;
-                }
-
                 // set the variable type
                 _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].type = varType;
 
                 AF_Log("Type: %s ", token);
                 token = strtok(NULL, delimiter); 
                 
+                if (token == NULL) {
+                    continue;
+                }
 
                 // progress the token to get the var name
                 AF_Log("Name: %s ", token);
-                // set the name
-                snprintf(_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].name, AF_MAX_PATH_CHAR_SIZE, "%s", token);
+                
+                // Track if we found a match in the JSON data
+                af_bool_t foundInJson = AF_FALSE;
+            for (uint32_t k = 0; k < existingVarCount; k++) {
+                    if (strcmp(existingVars[k].name, token) == 0) {
+                        // Found matching variable in JSON, copy it over to the new slot
+                        _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount] = existingVars[k];
+                        foundInJson = AF_TRUE;
+                        break;
+                    }
+                }
 
-                token = strtok(NULL, delimiter); 
-                
-                
-                // store the data
-                size_t currentOffset = _scriptComponent->scriptEditorVarCount * 16; // max size of editor var is 16 bytes (vec3)
-                _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].offset = currentOffset;
+                // If not found in JSON, initialise it with the default from the file
+                if (!foundInJson) {
+                    snprintf(_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].name, AF_MAX_PATH_CHAR_SIZE, "%s", token);
+                    _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].type = varType;
+
+                    char* nameToken = token;
+                    token = strtok(NULL, delimiter); // Progress to next token (should be '=' or value)
+                    
+                    if(token == NULL){
+                        AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get var assignment token for %s\n", nameToken);
+                        continue;
+                    }
+
+                    // If the token is "=", skip it to get the actual value
+                    if (strcmp(token, "=") == 0) {
+                        token = strtok(NULL, delimiter);
+                        if (token == NULL) {
+                            AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get value after '=' for %s\n", nameToken);
+                            continue;
+                        }
+                    }
+
+                    switch(varType){
+                        case AF_EDITOR_VAR_TYPE_INT:
+                            _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.intValue = atoi(token);
+                        break;
+
+                        case AF_EDITOR_VAR_TYPE_FLOAT:
+                            _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.floatValue = atof(token);
+                        break;
+
+                        case AF_EDITOR_VAR_TYPE_BOOL:
+                            _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.boolValue = (strcmp(token, "true") == 0) ? AF_TRUE : AF_FALSE;
+                        break;
+
+                        case AF_EDITOR_VAR_TYPE_STRING:
+                            snprintf(_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.strValue, AF_MAX_PATH_CHAR_SIZE, "%s", token);
+                        break;
+
+                        case AF_EDITOR_VAR_TYPE_VEC3:
+                            // Expecting format Vec3(x, y, z)
+                            if (sscanf(token, "Vec3(%f,%f,%f)", &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[0],
+                                &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[1],
+                                &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[2]) != 3) {
+                                AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec3 value from token: %s\n", token);
+                            }
+                        break;
+
+                        case AF_EDITOR_VAR_TYPE_EVENT:
+                            // Expecting format AF_Event_Type_e(EVENT_TYPE)
+                            if (sscanf(token, "AF_Event_Type_e(%d)", (int*)&_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.eventTypeValue) != 1) {
+                                AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Event Type value from token: %s\n", token);
+                            }
+                        break;
+                        default: break;
+                    }
+                }
                 
                 _scriptComponent->scriptEditorVarCount++;
-                AF_Log("Value: %s\n", token);
-                
             }
-
         }
     }
 
-    
-        // First token is the type, second token is the name, third is assignment, forth is the value.
-        // Determine what type the first token is and match with enum types.
-        // determine if forth value token is a string or number
-        // determine if number token 
-        // convert number token relevent number
-    // assign new variable into component var data slot.
-    //AF_Log("%s\n", scriptBuffer);
     free(scriptBuffer);
     scriptBuffer = NULL;
 }
@@ -471,6 +535,8 @@ AF_EDITOR_VAR_TYPE_e AF_Script_MapStringToEditorVarType(const char* _typeString)
         return AF_EDITOR_VAR_TYPE_STRING;
     }else if(strcmp(_typeString, "Vec3") == 0){
         return AF_EDITOR_VAR_TYPE_VEC3;
+    } else if(strcmp(_typeString, "AF_Event_Type_e") == 0){
+        return AF_EDITOR_VAR_TYPE_EVENT;
     } 
     else {
         AF_Log_Error("AF_Script_MapStringToEditorVarType: Var Type %s not recognised\n", _typeString);

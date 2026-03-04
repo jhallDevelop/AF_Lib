@@ -1,5 +1,6 @@
 #include "ECS/Components/AF_CScript.h"
 #include <stddef.h> // For NULL
+#include <string.h> // For memset
 #include "ECS/Components/AF_Component.h"
 
 /*
@@ -9,19 +10,9 @@ Initialisation constructor function
 ====================
 */
 AF_CScript AF_CScript_ZERO(void){
-    PACKED_CHAR component = AF_FALSE;
-	AF_CScript returnComponent = {
-		.enabled = component,
-		.scriptName = "\0",
-		.scriptFullPath = "\0",
-		.startFuncPtr = NULL,
-		.updateFuncPtr = NULL,
-		.destroyFuncPtr = NULL,
-		.loadedScriptPtr = NULL,
-		.scriptEditorVarCount = 0,
-		.scriptEditorVarData = {0}
-    };
-
+    AF_CScript returnComponent;
+    memset(&returnComponent, 0, sizeof(AF_CScript));
+    returnComponent.enabled = AF_FALSE;
     return returnComponent;
 }
 
@@ -33,21 +24,10 @@ Initialise with enable and has set to true
 ====================
 */
 AF_CScript AF_CScript_ADD(void){
-		
-	PACKED_CHAR component = AF_FALSE;
-	component = AF_Component_SetHas(component, AF_TRUE);
-	component = AF_Component_SetEnabled(component, AF_TRUE);
-	AF_CScript returnComponent = {
-		.enabled = component,
-		.scriptName = "\0",
-		.scriptFullPath = "\0",
-		.startFuncPtr = NULL,
-		.updateFuncPtr = NULL,
-		.destroyFuncPtr = NULL,
-		.loadedScriptPtr = NULL,
-		.scriptEditorVarCount = 0,
-		.scriptEditorVarData = {0}
-    };
-
+    AF_CScript returnComponent;
+    memset(&returnComponent, 0, sizeof(AF_CScript));
+    returnComponent.enabled = AF_FALSE;
+    returnComponent.enabled = AF_Component_SetHas(returnComponent.enabled, AF_TRUE);
+    returnComponent.enabled = AF_Component_SetEnabled(returnComponent.enabled, AF_TRUE);
     return returnComponent;
 }

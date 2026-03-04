@@ -21,7 +21,7 @@ typedef void (*ScriptFuncPtr)(uint32_t, void*);
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define MAX_EDITOR_VAR_STORAGE 1024
+#define AF_MAX_EDITOR_VAR_STORAGE 1024
 
 /*
 ====================
@@ -42,7 +42,7 @@ typedef struct AF_CScript {
 	void* loadedScriptPtr;
 	uint32_t scriptEditorVarCount;
 	AF_PropertyMetaData_s scriptEditorVarData[MAX_EDITOR_VARS_PER_SCRIPT];
-	uint8_t scriptEditorVarStorage[MAX_EDITOR_VAR_STORAGE];
+	uint8_t scriptEditorVarStorage[AF_MAX_EDITOR_VAR_STORAGE];
 } AF_CScript;
 
 AF_CScript AF_CScript_ZERO(void);

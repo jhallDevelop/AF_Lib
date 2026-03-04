@@ -11,13 +11,21 @@ typedef enum AF_EDITOR_VAR_TYPE_e{
     AF_EDITOR_VAR_TYPE_BOOL,
     AF_EDITOR_VAR_TYPE_STRING,
     AF_EDITOR_VAR_TYPE_VEC3,
+    AF_EDITOR_VAR_TYPE_EVENT,
     AF_EDITOR_VAR_TYPE_TOTAL_TYPES
 } AF_EDITOR_VAR_TYPE_e;
 
 typedef struct {
     char name[AF_MAX_PATH_CHAR_SIZE];
     enum AF_EDITOR_VAR_TYPE_e type;
-    size_t offset;
+    union {
+        uint32_t intValue;
+        AF_FLOAT floatValue;
+        af_bool_t boolValue;
+        char strValue[AF_MAX_PATH_CHAR_SIZE];
+        AF_FLOAT vec3Value[3];
+        uint32_t eventTypeValue;
+    } data;
 } AF_PropertyMetaData_s;
 
 
