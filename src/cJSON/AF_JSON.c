@@ -207,6 +207,12 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		newEntity->flags = AF_Component_SetEnabled(newEntity->flags, cJSON_GetObjectItem(entityJSON, "enabled")->valueint); // Get enabled flag from JSON
 		newEntity->flags = AF_Component_SetHas(newEntity->flags, cJSON_GetObjectItem(entityJSON, "has")->valueint); // Get has flag from JSON
 
+		// get parent 
+		cJSON* parentIDJSON = cJSON_GetObjectItem(entityJSON, "parentID");
+		if(parentIDJSON != NULL){
+			newEntity->parentID = parentIDJSON->valueint;
+		}
+		
 		if (AF_Component_GetHas(newEntity->flags) == AF_FALSE) {
 			continue; // Skip entities that are not enabled
 		}
@@ -356,11 +362,13 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		cJSON* entityJSON = cJSON_AddObjectToObject(rootJSON, "entity");
 		uint32_t entityID = AF_ECS_GetID(entity->id_tag);
 		uint32_t tagID =  AF_ECS_GetTag(entity->id_tag);
+		uint32_t parentID = entity->parentID;
 		cJSON_AddNumberToObject(entityJSON, "id", entityID); // Add ID
 		cJSON_AddNumberToObject(entityJSON, "tag", tagID); // Add tag
 		cJSON_AddBoolToObject(entityJSON, "enabled", AF_Component_GetEnabled(entity->flags)); // Add enabled flag
 		cJSON_AddBoolToObject(entityJSON, "has", AF_Component_GetHas(entity->flags)); // Add has flag
-
+		cJSON_AddNumberToObject(entityJSON, "parentID", entity->parentID);
+		
 		// for each component
 		af_bool_t flags = (af_bool_t)entity->flags; // TODO: extract the flags
 		//uint32_t id = AF_ECS_GetID(entity->id_tag);	// ID

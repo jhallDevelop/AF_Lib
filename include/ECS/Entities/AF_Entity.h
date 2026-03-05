@@ -1,9 +1,7 @@
-/*
-===============================================================================
-AF_Entity_H defninitions
-The entity struct and helper functions
-===============================================================================
-*/
+// ===============================================================================
+// AF_Entity_H defninitions
+// The entity struct and helper functions
+// ===============================================================================
 
 #ifndef AF_Entity_H
 #define AF_Entity_H
@@ -48,8 +46,9 @@ If 2D game then loaded verts are known at compile time as its just a quad hard c
 */
 // Size of struct is exactly 64 bytes
 typedef struct AF_Entity {
-    flag_t flags;	// Entity has ben enabled
+    flag_t flags;	            // Entity has ben enabled
     PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants    
+    uint32_t parentID;
 } AF_Entity;
 
 // Little helper struct that can be use
