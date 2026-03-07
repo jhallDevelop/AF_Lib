@@ -34,6 +34,7 @@ void AF_ECS_Init(AF_ECS* _ecs){
 	_ecs->entitiesCount = AF_ECS_TOTAL_ENTITIES;
 	_ecs->currentEntity = 0; // init to 0
 	
+	
 	// memset the sparse arrays to zero
 	_ecs->meshSparseSet.count = 0;
 	memset(_ecs->meshSparseSet.sparseEntityIDs, 0xFF, sizeof(_ecs->meshSparseSet.sparseEntityIDs));
@@ -52,7 +53,7 @@ void AF_ECS_Init(AF_ECS* _ecs){
 		entity->flags = AF_Component_SetEnabled(*componentState, AF_FALSE);
 		entity->id_tag = AF_ECS_AssignID(entity->id_tag, i);
 		entity->id_tag = AF_ECS_AssignTag(entity->id_tag, 0);
-		
+		entity->parentID = AF_ECS_GetID(entity->id_tag);	// set parentID to itself to indicate no parent
 		// zero the terrain
 		_ecs->terrains[i] = AF_CTerrain_ZERO();
 	}
@@ -226,6 +227,7 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 
 
 	uint32_t entityID = AF_ECS_GetID(entity->id_tag);
+	entity->parentID = entityID; // default to root/self-parent in hierarchy
 	_ecs->transforms[entityID] = AF_CTransform3D_ZERO();	
 
 	// Set the transform to be enabled
