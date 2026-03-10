@@ -48,9 +48,9 @@ void AF_ECS_Init(AF_ECS* _ecs){
 	for(uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; i++){
 		
 		AF_Entity* entity = &_ecs->entities[i];
-		flag_t* componentState = &entity->flags;
- 		//entity->enabled = AF_TRUE;
-		entity->flags = AF_Component_SetEnabled(*componentState, AF_FALSE);
+		// Zero all flag bits (clears both FLAG_HAS and FLAG_ENABLED) so stale
+		// component data from a previous scene cannot pass GetHas/GetEnabled checks.
+		entity->flags = 0;
 		entity->id_tag = AF_ECS_AssignID(entity->id_tag, i);
 		entity->id_tag = AF_ECS_AssignTag(entity->id_tag, 0);
 		entity->parentID = AF_ECS_GetID(entity->id_tag);	// set parentID to itself to indicate no parent

@@ -158,6 +158,13 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 
 	// Initialize body array
 	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		// Gate on the entity-level flag first. entity->flags being zero means
+		// this slot was cleared by AF_ECS_Init and must not inherit stale component data.
+		AF_Entity* entity = &_ecs->entities[i];
+		if(!AF_Component_GetHas(entity->flags)){
+			continue;
+		}
+
 		AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
 		AF_CCollider* col = &_ecs->colliders[i];
 		AF_CTransform3D* trans = &_ecs->transforms[i];
