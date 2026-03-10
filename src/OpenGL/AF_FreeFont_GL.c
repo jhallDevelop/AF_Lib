@@ -10,7 +10,6 @@
 #include "AF_File.h"
 
 
-
 /*
 ====================
 AF_LoadFont
@@ -53,7 +52,7 @@ af_bool_t AF_LoadFont(AF_Font* _font) {
     }
    
     // set size to load glyphs as
-    FT_Set_Pixel_Sizes(face, 0, 48);
+    FT_Set_Pixel_Sizes(face, 0, _font->fontSize);
 
     // disable byte-alignment restriction
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

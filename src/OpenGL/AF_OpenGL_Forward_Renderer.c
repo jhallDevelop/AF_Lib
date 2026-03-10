@@ -849,11 +849,15 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
                 // compute the character quad's position and size.
                 // compute the character quad's top-left position and size.
                 // The y coordinate is the baseline. We subtract the bearingY to find the top of the glyph.
-                AF_FLOAT xpos = x + ch.Bearing.x;
-                AF_FLOAT ypos = baseline - ch.Bearing.y;
+
+                AF_FLOAT xpos = x + (ch.Bearing.x);
+                AF_FLOAT ypos = baseline - (ch.Bearing.y);
                 AF_FLOAT width = ch.Size.x;
                 AF_FLOAT height = ch.Size.y;
 
+				
+				// advance the cursor for the next character
+            	x += (ch.Advance >> 6); // bitshift by 6 to get value in pixels (2^6 = 64)
 
                 // Construct an updated VBO for the character
                 AF_FLOAT vertices[6][4] = {
@@ -873,8 +877,7 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
                 AF_RendererBuffer_UpdateAndDrawTextBuffer(textMeshComp, vertices);
             }
             
-            // advance the cursor for the next character
-            x += (ch.Advance >> 6); // bitshift by 6 to get value in pixels (2^6 = 64)
+            
         }
 
 		
