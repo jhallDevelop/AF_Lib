@@ -228,7 +228,27 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
 
 	uint32_t entityID = AF_ECS_GetID(entity->id_tag);
 	entity->parentID = entityID; // default to root/self-parent in hierarchy
-	_ecs->transforms[entityID] = AF_CTransform3D_ZERO();	
+
+	// Zero ALL component arrays at this slot so no stale data from a previous
+	// scene leaks into the new entity.
+	_ecs->transforms[entityID]         = AF_CTransform3D_ZERO();
+	_ecs->sprites[entityID]            = AF_CSprite_ZERO();
+	_ecs->rigidbodies[entityID]        = AF_C3DRigidbody_ZERO();
+	_ecs->colliders[entityID]          = AF_CCollider_ZERO();
+	_ecs->cameras[entityID]            = AF_CCamera_ZERO();
+	_ecs->animations[entityID]         = AF_CAnimation_ZERO();
+	_ecs->terrains[entityID]           = AF_CTerrain_ZERO();
+	_ecs->texts[entityID]              = AF_CText_ZERO();
+	_ecs->audioSources[entityID]       = AF_CAudioSource_ZERO();
+	_ecs->playerDatas[entityID]        = AF_CPlayerData_ZERO();
+	_ecs->skeletalAnimations[entityID] = AF_CSkeletalAnimation_ZERO();
+	_ecs->aiBehaviours[entityID]       = AF_CAI_Behaviour_ZERO();
+	_ecs->editorData[entityID]         = AF_CEditorData_ZERO();
+	_ecs->inputControllers[entityID]   = AF_CInputController_ZERO();
+	_ecs->lights[entityID]             = AF_CLight_ZERO();
+	for(uint32_t s = 0; s < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; s++){
+		_ecs->scripts[entityID * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY + s] = AF_CScript_ZERO();
+	}
 
 	// Set the transform to be enabled
 	_ecs->transforms[entityID].enabled = AF_Component_SetHas(_ecs->transforms[entityID].enabled, AF_TRUE);
@@ -239,7 +259,6 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
     return entity;
 	
 }
-
 // ====================
 // AF_ECS_GetMeshComponent
 // Helper function to get a pointer reference to the mesh component for an entity
