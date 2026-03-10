@@ -28,7 +28,10 @@ AF_CText AF_CText_ZERO(void){
     .textColor = {0,0,0,1},
     .textData = NULL,
     .mesh = AF_CMesh_ZERO(),
-    .font = AF_Font_Zero()
+    .font = AF_Font_Zero(),
+    .textAnchor = AF_ANCHOR_MIDDLE_CENTRE,
+    .textAlignment = 0,
+    .characterCount = 0
     };
 
     return returnMesh;
@@ -56,7 +59,10 @@ AF_CText AF_CText_ADD(void){
     {0,0,0,1},
     NULL,
     AF_CMesh_ZERO(),
-    AF_Font_Zero()
+    AF_Font_Zero(),
+    AF_ANCHOR_MIDDLE_CENTRE,
+    0,
+    0
     };
 
     // Set the default font size

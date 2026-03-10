@@ -1531,11 +1531,32 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 		_text->screenPos.x = cJSON_GetArrayItem(screenPosJSON, 0)->valuedouble;
 		_text->screenPos.y = cJSON_GetArrayItem(screenPosJSON, 1)->valuedouble;
 	}
+
+	// textAnchor
+	cJSON* textAnchorJSON = cJSON_GetObjectItem(_textJSON, "textAnchor");
+	if (textAnchorJSON != NULL) {
+		_text->textAnchor = (enum AF_TextAnchor_e)textAnchorJSON->valueint;
+	}
+
+	// text alignment
+	cJSON* textAlignmentJSON = cJSON_GetObjectItem(_textJSON, "textAlignment");
+	if (textAlignmentJSON != NULL) {
+		_text->textAlignment = (enum AF_TextAlignment_e)textAlignmentJSON->valueint;
+	}
+
+
+
 	// textBounds
 	cJSON* textBoundsJSON = cJSON_GetObjectItem(_textJSON, "textBounds");
 	if (textBoundsJSON != NULL) {
 		_text->textBounds.x = cJSON_GetArrayItem(textBoundsJSON, 0)->valuedouble;
 		_text->textBounds.y = cJSON_GetArrayItem(textBoundsJSON, 1)->valuedouble;
+	}
+
+	// character count
+	cJSON* characterCountJSON = cJSON_GetObjectItem(_textJSON, "characterCount");
+	if (characterCountJSON != NULL) {
+		_text->characterCount = (uint32_t)characterCountJSON->valueint;
 	}
 	// textColor
 	cJSON* textColorJSON = cJSON_GetObjectItem(_textJSON, "textColor");
@@ -2659,9 +2680,18 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
     Vec2 screenPos = _component->screenPos;
     AF_JSON_Vec2ToJson("screenPos", &screenPos, returnJSON);
 
+	// textAnchor
+	cJSON_AddNumberToObject(returnJSON, "textAnchor", _component->textAnchor);
+
     // textBounds
     Vec2 textBounds = _component->textBounds;
     AF_JSON_Vec2ToJson("textBounds", &textBounds, returnJSON);
+
+	// text alignment
+	cJSON_AddNumberToObject(returnJSON, "textAlignment", _component->textAlignment);
+
+	// character count
+	cJSON_AddNumberToObject(returnJSON, "characterCount", _component->characterCount);
 
     // textColor
     cJSON* textJSONArray = cJSON_AddArrayToObject(returnJSON, "textColor");

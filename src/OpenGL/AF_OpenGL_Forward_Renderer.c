@@ -756,12 +756,81 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
         AF_FLOAT x = textMeshComp->screenPos.x;
         AF_FLOAT y = textMeshComp->screenPos.y;
 
+		// Adjust the x, y based on the anchorpoint
+		// based on the anchor enum, adjust the starting x and y position based on the screen width/height
+		switch(textMeshComp->textAnchor){
+			case AF_ANCHOR_TOP_LEFT:
+				// no adjustment needed
+			break;
+			case AF_ANCHOR_TOP_CENTRE:
+				x += screenWidth * 0.5f;
+			break;
+			case AF_ANCHOR_TOP_RIGHT:
+				x += screenWidth;
+			break;
+			case AF_ANCHOR_MIDDLE_LEFT:
+				y += screenHeight * 0.5f;
+			break;
+			case AF_ANCHOR_MIDDLE_CENTRE:
+				x += screenWidth * 0.5f;
+				y += screenHeight * 0.5f;
+			break;
+			case AF_ANCHOR_MIDDLE_RIGHT:
+				x += screenWidth;
+				y += screenHeight * 0.5f;
+			break;
+			case AF_ANCHOR_BOTTOM_LEFT:
+				y += screenHeight;
+			break;
+			case AF_ANCHOR_BOTTOM_CENTRE:
+				x += screenWidth * 0.5f;	
+				y += screenHeight;
+			break;
+			case AF_ANCHOR_BOTTOM_RIGHT:
+				x += screenWidth;
+				y += screenHeight;
+			break;
+			case AF_ANCHOR_ENUM_COUNT:
+				// no adjustment needed, user will handle it with the screenPos
+			break;
+		}
+		
+		
+		
+
 		// Establish a baseline so the text renders correctly.
         // We assume the user provides 'y' as the desired top coordinate.
         // The baseline is then y + the ascender of the font.
         // We'll use the bearing of the first character as an approximation for the ascender.
         AF_Font* font = &textMeshComp->font;
         AF_FLOAT baseline = y + font->characters[(unsigned char)textMeshComp->text[0]].Bearing.y;
+
+
+		// Calculate the total text width
+		AF_FLOAT totalTextWidth = 0.0f;
+		for (uint32_t i = 0; i < AF_MAX_PATH_CHAR_SIZE; i++) {
+			if(textMeshComp->text[i] == '\0') {
+				break;
+			}
+			AF_Character ch = font->characters[(unsigned char)textMeshComp->text[i]];
+			totalTextWidth += (ch.Advance >> 6); // bitshift by 6
+		}
+
+		// apply alignment
+		switch (textMeshComp->textAlignment) {
+			case AF_TEXT_ALIGNMENT_LEFT:
+				// no adjustment needed
+				break;
+			case AF_TEXT_ALIGNMENT_CENTER:
+				x -= totalTextWidth * 0.5f;
+				break;
+			case AF_TEXT_ALIGNMENT_RIGHT:
+				x -= totalTextWidth;
+				break;
+			case AF_TEXT_ALIGNMENT_ENUM_COUNT:
+				// no adjustment needed, user will handle it with the screenPos
+				break;
+		}
 
         
         // for each character in the text
@@ -807,6 +876,8 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
             // advance the cursor for the next character
             x += (ch.Advance >> 6); // bitshift by 6 to get value in pixels (2^6 = 64)
         }
+
+		
         
         //unbind the vertex array and texture
         glBindVertexArray(0);
