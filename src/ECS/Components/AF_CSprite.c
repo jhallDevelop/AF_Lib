@@ -39,7 +39,8 @@ AF_CSprite AF_CSprite_ZERO(void){
 		.spriteData = NULL,
 		.isPlaying = AF_FALSE,
 		.filtering = AF_FALSE,
-		.spriteMesh = AF_CMesh_ZERO()
+		.spriteMesh = AF_CMesh_ZERO(),
+		.isGUI = AF_FALSE
 		};
 	return returnSprite;
 }
@@ -81,7 +82,8 @@ AF_CSprite AF_CSprite_ADD(void){
 		.spriteData = NULL,
 		.isPlaying = AF_FALSE, 
 		.filtering = AF_FALSE,
-		.spriteMesh = AF_CMesh_ZERO()
+		.spriteMesh = AF_CMesh_ZERO(),
+		.isGUI = AF_FALSE
 	};
 
 	snprintf(returnSprite.spriteMesh.meshPath, AF_MAX_PATH_CHAR_SIZE, "%s", AF_CSPRITE_DEFAULT_SPRITE_MESH_NAME);

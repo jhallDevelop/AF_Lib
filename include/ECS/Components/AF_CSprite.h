@@ -59,6 +59,7 @@ typedef struct {
 	af_bool_t isPlaying;
 	af_bool_t filtering;
 	AF_CMesh spriteMesh; // 64 bytes
+	af_bool_t isGUI;
 	
 } AF_CSprite;
 

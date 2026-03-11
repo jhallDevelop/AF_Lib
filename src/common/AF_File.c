@@ -282,17 +282,19 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAl
     }
 #else
     struct dirent *dp;
+
+    if (MAX_FILELIST_BUFFER_SIZE > 0) {
+        _fileList->stringBuffer[0] = '\0';
+    }
+    _fileList->numberOfFiles = 0;
+
     DIR *dir = opendir(path);
 
     // Unable to open directory stream
     if (!dir) 
         return; 
 
-    // Initialize buffer and file count
-
     size_t bufferPosition = 0;
-    // reset the number of files
-    _fileList->numberOfFiles = 0;
     while ((dp = readdir(dir)) != NULL)
     {
          // Skip . and ..
@@ -316,6 +318,11 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAl
 
     // Close directory stream
     closedir(dir);
+
+    if (_fileList->numberOfFiles > 0) {
+        _fileList->stringBuffer[bufferPosition - 1] = '\0';
+    }
+
     if(_isAlphabetical == AF_TRUE){
         AF_File_OrderAlphabetically(_fileList);
     }

@@ -764,6 +764,12 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 
 	// Filtering
 	_sprite->filtering = cJSON_GetObjectItem(_spriteJSON, "filtering")->valueint;
+
+	// isGUI
+	cJSON* isGuiJSON= cJSON_GetObjectItem(_spriteJSON, "isGUI");
+	if(isGuiJSON != NULL) {
+		_sprite->isGUI = isGuiJSON->valueint;
+	} 
 }
 
 // rigidbody
@@ -2207,7 +2213,9 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	cJSON_AddNumberToObject(returnJSON, "filtering", filtering);
 
 
-	// Save the sprite mesh data
+	// Is GUI
+	af_bool_t isGUI = _sprite->isGUI;
+	cJSON_AddNumberToObject(returnJSON, "isGUI", isGUI);
 	
 
 	return returnJSON;
