@@ -186,6 +186,28 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         af_bool_t hasSprite = AF_Component_GetHas(_appData->ecs.sprites[i].enabled);
         if (hasSprite == AF_TRUE) {
             AF_CSprite* spriteComponent = &_appData->ecs.sprites[i];
+
+            // Legacy scene compatibility: older editor versions could save sprite components
+            // with mesh shaders like "unlit" or "litShadowTexture" which are 3D world-space.
+            // Sprite rendering expects the 2D screen-space sprite shader.
+            if ((strcmp(spriteComponent->spriteMesh.shader.name, "unlit") == 0) ||
+                (strcmp(spriteComponent->spriteMesh.shader.name, "litShadowTexture") == 0)) {
+                snprintf(spriteComponent->spriteMesh.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", "sprite");
+                snprintf(
+                    spriteComponent->spriteMesh.shader.vertPath,
+                    AF_MAX_PATH_CHAR_SIZE,
+                    "%s/shaders/%s/sprite.vert",
+                    _appData->projectData.assetsPath,
+                    AF_Platform_Mappings[_appData->projectData.platformData.platformType].name
+                );
+                snprintf(
+                    spriteComponent->spriteMesh.shader.fragPath,
+                    AF_MAX_PATH_CHAR_SIZE,
+                    "%s/shaders/%s/sprite.frag",
+                    _appData->projectData.assetsPath,
+                    AF_Platform_Mappings[_appData->projectData.platformData.platformType].name
+                );
+            }
             
             // Reload the sprite's mesh and texture from their file paths.
             // AF_MeshLoad_FromFile will handle loading the model data and shader.
