@@ -25,25 +25,6 @@ extern "C" {
 #define AF_CTEXT_DEFAULT_TEXT_FRAG_PATH "text.frag"
 //#define AF_CTEXT_DEFAULT_TEXT_TEXTURE_NAME "atlas.png"
 
-typedef enum AF_TextAnchor_e {
-    AF_ANCHOR_TOP_LEFT,
-    AF_ANCHOR_TOP_CENTRE,
-    AF_ANCHOR_TOP_RIGHT,
-    AF_ANCHOR_MIDDLE_LEFT,
-    AF_ANCHOR_MIDDLE_CENTRE,
-    AF_ANCHOR_MIDDLE_RIGHT,
-    AF_ANCHOR_BOTTOM_LEFT,
-    AF_ANCHOR_BOTTOM_CENTRE,
-    AF_ANCHOR_BOTTOM_RIGHT,
-    AF_ANCHOR_ENUM_COUNT
-} AF_TextAnchor_e;
-
-typedef enum AF_TextAlignment_e {
-    AF_TEXT_ALIGNMENT_LEFT,
-    AF_TEXT_ALIGNMENT_CENTER,
-    AF_TEXT_ALIGNMENT_RIGHT,
-    AF_TEXT_ALIGNMENT_ENUM_COUNT
-} AF_TextAlignment_e;
 
 
 
@@ -61,8 +42,8 @@ typedef struct AF_CText {
     void* textData;
     AF_CMesh mesh;
     AF_Font font;
-    AF_TextAnchor_e textAnchor;
-    AF_TextAlignment_e textAlignment; // 0 = left, 1 = center, 2 = right
+    AF_Anchor_e textAnchor;
+    AF_Anchor_e textAlignment; // pivot point for text layout: which position on the text block aligns to screenPos
     uint32_t characterCount; // number of characters in the text
 } AF_CText;
 

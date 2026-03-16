@@ -40,7 +40,9 @@ AF_CSprite AF_CSprite_ZERO(void){
 		.isPlaying = AF_FALSE,
 		.filtering = AF_FALSE,
 		.spriteMesh = AF_CMesh_ZERO(),
-		.isGUI = AF_FALSE
+		.isGUI = AF_FALSE,
+		.anchor = AF_ANCHOR_TOP_LEFT,
+		.alignment = AF_ANCHOR_TOP_LEFT
 		};
 	return returnSprite;
 }
@@ -83,7 +85,9 @@ AF_CSprite AF_CSprite_ADD(void){
 		.isPlaying = AF_FALSE, 
 		.filtering = AF_FALSE,
 		.spriteMesh = AF_CMesh_ZERO(),
-		.isGUI = AF_FALSE
+		.isGUI = AF_FALSE,
+		.anchor = AF_ANCHOR_TOP_LEFT,
+		.alignment = AF_ANCHOR_TOP_LEFT
 	};
 
 	snprintf(returnSprite.spriteMesh.meshPath, AF_MAX_PATH_CHAR_SIZE, "%s", AF_CSPRITE_DEFAULT_SPRITE_MESH_NAME);

@@ -46,6 +46,37 @@ typedef char flag_t;		// 1 byte char to hold up to 8 flags
 //#define FLAG_6 0x20		// Flag 6		0010 0000
 //#define FLAG_7 0x40		// Flag 7 		0100 0000
 //#define FLAG_8 0x80		// Flag 8		1000 0000
+typedef enum AF_Anchor_e {
+    AF_ANCHOR_TOP_LEFT,
+    AF_ANCHOR_TOP_CENTRE,
+    AF_ANCHOR_TOP_RIGHT,
+    AF_ANCHOR_MIDDLE_LEFT,
+    AF_ANCHOR_MIDDLE_CENTRE,
+    AF_ANCHOR_MIDDLE_RIGHT,
+    AF_ANCHOR_BOTTOM_LEFT,
+    AF_ANCHOR_BOTTOM_CENTRE,
+    AF_ANCHOR_BOTTOM_RIGHT,
+    AF_ANCHOR_ENUM_COUNT
+} AF_Anchor_e;
+
+
+// enum to text mapping
+typedef struct AF_AnchorComponentMap {
+    AF_Anchor_e anchorEnum;
+    const char* anchorName; 
+} AF_AnchorComponentMap;
+
+static AF_AnchorComponentMap AF_AnchorComponentMappings[] = {
+    {AF_ANCHOR_TOP_LEFT, "Top Left"},
+    {AF_ANCHOR_TOP_CENTRE, "Top Centre"},
+    {AF_ANCHOR_TOP_RIGHT, "Top Right"},
+    {AF_ANCHOR_MIDDLE_LEFT, "Middle Left"},
+    {AF_ANCHOR_MIDDLE_CENTRE, "Middle Centre"},
+    {AF_ANCHOR_MIDDLE_RIGHT, "Middle Right"},
+    {AF_ANCHOR_BOTTOM_LEFT, "Bottom Left"},
+    {AF_ANCHOR_BOTTOM_CENTRE, "Bottom Centre"},
+    {AF_ANCHOR_BOTTOM_RIGHT, "Bottom Right"}
+};
 
 // Helper sizeof to find the size of an array, as sizeof only tells you the size of the array pointer
 #endif

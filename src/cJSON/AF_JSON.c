@@ -298,6 +298,7 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		ecs->currentEntity++; // Increment entity index for each entity found
 	}
 
+	cJSON_Delete(rootJSON);
 	return AF_TRUE;
 
 }
@@ -331,14 +332,17 @@ af_bool_t AF_JSON_SaveProjectDataToJson(AF_ProjectData* _projectData, char* _cha
 	cJSON* buildData = cJSON_AddNullToObject(rootJSON, "buildData");
 
 	// save to text buffer
-	snprintf(_charBuffer, _charBufferSize, "%s", cJSON_Print(rootJSON));
-	if (_charBuffer == NULL)
+	char* printedProjectJSON = cJSON_Print(rootJSON);
+	cJSON_Delete(rootJSON);
+	if (printedProjectJSON == NULL)
 	{
-		AF_Log_Error("AF_JSON_SaveProjectDataToJson: Failed to print monitor.\n");
+		AF_Log_Error("AF_JSON_SaveProjectDataToJson: cJSON_Print failed - out of memory?\n");
 		return AF_FALSE;
 	}
+	snprintf(_charBuffer, _charBufferSize, "%s", printedProjectJSON);
+	free(printedProjectJSON);
 
-	return returnBool;
+	return AF_TRUE;
 
 }
 
@@ -487,12 +491,15 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 	}
 
 	// save to text buffer
-	snprintf(_charBuffer, _charBufferSize, "%s", cJSON_Print(rootJSON));
-	if (_charBuffer == NULL)
+	char* printedJSON = cJSON_Print(rootJSON);
+	cJSON_Delete(rootJSON);
+	if (printedJSON == NULL)
 	{
-		AF_Log_Error("AF_JSON_SaveECSToJson: Failed to print monitor.\n");
+		AF_Log_Error("AF_JSON_SaveECSToJson: cJSON_Print failed - out of memory?\n");
 		return AF_FALSE;
 	}
+	snprintf(_charBuffer, _charBufferSize, "%s", printedJSON);
+	free(printedJSON);
 
 	return AF_TRUE;
 }
@@ -605,6 +612,28 @@ void AF_JSON_JsonToSprite(cJSON* _spriteJSON, AF_CSprite* _sprite) {
 	if (spritePosJSON != NULL) {
 		_sprite->spritePos.x = cJSON_GetArrayItem(spritePosJSON, 0)->valuedouble;
 		_sprite->spritePos.y = cJSON_GetArrayItem(spritePosJSON, 1)->valuedouble;
+	}
+
+	// anchor
+	cJSON* anchorJSON = cJSON_GetObjectItem(_spriteJSON, "anchor");
+	if (anchorJSON != NULL) {
+		int anchorInt = anchorJSON->valueint;
+		if (anchorInt >= 0 && anchorInt < AF_ANCHOR_ENUM_COUNT) {
+			_sprite->anchor = (AF_Anchor_e)anchorInt;
+		}
+	}	
+
+	// alignment
+	cJSON* alignmentJSON = cJSON_GetObjectItem(_spriteJSON, "alignment");
+	if (alignmentJSON == NULL) {
+		// Backward compatibility with older scene files
+		alignmentJSON = cJSON_GetObjectItem(_spriteJSON, "allignment");
+	}
+	if (alignmentJSON != NULL) {
+		int alignmentInt = alignmentJSON->valueint;
+		if (alignmentInt >= 0 && alignmentInt < AF_ANCHOR_ENUM_COUNT) {
+			_sprite->alignment = (AF_Anchor_e)alignmentInt;
+		}
 	}
 
 	// Sprite Size
@@ -1541,13 +1570,19 @@ void AF_JSON_JsonToText(cJSON* _textJSON, AF_CText* _text) {
 	// textAnchor
 	cJSON* textAnchorJSON = cJSON_GetObjectItem(_textJSON, "textAnchor");
 	if (textAnchorJSON != NULL) {
-		_text->textAnchor = (enum AF_TextAnchor_e)textAnchorJSON->valueint;
+		int textAnchorInt = textAnchorJSON->valueint;
+		if (textAnchorInt >= 0 && textAnchorInt < AF_ANCHOR_ENUM_COUNT) {
+			_text->textAnchor = (AF_Anchor_e)textAnchorInt;
+		}
 	}
 
 	// text alignment
 	cJSON* textAlignmentJSON = cJSON_GetObjectItem(_textJSON, "textAlignment");
 	if (textAlignmentJSON != NULL) {
-		_text->textAlignment = (enum AF_TextAlignment_e)textAlignmentJSON->valueint;
+		int textAlignmentInt = textAlignmentJSON->valueint;
+		if (textAlignmentInt >= 0 && textAlignmentInt < AF_ANCHOR_ENUM_COUNT) {
+			_text->textAlignment = (AF_Anchor_e)textAlignmentInt;
+		}
 	}
 
 
@@ -2131,6 +2166,12 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	Vec2 spritePos = _sprite->spritePos;		    // 8 bytes
 	AF_JSON_Vec2ToJson("spritePos", &spritePos, returnJSON);
 
+	// anchor 
+	cJSON_AddNumberToObject(returnJSON, "anchor", _sprite->anchor);
+
+	// alignment
+	cJSON_AddNumberToObject(returnJSON, "alignment", _sprite->alignment);
+
 	// sprite size
 	Vec2 spriteSize = _sprite->spriteSize;    	// size of sprite in pixels
 	AF_JSON_Vec2ToJson("spriteSize", &spriteSize, returnJSON);
@@ -2138,6 +2179,7 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	// sprite frame pos
 	Vec2 spriteFramePos = _sprite->spriteFramePos;    	// frame pos of sprite in pixels
 	AF_JSON_Vec2ToJson("spriteFramePos", &spriteFramePos, returnJSON);
+
 
 	// sprite frame size
 	Vec2 spriteFrameSize = _sprite->spriteFrameSize;    	// frame size of sprite in pixels

@@ -1,11 +1,9 @@
-/*
-===============================================================================
-AF_OpenGL_Renderer Implementation
 
-Implementation of the AF_Renderer rendering functions
-This implementation is for OpenGL
-===============================================================================
-*/
+// ===============================================================================
+// AF_OpenGL_Renderer Implementation
+// Implementation of the AF_Renderer rendering functions
+// This implementation is for OpenGL
+// ===============================================================================
 #include <stdio.h>
 #include "AF_Lib_Define.h"
 #include "AF_Renderer.h"
@@ -60,12 +58,90 @@ const char* outOfMemory = "OUT_OF_MEMORY";
 const char* invalidFrameBufferOperation = "INVALID_FRAMEBUFFER_OPERATION";
 const char* SHADER_ASSET_PATH = "assets/shaders";
 
-/*
-====================
-AF_Renderer_Awake
-Init OpenGL
-====================
-*/
+static void AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityIndex, AF_FLOAT* _parentOffsetX, AF_FLOAT* _parentOffsetY, AF_FLOAT* _parentExtentX, AF_FLOAT* _parentExtentY){
+	if(_ecs == NULL || _parentOffsetX == NULL || _parentOffsetY == NULL || _parentExtentX == NULL || _parentExtentY == NULL){
+		return;
+	}
+
+	*_parentOffsetX = 0.0f;
+	*_parentOffsetY = 0.0f;
+	// Keep the caller-provided extents when no valid parent exists (root UI fallback uses viewport extents).
+
+	if(_entityIndex >= _ecs->entitiesCount){
+		return;
+	}
+
+	uint32_t currentID = _entityIndex;
+	uint32_t guardCount = 0;
+	af_bool_t hasDirectParent = AF_FALSE;
+
+	while(guardCount < _ecs->entitiesCount){
+		uint32_t parentID = _ecs->entities[currentID].parentID;
+		if(parentID == currentID || parentID >= _ecs->entitiesCount){
+			break;
+		}
+
+		AF_CTransform3D* parentTransform = &_ecs->transforms[parentID];
+		*_parentOffsetX += parentTransform->pos.x;
+		*_parentOffsetY += parentTransform->pos.y;
+
+		if(hasDirectParent == AF_FALSE){
+			*_parentExtentX = parentTransform->scale.x;
+			*_parentExtentY = parentTransform->scale.y;
+			hasDirectParent = AF_TRUE;
+		}
+
+		currentID = parentID;
+		guardCount++;
+	}
+}
+
+static void AF_Renderer_ApplyAnchorOffset(AF_Anchor_e _anchor, AF_FLOAT _extentX, AF_FLOAT _extentY, AF_FLOAT* _x, AF_FLOAT* _y){
+	if(_x == NULL || _y == NULL){
+		return;
+	}
+
+	switch(_anchor){
+		case AF_ANCHOR_TOP_LEFT:
+			break;
+		case AF_ANCHOR_TOP_CENTRE:
+			*_x += _extentX * 0.5f;
+			break;
+		case AF_ANCHOR_TOP_RIGHT:
+			*_x += _extentX;
+			break;
+		case AF_ANCHOR_MIDDLE_LEFT:
+			*_y += _extentY * 0.5f;
+			break;
+		case AF_ANCHOR_MIDDLE_CENTRE:
+			*_x += _extentX * 0.5f;
+			*_y += _extentY * 0.5f;
+			break;
+		case AF_ANCHOR_MIDDLE_RIGHT:
+			*_x += _extentX;
+			*_y += _extentY * 0.5f;
+			break;
+		case AF_ANCHOR_BOTTOM_LEFT:
+			*_y += _extentY;
+			break;
+		case AF_ANCHOR_BOTTOM_CENTRE:
+			*_x += _extentX * 0.5f;
+			*_y += _extentY;
+			break;
+		case AF_ANCHOR_BOTTOM_RIGHT:
+			*_x += _extentX;
+			*_y += _extentY;
+			break;
+		case AF_ANCHOR_ENUM_COUNT:
+			break;
+	}
+}
+
+
+// ====================
+// AF_Renderer_Awake
+// Init OpenGL
+// ====================
 af_bool_t AF_Renderer_Awake(void){
     af_bool_t success = AF_TRUE;
     AF_Log("AF_Renderer_Awake\n");
@@ -96,12 +172,11 @@ af_bool_t AF_Renderer_Awake(void){
     return success;
 } 
 
-/*
-====================
-AF_Renderer_Start
-Start function which occurs after everything is loaded in.
-====================
-*/
+
+// ====================
+// AF_Renderer_Start
+// Start function which occurs after everything is loaded in.
+// ====================
 af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight){
 	AF_Log("AF_Renderer_Start\n");
 
@@ -359,12 +434,11 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 
 // ============================  MAIN RENDERING PASSES ================================
 
-/*
-====================
-AF_Renderer_Render
-Simple render command to decide how to progress other rendering steps
-====================
-*/
+
+// ====================
+// AF_Renderer_Render
+// Simple render command to decide how to progress other rendering steps
+// ====================
 void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
 	// START RENDERING
 	AF_Renderer_CheckError( "AF_Renderer_Render: Error at start of Rendering OpenGL setting color and clearing screen! \n");
@@ -401,12 +475,11 @@ void AF_Renderer_Render(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_Light
 }
 
 
-/*
-====================
-AF_Renderer_StartForwardRendering
-Simple render command to perform forward rendering steps
-====================
-*/
+
+// ====================
+// AF_Renderer_StartForwardRendering
+// Simple render command to perform forward rendering steps
+// ====================
 void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderingData, AF_LightingData* _lightingData, uint32_t _cameraID){
     AF_Renderer_CheckError("AF_Renderer_StartForwardRendering: Start Forward rendering\n");
     AF_CCamera* camera = &_ecs->cameras[_cameraID];
@@ -579,24 +652,22 @@ void AF_Renderer_StartForwardRendering(AF_ECS* _ecs, AF_RenderingData* _renderin
 }
 
 
-/*
-====================
-AF_Renderer_EndForwardRendering
-Simple render command to cleanup forward rendering steps
-====================
-*/
+
+// ====================
+// AF_Renderer_EndForwardRendering
+// Simple render command to cleanup forward rendering steps
+// ====================
 void AF_Renderer_EndForwardRendering(void){
 
 	
 
 }
 
-/*
-====================
-AF_Renderer_DrawSpriteMeshes
-Render sprite meshes
-====================
-*/
+
+// ====================
+// AF_Renderer_DrawSpriteMeshes
+// Render sprite meshes
+// ====================
 void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) {
     AF_Renderer_CheckError("AF_Renderer_DrawSpriteMeshes: Start rendering sprite meshes\n");
 
@@ -645,11 +716,68 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
         
 		// Tell the shader to use texture unit 0 for the 'sprite' sampler
         AF_Shader_SetInt(spriteComp->spriteMesh.shader.shaderID, "sprite", 0);
-        // Calculate vertex positions based on sprite component data
-        float xpos = transform->pos.x;//spriteComp->spritePos.x;
-        float ypos = transform->pos.y;//spriteComp->spritePos.y;
-        float w = transform->scale.x * spriteComp->spriteSize.x;
-        float h = transform->scale.y * spriteComp->spriteSize.y;
+		// Calculate vertex positions based on sprite component data
+		AF_FLOAT xpos = transform->pos.x;
+		AF_FLOAT ypos = transform->pos.y;
+
+		if(spriteComp->isGUI == AF_TRUE){
+			AF_FLOAT parentExtentX = screenWidth;
+			AF_FLOAT parentExtentY = screenHeight;
+			AF_FLOAT parentOffsetX = 0.0f;
+			AF_FLOAT parentOffsetY = 0.0f;
+
+			// UI mode: local sprite position is in screen space and inherits parent transform offsets.
+			xpos = spriteComp->spritePos.x;
+			ypos = spriteComp->spritePos.y;
+			AF_Renderer_ResolveUIParentData(_ecs, i, &parentOffsetX, &parentOffsetY, &parentExtentX, &parentExtentY);
+			xpos += parentOffsetX;
+			ypos += parentOffsetY;
+			AF_Renderer_ApplyAnchorOffset(spriteComp->anchor, parentExtentX, parentExtentY, &xpos, &ypos);
+		}
+		float w = 0;
+		float h = 0;
+		// if isGUI, use screen space size, otherwise use world transform space size
+		w = spriteComp->spriteSize.x;//spriteComp->spriteScale.x;
+		h = spriteComp->spriteSize.y;//spriteComp->spriteScale.y;
+
+
+		// alignment
+		// apply alignment - pivot the sprite relative to its anchor position
+		switch (spriteComp->alignment) {
+			case AF_ANCHOR_TOP_LEFT:
+				break;
+			case AF_ANCHOR_TOP_CENTRE:
+				xpos -= w * 0.5f;
+				break;
+			case AF_ANCHOR_TOP_RIGHT:
+				xpos -= w;
+				break;
+			case AF_ANCHOR_MIDDLE_LEFT:
+				ypos -= h * 0.5f;
+				break;
+			case AF_ANCHOR_MIDDLE_CENTRE:
+				xpos -= w * 0.5f;
+				ypos -= h * 0.5f;
+				break;
+			case AF_ANCHOR_MIDDLE_RIGHT:
+				xpos -= w;
+				ypos -= h * 0.5f;
+				break;
+			case AF_ANCHOR_BOTTOM_LEFT:
+				ypos -= h;
+				break;
+			case AF_ANCHOR_BOTTOM_CENTRE:
+				xpos -= w * 0.5f;
+				ypos -= h;
+				break;
+			case AF_ANCHOR_BOTTOM_RIGHT:
+				xpos -= w;
+				ypos -= h;
+				break;
+			case AF_ANCHOR_ENUM_COUNT:
+				break;
+		}
+
 
         float vertices[6][5] = {
             {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
@@ -700,12 +828,11 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
     AF_Renderer_CheckError("AF_Renderer_DrawSpriteMeshes: Finished rendering sprite meshes\n");
 }
 
-/*
-====================
-AF_Renderer_DrawTextMeshes
-Render text meshes
-====================
-*/
+
+// ====================
+// AF_Renderer_DrawTextMeshes
+// Render text meshes
+// ====================
 void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) {
     AF_Renderer_CheckError("AF_Renderer_DrawTextMeshes: Start rendering text meshes\n");
     // Bind the framebuffer 
@@ -751,86 +878,87 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
         // bind the VAO
         glBindVertexArray(textMeshComp->mesh.meshes[0].vao);
 
-		
-        // 'x' will be our advancing cursor, starting at the component's screen position
-        AF_FLOAT x = textMeshComp->screenPos.x;
-        AF_FLOAT y = textMeshComp->screenPos.y;
+		// Text uses its authored screen-space local position, then inherits parent transform offsets.
+		AF_FLOAT x = textMeshComp->screenPos.x;
+		AF_FLOAT y = textMeshComp->screenPos.y;
 
-		// Adjust the x, y based on the anchorpoint
-		// based on the anchor enum, adjust the starting x and y position based on the screen width/height
-		switch(textMeshComp->textAnchor){
-			case AF_ANCHOR_TOP_LEFT:
-				// no adjustment needed
-			break;
-			case AF_ANCHOR_TOP_CENTRE:
-				x += screenWidth * 0.5f;
-			break;
-			case AF_ANCHOR_TOP_RIGHT:
-				x += screenWidth;
-			break;
-			case AF_ANCHOR_MIDDLE_LEFT:
-				y += screenHeight * 0.5f;
-			break;
-			case AF_ANCHOR_MIDDLE_CENTRE:
-				x += screenWidth * 0.5f;
-				y += screenHeight * 0.5f;
-			break;
-			case AF_ANCHOR_MIDDLE_RIGHT:
-				x += screenWidth;
-				y += screenHeight * 0.5f;
-			break;
-			case AF_ANCHOR_BOTTOM_LEFT:
-				y += screenHeight;
-			break;
-			case AF_ANCHOR_BOTTOM_CENTRE:
-				x += screenWidth * 0.5f;	
-				y += screenHeight;
-			break;
-			case AF_ANCHOR_BOTTOM_RIGHT:
-				x += screenWidth;
-				y += screenHeight;
-			break;
-			case AF_ANCHOR_ENUM_COUNT:
-				// no adjustment needed, user will handle it with the screenPos
-			break;
-		}
+		AF_FLOAT parentExtentX = screenWidth;
+		AF_FLOAT parentExtentY = screenHeight;
+		AF_FLOAT parentOffsetX = 0.0f;
+		AF_FLOAT parentOffsetY = 0.0f;
+		AF_Renderer_ResolveUIParentData(_ecs, i, &parentOffsetX, &parentOffsetY, &parentExtentX, &parentExtentY);
+		x += parentOffsetX;
+		y += parentOffsetY;
+		AF_Renderer_ApplyAnchorOffset(textMeshComp->textAnchor, parentExtentX, parentExtentY, &x, &y);
+		
+        // 'x' will be our advancing cursor, starting at the component's anchored screen position
 		
 		
 		
 
-		// Establish a baseline so the text renders correctly.
-        // We assume the user provides 'y' as the desired top coordinate.
-        // The baseline is then y + the ascender of the font.
-        // We'll use the bearing of the first character as an approximation for the ascender.
-        AF_Font* font = &textMeshComp->font;
-        AF_FLOAT baseline = y + font->characters[(unsigned char)textMeshComp->text[0]].Bearing.y;
+		AF_Font* font = &textMeshComp->font;
 
-
-		// Calculate the total text width
+		// Compute text block metrics from glyphs so alignment works even when textBounds is stale.
 		AF_FLOAT totalTextWidth = 0.0f;
+		AF_FLOAT maxAscent = 0.0f;
+		AF_FLOAT maxDescent = 0.0f;
 		for (uint32_t i = 0; i < AF_MAX_PATH_CHAR_SIZE; i++) {
 			if(textMeshComp->text[i] == '\0') {
 				break;
 			}
 			AF_Character ch = font->characters[(unsigned char)textMeshComp->text[i]];
 			totalTextWidth += (ch.Advance >> 6); // bitshift by 6
-		}
 
-		// apply alignment
+			AF_FLOAT glyphTop = (AF_FLOAT)ch.Bearing.y;
+			AF_FLOAT glyphBottom = (AF_FLOAT)(ch.Size.y - ch.Bearing.y);
+			if (glyphTop > maxAscent) {
+				maxAscent = glyphTop;
+			}
+			if (glyphBottom > maxDescent) {
+				maxDescent = glyphBottom;
+			}
+		}
+		AF_FLOAT totalTextHeight = maxAscent + maxDescent;
+
+		// apply alignment - pivot the text block relative to its anchor position
 		switch (textMeshComp->textAlignment) {
-			case AF_TEXT_ALIGNMENT_LEFT:
-				// no adjustment needed
+			case AF_ANCHOR_TOP_LEFT:
 				break;
-			case AF_TEXT_ALIGNMENT_CENTER:
+			case AF_ANCHOR_TOP_CENTRE:
 				x -= totalTextWidth * 0.5f;
 				break;
-			case AF_TEXT_ALIGNMENT_RIGHT:
+			case AF_ANCHOR_TOP_RIGHT:
 				x -= totalTextWidth;
 				break;
-			case AF_TEXT_ALIGNMENT_ENUM_COUNT:
-				// no adjustment needed, user will handle it with the screenPos
+			case AF_ANCHOR_MIDDLE_LEFT:
+					y -= totalTextHeight * 0.5f;
+				break;
+			case AF_ANCHOR_MIDDLE_CENTRE:
+				x -= totalTextWidth * 0.5f;
+					y -= totalTextHeight * 0.5f;
+				break;
+			case AF_ANCHOR_MIDDLE_RIGHT:
+				x -= totalTextWidth;
+					y -= totalTextHeight * 0.5f;
+				break;
+			case AF_ANCHOR_BOTTOM_LEFT:
+					y -= totalTextHeight;
+				break;
+			case AF_ANCHOR_BOTTOM_CENTRE:
+				x -= totalTextWidth * 0.5f;
+					y -= totalTextHeight;
+				break;
+			case AF_ANCHOR_BOTTOM_RIGHT:
+				x -= totalTextWidth;
+					y -= totalTextHeight;
+				break;
+			case AF_ANCHOR_ENUM_COUNT:
 				break;
 		}
+
+
+		// Establish the baseline after alignment offsets are applied.
+		AF_FLOAT baseline = y + maxAscent;
 
         
         // for each character in the text
@@ -1017,12 +1145,11 @@ void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName
 // These functions iterate through ECS entities and draw different mesh types
 // Tightly coupled with OpenGL - keep here for now
 
-/*
-====================
-AF_Renderer_DrawMeshes
-Loop through the entities and draw the meshes that have components attached
-====================
-*/
+
+// ====================
+// AF_Renderer_DrawMeshes
+// Loop through the entities and draw the meshes that have components attached
+// ====================
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
 	
 	for(uint32_t i = 0; i < _ecs->meshSparseSet.count; ++i){
@@ -1069,12 +1196,11 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 	AF_Renderer_CheckError("AF_Renderer_DrawMeshes: Finished drawing all the meshes");
 }
 
-/*
-====================
-AF_Renderer_DrawCollisionMeshes
-Loop through the entities and draw the meshes that have components attached
-====================
-*/
+
+// ====================
+// AF_Renderer_DrawCollisionMeshes
+// Loop through the entities and draw the meshes that have components attached
+// ====================
 void AF_Renderer_DrawCollisionMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
 	if (_renderingData->showPhysicsDebug == AF_FALSE) {
 		return;
@@ -1323,12 +1449,11 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
     AF_Renderer_UnbindTextures();
 }
 
-/*
-====================
-AF_Renderer_RenderScreenDebugFBOQuad
-Render the quad to the screen and swap the debug frame buffers over.
-====================
-*/
+
+// ====================
+// AF_Renderer_RenderScreenDebugFBOQuad
+// Render the quad to the screen and swap the debug frame buffers over.
+// ====================
 void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData){
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenDebugFBOQuad: Start Render debug quad\n");
 	
@@ -1351,12 +1476,11 @@ void AF_Renderer_RenderScreenDebugFBOQuad(AF_RenderingData* _renderingData){
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenDebugFBOQuad: Finish Render debug quad\n");
 }
 
-/*
-====================
-AF_Renderer_CreateScreenFBOQuadMeshBuffer
-Render the quad to the screen and swap the frame buffers over.
-====================
-*/
+
+// ====================
+// AF_Renderer_CreateScreenFBOQuadMeshBuffer
+// Render the quad to the screen and swap the frame buffers over.
+// ====================
 void AF_Renderer_RenderScreenFBOQuad(AF_RenderingData* _renderingData){
 	AF_Renderer_CheckError("AF_Renderer_RenderScreenFBOQuad: Start Render debug quad\n");
 	AF_RendererFramebuffer_BindFrameBuffer(0);
@@ -1398,13 +1522,12 @@ void AF_Renderer_InitMeshBuffers(AF_CMesh* _mesh, uint32_t _entityCount){
 
 
 // ============================  FRAMEBUFFER OPERATIONS ================================ 
-/*
-====================
-AF_Renderer_FrameResized
-Called by event or callback
-Update the Framebuffer as the window size has changed
-====================
-*/
+
+// ====================
+// AF_Renderer_FrameResized
+// Called by event or callback
+// Update the Framebuffer as the window size has changed
+// ====================
 void AF_Renderer_FrameResized(void* _renderingData){
 	if(_renderingData == NULL){
 		AF_Log_Error("AF_Renderer_FrameResized: passed null reference\n");
@@ -1452,13 +1575,13 @@ void AF_Renderer_FrameResized(void* _renderingData){
 }
 
 
-/*
-====================
-AF_Renderer_CreateDepthMapFBO
-Create frame buffer object
-return framebuffer index uint32_t
-====================
-*/
+
+// ====================
+// AF_Renderer_CreateDepthMapFBO
+// Create frame buffer object
+// return framebuffer index uint32_t
+// ====================
+
 
 // ============================  DEPTH ================================ 
 /*

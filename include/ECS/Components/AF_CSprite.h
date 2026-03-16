@@ -12,6 +12,7 @@ and helper functions
 #include "AF_Component.h"
 #include "AF_Math/AF_Vec2.h"
 #include "AF_CMesh.h"
+#include "AF_Lib_Define.h"
 #ifdef __cplusplus
 extern "C" {    
 #endif
@@ -59,8 +60,9 @@ typedef struct {
 	af_bool_t isPlaying;
 	af_bool_t filtering;
 	AF_CMesh spriteMesh; // 64 bytes
-	af_bool_t isGUI;
-	
+	af_bool_t isGUI;		// if true, sprite will be rendered in screen space and ignore camera
+	AF_Anchor_e anchor;		// if isGUI is true, use this to determine how to position the sprite relative to its spritePos. e.g. top left, center, etc.
+	AF_Anchor_e alignment;	// pivot point for the sprite relative to its anchor: which corner/edge of the sprite is at the anchor position
 } AF_CSprite;
 
 
