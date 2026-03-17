@@ -2,6 +2,10 @@
 #include <time.h>   // for clock_gettime
 #include <assert.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 // ====================
 // AF_Time_Init
 // Initialise the struct variables. 
@@ -38,10 +42,18 @@ void AF_Time_Update(AF_Time* _time){
 // Helper function to get the current time in ticks using clock_gettime for better precision
 // ====================
 uint64_t AF_GetRawTicks(void){
+	#ifdef _WIN32
+	LARGE_INTEGER counter;
+	LARGE_INTEGER frequency;
+	QueryPerformanceCounter(&counter);
+	QueryPerformanceFrequency(&frequency);
+	return (uint64_t)((counter.QuadPart * 1000000000ULL) / frequency.QuadPart);
+	#else
 	struct timespec timeSpec;
     // use CLOCK_MONOTONIC_RAW for the most precise timer available, unaffected by NTP adjustments
 	clock_gettime(CLOCK_MONOTONIC_RAW, &timeSpec);
 	return (uint64_t)timeSpec.tv_sec * 1000000000ULL + (uint64_t)timeSpec.tv_nsec;
+	#endif
 }	
 
 // ====================
@@ -49,7 +61,15 @@ uint64_t AF_GetRawTicks(void){
 // Helper function to get the current time in seconds using clock_gettime for better precision
 // ====================
 double AF_Time_GetTime(void){
+	#ifdef _WIN32
+	LARGE_INTEGER counter;
+	LARGE_INTEGER frequency;
+	QueryPerformanceCounter(&counter);
+	QueryPerformanceFrequency(&frequency);
+	return (double)counter.QuadPart / (double)frequency.QuadPart;
+	#else
 	struct timespec timeSpec;
 	clock_gettime(CLOCK_MONOTONIC, &timeSpec);
 	return (double)(timeSpec.tv_sec) + (double)(timeSpec.tv_nsec) * 1.0e-9; // multiply nanoseconds by 1e-9 to convert to seconds
+	#endif
 }
