@@ -1931,7 +1931,12 @@ void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
 						case AF_EDITOR_VAR_TYPE_BOOL:
 							_scripts->scriptEditorVarData[i].data.boolValue = cJSON_IsTrue(editorVarValueJSON) || (cJSON_IsNumber(editorVarValueJSON) && editorVarValueJSON->valueint) ? AF_TRUE : AF_FALSE;
 							break;
-
+						case AF_EDITOR_VAR_TYPE_VEC2:
+							if (cJSON_IsArray(editorVarValueJSON) && cJSON_GetArraySize(editorVarValueJSON) == 2) {
+								_scripts->scriptEditorVarData[i].data.vec3Value[0] = (AF_FLOAT)cJSON_GetArrayItem(editorVarValueJSON, 0)->valuedouble;
+								_scripts->scriptEditorVarData[i].data.vec3Value[1] = (AF_FLOAT)cJSON_GetArrayItem(editorVarValueJSON, 1)->valuedouble;
+							}
+							break;
 						case AF_EDITOR_VAR_TYPE_VEC3:
 							if (cJSON_IsArray(editorVarValueJSON) && cJSON_GetArraySize(editorVarValueJSON) == 3) {
 								_scripts->scriptEditorVarData[i].data.vec3Value[0] = (AF_FLOAT)cJSON_GetArrayItem(editorVarValueJSON, 0)->valuedouble;
@@ -3048,6 +3053,12 @@ cJSON* AF_JSON_ScriptsToJson(AF_CScript* _component) {
 				break;
 			case AF_EDITOR_VAR_TYPE_BOOL:
 				cJSON_AddBoolToObject(varObj, "value", propertyMetaData->data.boolValue == AF_TRUE);
+				break;
+			case AF_EDITOR_VAR_TYPE_VEC2:
+			{
+				cJSON* vec2Array = cJSON_CreateFloatArray(propertyMetaData->data.vec2Value, 2);
+				cJSON_AddItemToObject(varObj, "value", vec2Array);
+			}
 				break;
 			case AF_EDITOR_VAR_TYPE_VEC3:
 			{

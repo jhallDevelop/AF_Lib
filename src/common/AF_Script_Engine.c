@@ -535,7 +535,10 @@ AF_EDITOR_VAR_TYPE_e AF_Script_MapStringToEditorVarType(const char* _typeString)
         return AF_EDITOR_VAR_TYPE_STRING;
     }else if(strcmp(_typeString, "Vec3") == 0){
         return AF_EDITOR_VAR_TYPE_VEC3;
-    } else if(strcmp(_typeString, "AF_Event_Type_e") == 0){
+    } else if(strcmp(_typeString, "Vec2") == 0){
+        return AF_EDITOR_VAR_TYPE_VEC2;
+    }
+    else if(strcmp(_typeString, "AF_Event_Type_e") == 0){
         return AF_EDITOR_VAR_TYPE_EVENT;
     } 
     else {

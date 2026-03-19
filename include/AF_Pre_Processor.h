@@ -10,6 +10,7 @@ typedef enum AF_EDITOR_VAR_TYPE_e{
     AF_EDITOR_VAR_TYPE_FLOAT,
     AF_EDITOR_VAR_TYPE_BOOL,
     AF_EDITOR_VAR_TYPE_STRING,
+    AF_EDITOR_VAR_TYPE_VEC2,
     AF_EDITOR_VAR_TYPE_VEC3,
     AF_EDITOR_VAR_TYPE_EVENT,
     AF_EDITOR_VAR_TYPE_TOTAL_TYPES
@@ -23,6 +24,7 @@ typedef struct {
         AF_FLOAT floatValue;
         af_bool_t boolValue;
         char strValue[AF_MAX_PATH_CHAR_SIZE];
+        AF_FLOAT vec2Value[2];
         AF_FLOAT vec3Value[3];
         uint32_t eventTypeValue;
     } data;

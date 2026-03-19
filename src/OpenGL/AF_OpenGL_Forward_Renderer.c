@@ -58,22 +58,28 @@ const char* outOfMemory = "OUT_OF_MEMORY";
 const char* invalidFrameBufferOperation = "INVALID_FRAMEBUFFER_OPERATION";
 const char* SHADER_ASSET_PATH = "assets/shaders";
 
-static void AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityIndex, AF_FLOAT* _parentOffsetX, AF_FLOAT* _parentOffsetY, AF_FLOAT* _parentExtentX, AF_FLOAT* _parentExtentY){
-	if(_ecs == NULL || _parentOffsetX == NULL || _parentOffsetY == NULL || _parentExtentX == NULL || _parentExtentY == NULL){
-		return;
+// Forward declaration — used inside ResolveUIParentData before the full definition.
+static void AF_Renderer_ApplyAnchorOffset(AF_Anchor_e _anchor, AF_FLOAT _extentX, AF_FLOAT _extentY, AF_FLOAT* _x, AF_FLOAT* _y);
+
+// Returns AF_TRUE if a parent was found (entity is a child), AF_FALSE if root.
+// Accumulates all ancestor transform positions. If the root ancestor has a GUI
+// sprite with an anchor, that anchor offset against screen size is included so
+// children inherit the root's full rendered position.
+static af_bool_t AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityIndex, AF_FLOAT _screenW, AF_FLOAT _screenH, AF_FLOAT* _parentOffsetX, AF_FLOAT* _parentOffsetY){
+	if(_ecs == NULL || _parentOffsetX == NULL || _parentOffsetY == NULL){
+		return AF_FALSE;
 	}
 
 	*_parentOffsetX = 0.0f;
 	*_parentOffsetY = 0.0f;
-	// Keep the caller-provided extents when no valid parent exists (root UI fallback uses viewport extents).
 
 	if(_entityIndex >= _ecs->entitiesCount){
-		return;
+		return AF_FALSE;
 	}
 
 	uint32_t currentID = _entityIndex;
 	uint32_t guardCount = 0;
-	af_bool_t hasDirectParent = AF_FALSE;
+	af_bool_t hasParent = AF_FALSE;
 
 	while(guardCount < _ecs->entitiesCount){
 		uint32_t parentID = _ecs->entities[currentID].parentID;
@@ -81,19 +87,29 @@ static void AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityIndex,
 			break;
 		}
 
-		AF_CTransform3D* parentTransform = &_ecs->transforms[parentID];
-		*_parentOffsetX += parentTransform->pos.x;
-		*_parentOffsetY += parentTransform->pos.y;
-
-		if(hasDirectParent == AF_FALSE){
-			*_parentExtentX = parentTransform->scale.x;
-			*_parentExtentY = parentTransform->scale.y;
-			hasDirectParent = AF_TRUE;
-		}
+		*_parentOffsetX += _ecs->transforms[parentID].pos.x;
+		*_parentOffsetY += _ecs->transforms[parentID].pos.y;
+		hasParent = AF_TRUE;
 
 		currentID = parentID;
 		guardCount++;
 	}
+
+	// currentID is now the root ancestor. Include its screen anchor so
+	// children position relative to where the root actually renders.
+	if(hasParent == AF_TRUE){
+		AF_CSprite* rootSprite = &_ecs->sprites[currentID];
+		if(AF_Component_GetHas(rootSprite->enabled) == AF_TRUE && rootSprite->isGUI == AF_TRUE){
+			AF_Renderer_ApplyAnchorOffset(rootSprite->anchor, _screenW, _screenH, _parentOffsetX, _parentOffsetY);
+		} else {
+			// Root might be a text entity instead of a sprite
+			AF_CText* rootText = &_ecs->texts[currentID];
+			if(AF_Component_GetHas(rootText->enabled) == AF_TRUE){
+				AF_Renderer_ApplyAnchorOffset(rootText->textAnchor, _screenW, _screenH, _parentOffsetX, _parentOffsetY);
+			}
+		}
+	}
+	return hasParent;
 }
 
 static void AF_Renderer_ApplyAnchorOffset(AF_Anchor_e _anchor, AF_FLOAT _extentX, AF_FLOAT _extentY, AF_FLOAT* _x, AF_FLOAT* _y){
@@ -721,24 +737,24 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
 		AF_FLOAT ypos = transform->pos.y;
 
 		if(spriteComp->isGUI == AF_TRUE){
-			AF_FLOAT parentExtentX = screenWidth;
-			AF_FLOAT parentExtentY = screenHeight;
 			AF_FLOAT parentOffsetX = 0.0f;
 			AF_FLOAT parentOffsetY = 0.0f;
 
-			// UI mode: local sprite position is in screen space and inherits parent transform offsets.
-			xpos = spriteComp->spritePos.x;
-			ypos = spriteComp->spritePos.y;
-			AF_Renderer_ResolveUIParentData(_ecs, i, &parentOffsetX, &parentOffsetY, &parentExtentX, &parentExtentY);
+			xpos = transform->pos.x;
+			ypos = transform->pos.y;
+			af_bool_t hasParent = AF_Renderer_ResolveUIParentData(_ecs, i, screenWidth, screenHeight, &parentOffsetX, &parentOffsetY);
 			xpos += parentOffsetX;
 			ypos += parentOffsetY;
-			AF_Renderer_ApplyAnchorOffset(spriteComp->anchor, parentExtentX, parentExtentY, &xpos, &ypos);
+			// Root: anchor to screen. Child: offset already includes root's anchor.
+			if(hasParent == AF_FALSE){
+				AF_Renderer_ApplyAnchorOffset(spriteComp->anchor, screenWidth, screenHeight, &xpos, &ypos);
+			}
 		}
 		float w = 0;
 		float h = 0;
 		// if isGUI, use screen space size, otherwise use world transform space size
-		w = spriteComp->spriteSize.x;//spriteComp->spriteScale.x;
-		h = spriteComp->spriteSize.y;//spriteComp->spriteScale.y;
+		w = spriteComp->spriteSize.x * transform->scale.x;//spriteComp->spriteScale.x;
+		h = spriteComp->spriteSize.y * transform->scale.y;//spriteComp->spriteScale.y;
 
 
 		// alignment
@@ -777,6 +793,10 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
 			case AF_ANCHOR_ENUM_COUNT:
 				break;
 		}
+
+
+		spriteComp->spritePos.x = xpos;
+		spriteComp->spritePos.y = ypos;
 
 
         float vertices[6][5] = {
@@ -878,18 +898,20 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
         // bind the VAO
         glBindVertexArray(textMeshComp->mesh.meshes[0].vao);
 
-		// Text uses its authored screen-space local position, then inherits parent transform offsets.
-		AF_FLOAT x = textMeshComp->screenPos.x;
-		AF_FLOAT y = textMeshComp->screenPos.y;
+		// Text uses its transform position, matching how sprites work.
+		AF_CTransform3D* transform = &_ecs->transforms[i];
+		AF_FLOAT x = transform->pos.x;
+		AF_FLOAT y = transform->pos.y;
 
-		AF_FLOAT parentExtentX = screenWidth;
-		AF_FLOAT parentExtentY = screenHeight;
 		AF_FLOAT parentOffsetX = 0.0f;
 		AF_FLOAT parentOffsetY = 0.0f;
-		AF_Renderer_ResolveUIParentData(_ecs, i, &parentOffsetX, &parentOffsetY, &parentExtentX, &parentExtentY);
+		af_bool_t textHasParent = AF_Renderer_ResolveUIParentData(_ecs, i, screenWidth, screenHeight, &parentOffsetX, &parentOffsetY);
 		x += parentOffsetX;
 		y += parentOffsetY;
-		AF_Renderer_ApplyAnchorOffset(textMeshComp->textAnchor, parentExtentX, parentExtentY, &x, &y);
+		// Root: anchor to screen. Child: offset already includes root's anchor.
+		if(textHasParent == AF_FALSE){
+			AF_Renderer_ApplyAnchorOffset(textMeshComp->textAnchor, screenWidth, screenHeight, &x, &y);
+		}
 		
         // 'x' will be our advancing cursor, starting at the component's anchored screen position
 		
@@ -902,11 +924,11 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
 		AF_FLOAT totalTextWidth = 0.0f;
 		AF_FLOAT maxAscent = 0.0f;
 		AF_FLOAT maxDescent = 0.0f;
-		for (uint32_t i = 0; i < AF_MAX_PATH_CHAR_SIZE; i++) {
-			if(textMeshComp->text[i] == '\0') {
+		for (uint32_t ci = 0; ci < AF_MAX_PATH_CHAR_SIZE; ci++) {
+			if(textMeshComp->text[ci] == '\0') {
 				break;
 			}
-			AF_Character ch = font->characters[(unsigned char)textMeshComp->text[i]];
+			AF_Character ch = font->characters[(unsigned char)textMeshComp->text[ci]];
 			totalTextWidth += (ch.Advance >> 6); // bitshift by 6
 
 			AF_FLOAT glyphTop = (AF_FLOAT)ch.Bearing.y;
