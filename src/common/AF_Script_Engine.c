@@ -11,6 +11,7 @@
 void* AF_Script_Load(const char* _filePath){
     void* scriptPtr = NULL;
 #ifdef _WIN32
+    (void)_filePath; // Suppress unused variable warning
     AF_Log_Error("AF_Script_Load: Windows not defined\n");
 #else
     // Check file path 
@@ -225,6 +226,8 @@ ScriptFuncPtr AF_GetScriptFuncPtr(void* _sharedObjectPtr, const char* _funcName)
     // Load functions from the shared objects
     ScriptFuncPtr scriptFunctPtr1 = NULL;
 #ifdef _WIN32
+    (void)_funcName; // Suppress unused variable warning
+    (void)_sharedObjectPtr; // Suppress unused variable warning
     AF_Log_Error("AF_GetScriptFuncPtr: Windows not defined\n");
 #else
     scriptFunctPtr1 = (ScriptFuncPtr) dlsym(_sharedObjectPtr, _funcName);
@@ -409,18 +412,31 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
     // declare empty string to store token
     char* token = NULL;
+    char* tokenContext = NULL;
 
     // Get the first token
-    token = strtok(scriptBuffer, delimiter);
+#ifdef _WIN32
+    token = strtok_s(scriptBuffer, delimiter, &tokenContext);
+#else
+    token = strtok_r(scriptBuffer, delimiter, &tokenContext);
+#endif
 
     // continue upto the last token
     while(token != NULL){
             
         // pass null to get next token
-        token = strtok(NULL, delimiter);
+    #ifdef _WIN32
+        token = strtok_s(NULL, delimiter, &tokenContext);
+    #else
+        token = strtok_r(NULL, delimiter, &tokenContext);
+    #endif
         if (token != NULL && strcmp(token, "AF_EDITOR_VAR") == 0) {
             // Get the NEXT token which should be the type (int, float, etc)
-            token = strtok(NULL, delimiter); 
+    #ifdef _WIN32
+            token = strtok_s(NULL, delimiter, &tokenContext);
+    #else
+            token = strtok_r(NULL, delimiter, &tokenContext);
+    #endif
             if (token) {
                 
                 AF_EDITOR_VAR_TYPE_e varType = AF_Script_MapStringToEditorVarType(token);
@@ -434,7 +450,11 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
                 _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].type = varType;
 
                 AF_Log("Type: %s ", token);
-                token = strtok(NULL, delimiter); 
+#ifdef _WIN32
+                token = strtok_s(NULL, delimiter, &tokenContext);
+#else
+                token = strtok_r(NULL, delimiter, &tokenContext);
+#endif
                 
                 if (token == NULL) {
                     continue;
@@ -460,8 +480,12 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
                     _scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].type = varType;
 
                     char* nameToken = token;
-                    token = strtok(NULL, delimiter); // Progress to next token (should be '=' or value)
-                    
+#ifdef _WIN32
+                    token = strtok_s(NULL, delimiter, &tokenContext);
+#else
+                    token = strtok_r(NULL, delimiter, &tokenContext);
+#endif
+
                     if(token == NULL){
                         AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get var assignment token for %s\n", nameToken);
                         continue;
@@ -469,7 +493,11 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                     // If the token is "=", skip it to get the actual value
                     if (strcmp(token, "=") == 0) {
-                        token = strtok(NULL, delimiter);
+#ifdef _WIN32
+                        token = strtok_s(NULL, delimiter, &tokenContext);
+#else
+                        token = strtok_r(NULL, delimiter, &tokenContext);
+#endif
                         if (token == NULL) {
                             AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get value after '=' for %s\n", nameToken);
                             continue;
@@ -495,7 +523,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                         case AF_EDITOR_VAR_TYPE_VEC3:
                             // Expecting format Vec3(x, y, z)
-                            if (sscanf(token, "Vec3(%f,%f,%f)", &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[0],
+                            if (sscanf_s(token, "Vec3(%f,%f,%f)", &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[0],
                                 &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[1],
                                 &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[2]) != 3) {
                                 AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec3 value from token: %s\n", token);
@@ -504,7 +532,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                         case AF_EDITOR_VAR_TYPE_EVENT:
                             // Expecting format AF_Event_Type_e(EVENT_TYPE)
-                            if (sscanf(token, "AF_Event_Type_e(%d)", (int*)&_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.eventTypeValue) != 1) {
+                            if (sscanf_s(token, "AF_Event_Type_e(%d)", (int*)&_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.eventTypeValue) != 1) {
                                 AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Event Type value from token: %s\n", token);
                             }
                         break;

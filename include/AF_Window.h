@@ -1,4 +1,3 @@
-
 // ===============================================================================
 // AF_WINDOW_H
 // 
@@ -49,7 +48,19 @@ typedef struct {
 // Return a zero-initialized AF_Window struct with the given title and dimensions
 // ====================
 inline static AF_Window AF_Window_ZERO(const char* _title, uint16_t _windowWidth, uint16_t _windowHeight){
-    AF_Window window = { .frameBufferWidth = 0};  // Zero-initialize the struct
+    AF_Window window = {
+        .frameBufferWidth = 0,
+        .frameBufferHeight = 0,
+        .window = NULL,
+        .input = NULL,
+        .title = NULL,
+        .windowXPos = 0,
+        .windowYPos = 0,
+        .windowWidth = 0,
+        .windowHeight = 0,
+        .isFrameUpdated = AF_FALSE,
+        .isWindowResized = AF_FALSE
+    };
     // assign the provided values
     window.windowWidth = _windowWidth;
     window.windowHeight = _windowHeight;

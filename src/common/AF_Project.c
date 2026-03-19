@@ -238,6 +238,52 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
                 fontSize = textComponent->font.fontSize;
             } 
 
+            // Resolve text font path from scene data. Legacy scenes often store relative
+            // paths (e.g. "assets/font/...") that should be relative to projectRoot.
+            char resolvedFontPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            const char* preferredFontPath = textComponent->font.fontPath;
+            if (AF_STRING_IS_EMPTY(preferredFontPath) && !AF_STRING_IS_EMPTY(textComponent->fontPath)) {
+                preferredFontPath = textComponent->fontPath;
+            }
+
+            if (!AF_STRING_IS_EMPTY(preferredFontPath)) {
+                FILE* fontFile = AF_File_OpenFile(preferredFontPath, "rb");
+                if (fontFile != NULL) {
+                    AF_File_CloseFile(fontFile);
+                    snprintf(resolvedFontPath, AF_MAX_PATH_CHAR_SIZE, "%s", preferredFontPath);
+                } else if (!AF_STRING_IS_EMPTY(_appData->projectData.projectRoot)) {
+                    snprintf(
+                        resolvedFontPath,
+                        AF_MAX_PATH_CHAR_SIZE,
+                        "%s/%s",
+                        _appData->projectData.projectRoot,
+                        preferredFontPath
+                    );
+                    fontFile = AF_File_OpenFile(resolvedFontPath, "rb");
+                    if (fontFile != NULL) {
+                        AF_File_CloseFile(fontFile);
+                    } else {
+                        resolvedFontPath[0] = '\0';
+                    }
+                }
+            }
+
+            // Last-resort fallback so text components still render if project font moved.
+            if (AF_STRING_IS_EMPTY(resolvedFontPath)) {
+                const char* fallbackFontPath = "assets/font/Montserrat/static/Montserrat-Medium.ttf";
+                FILE* fallbackFile = AF_File_OpenFile(fallbackFontPath, "rb");
+                if (fallbackFile != NULL) {
+                    AF_File_CloseFile(fallbackFile);
+                    snprintf(resolvedFontPath, AF_MAX_PATH_CHAR_SIZE, "%s", fallbackFontPath);
+                    AF_Log_Warning("AF_Project_Load: Falling back to default font for text component %u\n", i);
+                }
+            }
+
+            if (!AF_STRING_IS_EMPTY(resolvedFontPath)) {
+                snprintf(textComponent->font.fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", resolvedFontPath);
+                snprintf(textComponent->fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", resolvedFontPath);
+            }
+
             // Load the shader for the text mesh
             // Guard against empty or dummy shader paths
             if (AF_STRING_IS_EMPTY(textComponent->mesh.shader.vertPath) || 
@@ -253,7 +299,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             // Load the font
             af_bool_t fontLoadSuccess = AF_LoadFont(&textComponent->font);
             if(fontLoadSuccess == AF_FALSE) {
-                AF_Log_Error("AF_Project_Load: Failed to load font %s for text component\n", textComponent->font.fontPath);
+                AF_Log_Warning("AF_Project_Load: Font backend unavailable or font load failed (%s). Text component will be skipped.\n", textComponent->font.fontPath);
                 continue;
             }
             // Init the font mesh

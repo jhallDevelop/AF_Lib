@@ -448,8 +448,9 @@ uint32_t AF_ECS_FindEntityOfTag(AF_ECS* _ecs, AF_Entity_Tag_e _tag) {
     
     uint32_t entityID = 0; // Default to 0 if no entity found
     // Get the entity ID from the ECS
-    for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-        if(AF_ECS_GetTag(_ecs->entities[i].id_tag) == _tag){
+	const PACKED_UINT32 targetTag = (PACKED_UINT32)_tag;
+	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+		if(AF_ECS_GetTag(_ecs->entities[i].id_tag) == targetTag){
             entityID = i; // Return the ID of the entity with the specified tag
             return entityID;
         }

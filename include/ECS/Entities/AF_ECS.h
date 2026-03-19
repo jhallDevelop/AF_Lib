@@ -69,7 +69,7 @@ void AF_ECS_DuplicateEntity(AF_ECS* _ecs, AF_Entity* _entity);
 AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs);
 //void AF_RemoveEntity(Entity _entity);
 void AF_ECS_Update(AF_Entity* _entities);
-AF_LIB_API void AF_ECS_LoadECSFromBinary(FILE* _filePtr, AF_ECS* _ecs);
+void AF_ECS_LoadECSFromBinary(FILE* _filePtr, AF_ECS* _ecs);
 void AF_ECS_SaveECS(FILE* _file, AF_ECS* _ecs);
 AF_LIB_API uint32_t AF_ECS_GetCamera(AF_ECS* _ecs);
 AF_LIB_API void AF_ECS_CreateCamera(AF_ECS* _ecs, Vec3 _pos);

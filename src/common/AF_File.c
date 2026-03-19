@@ -185,14 +185,15 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
     char* filePointers[MAX_FILELIST_BUFFER_SIZE] = {0};
     uint32_t fileCount = 0;
 
-    char* token = strtok(tempBuffer, ",");
+    char*savePtr = NULL;
     char* context = NULL;
+    char* token = NULL;
 
     // 3. Make the FIRST call to strtok_s using the COPY of the string.
     #ifdef _WIN32
         token = strtok_s(tempBuffer, ",", &context);
     #else
-        token = strtok(tempBuffer, ",");
+        token = strtok_r(tempBuffer, ",", &savePtr);
     #endif
 
     while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
@@ -202,7 +203,7 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
         #ifdef _WIN32
             token = strtok_s(NULL, ",", &context);
         #else
-            token = strtok(NULL, ",");
+            token = strtok_r(NULL, ",", &savePtr);
         #endif
     }
     qsort(filePointers, fileCount, sizeof(char*), AF_File_CompareItemsByValue);
@@ -386,7 +387,7 @@ uint32_t AF_File_GetFileSize(const char* _filePath) {
 // ====================
 af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _filePath, const char* _readCommand) {
 
-    FILE* _fileOpen = fopen(_filePath, _readCommand);
+    FILE* _fileOpen = AF_File_OpenFile(_filePath, _readCommand);
     if (_fileOpen == NULL) {
         AF_Log_Error("AF_Util: Read File: Failed to read file \n%s \nCheck file exists\n\n", _filePath);
         return AF_FALSE;
@@ -456,7 +457,7 @@ uint32_t AF_File_GetPathName(const char *_fontPath, char *_buffer, uint32_t _buf
         return 0;
     }
 
-    strncpy(_buffer, _fontPath, pathLength);
+    strncpy_s(_buffer, _bufferSize, _fontPath, pathLength);
     _buffer[pathLength] = '\0'; // Null-terminate the string
 
     return (uint32_t)pathLength;
