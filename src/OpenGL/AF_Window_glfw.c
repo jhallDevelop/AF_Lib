@@ -118,6 +118,9 @@ static void AF_Window_Cursor_Position_Callback(GLFWwindow* _window, double _xpos
     //Editor_AppData* editorAppData = (Editor_AppData*)glfwGetWindowUserPointer(_window);
     (void)_window;
 
+    // offset the mouse position by the window position to get the correct mouse position relative to the window
+    _xpos -= g_window->windowXPos;
+    _ypos -= g_window->windowYPos;
     // Update current mouse position
     g_input->mouseX = _xpos;
     g_input->mouseY = _ypos;
