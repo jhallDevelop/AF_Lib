@@ -1,7 +1,11 @@
 #ifndef AF_PRE_PROCESSOR_H
 #define AF_PRE_PROCESSOR_H
 
+#ifdef _WIN32
+#define AF_EDITOR_VAR __declspec(dllexport)
+#else
 #define AF_EDITOR_VAR
+#endif
 #include <stddef.h>
 #include "AF_Lib_Define.h"
 

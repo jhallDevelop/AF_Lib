@@ -225,6 +225,8 @@ void AF_Script_Call_Start(AF_AppData* _appData){
                 continue;
             }
 
+            // Apply editor var values to the DLL's globals before Start runs
+            AF_Script_ApplyEditorVars(script);
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
@@ -326,6 +328,59 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
             // Call it
             scriptFunctPtr(i, _appData);
+        }
+    }
+}
+
+// ===============================================================================
+// AF_Script_ApplyEditorVars
+// Write the values stored in scriptEditorVarData back into the loaded DLL/SO
+// globals before Start() is called, so scripts see editor-set values.
+// ===============================================================================
+void AF_Script_ApplyEditorVars(AF_CScript* _script) {
+    if (_script == NULL || _script->loadedScriptPtr == NULL) return;
+
+    for (uint32_t i = 0; i < _script->scriptEditorVarCount; i++) {
+        AF_PropertyMetaData_s* var = &_script->scriptEditorVarData[i];
+        void* sym = NULL;
+
+#ifdef _WIN32
+        HMODULE handle = (HMODULE)_script->loadedScriptPtr;
+        sym = (void*)GetProcAddress(handle, var->name);
+#else
+        sym = dlsym(_script->loadedScriptPtr, var->name);
+#endif
+        if (sym == NULL) {
+            AF_Log_Error("AF_Script_ApplyEditorVars: Could not find symbol '%s' in script '%s'\n", var->name, _script->scriptName);
+            continue;
+        }
+
+        switch (var->type) {
+            case AF_EDITOR_VAR_TYPE_INT:
+                *(uint32_t*)sym = var->data.intValue;
+            break;
+            case AF_EDITOR_VAR_TYPE_FLOAT:
+                *(AF_FLOAT*)sym = var->data.floatValue;
+            break;
+            case AF_EDITOR_VAR_TYPE_BOOL:
+                *(af_bool_t*)sym = var->data.boolValue;
+            break;
+            case AF_EDITOR_VAR_TYPE_STRING:
+                snprintf((char*)sym, AF_MAX_PATH_CHAR_SIZE, "%s", var->data.strValue);
+            break;
+            case AF_EDITOR_VAR_TYPE_VEC2:
+                ((AF_FLOAT*)sym)[0] = var->data.vec2Value[0];
+                ((AF_FLOAT*)sym)[1] = var->data.vec2Value[1];
+            break;
+            case AF_EDITOR_VAR_TYPE_VEC3:
+                ((AF_FLOAT*)sym)[0] = var->data.vec3Value[0];
+                ((AF_FLOAT*)sym)[1] = var->data.vec3Value[1];
+                ((AF_FLOAT*)sym)[2] = var->data.vec3Value[2];
+            break;
+            case AF_EDITOR_VAR_TYPE_EVENT:
+                *(uint32_t*)sym = var->data.eventTypeValue;
+            break;
+            default: break;
         }
     }
 }
@@ -479,6 +534,28 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                         case AF_EDITOR_VAR_TYPE_STRING:
                             snprintf(_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.strValue, AF_MAX_PATH_CHAR_SIZE, "%s", token);
+                        break;
+
+                        case AF_EDITOR_VAR_TYPE_VEC2:
+                        {
+#ifdef _WIN32
+                            char* nextToken = strtok_s(NULL, delimiter, &tokenContext);
+#else
+                            char* nextToken = strtok_r(NULL, delimiter, &tokenContext);
+#endif
+                            if (nextToken == NULL) {
+                                AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec2 second token from: %s\n", token);
+                                break;
+                            }
+
+                            char vec2Buffer[128];
+                            snprintf(vec2Buffer, sizeof(vec2Buffer), "%s %s", token, nextToken);
+                            if (sscanf_s(vec2Buffer, "{%f, %f};",
+                                &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec2Value[0],
+                                &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec2Value[1]) != 2) {
+                                AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec2 value from token: %s\n", vec2Buffer);
+                            }
+                        }
                         break;
 
                         case AF_EDITOR_VAR_TYPE_VEC3:

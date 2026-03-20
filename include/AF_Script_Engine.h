@@ -37,6 +37,7 @@ void AF_Script_Call_Update(AF_AppData* _appData);
 void AF_Script_Call_LateUpdate(AF_AppData* _appData);
 void AF_Script_Call_Destroy(AF_AppData* _appData);
 void AF_Script_SerialiseEditorVars(const char* _scriptPath, AF_CScript* _scriptComponent);
+void AF_Script_ApplyEditorVars(AF_CScript* _script);
 AF_EDITOR_VAR_TYPE_e AF_Script_MapStringToEditorVarType(const char* _typeString);
                 
 
