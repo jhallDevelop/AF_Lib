@@ -1,5 +1,7 @@
-#ifdef AF_LIB_EMBEDDED
-// When AF_Lib is embedded in the executable, no DLL boundary decoration needed.
+#if defined(AF_LIB_EXPORTS)
+#define AF_LIB_API __declspec(dllexport)
+#elif defined(AF_LIB_EMBEDDED)
+// Embedded build without exports.
 #define AF_LIB_API
 #elif defined(_WIN32) || defined(_WIN64)
 // This part is for Windows platforms (MSVC compiler)

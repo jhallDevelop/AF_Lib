@@ -1,5 +1,8 @@
 #include "AF_Script_Engine.h"
 #include "AF_File.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 
 
@@ -10,31 +13,29 @@
 // ===============================================================================
 void* AF_Script_Load(const char* _filePath){
     void* scriptPtr = NULL;
-#ifdef _WIN32
-    (void)_filePath; // Suppress unused variable warning
-    AF_Log_Error("AF_Script_Load: Windows not defined\n");
-#else
-    // Check file path 
-    if(strncmp(_filePath, "", MAX_PROJECTDATA_FILE_PATH) == 0){
+    if(_filePath == NULL || _filePath[0] == '\0'){
         AF_Log_Error("AF_Script_Load: file path is empty\n");
         return NULL;
     }
-
-    // Open a file for binary reading
+#ifdef _WIN32
+    HMODULE handle = LoadLibraryA(_filePath);
+    if (!handle) {
+        AF_Log_Error("AF_Script_Load: LoadLibraryA failed for %s (error %lu)\n", _filePath, (unsigned long)GetLastError());
+        return NULL;
+    }
+    scriptPtr = (void*)handle;
+#else
     FILE* file = AF_File_OpenFile(_filePath, "rb");
-    
     if (file == NULL) {
         AF_Log_Error("AF_Script_Load: FAILED to open file %s\n", _filePath);
         return scriptPtr;
-    } else {
-        
-        int eret;
-        scriptPtr = dlopen(_filePath, RTLD_LOCAL | RTLD_LAZY);
-        if (!scriptPtr) {
-            AF_Log_Error("Game_App_Awake: Failed to open script 1 shared object: %s\n", dlerror());
-            return scriptPtr;
-        }
-    }   
+    }
+    AF_File_CloseFile(file);
+    scriptPtr = dlopen(_filePath, RTLD_LOCAL | RTLD_LAZY);
+    if (!scriptPtr) {
+        AF_Log_Error("AF_Script_Load: Failed to open shared object %s: %s\n", _filePath, dlerror());
+        return scriptPtr;
+    }
 #endif
 
     return scriptPtr;
@@ -52,78 +53,35 @@ uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr
         return AF_FAIL;
     }
 
-#ifdef _WIN32
-    AF_Log_Error("AF_Script_Bind_Functions: Windows not defined\n");
-    return AF_FAIL;
-#else
-    // ==== START Func ==== 
-    // Get the script name
     char startFuncName[MAX_FUNCTION_NAME];
-    snprintf(startFuncName, MAX_FUNCTION_NAME, "Start_%s", _script->scriptName);
-
-    // Search the shared object for the function named
-    ScriptFuncPtr startSCriptFunctPtr = (ScriptFuncPtr) dlsym(_scriptSharedObjPtr, startFuncName);
-    
-    // Check for any error after dlsym
-    char *error = dlerror(); 
-    if (error != NULL) {
-        AF_Log_Error("AF_Script_Bind_Functions: Failed to load Start_%s: %s\n", startFuncName, error);
-        return AF_FAIL;
-    }
-
-    _script->startFuncPtr = startSCriptFunctPtr;
-
-    // ==== Update Func ==== 
-    // Get the script name
     char updateFuncName[MAX_FUNCTION_NAME];
-    snprintf(updateFuncName, MAX_FUNCTION_NAME, "Update_%s", _script->scriptName);
-
-    // Search the shared object for the function named
-    ScriptFuncPtr updateScriptFunctPtr = (ScriptFuncPtr) dlsym(_scriptSharedObjPtr, updateFuncName);
-    
-    // Check for any error after dlsym
-    error = dlerror(); 
-    if (error != NULL) {
-        AF_Log_Error("AF_Script_Bind_Functions: Failed to load Start_%s: %s\n", updateFuncName, error);
-        return AF_FAIL;
-    }
-
-    _script->updateFuncPtr = updateScriptFunctPtr;
-
-    // ==== Late Update Func ==== 
-    // Get the script name
     char lateUpdateFuncName[MAX_FUNCTION_NAME];
-    snprintf(lateUpdateFuncName, MAX_FUNCTION_NAME, "LateUpdate_%s", _script->scriptName);
-
-    // Search the shared object for the function named
-    ScriptFuncPtr lateUpdateScriptFunctPtr = (ScriptFuncPtr) dlsym(_scriptSharedObjPtr, lateUpdateFuncName);
-    
-    // Check for any error after dlsym
-    error = dlerror(); 
-    if (error != NULL) {
-        AF_Log_Error("AF_Script_Bind_Functions: Failed to load LateUpdate_%s: %s\n", lateUpdateFuncName, error);
-        return AF_FAIL;
-    }
-
-    _script->lateUpdateFuncPtr = lateUpdateScriptFunctPtr;
-
-
-    // ==== Destroy Func ==== 
-    // Get the script name
     char destroyFuncName[MAX_FUNCTION_NAME];
-    snprintf(destroyFuncName, MAX_FUNCTION_NAME, "Destroy_%s", _script->scriptName);
+    snprintf(startFuncName,      MAX_FUNCTION_NAME, "Start_%s",      _script->scriptName);
+    snprintf(updateFuncName,     MAX_FUNCTION_NAME, "Update_%s",     _script->scriptName);
+    snprintf(lateUpdateFuncName, MAX_FUNCTION_NAME, "LateUpdate_%s", _script->scriptName);
+    snprintf(destroyFuncName,    MAX_FUNCTION_NAME, "Destroy_%s",    _script->scriptName);
 
-    // Search the shared object for the function named
-    ScriptFuncPtr destroyScriptFunctPtr = (ScriptFuncPtr) dlsym(_scriptSharedObjPtr, destroyFuncName);
-    
-    // Check for any error after dlsym
-    error = dlerror(); 
-    if (error != NULL) {
-        AF_Log_Error("AF_Script_Bind_Functions: Failed to load Start_%s: %s\n", destroyFuncName, error);
+#ifdef _WIN32
+    HMODULE handle = (HMODULE)_scriptSharedObjPtr;
+    _script->startFuncPtr      = (ScriptFuncPtr)GetProcAddress(handle, startFuncName);
+    _script->updateFuncPtr     = (ScriptFuncPtr)GetProcAddress(handle, updateFuncName);
+    _script->lateUpdateFuncPtr = (ScriptFuncPtr)GetProcAddress(handle, lateUpdateFuncName);
+    _script->destroyFuncPtr    = (ScriptFuncPtr)GetProcAddress(handle, destroyFuncName);
+    if (!_script->startFuncPtr || !_script->updateFuncPtr || !_script->lateUpdateFuncPtr || !_script->destroyFuncPtr) {
+        AF_Log_Error("AF_Script_Bind_Functions: GetProcAddress failed for %s (error %lu)\n", _script->scriptName, (unsigned long)GetLastError());
         return AF_FAIL;
     }
-
-    _script->destroyFuncPtr = destroyScriptFunctPtr;
+#else
+    dlerror(); // clear any existing error
+    _script->startFuncPtr = (ScriptFuncPtr)dlsym(_scriptSharedObjPtr, startFuncName);
+    if (dlerror() != NULL) { AF_Log_Error("AF_Script_Bind_Functions: dlsym failed for %s\n", startFuncName); return AF_FAIL; }
+    _script->updateFuncPtr = (ScriptFuncPtr)dlsym(_scriptSharedObjPtr, updateFuncName);
+    if (dlerror() != NULL) { AF_Log_Error("AF_Script_Bind_Functions: dlsym failed for %s\n", updateFuncName); return AF_FAIL; }
+    _script->lateUpdateFuncPtr = (ScriptFuncPtr)dlsym(_scriptSharedObjPtr, lateUpdateFuncName);
+    if (dlerror() != NULL) { AF_Log_Error("AF_Script_Bind_Functions: dlsym failed for %s\n", lateUpdateFuncName); return AF_FAIL; }
+    _script->destroyFuncPtr = (ScriptFuncPtr)dlsym(_scriptSharedObjPtr, destroyFuncName);
+    if (dlerror() != NULL) { AF_Log_Error("AF_Script_Bind_Functions: dlsym failed for %s\n", destroyFuncName); return AF_FAIL; }
 #endif
 
     return AF_SUCCESS;
@@ -148,7 +106,11 @@ void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
             }
             // set the correct script path as the build location may have changed.
             //snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "bin/%s/scripts/%s.so", AF_Platform_Mappings[_AppData->projectData.platformData.platformType].name, script->scriptName);
+#ifdef _WIN32
+            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.dll", script->scriptName);
+#else
             snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.so", script->scriptName);
+#endif
             // attempt to load the script
             script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
     
@@ -175,14 +137,12 @@ void AF_Script_UnLoad(void* _scriptSharedObjPtr){
         return;
     }
 
-    int eret;
-    // Close the shared objects
 #ifdef _WIN32
-    AF_Log_Error("AF_Script_UnLoad: Windows not defined\n");
+    FreeLibrary((HMODULE)_scriptSharedObjPtr);
 #else
-    eret = dlclose(_scriptSharedObjPtr);
+    int eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {
-        AF_Log_Error("AF_Script_UnLoad: Failed to close shared object 1: %s\n", dlerror());
+        AF_Log_Error("AF_Script_UnLoad: Failed to close shared object: %s\n", dlerror());
     }
 #endif
 }
