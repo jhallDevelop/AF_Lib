@@ -157,6 +157,11 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 	}
 
 	// Initialize body array
+	uint32_t entitySlotsWithHas = 0;
+	uint32_t colliderSlotsEnabled = 0;
+	uint32_t bodiesCreated = 0;
+	uint32_t dynamicBodies = 0;
+	uint32_t staticOrKinematicBodies = 0;
 	for (int i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
 		// Gate on the entity-level flag first. entity->flags being zero means
 		// this slot was cleared by AF_ECS_Init and must not inherit stale component data.
@@ -164,6 +169,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 		if(!AF_Component_GetHas(entity->flags)){
 			continue;
 		}
+		entitySlotsWithHas++;
 
 		AF_C3DRigidbody* rb = &_ecs->rigidbodies[i];
 		AF_CCollider* col = &_ecs->colliders[i];
@@ -174,6 +180,7 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 		if(colEnabled == AF_FALSE){
 			continue;	
 		}
+		colliderSlotsEnabled++;
 
 
 		// init bt trans to be used
@@ -351,12 +358,30 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 
 		bulletData->dynamicsWorld->addRigidBody(body);
 		bulletData->bodies[i] = body;
+		bodiesCreated++;
+		if (mass > 0.0f) {
+			dynamicBodies++;
+		} else {
+			staticOrKinematicBodies++;
+		}
 
 		
 		// Set gravity
 		if (rb->gravity == AF_FALSE) {
 			body->setGravity(btVector3(0, 0, 0));
 		}
+	}
+
+	AF_Log(
+		"AF_Physics_Init: entities(has)=%u, colliders(enabled)=%u, bodies=%u, dynamic=%u, static_or_kinematic=%u\n",
+		entitySlotsWithHas,
+		colliderSlotsEnabled,
+		bodiesCreated,
+		dynamicBodies,
+		staticOrKinematicBodies
+	);
+	if (bodiesCreated == 0) {
+		AF_Log_Warning("AF_Physics_Init: No Bullet bodies created. Scene colliders/rigidbodies will not simulate.\n");
 	}
 
 	// collision resolution

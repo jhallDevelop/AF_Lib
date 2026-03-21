@@ -5,12 +5,15 @@
 #define GL_SILENCE_DEPRECATION
 #define RENDERER_CHECK_ERROR_FLAG 1 // Set to 1 to enable error checking, 0 to disable
 
-void AF_Renderer_CheckError(const char* message) {
+af_bool_t AF_Renderer_CheckError(const char* message) {
     if (RENDERER_CHECK_ERROR_FLAG == 0) {
-        return;
+        return AF_FALSE;
     }
+
+    af_bool_t hadError = AF_FALSE;
     GLenum error = glGetError();
     while (error != GL_NO_ERROR) {
+        hadError = AF_TRUE;
         const char* errorString;
         switch (error) {
         case GL_INVALID_ENUM:
@@ -42,4 +45,6 @@ void AF_Renderer_CheckError(const char* message) {
         fprintf(stderr, "OpenGL Error: %s | Message: %s\n", errorString, message);
         error = glGetError(); // Continue checking for additional errors
     }
+
+    return hadError;
 }

@@ -242,10 +242,6 @@ static void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, con
         return;
     }
 
-    if (AF_File_FileExists(_path) == AF_TRUE) {
-        return;
-    }
-
     char originalPath[MAX_PROJECTDATA_FILE_PATH];
     snprintf(originalPath, sizeof(originalPath), "%s", _path);
 
@@ -264,16 +260,17 @@ static void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, con
         snprintf(resolvedPath, sizeof(resolvedPath), "%s/../%s", appDataDirectory, originalPath);
         if (AF_File_FileExists(resolvedPath) == AF_TRUE) {
             snprintf(_path, _pathSize, "%s", resolvedPath);
+            return;
         }
+    }
+
+    if (AF_File_FileExists(originalPath) == AF_TRUE) {
+        return;
     }
 }
 
 static void AF_Project_NormaliseProjectDirectory(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
     if (_path == NULL || _path[0] == '\0' || AF_Project_IsAbsolutePath(_path) == AF_TRUE) {
-        return;
-    }
-
-    if (AF_Project_PathExists(_path) == AF_TRUE) {
         return;
     }
 
@@ -296,7 +293,13 @@ static void AF_Project_NormaliseProjectDirectory(char* _path, uint32_t _pathSize
         snprintf(appDataCandidate, sizeof(appDataCandidate), "%s/../%s", appDataDirectory, originalPath);
         if (AF_Project_PathExists(appDataCandidate) == AF_TRUE) {
             snprintf(_path, _pathSize, "%s", appDataCandidate);
+            return;
         }
+    }
+
+    if (AF_Project_PathExists(originalPath) == AF_TRUE) {
+        // Preserve the existing relative path only if no project-root or app-data-based resolution applied.
+        return;
     }
 }
 
