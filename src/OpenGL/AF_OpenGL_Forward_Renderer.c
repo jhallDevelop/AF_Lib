@@ -10,7 +10,9 @@
 #include "AF_Debug.h"
 #include "ECS/Components/AF_Component.h"
 #include "AF_Log.h"
+#include "AF_Math/AF_Vec2.h"
 #include "AF_Math/AF_Vec3.h"
+#include "AF_Math/AF_Vec4.h"
 #include "AF_Math/AF_Mat4.h"
 #include "AF_MeshLoad.h"
 #include <GL/glew.h>
@@ -61,57 +63,6 @@ const char* SHADER_ASSET_PATH = "assets/shaders";
 // Forward declaration — used inside ResolveUIParentData before the full definition.
 static void AF_Renderer_ApplyAnchorOffset(AF_Anchor_e _anchor, AF_FLOAT _extentX, AF_FLOAT _extentY, AF_FLOAT* _x, AF_FLOAT* _y);
 
-// Returns AF_TRUE if a parent was found (entity is a child), AF_FALSE if root.
-// Accumulates all ancestor transform positions. If the root ancestor has a GUI
-// sprite with an anchor, that anchor offset against screen size is included so
-// children inherit the root's full rendered position.
-static af_bool_t AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityIndex, AF_FLOAT _screenW, AF_FLOAT _screenH, AF_FLOAT* _parentOffsetX, AF_FLOAT* _parentOffsetY){
-	if(_ecs == NULL || _parentOffsetX == NULL || _parentOffsetY == NULL){
-		return AF_FALSE;
-	}
-
-	*_parentOffsetX = 0.0f;
-	*_parentOffsetY = 0.0f;
-
-	if(_entityIndex >= _ecs->entitiesCount){
-		return AF_FALSE;
-	}
-
-	uint32_t currentID = _entityIndex;
-	uint32_t guardCount = 0;
-	af_bool_t hasParent = AF_FALSE;
-
-	while(guardCount < _ecs->entitiesCount){
-		uint32_t parentID = _ecs->entities[currentID].parentID;
-		if(parentID == currentID || parentID >= _ecs->entitiesCount){
-			break;
-		}
-
-		*_parentOffsetX += _ecs->transforms[parentID].pos.x;
-		*_parentOffsetY += _ecs->transforms[parentID].pos.y;
-		hasParent = AF_TRUE;
-
-		currentID = parentID;
-		guardCount++;
-	}
-
-	// currentID is now the root ancestor. Include its screen anchor so
-	// children position relative to where the root actually renders.
-	if(hasParent == AF_TRUE){
-		AF_CSprite* rootSprite = &_ecs->sprites[currentID];
-		if(AF_Component_GetHas(rootSprite->enabled) == AF_TRUE && rootSprite->isGUI == AF_TRUE){
-			AF_Renderer_ApplyAnchorOffset(rootSprite->anchor, _screenW, _screenH, _parentOffsetX, _parentOffsetY);
-		} else {
-			// Root might be a text entity instead of a sprite
-			AF_CText* rootText = &_ecs->texts[currentID];
-			if(AF_Component_GetHas(rootText->enabled) == AF_TRUE){
-				AF_Renderer_ApplyAnchorOffset(rootText->textAnchor, _screenW, _screenH, _parentOffsetX, _parentOffsetY);
-			}
-		}
-	}
-	return hasParent;
-}
-
 static void AF_Renderer_ApplyAnchorOffset(AF_Anchor_e _anchor, AF_FLOAT _extentX, AF_FLOAT _extentY, AF_FLOAT* _x, AF_FLOAT* _y){
 	if(_x == NULL || _y == NULL){
 		return;
@@ -151,6 +102,88 @@ static void AF_Renderer_ApplyAnchorOffset(AF_Anchor_e _anchor, AF_FLOAT _extentX
 		case AF_ANCHOR_ENUM_COUNT:
 			break;
 	}
+}
+
+static void AF_Renderer_RotatePoint2D(AF_FLOAT _angleRadians, AF_FLOAT* _x, AF_FLOAT* _y) {
+	AF_FLOAT cosA = cosf(_angleRadians);
+	AF_FLOAT sinA = sinf(_angleRadians);
+	AF_FLOAT originalX = *_x;
+	AF_FLOAT originalY = *_y;
+	*_x = originalX * cosA - originalY * sinA;
+	*_y = originalX * sinA + originalY * cosA;
+}
+
+static AF_FLOAT AF_Renderer_QuatToZAngleRad(Vec4 _quat) {
+	// Extract yaw (Z axis rotation) from quaternion.
+	AF_FLOAT siny_cosp = 2.0f * (_quat.w * _quat.z + _quat.x * _quat.y);
+	AF_FLOAT cosy_cosp = 1.0f - 2.0f * (_quat.y * _quat.y + _quat.z * _quat.z);
+	return atan2f(siny_cosp, cosy_cosp);
+}
+
+// Returns AF_TRUE if a parent was found (entity is a child), AF_FALSE if root.
+// Accumulates all ancestor transform positions. If the root ancestor has a GUI
+// sprite with an anchor, that anchor offset against screen size is included so
+// children inherit the root's full rendered position.
+static af_bool_t AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityIndex, AF_FLOAT _screenW, AF_FLOAT _screenH, AF_FLOAT* _parentOffsetX, AF_FLOAT* _parentOffsetY, Vec2* _parentScale, AF_FLOAT* _parentRotation){
+	if(_ecs == NULL || _parentOffsetX == NULL || _parentOffsetY == NULL || _parentScale == NULL || _parentRotation == NULL){
+		return AF_FALSE;
+	}
+
+	*_parentOffsetX = 0.0f;
+	*_parentOffsetY = 0.0f;
+	_parentScale->x = 1.0f;
+	_parentScale->y = 1.0f;
+	*_parentRotation = 0.0f;
+
+	if(_entityIndex >= _ecs->entitiesCount){
+		return AF_FALSE;
+	}
+
+	uint32_t currentID = _entityIndex;
+	uint32_t guardCount = 0;
+	af_bool_t hasParent = AF_FALSE;
+
+	// Walk parent chain to compute cumulative parent transform (parent origin) for this node.
+	while(guardCount < _ecs->entitiesCount){
+		uint32_t parentID = _ecs->entities[currentID].parentID;
+		if(parentID == currentID || parentID >= _ecs->entitiesCount){
+			break;
+		}
+
+		AF_CTransform3D* parentTransform = &_ecs->transforms[parentID];
+		Vec2 parentScale = { parentTransform->scale.x, parentTransform->scale.y };
+		AF_FLOAT parentRotation = AF_Renderer_QuatToZAngleRad(parentTransform->rot);
+		
+		// Transform existing offset by parent local transform
+		*_parentOffsetX *= parentScale.x;
+		*_parentOffsetY *= parentScale.y;
+		AF_Renderer_RotatePoint2D(parentRotation, _parentOffsetX, _parentOffsetY);
+		*_parentOffsetX += parentTransform->pos.x;
+		*_parentOffsetY += parentTransform->pos.y;
+
+		_parentScale->x *= parentScale.x;
+		_parentScale->y *= parentScale.y;
+		*_parentRotation += parentRotation;
+
+		hasParent = AF_TRUE;
+		currentID = parentID;
+		guardCount++;
+	}
+
+	// currentID is now the root ancestor. Include its screen anchor so
+	// children position relative to where the root actually renders.
+	if(hasParent == AF_TRUE){
+		AF_CSprite* rootSprite = &_ecs->sprites[currentID];
+		if(AF_Component_GetHas(rootSprite->enabled) == AF_TRUE && rootSprite->isGUI == AF_TRUE){
+			AF_Renderer_ApplyAnchorOffset(rootSprite->anchor, _screenW, _screenH, _parentOffsetX, _parentOffsetY);
+		} else {
+			AF_CText* rootText = &_ecs->texts[currentID];
+			if(AF_Component_GetHas(rootText->enabled) == AF_TRUE){
+				AF_Renderer_ApplyAnchorOffset(rootText->textAnchor, _screenW, _screenH, _parentOffsetX, _parentOffsetY);
+			}
+		}
+	}
+	return hasParent;
 }
 
 
@@ -735,30 +768,54 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
 		// Calculate vertex positions based on sprite component data
 		AF_FLOAT xpos = transform->pos.x;
 		AF_FLOAT ypos = transform->pos.y;
+		AF_FLOAT worldScaleX = transform->scale.x;
+		AF_FLOAT worldScaleY = transform->scale.y;
+		AF_FLOAT worldRotation = AF_Renderer_QuatToZAngleRad(transform->rot);
 
 		if(spriteComp->isGUI == AF_TRUE){
 			AF_FLOAT parentOffsetX = 0.0f;
 			AF_FLOAT parentOffsetY = 0.0f;
+			Vec2 parentScale = {1.0f, 1.0f};
+			AF_FLOAT parentRotation = 0.0f;
 
-			xpos = transform->pos.x;
-			ypos = transform->pos.y;
-			af_bool_t hasParent = AF_Renderer_ResolveUIParentData(_ecs, i, screenWidth, screenHeight, &parentOffsetX, &parentOffsetY);
-			xpos += parentOffsetX;
-			ypos += parentOffsetY;
-			// Root: anchor to screen. Child: offset already includes root's anchor.
-			if(hasParent == AF_FALSE){
-				AF_Renderer_ApplyAnchorOffset(spriteComp->anchor, screenWidth, screenHeight, &xpos, &ypos);
+			AF_FLOAT localX = transform->pos.x;
+			AF_FLOAT localY = transform->pos.y;
+			AF_FLOAT localScaleX = transform->scale.x;
+			AF_FLOAT localScaleY = transform->scale.y;
+			AF_FLOAT localRotation = AF_Renderer_QuatToZAngleRad(transform->rot);
+
+			af_bool_t hasParent = AF_Renderer_ResolveUIParentData(_ecs, i, screenWidth, screenHeight, &parentOffsetX, &parentOffsetY, &parentScale, &parentRotation);
+
+			if(hasParent == AF_TRUE){
+				localX *= parentScale.x;
+				localY *= parentScale.y;
+				AF_Renderer_RotatePoint2D(parentRotation, &localX, &localY);
+				localX += parentOffsetX;
+				localY += parentOffsetY;
+				localScaleX *= parentScale.x;
+				localScaleY *= parentScale.y;
+				localRotation += parentRotation;
+			} else {
+				AF_Renderer_ApplyAnchorOffset(spriteComp->anchor, screenWidth, screenHeight, &localX, &localY);
 			}
-		}
-		float w = 0;
+
+			xpos = localX;
+		ypos = localY;
+		worldScaleX = localScaleX;
+		worldScaleY = localScaleY;
+		worldRotation = localRotation;
+	}
+	float w = 0;
 		float h = 0;
 		// if isGUI, use screen space size, otherwise use world transform space size
-		w = spriteComp->spriteSize.x * transform->scale.x;//spriteComp->spriteScale.x;
-		h = spriteComp->spriteSize.y * transform->scale.y;//spriteComp->spriteScale.y;
+		w = spriteComp->spriteSize.x * worldScaleX; // spriteComp->spriteScale.x;
+		h = spriteComp->spriteSize.y * worldScaleY; // spriteComp->spriteScale.y;
 
 
 		// alignment
 		// apply alignment - pivot the sprite relative to its anchor position
+		AF_FLOAT pivotX = xpos;
+		AF_FLOAT pivotY = ypos;
 		switch (spriteComp->alignment) {
 			case AF_ANCHOR_TOP_LEFT:
 				break;
@@ -809,23 +866,15 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
             {xpos + w, ypos + h, 0.0f, 1.0f, 1.0f}
         };
 
-		/*
-		
-		float xpos = transform.pos.x;
-        float ypos = transform.pos.y;
-        float w = spriteComp->spriteScale.x;
-        float h = spriteComp->spriteScale.y;
-
-        float vertices[6][5] = {
-            {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
-            {xpos,     ypos,     0.0f, 0.0f, 0.0f},
-            {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
-
-            {xpos,     ypos + h, 0.0f, 0.0f, 1.0f},
-            {xpos + w, ypos,     0.0f, 1.0f, 0.0f},
-            {xpos + w, ypos + h, 0.0f, 1.0f, 1.0f}
-        };
-		*/
+        if (worldRotation != 0.0f) {
+            for (int vi = 0; vi < 6; vi++) {
+                AF_FLOAT vx = vertices[vi][0] - pivotX;
+                AF_FLOAT vy = vertices[vi][1] - pivotY;
+                AF_Renderer_RotatePoint2D(worldRotation, &vx, &vy);
+                vertices[vi][0] = vx + pivotX;
+                vertices[vi][1] = vy + pivotY;
+            }
+        }
 
         // Bind texture
         glActiveTexture(GL_TEXTURE0);
@@ -900,20 +949,30 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
 
 		// Text uses its transform position, matching how sprites work.
 		AF_CTransform3D* transform = &_ecs->transforms[i];
-		AF_FLOAT x = transform->pos.x;
-		AF_FLOAT y = transform->pos.y;
+                AF_FLOAT x = transform->pos.x;
+                AF_FLOAT y = transform->pos.y;
 
-		AF_FLOAT parentOffsetX = 0.0f;
-		AF_FLOAT parentOffsetY = 0.0f;
-		af_bool_t textHasParent = AF_Renderer_ResolveUIParentData(_ecs, i, screenWidth, screenHeight, &parentOffsetX, &parentOffsetY);
-		x += parentOffsetX;
-		y += parentOffsetY;
-		// Root: anchor to screen. Child: offset already includes root's anchor.
-		if(textHasParent == AF_FALSE){
-			AF_Renderer_ApplyAnchorOffset(textMeshComp->textAnchor, screenWidth, screenHeight, &x, &y);
-		}
-		
-        // 'x' will be our advancing cursor, starting at the component's anchored screen position
+                AF_FLOAT parentOffsetX = 0.0f;
+                AF_FLOAT parentOffsetY = 0.0f;
+                Vec2 parentScale = {1.0f, 1.0f};
+                AF_FLOAT parentRotation = 0.0f;
+                af_bool_t textHasParent = AF_Renderer_ResolveUIParentData(_ecs, i, screenWidth, screenHeight, &parentOffsetX, &parentOffsetY, &parentScale, &parentRotation);
+
+                if(textHasParent == AF_TRUE){
+                    x *= parentScale.x;
+                    y *= parentScale.y;
+                    AF_Renderer_RotatePoint2D(parentRotation, &x, &y);
+                    x += parentOffsetX;
+                    y += parentOffsetY;
+                } else {
+                    AF_Renderer_ApplyAnchorOffset(textMeshComp->textAnchor, screenWidth, screenHeight, &x, &y);
+                }
+
+                AF_FLOAT worldScaleX = transform->scale.x * parentScale.x;
+                AF_FLOAT worldScaleY = transform->scale.y * parentScale.y;
+                AF_FLOAT worldScaleUniform = (worldScaleX + worldScaleY) * 0.5f;
+                AF_FLOAT worldRotation = AF_Renderer_QuatToZAngleRad(transform->rot) + parentRotation;
+// 'x' will be our advancing cursor, starting at the component's anchored screen position
 		
 		
 		
@@ -941,38 +1000,40 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
 			}
 		}
 		AF_FLOAT totalTextHeight = maxAscent + maxDescent;
+                AF_FLOAT totalTextWidthScaled = totalTextWidth * worldScaleUniform;
+                AF_FLOAT totalTextHeightScaled = totalTextHeight * worldScaleUniform;
 
-		// apply alignment - pivot the text block relative to its anchor position
-		switch (textMeshComp->textAlignment) {
+                // apply alignment - pivot the text block relative to its anchor position
+                switch (textMeshComp->textAlignment) {
 			case AF_ANCHOR_TOP_LEFT:
 				break;
 			case AF_ANCHOR_TOP_CENTRE:
-				x -= totalTextWidth * 0.5f;
+				x -= totalTextWidthScaled * 0.5f;
 				break;
 			case AF_ANCHOR_TOP_RIGHT:
-				x -= totalTextWidth;
+				x -= totalTextWidthScaled;
 				break;
 			case AF_ANCHOR_MIDDLE_LEFT:
-					y -= totalTextHeight * 0.5f;
+					y -= totalTextHeightScaled * 0.5f;
 				break;
 			case AF_ANCHOR_MIDDLE_CENTRE:
-				x -= totalTextWidth * 0.5f;
-					y -= totalTextHeight * 0.5f;
+				x -= totalTextWidthScaled * 0.5f;
+					y -= totalTextHeightScaled * 0.5f;
 				break;
 			case AF_ANCHOR_MIDDLE_RIGHT:
-				x -= totalTextWidth;
-					y -= totalTextHeight * 0.5f;
+				x -= totalTextWidthScaled;
+					y -= totalTextHeightScaled * 0.5f;
 				break;
 			case AF_ANCHOR_BOTTOM_LEFT:
-					y -= totalTextHeight;
+					y -= totalTextHeightScaled;
 				break;
 			case AF_ANCHOR_BOTTOM_CENTRE:
-				x -= totalTextWidth * 0.5f;
-					y -= totalTextHeight;
+				x -= totalTextWidthScaled * 0.5f;
+					y -= totalTextHeightScaled;
 				break;
 			case AF_ANCHOR_BOTTOM_RIGHT:
-				x -= totalTextWidth;
-					y -= totalTextHeight;
+				x -= totalTextWidthScaled;
+					y -= totalTextHeightScaled;
 				break;
 			case AF_ANCHOR_ENUM_COUNT:
 				break;
@@ -980,7 +1041,10 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
 
 
 		// Establish the baseline after alignment offsets are applied.
-		AF_FLOAT baseline = y + maxAscent;
+		AF_FLOAT textPivotX = x;
+                AF_FLOAT textPivotY = y;
+                AF_FLOAT baseline = y + maxAscent * worldScaleUniform;
+                AF_FLOAT cursorX = x;
 
         
         // for each character in the text
@@ -1000,14 +1064,14 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
                 // compute the character quad's top-left position and size.
                 // The y coordinate is the baseline. We subtract the bearingY to find the top of the glyph.
 
-                AF_FLOAT xpos = x + (ch.Bearing.x);
-                AF_FLOAT ypos = baseline - (ch.Bearing.y);
-                AF_FLOAT width = ch.Size.x;
-                AF_FLOAT height = ch.Size.y;
+AF_FLOAT xpos = cursorX + (ch.Bearing.x * worldScaleUniform);
+                AF_FLOAT ypos = baseline - (ch.Bearing.y * worldScaleUniform);
+                AF_FLOAT width = ch.Size.x * worldScaleUniform;
+                AF_FLOAT height = ch.Size.y * worldScaleUniform;
 
-				
-				// advance the cursor for the next character
-            	x += (ch.Advance >> 6); // bitshift by 6 to get value in pixels (2^6 = 64)
+
+                                // advance the cursor for the next character
+                cursorX += (ch.Advance >> 6) * worldScaleUniform; // bitshift by 6 to get value in pixels (2^6 = 64)
 
                 // Construct an updated VBO for the character
                 AF_FLOAT vertices[6][4] = {
@@ -1019,6 +1083,16 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
                     { xpos + width, ypos,            1.0f, 1.0f },
                     { xpos + width, ypos + height,   1.0f, 0.0f }           
                 };
+
+                if(worldRotation != 0.0f) {
+                    for(int vi = 0; vi < 6; vi++){
+                        AF_FLOAT vx = vertices[vi][0] - textPivotX;
+                        AF_FLOAT vy = vertices[vi][1] - textPivotY;
+                        AF_Renderer_RotatePoint2D(worldRotation, &vx, &vy);
+                        vertices[vi][0] = vx + textPivotX;
+                        vertices[vi][1] = vy + textPivotY;
+                    }
+                }
                 
                 // Render glyph texture over quad
                 glBindTexture(GL_TEXTURE_2D, ch.TextureID);
