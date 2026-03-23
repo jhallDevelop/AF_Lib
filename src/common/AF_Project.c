@@ -32,6 +32,8 @@
 #include "ECS/Components/AF_Component.h"
 #include "AF_JSON.h"
 #include "AF_TextureLoader.h"
+#include "AF_Script_Engine.h"
+#include "AF_Physics.h"
 
 #include "../../../stb/stb_image.h"
 
@@ -798,3 +800,58 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
     return AF_TRUE;
 }
 
+af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
+{
+    af_bool_t returnValue = AF_FALSE;
+    // Unload everything first
+    AF_Script_Call_Destroy(_appData);
+    AF_Script_UnloadScripts(&_appData->ecs);
+
+    AF_ECS_Init(&_appData->ecs);
+
+    // Tear down old Bullet world first. Re-init happens after scene JSON is loaded.
+    AF_Physics_Shutdown(_appData->physicsEngineHandle);
+
+    // Load the ECS from the file
+    FILE* sceneFile = AF_File_OpenFile(_sceneFilePath, "rb");
+    if (sceneFile == NULL) {
+        AF_Log_Error("AF_LoadScene: Failed to open scene file %s\n", _sceneFilePath);
+        return AF_FALSE;
+    }
+
+    af_bool_t sceneLoaded = AF_JSON_LoadSceneJson(_appData, sceneFile);
+    AF_File_CloseFile(sceneFile);
+
+    AF_Log("AF_LoadScene: Finished loading scene from %s\n", _sceneFilePath);
+
+    if (sceneLoaded == AF_TRUE) {
+        AF_Log("AF_LoadScene: Successfully loaded scene from %s\n", _sceneFilePath);
+        // Track the active scene so menu-bar saves go to the right file
+        snprintf(_appData->projectData.defaultScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
+
+        AF_Project_SyncEntities(_appData);
+
+        // Build Bullet bodies from the freshly loaded/synced ECS scene.
+        AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
+        AF_Renderer_InitCollisionGeomtery(&_appData->ecs);
+
+        AF_Script_Load_And_Bind_Functions(&_appData->ecs);
+        AF_Script_Call_Start(_appData);
+
+        returnValue = AF_TRUE;
+    } else {
+        // Keep physics handle valid even when scene load fails.
+        AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
+        AF_Log_Error("Editor_SceneBrowser_RenderSaveFile: Failed to load scene %s\n", _sceneFilePath);
+    }
+    return returnValue;
+}
+
+void AF_RequestSceneChange(AF_AppData* _appData, const char* _sceneFilePath) {
+    if (_appData == NULL || _sceneFilePath == NULL) {
+        return;
+    }
+    snprintf(_appData->projectData.pendingScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
+    _appData->projectData.hasPendingSceneChange = AF_TRUE;
+    AF_Log("AF_RequestSceneChange: Scene change to '%s' queued\n", _sceneFilePath);
+}

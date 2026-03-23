@@ -23,6 +23,9 @@ typedef struct AF_ProjectData{
     char assetsPath[MAX_PROJECTDATA_FILE_PATH];
     char defaultAppDataPath[MAX_PROJECTDATA_FILE_PATH];
     char defaultScenePath[MAX_PROJECTDATA_FILE_PATH];
+    // Deferred scene change: set by scripts, processed by the host game loop AFTER all scripts return
+    char pendingScenePath[MAX_PROJECTDATA_FILE_PATH];
+    af_bool_t hasPendingSceneChange;
 
     AF_PlatformData platformData;
     AF_BuildGameData buildData;
@@ -43,6 +46,8 @@ static inline AF_ProjectData Editor_Project_Data_ZERO(void){
     returnData.assetsPath[0] = '\0';
     returnData.defaultAppDataPath[0] = '\0';
     returnData.defaultScenePath[0] = '\0';
+    returnData.pendingScenePath[0] = '\0';
+    returnData.hasPendingSceneChange = AF_FALSE;
     returnData.platformData = AF_PlatformData_ZERO();
     returnData.buildData = AF_BuildGameData_ZERO();
 
