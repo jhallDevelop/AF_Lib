@@ -22,6 +22,21 @@ define extra types e.g. af_bool_t which doesn't exist in c
 #define AF_SUCCESS 1
 #define AF_FAIL 0
 typedef char af_bool_t;		// 1 byte
+
+// --- Cross-Platform "Safe" Strings & IO ---
+#if defined(_WIN32)
+	#include <string.h>
+	#include <stdio.h>
+	#define AF_STRNCPY_S(dest, destSize, src, count) strncpy_s(dest, destSize, src, count)
+	#define AF_SSCANF_S sscanf_s
+#else
+	#include <string.h>
+	#include <stdio.h>
+	// POSIX strncpy doesn't take destSize, but we check bounds manually in the caller
+	#define AF_STRNCPY_S(dest, destSize, src, count) (strncpy(dest, src, count), (dest)[(count) < (destSize) ? (count) : (destSize) - 1] = '\0')
+	#define AF_SSCANF_S sscanf
+#endif
+
 typedef char PACKED_CHAR;	// 1 byte
 typedef uint16_t PACKED_UINT16;	// 2 bytes
 typedef uint32_t PACKED_UINT32;	// 4 bytes

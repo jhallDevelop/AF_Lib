@@ -457,7 +457,7 @@ uint32_t AF_File_GetPathName(const char *_fontPath, char *_buffer, uint32_t _buf
         return 0;
     }
 
-    strncpy_s(_buffer, _bufferSize, _fontPath, pathLength);
+    AF_STRNCPY_S(_buffer, _bufferSize, _fontPath, pathLength);
     _buffer[pathLength] = '\0'; // Null-terminate the string
 
     return (uint32_t)pathLength;

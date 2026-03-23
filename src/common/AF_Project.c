@@ -810,7 +810,7 @@ af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
     AF_ECS_Init(&_appData->ecs);
 
     // Tear down old Bullet world first. Re-init happens after scene JSON is loaded.
-    AF_Physics_Shutdown(_appData->physicsEngineHandle);
+    AF_Physics_Shutdown(&_appData->physicsEngineHandle);
 
     // Load the ECS from the file
     FILE* sceneFile = AF_File_OpenFile(_sceneFilePath, "rb");

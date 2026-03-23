@@ -550,7 +550,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                             char vec2Buffer[128];
                             snprintf(vec2Buffer, sizeof(vec2Buffer), "%s %s", token, nextToken);
-                            if (sscanf_s(vec2Buffer, "{%f, %f};",
+                            if (AF_SSCANF_S(vec2Buffer, "{%f, %f};",
                                 &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec2Value[0],
                                 &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec2Value[1]) != 2) {
                                 AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec2 value from token: %s\n", vec2Buffer);
@@ -560,7 +560,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                         case AF_EDITOR_VAR_TYPE_VEC3:
                             // Expecting format Vec3(x, y, z)
-                            if (sscanf_s(token, "Vec3(%f,%f,%f)", &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[0],
+                            if (AF_SSCANF_S(token, "Vec3(%f,%f,%f)", &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[0],
                                 &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[1],
                                 &_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.vec3Value[2]) != 3) {
                                 AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec3 value from token: %s\n", token);
@@ -569,7 +569,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 
                         case AF_EDITOR_VAR_TYPE_EVENT:
                             // Expecting format AF_Event_Type_e(EVENT_TYPE)
-                            if (sscanf_s(token, "AF_Event_Type_e(%d)", (int*)&_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.eventTypeValue) != 1) {
+                            if (AF_SSCANF_S(token, "AF_Event_Type_e(%d)", (int*)&_scriptComponent->scriptEditorVarData[_scriptComponent->scriptEditorVarCount].data.eventTypeValue) != 1) {
                                 AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Event Type value from token: %s\n", token);
                             }
                         break;

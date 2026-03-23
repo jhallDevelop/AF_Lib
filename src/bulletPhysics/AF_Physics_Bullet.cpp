@@ -127,8 +127,19 @@ void AF_Physics_Init(AF_ECS* _ecs, void** _physicsEngineHandle) {
 		return;
 	}
 
+	// Bullet data already exists. Re-initializing mid-scene is not supported yet.
+	if (*_physicsEngineHandle != nullptr) {
+		AF_Log_Warning("AF_Physics_Init: Handle is already initialized. Skipping to avoid leak.\n");
+		return;
+	}
+
 	// Allocate the internal data storage
 	AF_BulletInternalData* bulletData = new AF_BulletInternalData();
+	// Clear the data
+	for (uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; i++) {
+		bulletData->bodies[i] = nullptr;
+		bulletData->upsampledHeightMaps[i] = nullptr;
+	}
 	*_physicsEngineHandle = static_cast<void*>(bulletData);
 
 	// Initialize Bullet components
@@ -763,14 +774,14 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
 // ========================================================================
 // AF_Physics_Shutdown
 // ========================================================================
-af_bool_t AF_Physics_Shutdown(void* _physicsEngineHandle) {
+af_bool_t AF_Physics_Shutdown(void** _physicsEngineHandle) {
 	AF_Log("AF_Physics_Shutdown: Shutting down Bullet physics engine.\n");
-	if (_physicsEngineHandle == nullptr) {
+	if (_physicsEngineHandle == nullptr || *_physicsEngineHandle == nullptr) {
 		AF_Log_Error("AF_Physics_Shutdown: Physics engine handle is null during shutdown.\n");
 		return AF_FALSE;
 	}
 	
-	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(_physicsEngineHandle);
+	AF_BulletInternalData* bulletData = static_cast<AF_BulletInternalData*>(*_physicsEngineHandle);
 
 	if(bulletData == nullptr) {
 		AF_Log_Error("AF_Physics_Shutdown: Failed Shutting down Bullet physics engine. Probably causing a mem leak\n");
@@ -828,10 +839,10 @@ af_bool_t AF_Physics_Shutdown(void* _physicsEngineHandle) {
 	bulletData->collisionConfiguration = nullptr;
 
 	delete bulletData->debugDrawer;
-	bulletData->dynamicsWorld = nullptr;
+	// No need to set debugDrawer to nullptr since bulletData will be freed.
 
 	delete bulletData;
-	bulletData = nullptr;
+	*_physicsEngineHandle = nullptr;
 	AF_Log("AF_Physics_Shutdown: Physics engine handle is valid, proceeding with shutdown.\n");
 	return AF_TRUE;
 }

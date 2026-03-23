@@ -8,6 +8,7 @@
 #ifndef AF_WINDOW_H
 #define AF_WINDOW_H
 #include <stdint.h>
+#include <stddef.h>
 #include "AF_Lib_Define.h"
 #include "AF_Vec2.h"
 
