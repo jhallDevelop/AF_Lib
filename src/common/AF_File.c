@@ -15,11 +15,11 @@
 #include <unistd.h>  // For chdir() on Linux/macOS
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "AF_Log.h"
+#include "AF_String.h"
 
 /*
 ================================
@@ -193,17 +193,16 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
     #ifdef _WIN32
         token = strtok_s(tempBuffer, ",", &context);
     #else
-        token = strtok_r(tempBuffer, ",", &savePtr);
+        token = AF_StrtokR(tempBuffer, ",", &savePtr);
     #endif
 
     while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
         filePointers[fileCount++] = token;
-        
-        // todo, don't if def
+
         #ifdef _WIN32
             token = strtok_s(NULL, ",", &context);
         #else
-            token = strtok_r(NULL, ",", &savePtr);
+            token = AF_StrtokR(NULL, ",", &savePtr);
         #endif
     }
     qsort(filePointers, fileCount, sizeof(char*), AF_File_CompareItemsByValue);

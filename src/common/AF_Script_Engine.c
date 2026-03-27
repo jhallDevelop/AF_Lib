@@ -1,10 +1,9 @@
 #include "AF_Script_Engine.h"
 #include "AF_File.h"
+#include "AF_String.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
-
-
 
 // ===============================================================================
 // AF_Script_Load
@@ -433,7 +432,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 #ifdef _WIN32
     token = strtok_s(scriptBuffer, delimiter, &tokenContext);
 #else
-    token = strtok_r(scriptBuffer, delimiter, &tokenContext);
+    token = AF_StrtokR(scriptBuffer, delimiter, &tokenContext);
 #endif
 
     // continue upto the last token
@@ -443,14 +442,14 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
     #ifdef _WIN32
         token = strtok_s(NULL, delimiter, &tokenContext);
     #else
-        token = strtok_r(NULL, delimiter, &tokenContext);
+        token = AF_StrtokR(NULL, delimiter, &tokenContext);
     #endif
         if (token != NULL && strcmp(token, "AF_EDITOR_VAR") == 0) {
             // Get the NEXT token which should be the type (int, float, etc)
     #ifdef _WIN32
             token = strtok_s(NULL, delimiter, &tokenContext);
     #else
-            token = strtok_r(NULL, delimiter, &tokenContext);
+            token = AF_StrtokR(NULL, delimiter, &tokenContext);
     #endif
             if (token) {
                 
@@ -468,7 +467,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 #ifdef _WIN32
                 token = strtok_s(NULL, delimiter, &tokenContext);
 #else
-                token = strtok_r(NULL, delimiter, &tokenContext);
+                token = AF_StrtokR(NULL, delimiter, &tokenContext);
 #endif
                 
                 if (token == NULL) {
@@ -498,7 +497,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 #ifdef _WIN32
                     token = strtok_s(NULL, delimiter, &tokenContext);
 #else
-                    token = strtok_r(NULL, delimiter, &tokenContext);
+                    token = AF_StrtokR(NULL, delimiter, &tokenContext);
 #endif
 
                     if(token == NULL){
@@ -511,7 +510,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 #ifdef _WIN32
                         token = strtok_s(NULL, delimiter, &tokenContext);
 #else
-                        token = strtok_r(NULL, delimiter, &tokenContext);
+                        token = AF_StrtokR(NULL, delimiter, &tokenContext);
 #endif
                         if (token == NULL) {
                             AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to get value after '=' for %s\n", nameToken);
@@ -541,7 +540,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
 #ifdef _WIN32
                             char* nextToken = strtok_s(NULL, delimiter, &tokenContext);
 #else
-                            char* nextToken = strtok_r(NULL, delimiter, &tokenContext);
+                            char* nextToken = AF_StrtokR(NULL, delimiter, &tokenContext);
 #endif
                             if (nextToken == NULL) {
                                 AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to parse Vec2 second token from: %s\n", token);
