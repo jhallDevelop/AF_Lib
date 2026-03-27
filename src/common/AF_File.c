@@ -21,6 +21,10 @@
 #include "AF_Log.h"
 #include "AF_String.h"
 
+// Forward declarations for local helpers.
+static void AF_File_NormalizePathSeparators(char* outPath, size_t outSize, const char* inPath, char from, char to);
+static af_bool_t AF_File_PathHasPrefix(const char* path, const char* prefix);
+
 /*
 ================================
 AF_File_OpenFile
@@ -34,23 +38,94 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
         AF_Log_Error("AF_File_OpenFile: FAILED to open file. _path is NULL\n");
         return 0;
     }
+
     FILE* f = NULL;
     int err = 0;
+
 #ifdef _WIN32
     err = fopen_s(&f, _path, _writeCommands);
-    if (err != 0) {
-        AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s (Error code: %d)\n", _path, err);
-        return NULL;
+    if (err == 0) {
+        return f;
     }
+
+    // Try platform-specific separator conversion if initial open fails
+    char tryPath[MAX_PATH] = {0};
+    AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _path, '/', '\\');
+    if (strcmp(tryPath, _path) != 0) {
+        err = fopen_s(&f, tryPath, _writeCommands);
+        if (err == 0) {
+            return f;
+        }
+    }
+
+    // Map old macOS user root paths to current user profile directory
+    if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
+        const char* userProfile = getenv("USERPROFILE");
+        if (userProfile && userProfile[0] != '\0') {
+            char mappedPath[MAX_PATH] = {0};
+            const char* rest = tryPath + 7; // skip "\\Users\\"
+            while (*rest == '\\' || *rest == '/') {
+                rest++;
+            }
+            snprintf(mappedPath, sizeof(mappedPath), "%s\\%s", userProfile, rest);
+            err = fopen_s(&f, mappedPath, _writeCommands);
+            if (err == 0) {
+                return f;
+            }
+        }
+    }
+
+    // Attempt to resolve path via editor/game root hints in current cwd
+    {
+        const char* keys[] = {"AF_Editor", "game_projects", NULL};
+        char currentCwd[MAX_PATH] = {0};
+        if (_getcwd(currentCwd, sizeof(currentCwd)) != NULL && currentCwd[0] != '\0') {
+            for (int i = 0; keys[i] != NULL; ++i) {
+                const char* keyLoc = strstr(tryPath, keys[i]);
+                if (!keyLoc) {
+                    keyLoc = strstr(_path, keys[i]);
+                }
+                if (keyLoc) {
+                    const char* suffix = keyLoc + strlen(keys[i]);
+                    while (*suffix == '\\' || *suffix == '/') {
+                        suffix++;
+                    }
+                    const char* localKey = strstr(currentCwd, keys[i]);
+                    if (localKey) {
+                        size_t baseLen = (size_t)(localKey - currentCwd + strlen(keys[i]));
+                        char mappedPath[MAX_PATH] = {0};
+                        if (suffix[0] != '\0') {
+                            snprintf(mappedPath, sizeof(mappedPath), "%.*s\\%s", (int)baseLen, currentCwd, suffix);
+                        } else {
+                            snprintf(mappedPath, sizeof(mappedPath), "%.*s", (int)baseLen, currentCwd);
+                        }
+                        err = fopen_s(&f, mappedPath, _writeCommands);
+                        if (err == 0) {
+                            return f;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s (Error code: %d)\n", _path, err);
+    return NULL;
 #else
     f = fopen(_path, _writeCommands);
     if (f == NULL) {
-        AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s\n", _path);
-        return NULL;
+        // Try Windows separator style in case path came from Windows
+        char tryPath[MAX_PATH] = {0};
+        AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _path, '\\', '/');
+        f = fopen(tryPath, _writeCommands);
+        if (f == NULL) {
+            AF_Log_Error("AF_File_OpenFile: FAILED to open file: %s\n", _path);
+            return NULL;
+        }
     }
-#endif
-
     return f;
+#endif
+    return NULL;
 }
 
 /*
@@ -415,6 +490,48 @@ af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* _fil
 	return AF_TRUE; // Return the buffer containing the file contents
 }
 
+// Local helper: convert all occurences of one separator to another (in/out can be same buffer)
+static void AF_File_NormalizePathSeparators(char* outPath, size_t outSize, const char* inPath, char from, char to)
+{
+    if (outPath == NULL || inPath == NULL || outSize == 0) {
+        return;
+    }
+
+    size_t i = 0;
+    for (; i + 1 < outSize && inPath[i] != '\0'; ++i) {
+        char c = inPath[i];
+        outPath[i] = (c == from ? to : c);
+    }
+    outPath[i] = '\0';
+}
+
+static af_bool_t AF_File_TryChangeDirectory(const char* path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return AF_FALSE;
+    }
+
+    if (chdir(path) == 0) {
+        AF_Log("AF_File_SetWorkingDirectory: SUCCESS: %s\n", path);
+        return AF_TRUE;
+    }
+    return AF_FALSE;
+}
+
+static af_bool_t AF_File_PathHasPrefix(const char* path, const char* prefix)
+{
+    if (!path || !prefix) {
+        return AF_FALSE;
+    }
+
+    size_t prefixLen = strlen(prefix);
+    if (strlen(path) < prefixLen) {
+        return AF_FALSE;
+    }
+
+    return (strncmp(path, prefix, prefixLen) == 0) ? AF_TRUE : AF_FALSE;
+}
+
 /*
 ================
 Editor_Utils_SetWorkingDirectory
@@ -424,10 +541,132 @@ Set the working directory
 */
 void AF_File_SetWorkingDirectory(const char *_projectRoot)
 {
-    //AF_Log_Error("Editor_Utils_SetWorkingDirectory: Windows not defined\n");
-    if (chdir(_projectRoot) != 0) {  // Use _chdir(projectRoot) on Windows
-        AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
+    if (_projectRoot == NULL || _projectRoot[0] == '\0') {
+        AF_Log_Error("AF_File_SetWorkingDirectory: Invalid project root\n");
+        return;
     }
+
+    // Try the path as given first
+    if (AF_File_TryChangeDirectory(_projectRoot)) {
+        return;
+    }
+
+#ifdef _WIN32
+    char tryPath[MAX_PATH];
+    // Convert any forward slashes to backslashes
+    AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _projectRoot, '/', '\\');
+    if (AF_File_TryChangeDirectory(tryPath)) {
+        return;
+    }
+
+    // If we have a Linux-style absolute path like '/Users/..', try mapping to Windows user profile
+    if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
+        const char* userProfile = getenv("USERPROFILE");
+        if (userProfile && userProfile[0] != '\0') {
+            char mappedPath[MAX_PATH];
+            const char* rest = tryPath + 7; // skip "\\Users\\"
+            if (rest[0] == '\\') {
+                rest++;
+            }
+            snprintf(mappedPath, sizeof(mappedPath), "%s\\%s", userProfile, rest);
+            if (AF_File_TryChangeDirectory(mappedPath)) {
+                return;
+            }
+        }
+    }
+
+    // If path is root-relative (starts with '\\'), prefix current drive letter
+    if (tryPath[0] == '\\') {
+        char cwd[MAX_PATH] = {0};
+        if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
+            char currentDrive[4] = { cwd[0], ':', '\0' };
+            char drivePrefixed[MAX_PATH];
+            snprintf(drivePrefixed, sizeof(drivePrefixed), "%s%s", currentDrive, tryPath);
+            if (AF_File_TryChangeDirectory(drivePrefixed)) {
+                return;
+            }
+        }
+    }
+
+    // If path contains AF_Editor or game_projects, remap using current working path.
+    {
+        const char* keys[] = {"AF_Editor", "game_projects", NULL};
+        for (int i = 0; keys[i] != NULL; ++i) {
+            const char* keyLoc = strstr(tryPath, keys[i]);
+            if (keyLoc) {
+                char cwd[MAX_PATH] = {0};
+                if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
+                    const char* suffix = keyLoc + strlen(keys[i]);
+                    while (*suffix == '\\' || *suffix == '/') {
+                        suffix++;
+                    }
+
+                    // prefer original copy of project tree base
+                    char *editorKey = strstr(cwd, "AF_Editor");
+                    if (editorKey) {
+                        size_t rootLen = (size_t)(editorKey - cwd + strlen("AF_Editor"));
+                        char basePath[MAX_PATH];
+                        if (rootLen >= sizeof(basePath)) {
+                            break;
+                        }
+                        memcpy(basePath, cwd, rootLen);
+                        basePath[rootLen] = '\0';
+                        char mapped[MAX_PATH];
+                        if (suffix[0] != '\0') {
+                            snprintf(mapped, sizeof(mapped), "%s\\%s", basePath, suffix);
+                        } else {
+                            snprintf(mapped, sizeof(mapped), "%s", basePath);
+                        }
+                        if (AF_File_TryChangeDirectory(mapped)) {
+                            return;
+                        }
+                    }
+
+                    char mapped2[MAX_PATH];
+                    if (suffix[0] != '\0') {
+                        snprintf(mapped2, sizeof(mapped2), "%s\\%s", cwd, suffix);
+                    } else {
+                        snprintf(mapped2, sizeof(mapped2), "%s", cwd);
+                    }
+                    if (AF_File_TryChangeDirectory(mapped2)) {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    // Last attempt: treat as relative path and combine with current working directory
+    {
+        char cwd[MAX_PATH] = {0};
+        if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
+            char combined[MAX_PATH];
+            snprintf(combined, sizeof(combined), "%s\\%s", cwd, tryPath);
+            if (AF_File_TryChangeDirectory(combined)) {
+                return;
+            }
+        }
+    }
+#else
+    // On POSIX, also try converting backslashes to forward slashes if needed (Windows-style input)
+    char tryPath[MAX_PATH];
+    AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _projectRoot, '\\', '/');
+    if (AF_File_TryChangeDirectory(tryPath)) {
+        return;
+    }
+
+    // Also attempt relative path based on current directory
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
+        char combined[PATH_MAX];
+        snprintf(combined, sizeof(combined), "%s/%s", cwd, tryPath);
+        if (AF_File_TryChangeDirectory(combined)) {
+            return;
+        }
+    }
+#endif
+
+    AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
 }
 
 /*

@@ -62,11 +62,138 @@ static af_bool_t AF_Project_PathExists(const char* _path) {
     return (AF_PROJECT_ACCESS(_path, 0) == 0) ? AF_TRUE : AF_FALSE;
 }
 
+// Convert path separators in a string.
+static void AF_Project_ConvertPathSeparators(char* outPath, uint32_t outSize, const char* inPath, char from, char to) {
+    if (outPath == NULL || inPath == NULL || outSize == 0) {
+        return;
+    }
+
+    size_t i = 0;
+    for (; i + 1 < outSize && inPath[i] != '\0'; ++i) {
+        char c = inPath[i];
+        outPath[i] = (c == from ? to : c);
+    }
+    outPath[i] = '\0';
+}
+
+static af_bool_t AF_Project_HasPrefixIgnoreCase(const char* str, const char* prefix) {
+    if (!str || !prefix) {
+        return AF_FALSE;
+    }
+    while (*prefix && *str) {
+        char a = (char)tolower((unsigned char)*str);
+        char b = (char)tolower((unsigned char)*prefix);
+        if (a != b) {
+            return AF_FALSE;
+        }
+        str++;
+        prefix++;
+    }
+    return (*prefix == '\0') ? AF_TRUE : AF_FALSE;
+}
+
+static af_bool_t AF_Project_ResolveCrossPlatformAbsolutePath(const char* sourcePath, char* outPath, uint32_t outSize, const char* projectRoot) {
+    if (!sourcePath || !outPath || outSize == 0) {
+        return AF_FALSE;
+    }
+
+    // 1) Exact path exists
+    if (AF_Project_PathExists(sourcePath)) {
+        snprintf(outPath, outSize, "%s", sourcePath);
+        return AF_TRUE;
+    }
+
+    // 2) Normalize separator to current platform and test
+    char nativePath[MAX_PROJECTDATA_FILE_PATH] = {0};
+#ifdef _WIN32
+    AF_Project_ConvertPathSeparators(nativePath, sizeof(nativePath), sourcePath, '/', '\\');
+#else
+    AF_Project_ConvertPathSeparators(nativePath, sizeof(nativePath), sourcePath, '\\', '/');
+#endif
+
+    if (AF_Project_PathExists(nativePath)) {
+        snprintf(outPath, outSize, "%s", nativePath);
+        return AF_TRUE;
+    }
+
+#ifdef _WIN32
+    // 3) Convert /Users to current user profile. (macOS path -> Windows mapping)
+    char userMapped[MAX_PROJECTDATA_FILE_PATH] = {0};
+    if (AF_Project_HasPrefixIgnoreCase(nativePath, "\\Users\\") || AF_Project_HasPrefixIgnoreCase(nativePath, "\\users\\")) {
+        const char* userProfile = getenv("USERPROFILE");
+        if (userProfile && userProfile[0] != '\0') {
+            const char* rest = nativePath + 7; // skip "\\Users\\"
+            while (*rest == '\\' || *rest == '/') {
+                rest++;
+            }
+            snprintf(userMapped, sizeof(userMapped), "%s\\%s", userProfile, rest);
+            if (AF_Project_PathExists(userMapped)) {
+                snprintf(outPath, outSize, "%s", userMapped);
+                return AF_TRUE;
+            }
+        }
+    }
+#endif
+
+    // 4) Translate via known repository/project roots (AF_Editor/game_projects)
+    {
+        const char* keys[] = {"AF_Editor", "game_projects", NULL};
+        for (int i = 0; keys[i] != NULL; ++i) {
+            const char* keyLoc = strstr(sourcePath, keys[i]);
+            if (!keyLoc) {
+                // try normalized variant
+                keyLoc = strstr(nativePath, keys[i]);
+            }
+            if (keyLoc && projectRoot && projectRoot[0] != '\0') {
+                const char* suffix = keyLoc + strlen(keys[i]);
+                while (*suffix == '/' || *suffix == '\\') {
+                    suffix++;
+                }
+
+                // Find local base path containing the same key
+                const char* localKeyLoc = strstr(projectRoot, keys[i]);
+                if (localKeyLoc) {
+                    size_t baseLen = (size_t)(localKeyLoc - projectRoot + strlen(keys[i]));
+                    if (baseLen < sizeof(nativePath)) {
+                        char basePath[MAX_PROJECTDATA_FILE_PATH] = {0};
+                        snprintf(basePath, sizeof(basePath), "%.*s", (int)baseLen, projectRoot);
+
+                        char candidate[MAX_PROJECTDATA_FILE_PATH] = {0};
+#ifdef _WIN32
+                        if (suffix[0] != '\0')
+                            snprintf(candidate, sizeof(candidate), "%s\\%s", basePath, suffix);
+                        else
+                            snprintf(candidate, sizeof(candidate), "%s", basePath);
+#else
+                        if (suffix[0] != '\0')
+                            snprintf(candidate, sizeof(candidate), "%s/%s", basePath, suffix);
+                        else
+                            snprintf(candidate, sizeof(candidate), "%s", basePath);
+#endif
+                        if (AF_Project_PathExists(candidate)) {
+                            snprintf(outPath, outSize, "%s", candidate);
+                            return AF_TRUE;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // no translation found
+    return AF_FALSE;
+}
+
 static void AF_Project_MakeAbsolutePath(char* _path, uint32_t _pathSize, const char* _baseDir) {
     if (_path == NULL || _path[0] == '\0' || _baseDir == NULL || _baseDir[0] == '\0') {
         return;
     }
+
     if (AF_Project_IsAbsolutePath(_path) == AF_TRUE) {
+        char resolved[MAX_PROJECTDATA_FILE_PATH] = {0};
+        if (AF_Project_ResolveCrossPlatformAbsolutePath(_path, resolved, sizeof(resolved), _baseDir)) {
+            snprintf(_path, _pathSize, "%s", resolved);
+        }
         return;
     }
 
@@ -240,7 +367,18 @@ static void AF_Project_MigrateShaderToSelectedPlatform(AF_AppData* _appData, AF_
 }
 
 static void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
-    if (_path == NULL || _path[0] == '\0' || AF_Project_IsAbsolutePath(_path) == AF_TRUE) {
+    if (_path == NULL || _path[0] == '\0') {
+        return;
+    }
+
+    if (AF_Project_IsAbsolutePath(_path) == AF_TRUE) {
+        if (AF_Project_PathExists(_path)) {
+            return;
+        }
+        char translatedPath[MAX_PROJECTDATA_FILE_PATH] = {0};
+        if (AF_Project_ResolveCrossPlatformAbsolutePath(_path, translatedPath, sizeof(translatedPath), _projectRoot)) {
+            snprintf(_path, _pathSize, "%s", translatedPath);
+        }
         return;
     }
 
@@ -272,7 +410,18 @@ static void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, con
 }
 
 static void AF_Project_NormaliseProjectDirectory(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
-    if (_path == NULL || _path[0] == '\0' || AF_Project_IsAbsolutePath(_path) == AF_TRUE) {
+    if (_path == NULL || _path[0] == '\0') {
+        return;
+    }
+
+    if (AF_Project_IsAbsolutePath(_path) == AF_TRUE) {
+        if (AF_Project_PathExists(_path)) {
+            return;
+        }
+        char translatedPath[MAX_PROJECTDATA_FILE_PATH] = {0};
+        if (AF_Project_ResolveCrossPlatformAbsolutePath(_path, translatedPath, sizeof(translatedPath), _projectRoot)) {
+            snprintf(_path, _pathSize, "%s", translatedPath);
+        }
         return;
     }
 

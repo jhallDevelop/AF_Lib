@@ -57,7 +57,12 @@ static inline void AF_AppData_Init(AF_AppData* _appData){
 		AF_Log_Error("AF_AppData_ZERO: _appData is NULL");
         return;
     }
-    
+
+    // Zero the entire struct first so all component enabled flags start at 0.
+    // Without this, malloc'd memory (0xCD in MSVC debug) causes FLAG_HAS checks
+    // to pass on every uninitialized component, corrupting asset path loading.
+    memset(_appData, 0, sizeof(AF_AppData));
+
     _appData->time = AF_Time_ZERO();  // Use the function to initialize the time struct
     _appData->profileTimer = AF_ProfileTimer_ZERO();  // Use the function to initialize the profile timer
 
