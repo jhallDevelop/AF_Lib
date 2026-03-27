@@ -226,7 +226,7 @@ af_bool_t AF_Renderer_Awake(void){
 // AF_Renderer_Start
 // Start function which occurs after everything is loaded in.
 // ====================
-af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, const char* _platform, uint16_t* _screenWidth, uint16_t* _screenHeight){
+af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, uint16_t* _screenWidth, uint16_t* _screenHeight){
 	AF_Log("AF_Renderer_Start\n");
 
 	// Ensure clean state at start to prevent macOS driver warnings during FBO creation
@@ -241,8 +241,8 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
         //AF_Renderer_Start_ScreenFrameBuffers(&_renderingData->screenFBO_ID, &_renderingData->screenRBO_ID, &_renderingData->screenFBO_ShaderID, &_renderingData->screenFBO_TextureID, _screenWidth, _screenHeight, SCREEN_VERT_SHADER_PATH, SCREEN_FRAG_SHADER_PATH, "screenTexture");
 		char screenVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		char screenFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(screenVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform,  SCREEN_VERT_SHADER_PATH);
-		snprintf(screenFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, SCREEN_FRAG_SHADER_PATH);
+		snprintf(screenVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, SCREEN_VERT_SHADER_PATH);
+		snprintf(screenFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, SCREEN_FRAG_SHADER_PATH);
 		int32_t screenBufferShaderID = AF_Shader_Load(screenVertShaderFullPath, screenFragShaderFullPath);
 		if(screenBufferShaderID < 0){
 			AF_Log_Error("AF_Renderer_Start: Failed to loadscreenVertShader\n");
@@ -291,8 +291,8 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 		// setup depth frame buffer
 		char depthVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		char depthFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(depthVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_VERT_SHADER_PATH);
-		snprintf(depthFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_FRAG_SHADER_PATH);
+		snprintf(depthVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, DEPTH_VERT_SHADER_PATH);
+		snprintf(depthFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, DEPTH_FRAG_SHADER_PATH);
 		
 		int32_t depthBufferShaderID = AF_Shader_Load(depthVertShaderFullPath, depthFragShaderFullPath);
 		if(depthBufferShaderID < 0){
@@ -329,8 +329,8 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 		// setup depth frame buffer
 		char depthDebugVertShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
 		char depthDebugFragShaderFullPath[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(depthDebugVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_DEBUG_VERT_SHADER_PATH);
-		snprintf(depthDebugFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEPTH_DEBUG_FRAG_SHADER_PATH);
+		snprintf(depthDebugVertShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, DEPTH_DEBUG_VERT_SHADER_PATH);
+		snprintf(depthDebugFragShaderFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, DEPTH_DEBUG_FRAG_SHADER_PATH);
 		
 		int32_t depthDebugShaderID = AF_Shader_Load(depthDebugVertShaderFullPath, depthDebugFragShaderFullPath);
 		if(depthDebugShaderID < 0){
@@ -429,8 +429,8 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, cons
 	char guizmoDebugFragShaderPath[AF_MAX_PATH_CHAR_SIZE];
 	char guizmoDebugVertShaderPath[AF_MAX_PATH_CHAR_SIZE];
 
-	snprintf(guizmoDebugFragShaderPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEBUG_GEOMETRY_FRAG_SHADER_PATH);
-	snprintf(guizmoDebugVertShaderPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s/%s", SHADER_ASSET_PATH, _platform, DEBUG_GEOMETRY_VERT_SHADER_PATH);	
+	snprintf(guizmoDebugFragShaderPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, DEBUG_GEOMETRY_FRAG_SHADER_PATH);
+	snprintf(guizmoDebugVertShaderPath, AF_MAX_PATH_CHAR_SIZE, "%s/%s", SHADER_ASSET_PATH, DEBUG_GEOMETRY_VERT_SHADER_PATH);	
 	
 	int32_t guizmoShaderID = AF_Shader_Load(guizmoDebugVertShaderPath, guizmoDebugFragShaderPath);
 	_renderingData->guizmoDebugShaderID = guizmoShaderID;

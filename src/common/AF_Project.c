@@ -490,7 +490,8 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         }
 
         AF_Project_NormaliseScenePath(_appData, meshComponent->meshPath, sizeof(meshComponent->meshPath));
-        AF_Project_MigrateShaderToSelectedPlatform(_appData, &meshComponent->shader);
+        AF_Log("AF_Project:sync entities: disabled migrate shader \n");
+        //AF_Project_MigrateShaderToSelectedPlatform(_appData, &meshComponent->shader);
         AF_Project_NormaliseScenePath(_appData, meshComponent->material.diffuseTexture.path, sizeof(meshComponent->material.diffuseTexture.path));
         
         af_bool_t meshLoadSuccess = AF_MeshLoad_InitMesh(&_appData->assets, meshComponent, meshComponent->meshPath);
@@ -580,29 +581,27 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             AF_CSprite* spriteComponent = &_appData->ecs.sprites[i];
 
             AF_Project_NormaliseScenePath(_appData, spriteComponent->spriteMesh.meshPath, sizeof(spriteComponent->spriteMesh.meshPath));
-            AF_Project_MigrateShaderToSelectedPlatform(_appData, &spriteComponent->spriteMesh.shader);
+            AF_Log("AF_Project_SyncEntities: disabled migrate shader for sprite component %u\n", i);
+            //AF_Project_MigrateShaderToSelectedPlatform(_appData, &spriteComponent->spriteMesh.shader);
             AF_Project_NormaliseScenePath(_appData, spriteComponent->spriteMesh.material.diffuseTexture.path, sizeof(spriteComponent->spriteMesh.material.diffuseTexture.path));
 
             // Legacy scene compatibility: older editor versions could save sprite components
             // with mesh shaders like "unlit" or "litShadowTexture" which are 3D world-space.
             // Sprite rendering expects the 2D screen-space sprite shader.
+            /**/
             if ((strcmp(spriteComponent->spriteMesh.shader.name, "unlit") == 0) ||
                 (strcmp(spriteComponent->spriteMesh.shader.name, "litShadowTexture") == 0)) {
                 snprintf(spriteComponent->spriteMesh.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", "sprite");
                 snprintf(
                     spriteComponent->spriteMesh.shader.vertPath,
                     AF_MAX_PATH_CHAR_SIZE,
-                    "%s/shaders/%s/sprite.vert",
-                    _appData->projectData.assetsPath,
-                    AF_Platform_Mappings[_appData->projectData.platformData.platformType].name
-                );
+                    "%s/shaders/sprite.vert",
+                    _appData->projectData.assetsPath                );
                 snprintf(
                     spriteComponent->spriteMesh.shader.fragPath,
                     AF_MAX_PATH_CHAR_SIZE,
-                    "%s/shaders/%s/sprite.frag",
-                    _appData->projectData.assetsPath,
-                    AF_Platform_Mappings[_appData->projectData.platformData.platformType].name
-                );
+                    "%s/shaders/sprite.frag",
+                    _appData->projectData.assetsPath                );
             }
             
             // Reload the sprite's mesh and texture from their file paths.
@@ -630,7 +629,8 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         if (hasText == AF_TRUE) {
             AF_CText* textComponent = &_appData->ecs.texts[i];
             AF_Project_NormaliseScenePath(_appData, textComponent->mesh.meshPath, sizeof(textComponent->mesh.meshPath));
-            AF_Project_MigrateShaderToSelectedPlatform(_appData, &textComponent->mesh.shader);
+            AF_Log("AF_Project_SyncEntities: disabled migrate shader for text component %u\n", i);
+            //AF_Project_MigrateShaderToSelectedPlatform(_appData, &textComponent->mesh.shader);
             AF_Project_NormaliseScenePath(_appData, textComponent->font.fontPath, sizeof(textComponent->font.fontPath));
             AF_Project_NormaliseScenePath(_appData, textComponent->fontPath, sizeof(textComponent->fontPath));
             uint32_t fontSize = 1;
