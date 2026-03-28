@@ -1,4 +1,6 @@
 #include "AF_File.h"
+#include "AF_Lib_Define.h"
+
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -79,7 +81,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     }
 
     // Try platform-specific separator conversion if initial open fails
-    char tryPath[MAX_PATH] = {0};
+    char tryPath[AF_MAX_PATH_CHAR_SIZE] = {0};
     AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _path, '/', '\\');
     if (strcmp(tryPath, _path) != 0) {
         err = fopen_s(&f, tryPath, _writeCommands);
@@ -90,9 +92,9 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
 
     // Map old macOS user root paths to current user profile directory
     if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
-        char userProfile[MAX_PATH] = {0};
+        char userProfile[AF_MAX_PATH_CHAR_SIZE] = {0};
         if (AF_File_GetEnv("USERPROFILE", userProfile, sizeof(userProfile))) {
-            char mappedPath[MAX_PATH] = {0};
+            char mappedPath[AF_MAX_PATH_CHAR_SIZE] = {0};
             const char* rest = tryPath + 7; // skip "\\Users\\"
             while (*rest == '\\' || *rest == '/') {
                 rest++;
@@ -108,7 +110,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     // Attempt to resolve path via editor/game root hints in current cwd
     {
         const char* keys[] = {"AF_Editor", "game_projects", NULL};
-        char currentCwd[MAX_PATH] = {0};
+        char currentCwd[AF_MAX_PATH_CHAR_SIZE] = {0};
         if (_getcwd(currentCwd, sizeof(currentCwd)) != NULL && currentCwd[0] != '\0') {
             for (int i = 0; keys[i] != NULL; ++i) {
                 const char* keyLoc = strstr(tryPath, keys[i]);
@@ -123,7 +125,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
                     const char* localKey = strstr(currentCwd, keys[i]);
                     if (localKey) {
                         size_t baseLen = (size_t)(localKey - currentCwd + strlen(keys[i]));
-                        char mappedPath[MAX_PATH] = {0};
+                        char mappedPath[AF_MAX_PATH_CHAR_SIZE] = {0};
                         if (suffix[0] != '\0') {
                             snprintf(mappedPath, sizeof(mappedPath), "%.*s\\%s", (int)baseLen, currentCwd, suffix);
                         } else {
@@ -145,7 +147,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
     f = fopen(_path, _writeCommands);
     if (f == NULL) {
         // Try Windows separator style in case path came from Windows
-        char tryPath[MAX_PATH] = {0};
+        char tryPath[AF_MAX_PATH_CHAR_SIZE] = {0};
         AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _path, '\\', '/');
         f = fopen(tryPath, _writeCommands);
         if (f == NULL) {
@@ -349,7 +351,7 @@ void AF_File_ListFiles(const char *path, AF_FileList* _fileList, af_bool_t _isAl
     WIN32_FIND_DATAA findFileData;
     HANDLE hFind = INVALID_HANDLE_VALUE;
 
-    char searchPath[MAX_PATH];
+    char searchPath[AF_MAX_PATH_CHAR_SIZE];
     snprintf(searchPath, sizeof(searchPath), "%s\\*", path);
 
     hFind = FindFirstFileA(searchPath, &findFileData);
@@ -582,7 +584,7 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
     }
 
 #ifdef _WIN32
-    char tryPath[MAX_PATH];
+    char tryPath[AF_MAX_PATH_CHAR_SIZE];
     // Convert any forward slashes to backslashes
     AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _projectRoot, '/', '\\');
     if (AF_File_TryChangeDirectory(tryPath)) {
@@ -591,9 +593,9 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
 
     // If we have a Linux-style absolute path like '/Users/..', try mapping to Windows user profile
     if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
-        char userProfile[MAX_PATH] = {0};
+        char userProfile[AF_MAX_PATH_CHAR_SIZE] = {0};
         if (AF_File_GetEnv("USERPROFILE", userProfile, sizeof(userProfile))) {
-            char mappedPath[MAX_PATH];
+            char mappedPath[AF_MAX_PATH_CHAR_SIZE];
             const char* rest = tryPath + 7; // skip "\\Users\\"
             if (rest[0] == '\\') {
                 rest++;
@@ -607,10 +609,10 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
 
     // If path is root-relative (starts with '\\'), prefix current drive letter
     if (tryPath[0] == '\\') {
-        char cwd[MAX_PATH] = {0};
+        char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
         if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
             char currentDrive[4] = { cwd[0], ':', '\0' };
-            char drivePrefixed[MAX_PATH];
+            char drivePrefixed[AF_MAX_PATH_CHAR_SIZE];
             snprintf(drivePrefixed, sizeof(drivePrefixed), "%s%s", currentDrive, tryPath);
             if (AF_File_TryChangeDirectory(drivePrefixed)) {
                 return;
@@ -624,7 +626,7 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
         for (int i = 0; keys[i] != NULL; ++i) {
             const char* keyLoc = strstr(tryPath, keys[i]);
             if (keyLoc) {
-                char cwd[MAX_PATH] = {0};
+                char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
                 if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
                     const char* suffix = keyLoc + strlen(keys[i]);
                     while (*suffix == '\\' || *suffix == '/') {
@@ -635,13 +637,13 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
                     char *editorKey = strstr(cwd, "AF_Editor");
                     if (editorKey) {
                         size_t rootLen = (size_t)(editorKey - cwd + strlen("AF_Editor"));
-                        char basePath[MAX_PATH];
+                        char basePath[AF_MAX_PATH_CHAR_SIZE];
                         if (rootLen >= sizeof(basePath)) {
                             break;
                         }
                         memcpy(basePath, cwd, rootLen);
                         basePath[rootLen] = '\0';
-                        char mapped[MAX_PATH];
+                        char mapped[AF_MAX_PATH_CHAR_SIZE];
                         if (suffix[0] != '\0') {
                             snprintf(mapped, sizeof(mapped), "%s\\%s", basePath, suffix);
                         } else {
@@ -652,7 +654,7 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
                         }
                     }
 
-                    char mapped2[MAX_PATH];
+                    char mapped2[AF_MAX_PATH_CHAR_SIZE];
                     if (suffix[0] != '\0') {
                         snprintf(mapped2, sizeof(mapped2), "%s\\%s", cwd, suffix);
                     } else {
@@ -668,9 +670,9 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
 
     // Last attempt: treat as relative path and combine with current working directory
     {
-        char cwd[MAX_PATH] = {0};
+        char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
         if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
-            char combined[MAX_PATH];
+            char combined[AF_MAX_PATH_CHAR_SIZE];
             snprintf(combined, sizeof(combined), "%s\\%s", cwd, tryPath);
             if (AF_File_TryChangeDirectory(combined)) {
                 return;
@@ -679,7 +681,7 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
     }
 #else
     // On POSIX, also try converting backslashes to forward slashes if needed (Windows-style input)
-    char tryPath[MAX_PATH];
+    char tryPath[AF_MAX_PATH_CHAR_SIZE];
     AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _projectRoot, '\\', '/');
     if (AF_File_TryChangeDirectory(tryPath)) {
         return;
