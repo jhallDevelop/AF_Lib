@@ -4,9 +4,33 @@
 #include "AF_File.h"
 #include "AF_TextureLoader.h"
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmicrosoft-enum-value"
+#pragma clang diagnostic ignored "-Wdeprecated-copy"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmicrosoft-enum-value"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+// 4987: nonstandard extension used: 'throw (...)'
+// 4820: padding added after data member
+// (no direct warning number is known for these Assimp issues in MSVC, but push is safe)
+#pragma warning(disable: 4987 4820)
+#endif
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 // Forward declare assimp specific definitions
 af_bool_t AF_MeshLoad_Assimp(AF_Assets& _assets, AF_CMesh& _meshComponent, const char* _modelPath);
