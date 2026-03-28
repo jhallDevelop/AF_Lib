@@ -4,6 +4,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include <emscripten/dlfcn.h>
+#endif
 
 // ===============================================================================
 // AF_Script_Load
@@ -30,11 +34,20 @@ void* AF_Script_Load(const char* _filePath){
         return scriptPtr;
     }
     AF_File_CloseFile(file);
-    scriptPtr = dlopen(_filePath, RTLD_LOCAL | RTLD_LAZY);
-    if (!scriptPtr) {
-        AF_Log_Error("AF_Script_Load: Failed to open shared object %s: %s\n", _filePath, dlerror());
-        return scriptPtr;
-    }
+
+    #ifdef __EMSCRIPTEN__
+        scriptPtr = emscripten_dlopen(_filePath);
+        if (!scriptPtr) {
+            AF_Log_Error("AF_Script_Load: Failed to open side module %s: %s\n", _filePath, emscripten_dlerror());
+            return scriptPtr;
+        }
+    #else
+        scriptPtr = dlopen(_filePath, RTLD_LOCAL | RTLD_LAZY);
+        if (!scriptPtr) {
+            AF_Log_Error("AF_Script_Load: Failed to open shared object %s: %s\n", _filePath, dlerror());
+            return scriptPtr;
+        }
+    #endif
 #endif
 
     return scriptPtr;
@@ -138,6 +151,11 @@ void AF_Script_UnLoad(void* _scriptSharedObjPtr){
 
 #ifdef _WIN32
     FreeLibrary((HMODULE)_scriptSharedObjPtr);
+#elif defined(__EMSCRIPTEN__)
+    int eret = emscripten_dlclose(_scriptSharedObjPtr);
+    if (eret != 0) {
+        AF_Log_Error("AF_Script_UnLoad: Failed to close side module: %s\n", emscripten_dlerror());
+    }
 #else
     int eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {
