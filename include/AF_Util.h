@@ -77,6 +77,8 @@ static inline af_bool_t AF_STRING_IS_EMPTY(const char* _string){
     }
 }
 
+#define AF_UNUSED(x) ((void)(x))
+
 /*
 ====================
 AF_GetMaxElement
