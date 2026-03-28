@@ -24,6 +24,36 @@
 // Forward declarations for local helpers.
 static void AF_File_NormalizePathSeparators(char* outPath, size_t outSize, const char* inPath, char from, char to);
 static af_bool_t AF_File_PathHasPrefix(const char* path, const char* prefix);
+static const char* AF_File_GetEnv(const char* key, char* outBuffer, size_t outSize);
+
+static const char* AF_File_GetEnv(const char* key, char* outBuffer, size_t outSize){
+    if(!key || !outBuffer || outSize == 0){
+        return NULL;
+    }
+
+#ifdef _WIN32
+    char* value = NULL;
+    size_t len = 0;
+    if(_dupenv_s(&value, &len, key) == 0 && value && value[0] != '\0'){
+        strncpy_s(outBuffer, outSize, value, _TRUNCATE);
+        outBuffer[outSize-1] = '\0';
+        free(value);
+        return outBuffer;
+    }
+    if(value){
+        free(value);
+    }
+    return NULL;
+#else
+    const char* value = getenv(key);
+    if(value && value[0] != '\0'){
+        strncpy(outBuffer, value, outSize);
+        outBuffer[outSize-1] = '\0';
+        return outBuffer;
+    }
+    return NULL;
+#endif
+}
 
 /*
 ================================
@@ -60,8 +90,8 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands){
 
     // Map old macOS user root paths to current user profile directory
     if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
-        const char* userProfile = getenv("USERPROFILE");
-        if (userProfile && userProfile[0] != '\0') {
+        char userProfile[MAX_PATH] = {0};
+        if (AF_File_GetEnv("USERPROFILE", userProfile, sizeof(userProfile))) {
             char mappedPath[MAX_PATH] = {0};
             const char* rest = tryPath + 7; // skip "\\Users\\"
             while (*rest == '\\' || *rest == '/') {
@@ -561,8 +591,8 @@ void AF_File_SetWorkingDirectory(const char *_projectRoot)
 
     // If we have a Linux-style absolute path like '/Users/..', try mapping to Windows user profile
     if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
-        const char* userProfile = getenv("USERPROFILE");
-        if (userProfile && userProfile[0] != '\0') {
+        char userProfile[MAX_PATH] = {0};
+        if (AF_File_GetEnv("USERPROFILE", userProfile, sizeof(userProfile))) {
             char mappedPath[MAX_PATH];
             const char* rest = tryPath + 7; // skip "\\Users\\"
             if (rest[0] == '\\') {

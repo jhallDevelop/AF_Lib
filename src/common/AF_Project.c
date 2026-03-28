@@ -37,6 +37,35 @@
 
 #include "../../../stb/stb_image.h"
 
+static const char* AF_Project_GetEnv(const char* key, char* outBuffer, size_t outSize) {
+    if (!key || !outBuffer || outSize == 0) {
+        return NULL;
+    }
+
+#ifdef _WIN32
+    char* value = NULL;
+    size_t len = 0;
+    if (_dupenv_s(&value, &len, key) == 0 && value && value[0] != '\0') {
+        strncpy_s(outBuffer, outSize, value, _TRUNCATE);
+        outBuffer[outSize - 1] = '\0';
+        free(value);
+        return outBuffer;
+    }
+    if (value) {
+        free(value);
+    }
+    return NULL;
+#else
+    const char* value = getenv(key);
+    if (value && value[0] != '\0') {
+        strncpy(outBuffer, value, outSize);
+        outBuffer[outSize - 1] = '\0';
+        return outBuffer;
+    }
+    return NULL;
+#endif
+}
+
 static af_bool_t AF_Project_IsAbsolutePath(const char* _path) {
     if (_path == NULL || _path[0] == '\0') {
         return AF_FALSE;
@@ -119,9 +148,9 @@ static af_bool_t AF_Project_ResolveCrossPlatformAbsolutePath(const char* sourceP
 #ifdef _WIN32
     // 3) Convert /Users to current user profile. (macOS path -> Windows mapping)
     char userMapped[MAX_PROJECTDATA_FILE_PATH] = {0};
+    char userProfile[MAX_PROJECTDATA_FILE_PATH] = {0};
     if (AF_Project_HasPrefixIgnoreCase(nativePath, "\\Users\\") || AF_Project_HasPrefixIgnoreCase(nativePath, "\\users\\")) {
-        const char* userProfile = getenv("USERPROFILE");
-        if (userProfile && userProfile[0] != '\0') {
+        if (AF_Project_GetEnv("USERPROFILE", userProfile, sizeof(userProfile)) && userProfile[0] != '\0') {
             const char* rest = nativePath + 7; // skip "\\Users\\"
             while (*rest == '\\' || *rest == '/') {
                 rest++;
