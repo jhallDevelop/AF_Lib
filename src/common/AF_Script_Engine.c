@@ -1,12 +1,22 @@
 #include "AF_Script_Engine.h"
 #include "AF_File.h"
 #include "AF_String.h"
+#include <stdbool.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #include <emscripten/dlfcn.h>
+#endif
+
+#ifdef _WIN32
+static void AF_Script_NormalizePath(char* path) {
+    if (!path) return;
+    for (char* p = path; *p; ++p) {
+        if (*p == '/') *p = '\\';
+    }
+}
 #endif
 
 // ===============================================================================
@@ -21,11 +31,50 @@ void* AF_Script_Load(const char* _filePath){
         return NULL;
     }
 #ifdef _WIN32
-    HMODULE handle = LoadLibraryA(_filePath);
+    HMODULE handle = NULL;
+
+    // Try loading with redirected search path (prefers module directory for dependencies)
+    handle = LoadLibraryExA(_filePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+
+    if (!handle) {
+        // If that fails, attempt to resolve relative paths against the executable directory
+        char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        if (GetModuleFileNameA(NULL, exePath, sizeof(exePath)) > 0) {
+            char *lastSlash = strrchr(exePath, '\\');
+            if (!lastSlash) {
+                lastSlash = strrchr(exePath, '/');
+            }
+            if (lastSlash) {
+                *lastSlash = '\0';
+            }
+
+            // Try exe dir + requested path
+            char candidatePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            snprintf(candidatePath, sizeof(candidatePath), "%s/%s", exePath, _filePath);
+            AF_Script_NormalizePath(candidatePath);
+            handle = LoadLibraryExA(candidatePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+
+            if (!handle) {
+                // Try exe dir + scripts subfolder
+                char candidateScriptPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+                snprintf(candidateScriptPath, sizeof(candidateScriptPath), "%s/scripts/%s", exePath, _filePath);
+                AF_Script_NormalizePath(candidateScriptPath);
+                handle = LoadLibraryExA(candidateScriptPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+
+                if (handle) {
+                    AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidateScriptPath);
+                }
+            } else {
+                AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
+            }
+        }
+    }
+
     if (!handle) {
         AF_Log_Error("AF_Script_Load: LoadLibraryA failed for %s (error %lu)\n", _filePath, (unsigned long)GetLastError());
         return NULL;
     }
+
     scriptPtr = (void*)handle;
 #else
     FILE* file = AF_File_OpenFile(_filePath, "rb");
@@ -107,32 +156,82 @@ uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr
 // binding the start, update and destroy function ptrs
 // ===============================================================================
 void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
+    char exeDir[AF_MAX_PATH_CHAR_SIZE] = {0};
+
+#ifdef _WIN32
+    char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    if (GetModuleFileNameA(NULL, exePath, sizeof(exePath)) > 0) {
+        char *lastSlash = strrchr(exePath, '\\');
+        if (!lastSlash) {
+            lastSlash = strrchr(exePath, '/');
+        }
+        if (lastSlash) {
+            *lastSlash = '\0';
+            snprintf(exeDir, sizeof(exeDir), "%s", exePath);
+        }
+    }
+#endif
+
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-        //AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
-            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
-            AF_CScript* script = &_ecs->scripts[scriptID];// entity->scripts[j];
-            
+            uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j;
+            AF_CScript* script = &_ecs->scripts[scriptID];
+
             if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
-            // set the correct script path as the build location may have changed.
-            //snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "bin/%s/scripts/%s.so", AF_Platform_Mappings[_AppData->projectData.platformData.platformType].name, script->scriptName);
+
+            bool scriptPathResolved = AF_FALSE;
+
+            // Prefer an existing user-provided script path if valid
+            if (script->scriptFullPath[0] != '\0' && AF_File_FileExists(script->scriptFullPath) == AF_TRUE) {
+                scriptPathResolved = AF_TRUE;
+            }
+
 #ifdef _WIN32
-            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.dll", script->scriptName);
+            if (!scriptPathResolved && exeDir[0] != '\0') {
+                char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
+                snprintf(candidate, sizeof(candidate), "%s\\scripts\\%s.dll", exeDir, script->scriptName);
+                if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                    scriptPathResolved = AF_TRUE;
+                }
+            }
+
+            if (!scriptPathResolved) {
+                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.dll", script->scriptName);
+            }
 #else
-            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.so", script->scriptName);
+            if (!scriptPathResolved && exeDir[0] != '\0') {
+                char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
+                snprintf(candidate, sizeof(candidate), "%s/scripts/%s.so", exeDir, script->scriptName);
+                if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                    scriptPathResolved = AF_TRUE;
+                }
+            }
+
+            if (!scriptPathResolved) {
+                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.so", script->scriptName);
+            }
 #endif
+
             // attempt to load the script
             script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
-    
+
+            if (!script->loadedScriptPtr) {
+                AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to load script: %s (Entity: %u, Script: %u)\n", script->scriptFullPath, i, scriptID);
+                continue;
+            }
+
             // attempt the bind the scripts functions to this component
-            uint32_t scriptBindSuccess =  AF_Script_Bind_Functions(script, script->loadedScriptPtr);
+            uint32_t scriptBindSuccess = AF_Script_Bind_Functions(script, script->loadedScriptPtr);
             if(scriptBindSuccess == AF_FAIL){
-                AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to bind script: Entity: %i, Script: %i\n", i, scriptID);
+                AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to bind script: Entity: %u, Script: %u\n", i, scriptID);
+                AF_Script_UnLoad(script->loadedScriptPtr);
+                script->loadedScriptPtr = NULL;
             }
         }
-        
     }
     AF_Log("AF_Script_Load_And_Bind_Functions: Loaded and bound all scripts, Finished \n");
 }
