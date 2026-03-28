@@ -42,7 +42,7 @@ static const char* AF_Project_GetEnv(const char* key, char* outBuffer, size_t ou
         return NULL;
     }
 
-#ifdef _WIN32
+#if defined(_WIN32)
     char* value = NULL;
     size_t len = 0;
     if (_dupenv_s(&value, &len, key) == 0 && value && value[0] != '\0') {
@@ -145,24 +145,42 @@ static af_bool_t AF_Project_ResolveCrossPlatformAbsolutePath(const char* sourceP
         return AF_TRUE;
     }
 
-#ifdef _WIN32
-    // 3) Convert /Users to current user profile. (macOS path -> Windows mapping)
-    char userMapped[MAX_PROJECTDATA_FILE_PATH] = {0};
-    char userProfile[MAX_PROJECTDATA_FILE_PATH] = {0};
-    if (AF_Project_HasPrefixIgnoreCase(nativePath, "\\Users\\") || AF_Project_HasPrefixIgnoreCase(nativePath, "\\users\\")) {
-        if (AF_Project_GetEnv("USERPROFILE", userProfile, sizeof(userProfile)) && userProfile[0] != '\0') {
-            const char* rest = nativePath + 7; // skip "\\Users\\"
-            while (*rest == '\\' || *rest == '/') {
+    // 3) Convert old user-root paths to current user directory (cross-platform)
+    {
+        char userMapped[MAX_PROJECTDATA_FILE_PATH] = {0};
+        char userProfile[MAX_PROJECTDATA_FILE_PATH] = {0};
+        const char* userKey = NULL;
+        const char* rest = NULL;
+
+        if (AF_Project_HasPrefixIgnoreCase(nativePath, "\\Users\\") || AF_Project_HasPrefixIgnoreCase(nativePath, "\\users\\")) {
+            userKey = "USERPROFILE";
+            rest = nativePath + 7; // skip "\\Users\\"
+        } else if (AF_Project_HasPrefixIgnoreCase(nativePath, "/Users/") || AF_Project_HasPrefixIgnoreCase(nativePath, "/users/")) {
+            userKey = "HOME";
+            rest = nativePath + 7; // skip "/Users/"
+        }
+
+        if (userKey && AF_Project_GetEnv(userKey, userProfile, sizeof(userProfile)) && userProfile[0] != '\0') {
+            while (rest && (*rest == '\\' || *rest == '/')) {
                 rest++;
             }
-            snprintf(userMapped, sizeof(userMapped), "%s\\%s", userProfile, rest);
+
+            if (!rest || rest[0] == '\0') {
+                snprintf(userMapped, sizeof(userMapped), "%s", userProfile);
+            } else {
+#ifdef _WIN32
+                snprintf(userMapped, sizeof(userMapped), "%s\\%s", userProfile, rest);
+#else
+                snprintf(userMapped, sizeof(userMapped), "%s/%s", userProfile, rest);
+#endif
+            }
+
             if (AF_Project_PathExists(userMapped)) {
                 snprintf(outPath, outSize, "%s", userMapped);
                 return AF_TRUE;
             }
         }
     }
-#endif
 
     // 4) Translate via known repository/project roots (AF_Editor/game_projects)
     {

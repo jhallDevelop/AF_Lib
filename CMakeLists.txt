@@ -21,18 +21,17 @@ if (APPLE)
     message(STATUS "Configuring for macOS")
     enable_language(OBJC)
     set(CMAKE_OBJC_COMPILER "/usr/bin/clang")
-    #file(GLOB_RECURSE PLATFORM_SOURCE_FILES src/osx/*.c src/osx/*.m)
-    file(GLOB_RECURSE PLATFORM_SOURCE_FILES src/osx/*.m)
+    file(GLOB_RECURSE OSX_OBJC_FILES src/osx/*.m)
+    file(GLOB_RECURSE POSIX_C_FILES src/posix/*.c)
+    set(PLATFORM_SOURCE_FILES ${OSX_OBJC_FILES} ${POSIX_C_FILES})
+    set_source_files_properties(${OSX_OBJC_FILES} PROPERTIES LANGUAGE OBJC)
 
-    # Specific files to be treated as Objective-C
-    set_source_files_properties(${PLATFORM_SOURCE_FILES} PROPERTIES LANGUAGE OBJC)
-    
 elseif (WIN32)
     message(STATUS "Configuring for windows")
     file(GLOB_RECURSE PLATFORM_SOURCE_FILES src/windows/*.c)
 else()
     message(STATUS "Configuring for linux")
-    file(GLOB_RECURSE PLATFORM_SOURCE_FILES src/linux/*.c)
+    file(GLOB_RECURSE PLATFORM_SOURCE_FILES src/linux/*.c src/posix/*.c)
 endif()
 
 # Combine all source files
