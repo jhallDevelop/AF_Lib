@@ -136,6 +136,12 @@ void AF_Event_Dispatch(AF_EventRegistry_s* _registry, AF_Event_s* _event){
         return;
     }
     
+    AF_Log("AF_Event_Dispatch: Event type=%u, AF_EVENT_TYPE_TOTAL_TYPES=%d", _event->type, AF_EVENT_TYPE_TOTAL_TYPES);
+    if (_event->type >= AF_EVENT_TYPE_TOTAL_TYPES) {
+        AF_Log_Error("AF_Event_Dispatch: Event type %u is out of bounds (max=%d)", _event->type, AF_EVENT_TYPE_TOTAL_TYPES);
+        return;
+    }
+    
     AF_EventListenerList_s* registry = &_registry->registries[_event->type];
     for (uint32_t i = 0; i < registry->listenerCount; i++) {
         registry->listeners[i](_event);

@@ -758,7 +758,27 @@ void AF_Script_ApplyEditorVars(AF_CScript* _script) {
                 ((AF_FLOAT*)sym)[2] = var->data.vec3Value[2];
             break;
             case AF_EDITOR_VAR_TYPE_EVENT:
-                *(uint32_t*)sym = var->data.eventTypeValue;
+            {
+                uint32_t eventValue = var->data.eventTypeValue;
+                AF_Event_Type_e mappedEventType = AF_EVENT_TYPE_NONE;
+
+                // Editor combo stores compact indices; map them to runtime event enums.
+                switch (eventValue) {
+                    case 0: mappedEventType = AF_EVENT_TYPE_NONE; break;
+                    case 1: mappedEventType = AF_EVENT_TYPE_GAME_WIN; break;
+                    case 2: mappedEventType = AF_EVENT_TYPE_GAME_LOSE; break;
+                    default:
+                        if (eventValue < AF_EVENT_TYPE_TOTAL_TYPES) {
+                            mappedEventType = (AF_Event_Type_e)eventValue;
+                        } else {
+                            AF_Log_Warning("AF_Script_ApplyEditorVars: invalid event value %u for script '%s' var '%s', defaulting to NONE\n", eventValue, _script->scriptName, var->name);
+                        }
+                    break;
+                }
+
+                AF_Log("AF_Script_ApplyEditorVars: Setting event var '%s' in script '%s' from editor value %u to mapped enum %u\n", var->name, _script->scriptName, eventValue, mappedEventType);
+                *(uint32_t*)sym = (uint32_t)mappedEventType;
+            }
             break;
             default: break;
         }
