@@ -666,21 +666,19 @@ void AF_Physics_Update(AF_ECS* _ecs, void* _physicsEngineHandle, const AF_FLOAT 
 				collisionA->normal = { (AF_FLOAT)normalOnB.getX(), (AF_FLOAT)normalOnB.getY(), (AF_FLOAT)normalOnB.getZ() };
 				collisionB->normal = { (AF_FLOAT)normalOnB.getX(), (AF_FLOAT)normalOnB.getY(), (AF_FLOAT)normalOnB.getZ() };
 
-				// Store the other entity's ID in the collision data
-				collisionA->entity2ID = obB->getUserIndex();
-				collisionB->entity1ID = obA->getUserIndex();
+                // Store both entity IDs in each collision record for consistent callback logic
+                collisionA->entity1ID = obA->getUserIndex();
+                collisionA->entity2ID = obB->getUserIndex();
+                collisionB->entity1ID = obB->getUserIndex();
+                collisionB->entity2ID = obA->getUserIndex();
 
-				// assign ecs ptr
-				if(collisionA->ecsPtr == nullptr){
-					collisionA->ecsPtr = _ecs;
-				}
-				if(collisionB->ecsPtr == nullptr){
-					collisionB->ecsPtr = _ecs;
-				}
-
-				
-
-
+                // assign ecs ptr
+                if (collisionA->ecsPtr == nullptr) {
+                    collisionA->ecsPtr = _ecs;
+                }
+                if (collisionB->ecsPtr == nullptr) {
+                    collisionB->ecsPtr = _ecs;
+                }
 				if(((obA->getUserIndex() == 48) && (obB->getUserIndex() == 49)) || ((obB->getUserIndex() == 48) && (obA->getUserIndex() == 49))){
 					AF_Log("Collision detected between Entity %d and Entity %d at point A(%.2f, %.2f, %.2f) and point B(%.2f, %.2f, %.2f) with normal (%.2f, %.2f, %.2f)\n",
 					obA->getUserIndex(), obB->getUserIndex(),

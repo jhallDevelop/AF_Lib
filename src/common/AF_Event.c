@@ -88,6 +88,11 @@ void AF_Event_Queue(AF_AppData* _appData, AF_Event_s _event)
         return;
     }
 
+    if (_event.type <= AF_EVENT_TYPE_NONE || _event.type >= AF_EVENT_TYPE_TOTAL_TYPES) {
+        AF_Log_Error("AF_Event_Queue: Invalid event type %u, dropping event.", (uint32_t)_event.type);
+        return;
+    }
+
     for (uint32_t i = 0; i < AF_EVENT_QUEUE_SIZE; i++) {
         if (_appData->events[i].type == AF_EVENT_TYPE_NONE) {
             _appData->events[i] = _event;

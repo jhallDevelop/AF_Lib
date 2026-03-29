@@ -1,6 +1,7 @@
 #include "AF_Script_Engine.h"
 #include "AF_File.h"
 #include "AF_String.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 #if !defined(_WIN32)
@@ -775,6 +776,8 @@ void AF_Script_ApplyEditorVars(AF_CScript* _script) {
                         }
                     break;
                 }
+
+                assert(mappedEventType >= AF_EVENT_TYPE_NONE && mappedEventType < AF_EVENT_TYPE_TOTAL_TYPES);
 
                 AF_Log("AF_Script_ApplyEditorVars: Setting event var '%s' in script '%s' from editor value %u to mapped enum %u\n", var->name, _script->scriptName, eventValue, mappedEventType);
                 *(uint32_t*)sym = (uint32_t)mappedEventType;
