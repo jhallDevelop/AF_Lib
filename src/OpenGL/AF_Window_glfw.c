@@ -118,12 +118,27 @@ static void AF_Window_Cursor_Position_Callback(GLFWwindow* _window, double _xpos
     //Editor_AppData* editorAppData = (Editor_AppData*)glfwGetWindowUserPointer(_window);
     (void)_window;
 
-    // offset the mouse position by the window position to get the correct mouse position relative to the window
-    _xpos -= g_window->windowXPos;
-    _ypos -= g_window->windowYPos;
+    // GLFW cursor coordinates are in window-space points.
+    // Convert to framebuffer-space pixels so script/UI hit testing matches spritePos/spriteSize.
+    int windowW = 0;
+    int windowH = 0;
+    int framebufferW = 0;
+    int framebufferH = 0;
+    glfwGetWindowSize((GLFWwindow*)g_window->window, &windowW, &windowH);
+    glfwGetFramebufferSize((GLFWwindow*)g_window->window, &framebufferW, &framebufferH);
+
+    AF_FLOAT scaleX = 1.0f;
+    AF_FLOAT scaleY = 1.0f;
+    if (windowW > 0 && framebufferW > 0) {
+        scaleX = (AF_FLOAT)framebufferW / (AF_FLOAT)windowW;
+    }
+    if (windowH > 0 && framebufferH > 0) {
+        scaleY = (AF_FLOAT)framebufferH / (AF_FLOAT)windowH;
+    }
+
     // Update current mouse position
-    g_input->mouseX = _xpos;
-    g_input->mouseY = _ypos;
+    g_input->mouseX = (AF_FLOAT)(_xpos * scaleX);
+    g_input->mouseY = (AF_FLOAT)(_ypos * scaleY);
 }
 
 

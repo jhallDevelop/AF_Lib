@@ -1080,6 +1080,11 @@ af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
         // Track the active scene so menu-bar saves go to the right file
         snprintf(_appData->projectData.defaultScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
 
+        // Resolve shader paths now that scene JSON is loaded.
+        // This matches AF_Project_Load behavior and avoids invalid shader references on runtime scene swap.
+        AF_Log("AF_LoadScene: expanding shader paths for scene %s\n", _sceneFilePath);
+        AF_Project_ExpandShaderPaths(_appData);
+
         AF_Project_SyncEntities(_appData);
 
         // Build Bullet bodies from the freshly loaded/synced ECS scene.

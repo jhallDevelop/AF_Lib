@@ -3,6 +3,12 @@
 #include "AF_String.h"
 #include <stdbool.h>
 #include <string.h>
+#if !defined(_WIN32)
+#include <unistd.h>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+#endif
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -53,6 +59,59 @@ static void AF_Script_DeriveNameFromPath(AF_CScript* script) {
     if (extension != NULL) {
         *extension = '\0';
     }
+}
+
+static af_bool_t AF_Script_GetExecutableDir(char* outDir, uint32_t outDirSize) {
+    if (outDir == NULL || outDirSize == 0) {
+        return AF_FALSE;
+    }
+    outDir[0] = '\0';
+
+#ifdef _WIN32
+    char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    if (GetModuleFileNameA(NULL, exePath, sizeof(exePath)) == 0) {
+        return AF_FALSE;
+    }
+    char* lastSlash = strrchr(exePath, '\\');
+    if (lastSlash == NULL) {
+        lastSlash = strrchr(exePath, '/');
+    }
+    if (lastSlash == NULL) {
+        return AF_FALSE;
+    }
+    *lastSlash = '\0';
+    snprintf(outDir, outDirSize, "%s", exePath);
+    return AF_TRUE;
+#elif defined(__APPLE__)
+    char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    uint32_t size = (uint32_t)sizeof(exePath);
+    if (_NSGetExecutablePath(exePath, &size) != 0) {
+        return AF_FALSE;
+    }
+
+    char* lastSlash = strrchr(exePath, '/');
+    if (lastSlash == NULL) {
+        return AF_FALSE;
+    }
+    *lastSlash = '\0';
+    snprintf(outDir, outDirSize, "%s", exePath);
+    return AF_TRUE;
+#else
+    char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    ssize_t len = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+    if (len <= 0) {
+        return AF_FALSE;
+    }
+    exePath[len] = '\0';
+
+    char* lastSlash = strrchr(exePath, '/');
+    if (lastSlash == NULL) {
+        return AF_FALSE;
+    }
+    *lastSlash = '\0';
+    snprintf(outDir, outDirSize, "%s", exePath);
+    return AF_TRUE;
+#endif
 }
 
 #ifdef _WIN32
@@ -258,6 +317,10 @@ void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
         }
     }
     winHostSubdir = AF_Script_GetWinHostSubdir(exeName);
+#endif
+
+#if !defined(_WIN32)
+    AF_Script_GetExecutableDir(exeDir, sizeof(exeDir));
 #endif
 
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
