@@ -197,3 +197,47 @@ void AF_File_SetWorkingDirectory(const char* _projectRoot) {
 
 	AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
 }
+
+AF_LIB_API void AF_File_CloseFile(FILE* _filePtr) {
+	if (_filePtr == NULL) {
+		AF_Log_Error("AF_File_CloseFile: FAILED to close buffer. _filePtr is NULL\n");
+		return;
+	}
+
+	if (ferror(_filePtr)) {
+		AF_Log_Warning("AF_File_CloseFile: File had errors before closing\n");
+	}
+
+	if (fclose(_filePtr) != 0) {
+		AF_Log_Error("AF_File_CloseFile: Error while closing file\n");
+	}
+}
+
+AF_LIB_API af_bool_t AF_File_FileExists(const char* _filePath) {
+	if (_filePath == NULL || _filePath[0] == '\0') {
+		return AF_FALSE;
+	}
+
+	struct stat fileStat;
+	if (stat(_filePath, &fileStat) == 0) {
+		return AF_TRUE;
+	}
+	return AF_FALSE;
+}
+
+AF_LIB_API uint32_t AF_File_GetFileSize(const char* _filePath) {
+	if (_filePath == NULL || _filePath[0] == '\0') {
+		return 0;
+	}
+
+	struct stat fileStat;
+	if (stat(_filePath, &fileStat) != 0) {
+		return 0;
+	}
+
+	if (fileStat.st_size < 0) {
+		return 0;
+	}
+
+	return (uint32_t)fileStat.st_size;
+}

@@ -504,15 +504,6 @@ void AF_Script_Call_Start(AF_AppData* _appData){
             } __except(EXCEPTION_EXECUTE_HANDLER) {
                 AF_Log_Error("AF_Script_Call_Start: script '%s' crashed in Start for entity %u\n", script->scriptName, i);
             }
-#elif defined(__clang__)
-            _Pragma("clang diagnostic push")
-            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
-            __try {
-                scriptFunctPtr(i, _appData);
-            } __except(EXCEPTION_EXECUTE_HANDLER) {
-                AF_Log_Error("AF_Script_Call_Start: script '%s' crashed in Start for entity %u\n", script->scriptName, i);
-            }
-            _Pragma("clang diagnostic pop")
 #else
             scriptFunctPtr(i, _appData);
 #endif
@@ -557,15 +548,6 @@ void AF_Script_Call_Update(AF_AppData* _appData){
             } __except(EXCEPTION_EXECUTE_HANDLER) {
                 AF_Log_Error("AF_Script_Call_Update: script '%s' crashed in Update for entity %u\n", script->scriptName, i);
             }
-#elif defined(__clang__)
-            _Pragma("clang diagnostic push")
-            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
-            __try {
-                scriptFunctPtr(i, _appData);
-            } __except(EXCEPTION_EXECUTE_HANDLER) {
-                AF_Log_Error("AF_Script_Call_Update: script '%s' crashed in Update for entity %u\n", script->scriptName, i);
-            }
-            _Pragma("clang diagnostic pop")
 #else
             scriptFunctPtr(i, _appData);
 #endif
@@ -609,15 +591,6 @@ void AF_Script_Call_LateUpdate(AF_AppData* _appData){
             } __except(EXCEPTION_EXECUTE_HANDLER) {
                 AF_Log_Error("AF_Script_Call_LateUpdate: script '%s' crashed in LateUpdate for entity %u\n", script->scriptName, i);
             }
-#elif defined(__clang__)
-            _Pragma("clang diagnostic push")
-            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
-            __try {
-                scriptFunctPtr(i, _appData);
-            } __except(EXCEPTION_EXECUTE_HANDLER) {
-                AF_Log_Error("AF_Script_Call_LateUpdate: script '%s' crashed in LateUpdate for entity %u\n", script->scriptName, i);
-            }
-            _Pragma("clang diagnostic pop")
 #else
             scriptFunctPtr(i, _appData);
 #endif
@@ -661,15 +634,6 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
             } __except(EXCEPTION_EXECUTE_HANDLER) {
                 AF_Log_Error("AF_Script_Call_Destroy: script '%s' crashed in Destroy for entity %u\n", script->scriptName, i);
             }
-#elif defined(__clang__)
-            _Pragma("clang diagnostic push")
-            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
-            __try {
-                scriptFunctPtr(i, _appData);
-            } __except(EXCEPTION_EXECUTE_HANDLER) {
-                AF_Log_Error("AF_Script_Call_Destroy: script '%s' crashed in Destroy for entity %u\n", script->scriptName, i);
-            }
-            _Pragma("clang diagnostic pop")
 #else
             scriptFunctPtr(i, _appData);
 #endif
