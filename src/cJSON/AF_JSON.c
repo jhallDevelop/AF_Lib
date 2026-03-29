@@ -1880,7 +1880,7 @@ void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
 	// Script Full Path
 	cJSON* scriptFullPathJSON = cJSON_GetObjectItem(_scriptsJSON, "scriptFullPath");
 	if (scriptFullPathJSON != NULL && cJSON_IsString(scriptFullPathJSON)) {
-		snprintf(_scripts->scriptFullPath, sizeof(_scripts->scriptName) - 1, "%s", scriptFullPathJSON->valuestring);
+		snprintf(_scripts->scriptFullPath, sizeof(_scripts->scriptFullPath) - 1, "%s", scriptFullPathJSON->valuestring);
 		//strncpy(_scripts->scriptFullPath, scriptFullPathJSON->valuestring, sizeof(_scripts->scriptFullPath) - 1);
 		_scripts->scriptFullPath[sizeof(_scripts->scriptFullPath) - 1] = '\0'; // Ensure null termination
 	}
@@ -3028,8 +3028,13 @@ cJSON* AF_JSON_ScriptsToJson(AF_CScript* _component) {
 	
 	cJSON_AddStringToObject(returnJSON, "scriptName", _component->scriptName);
 
-	//char scriptFullPath[MAX_CSCRIPT_PATH];
-	cJSON_AddStringToObject(returnJSON, "scriptFullPath", _component->scriptFullPath);
+	char scriptFullPath[MAX_CSCRIPT_PATH] = {0};
+	if (_component->scriptName[0] != '\0') {
+		snprintf(scriptFullPath, sizeof(scriptFullPath), "scripts/%s", _component->scriptName);
+	} else {
+		snprintf(scriptFullPath, sizeof(scriptFullPath), "%s", _component->scriptFullPath);
+	}
+	cJSON_AddStringToObject(returnJSON, "scriptFullPath", scriptFullPath);
 
 	
 	// store the script editor vars

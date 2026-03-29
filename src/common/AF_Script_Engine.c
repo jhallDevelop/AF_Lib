@@ -2,6 +2,7 @@
 #include "AF_File.h"
 #include "AF_String.h"
 #include <stdbool.h>
+#include <string.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -16,6 +17,50 @@ static void AF_Script_NormalizePath(char* path) {
     for (char* p = path; *p; ++p) {
         if (*p == '/') *p = '\\';
     }
+}
+#endif
+
+static const char* AF_Script_GetBinaryExtension(void) {
+#ifdef __EMSCRIPTEN__
+    return ".so";
+#elif defined(_WIN32)
+    return ".dll";
+#elif defined(__APPLE__)
+    return ".dylib";
+#else
+    return ".so";
+#endif
+}
+
+static void AF_Script_DeriveNameFromPath(AF_CScript* script) {
+    if (script == NULL) {
+        return;
+    }
+    if (script->scriptName[0] != '\0' || script->scriptFullPath[0] == '\0') {
+        return;
+    }
+
+    const char* baseName = strrchr(script->scriptFullPath, '/');
+    if (baseName == NULL) {
+        baseName = strrchr(script->scriptFullPath, '\\');
+    }
+    baseName = (baseName == NULL) ? script->scriptFullPath : baseName + 1;
+
+    snprintf(script->scriptName, sizeof(script->scriptName), "%s", baseName);
+    script->scriptName[sizeof(script->scriptName) - 1] = '\0';
+
+    char* extension = strrchr(script->scriptName, '.');
+    if (extension != NULL) {
+        *extension = '\0';
+    }
+}
+
+#ifdef _WIN32
+static const char* AF_Script_GetWinHostSubdir(const char* exeName) {
+    if (exeName != NULL && strstr(exeName, "AF_Editor") != NULL) {
+        return "editor";
+    }
+    return "game";
 }
 #endif
 
@@ -66,6 +111,34 @@ void* AF_Script_Load(const char* _filePath){
                 }
             } else {
                 AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
+            }
+        }
+    }
+
+    // If still no handle, try setting DLL directory to the script's folder and reloading.
+    if (!handle) {
+        char scriptDir[AF_MAX_PATH_CHAR_SIZE] = {0};
+        const char* lastSlash = strrchr(_filePath, '\\');
+        if (!lastSlash) {
+            lastSlash = strrchr(_filePath, '/');
+        }
+        if (lastSlash) {
+            size_t dirLen = (size_t)(lastSlash - _filePath);
+            if (dirLen > 0 && dirLen < sizeof(scriptDir)) {
+                memcpy(scriptDir, _filePath, dirLen);
+                scriptDir[dirLen] = '\0';
+            }
+        }
+
+        if (scriptDir[0] != '\0') {
+            if (SetDllDirectoryA(scriptDir)) {
+                handle = LoadLibraryExA(_filePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+                SetDllDirectoryA(NULL);
+                if (handle) {
+                    AF_Log("AF_Script_Load: Resolved with SetDllDirectory %s\n", _filePath);
+                }
+            } else {
+                AF_Log_Error("AF_Script_Load: SetDllDirectoryA failed for %s (error %lu)\n", scriptDir, (unsigned long)GetLastError());
             }
         }
     }
@@ -157,10 +230,24 @@ uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr
 // ===============================================================================
 void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
     char exeDir[AF_MAX_PATH_CHAR_SIZE] = {0};
+    char exeName[AF_MAX_PATH_CHAR_SIZE] = {0};
+    const char* scriptExt = AF_Script_GetBinaryExtension();
+#ifdef _WIN32
+    const char* winHostSubdir = "game";
+#endif
 
 #ifdef _WIN32
     char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
     if (GetModuleFileNameA(NULL, exePath, sizeof(exePath)) > 0) {
+        const char* fileName = strrchr(exePath, '\\');
+        if (!fileName) {
+            fileName = strrchr(exePath, '/');
+        }
+        if (fileName != NULL) {
+            snprintf(exeName, sizeof(exeName), "%s", fileName + 1);
+            exeName[sizeof(exeName) - 1] = '\0';
+        }
+
         char *lastSlash = strrchr(exePath, '\\');
         if (!lastSlash) {
             lastSlash = strrchr(exePath, '/');
@@ -170,6 +257,7 @@ void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
             snprintf(exeDir, sizeof(exeDir), "%s", exePath);
         }
     }
+    winHostSubdir = AF_Script_GetWinHostSubdir(exeName);
 #endif
 
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
@@ -177,50 +265,103 @@ void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j;
             AF_CScript* script = &_ecs->scripts[scriptID];
 
+            // Reset script function pointers and module handle before (re)loading.
+            script->startFuncPtr      = NULL;
+            script->updateFuncPtr     = NULL;
+            script->lateUpdateFuncPtr = NULL;
+            script->destroyFuncPtr    = NULL;
+            script->loadedScriptPtr   = NULL;
+
             if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
                 continue;
             }
 
-            bool scriptPathResolved = AF_FALSE;
+            AF_Script_DeriveNameFromPath(script);
+
+            af_bool_t scriptPathResolved = AF_FALSE;
 
             // Prefer an existing user-provided script path if valid
             if (script->scriptFullPath[0] != '\0' && AF_File_FileExists(script->scriptFullPath) == AF_TRUE) {
                 scriptPathResolved = AF_TRUE;
             }
 
+            if (scriptPathResolved == AF_FALSE && script->scriptName[0] != '\0') {
+                char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
+
 #ifdef _WIN32
-            if (!scriptPathResolved && exeDir[0] != '\0') {
-                char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
-                snprintf(candidate, sizeof(candidate), "%s\\scripts\\%s.dll", exeDir, script->scriptName);
-                if (AF_File_FileExists(candidate) == AF_TRUE) {
-                    snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
-                    scriptPathResolved = AF_TRUE;
+                if (exeDir[0] != '\0') {
+                    snprintf(candidate, sizeof(candidate), "%s/scripts/%s/%s%s", exeDir, winHostSubdir, script->scriptName, scriptExt);
+                    AF_Script_NormalizePath(candidate);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                    }
                 }
-            }
 
-            if (!scriptPathResolved) {
-                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.dll", script->scriptName);
-            }
+                if (scriptPathResolved == AF_FALSE && exeDir[0] != '\0') {
+                    snprintf(candidate, sizeof(candidate), "%s/scripts/%s%s", exeDir, script->scriptName, scriptExt);
+                    AF_Script_NormalizePath(candidate);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                    }
+                }
+
+                if (scriptPathResolved == AF_FALSE) {
+                    snprintf(candidate, sizeof(candidate), "scripts/%s/%s%s", winHostSubdir, script->scriptName, scriptExt);
+                    AF_Script_NormalizePath(candidate);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                    }
+                }
+
+                if (scriptPathResolved == AF_FALSE) {
+                    snprintf(candidate, sizeof(candidate), "scripts/%s%s", script->scriptName, scriptExt);
+                    AF_Script_NormalizePath(candidate);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                    }
+                }
 #else
-            if (!scriptPathResolved && exeDir[0] != '\0') {
-                char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
-                snprintf(candidate, sizeof(candidate), "%s/scripts/%s.so", exeDir, script->scriptName);
-                if (AF_File_FileExists(candidate) == AF_TRUE) {
-                    snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
-                    scriptPathResolved = AF_TRUE;
+                if (exeDir[0] != '\0') {
+                    snprintf(candidate, sizeof(candidate), "%s/scripts/%s%s", exeDir, script->scriptName, scriptExt);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                    }
                 }
+
+                if (scriptPathResolved == AF_FALSE) {
+                    snprintf(candidate, sizeof(candidate), "scripts/%s%s", script->scriptName, scriptExt);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                    }
+                }
+#endif
             }
 
-            if (!scriptPathResolved) {
-                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s.so", script->scriptName);
-            }
+            if (scriptPathResolved == AF_FALSE && script->scriptName[0] != '\0') {
+#ifdef _WIN32
+                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s/%s%s", winHostSubdir, script->scriptName, scriptExt);
+#else
+                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s%s", script->scriptName, scriptExt);
 #endif
+            }
 
             // attempt to load the script
+            AF_Log("AF_Script_Load_And_Bind_Functions: loading script: %s (Entity: %u, Script: %u)\n", script->scriptFullPath, i, scriptID);
             script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
 
             if (!script->loadedScriptPtr) {
                 AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to load script: %s (Entity: %u, Script: %u)\n", script->scriptFullPath, i, scriptID);
+                script->startFuncPtr      = NULL;
+                script->updateFuncPtr     = NULL;
+                script->lateUpdateFuncPtr = NULL;
+                script->destroyFuncPtr    = NULL;
+                script->loadedScriptPtr   = NULL;
                 continue;
             }
 
@@ -229,7 +370,11 @@ void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
             if(scriptBindSuccess == AF_FAIL){
                 AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to bind script: Entity: %u, Script: %u\n", i, scriptID);
                 AF_Script_UnLoad(script->loadedScriptPtr);
-                script->loadedScriptPtr = NULL;
+                script->startFuncPtr      = NULL;
+                script->updateFuncPtr     = NULL;
+                script->lateUpdateFuncPtr = NULL;
+                script->destroyFuncPtr    = NULL;
+                script->loadedScriptPtr   = NULL;
             }
         }
     }
@@ -271,22 +416,22 @@ void AF_Script_UnLoad(void* _scriptSharedObjPtr){
 // ===============================================================================
 void AF_Script_UnloadScripts(AF_ECS* _ecs){
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
-        AF_Entity* entity = &_ecs->entities[i];
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY)  +j;
-            AF_CScript* script = &_ecs->scripts[scriptID];// entity->scripts[j];
-            if(AF_Component_GetHasEnabled(script->enabled) == AF_FALSE){
-                continue;
+            AF_CScript* script = &_ecs->scripts[scriptID];
+
+            // Unload regardless of enabled state to avoid stale handles/pointers.
+            if (script->loadedScriptPtr != NULL) {
+                AF_Script_UnLoad(script->loadedScriptPtr);
             }
-    
-            // attempt to unload the script
-            AF_Script_UnLoad(script->loadedScriptPtr);
-            
-            // set the script ptrs to null
-            script->startFuncPtr = NULL;
-            script->updateFuncPtr = NULL;
+
+            script->loadedScriptPtr   = NULL;
+            script->startFuncPtr      = NULL;
+            script->updateFuncPtr     = NULL;
             script->lateUpdateFuncPtr = NULL;
-            script->destroyFuncPtr = NULL;
+            script->destroyFuncPtr    = NULL;
+            script->scriptEditorVarCount = 0;
+            // Keep scriptName/scriptFullPath as is; useful for reload path calculation.
         }
     }
     AF_Log("AF_Script_UnloadScripts: Unload Finished \n");
@@ -336,18 +481,42 @@ void AF_Script_Call_Start(AF_AppData* _appData){
                 continue;
             }
             
+            if(script->loadedScriptPtr == NULL){
+                continue;
+            }
+
             if(script->startFuncPtr == NULL){
                 //AF_Log_Error("AF_CallScriptStart: script startFuncPtr is null. Forgot to set it\n");
                 continue;
             }
 
             // Apply editor var values to the DLL's globals before Start runs
+            AF_Log("AF_Script_Call_Start: calling script Start for entity %u script '%s' (id %u)\n", i, script->scriptName, scriptID);
             AF_Script_ApplyEditorVars(script);
+
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->startFuncPtr;
-            // Call it
+            // Call it safely to prevent a broken script from crashing the host.
+#if defined(_MSC_VER) && !defined(__clang__)
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_Start: script '%s' crashed in Start for entity %u\n", script->scriptName, i);
+            }
+#elif defined(__clang__)
+            _Pragma("clang diagnostic push")
+            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_Start: script '%s' crashed in Start for entity %u\n", script->scriptName, i);
+            }
+            _Pragma("clang diagnostic pop")
+#else
             scriptFunctPtr(i, _appData);
+#endif
+            AF_Log("AF_Script_Call_Start: script '%s' started successfully for entity %u script slot %u\n", script->scriptName, i, j);
         }
     }
 }
@@ -370,6 +539,10 @@ void AF_Script_Call_Update(AF_AppData* _appData){
                 continue;
             }
         
+            if(script->loadedScriptPtr == NULL){
+                continue;
+            }
+
             if(script->updateFuncPtr == NULL){
                 //AF_Log_Error("AF_CallScriptUpdate: script updateFuncPtr is null. Forgot to set it\n");
                 continue;
@@ -378,8 +551,24 @@ void AF_Script_Call_Update(AF_AppData* _appData){
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->updateFuncPtr;
-            // Call it passing the entity ID and reference to the game data
+#if defined(_MSC_VER) && !defined(__clang__)
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_Update: script '%s' crashed in Update for entity %u\n", script->scriptName, i);
+            }
+#elif defined(__clang__)
+            _Pragma("clang diagnostic push")
+            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_Update: script '%s' crashed in Update for entity %u\n", script->scriptName, i);
+            }
+            _Pragma("clang diagnostic pop")
+#else
             scriptFunctPtr(i, _appData);
+#endif
         }
     }
 }
@@ -402,6 +591,10 @@ void AF_Script_Call_LateUpdate(AF_AppData* _appData){
                 continue;
             }
         
+            if(script->loadedScriptPtr == NULL){
+                continue;
+            }
+
             if(script->lateUpdateFuncPtr == NULL){
                 //AF_Log_Error("AF_CallScriptUpdate: script updateFuncPtr is null. Forgot to set it\n");
                 continue;
@@ -410,8 +603,24 @@ void AF_Script_Call_LateUpdate(AF_AppData* _appData){
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->lateUpdateFuncPtr;
-            // Call it passing the entity ID and reference to the game data
+#if defined(_MSC_VER) && !defined(__clang__)
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_LateUpdate: script '%s' crashed in LateUpdate for entity %u\n", script->scriptName, i);
+            }
+#elif defined(__clang__)
+            _Pragma("clang diagnostic push")
+            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_LateUpdate: script '%s' crashed in LateUpdate for entity %u\n", script->scriptName, i);
+            }
+            _Pragma("clang diagnostic pop")
+#else
             scriptFunctPtr(i, _appData);
+#endif
         }
     }
 }
@@ -434,6 +643,10 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
                 continue;
             }
     
+            if(script->loadedScriptPtr == NULL){
+                continue;
+            }
+
             if(script->destroyFuncPtr == NULL){
                 //AF_Log_Error("AF_CallScriptDestroy: script destroyFuncPtr is null. Forgot to set it\n");
                 continue;
@@ -442,8 +655,24 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
             // Call the function
             // Cast to special func ptr
             ScriptFuncPtr scriptFunctPtr = (ScriptFuncPtr)script->destroyFuncPtr;
-            // Call it
+#if defined(_MSC_VER) && !defined(__clang__)
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_Destroy: script '%s' crashed in Destroy for entity %u\n", script->scriptName, i);
+            }
+#elif defined(__clang__)
+            _Pragma("clang diagnostic push")
+            _Pragma("clang diagnostic ignored \"-Wlanguage-extension-token\"")
+            __try {
+                scriptFunctPtr(i, _appData);
+            } __except(EXCEPTION_EXECUTE_HANDLER) {
+                AF_Log_Error("AF_Script_Call_Destroy: script '%s' crashed in Destroy for entity %u\n", script->scriptName, i);
+            }
+            _Pragma("clang diagnostic pop")
+#else
             scriptFunctPtr(i, _appData);
+#endif
         }
     }
 }
@@ -456,7 +685,13 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
 void AF_Script_ApplyEditorVars(AF_CScript* _script) {
     if (_script == NULL || _script->loadedScriptPtr == NULL) return;
 
-    for (uint32_t i = 0; i < _script->scriptEditorVarCount; i++) {
+    uint32_t varCount = _script->scriptEditorVarCount;
+    if (varCount > MAX_EDITOR_VARS_PER_SCRIPT) {
+        AF_Log_Error("AF_Script_ApplyEditorVars: clip scriptEditorVarCount from %u to %u for script %s\n", varCount, MAX_EDITOR_VARS_PER_SCRIPT, _script->scriptName);
+        varCount = MAX_EDITOR_VARS_PER_SCRIPT;
+    }
+
+    for (uint32_t i = 0; i < varCount; i++) {
         AF_PropertyMetaData_s* var = &_script->scriptEditorVarData[i];
         void* sym = NULL;
 

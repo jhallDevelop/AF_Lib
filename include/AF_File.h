@@ -75,18 +75,7 @@ static inline void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSiz
 	}
 }
 
-static inline void AF_File_CloseFile(FILE* _filePtr) {
-	if (_filePtr == NULL) {
-		AF_Log_Error("AF_File_CloseFile: FAILED to close buffer. _filePtr is NULL\n");
-		return;
-	}
-	if (ferror(_filePtr)) {
-		AF_Log_Warning("AF_File_CloseFile: File had errors before closing\n");
-	}
-	if (fclose(_filePtr) != 0) {
-		AF_Log_Error("AF_File_CloseFile: Error while closing file\n");
-	}
-}
+AF_LIB_API void AF_File_CloseFile(FILE* _filePtr);
 
 static inline int AF_File_CompareItemsByValue(const void* lhs, const void* rhs) {
 	const char* a = *(const char**)lhs;
@@ -122,20 +111,8 @@ static inline void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
 	}
 }
 
-static inline af_bool_t AF_File_FileExists(const char* _filePath) {
-	struct stat buffer;
-	return (stat(_filePath, &buffer) == 0);
-}
-
-static inline uint32_t AF_File_GetFileSize(const char* _filePath) {
-	struct stat st;
-	if (stat(_filePath, &st) != 0) {
-		AF_Log_Error("AF_Util: Size of file: Failed to get file size for %s\n", _filePath);
-		return 0;
-	}
-	return (uint32_t)st.st_size;
-}
-
+AF_LIB_API af_bool_t AF_File_FileExists(const char* _filePath);
+AF_LIB_API uint32_t AF_File_GetFileSize(const char* _filePath);
 static inline af_bool_t AF_File_ReadFile(char* _buffer, uint32_t _bufferSize, const char* thisFilePath, const char* _readCommand) {
 	FILE* _fileOpen = AF_File_OpenFile(thisFilePath, _readCommand);
 	if (_fileOpen == NULL) {

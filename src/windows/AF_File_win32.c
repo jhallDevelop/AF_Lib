@@ -87,7 +87,7 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands) {
 	if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
 		char userProfile[AF_MAX_PATH_CHAR_SIZE] = {0};
 		if (AF_File_GetEnv("USERPROFILE", userProfile, sizeof(userProfile))) {
-			const char* rest = tryPath + 7; // skip \Users\
+			const char* rest = tryPath + 7; /* skip \Users\ */
 			while (*rest == '\\') rest++;
 			char mappedPath[AF_MAX_PATH_CHAR_SIZE] = {0};
 			snprintf(mappedPath, sizeof(mappedPath), "%s\\%s", userProfile, rest);
@@ -265,4 +265,32 @@ void AF_File_SetWorkingDirectory(const char* _projectRoot) {
 	}
 
 	AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
+}
+
+// Provide non-inline exports for script binding and external module use.
+AF_LIB_API af_bool_t AF_File_FileExists(const char* _filePath) {
+	struct stat buffer;
+	return (stat(_filePath, &buffer) == 0) ? AF_TRUE : AF_FALSE;
+}
+
+AF_LIB_API void AF_File_CloseFile(FILE* _filePtr) {
+	if (_filePtr == NULL) {
+		AF_Log_Error("AF_File_CloseFile: FAILED to close buffer. _filePtr is NULL\n");
+		return;
+	}
+	if (ferror(_filePtr)) {
+		AF_Log_Warning("AF_File_CloseFile: File had errors before closing\n");
+	}
+	if (fclose(_filePtr) != 0) {
+		AF_Log_Error("AF_File_CloseFile: Error while closing file\n");
+	}
+}
+
+AF_LIB_API uint32_t AF_File_GetFileSize(const char* _filePath) {
+	struct stat st;
+	if (stat(_filePath, &st) != 0) {
+		AF_Log_Error("AF_Util: Size of file: Failed to get file size for %s\n", _filePath);
+		return 0;
+	}
+	return (uint32_t)st.st_size;
 }
