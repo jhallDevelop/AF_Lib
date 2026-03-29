@@ -493,7 +493,7 @@ void AF_Script_UnloadScripts(AF_ECS* _ecs){
             script->updateFuncPtr     = NULL;
             script->lateUpdateFuncPtr = NULL;
             script->destroyFuncPtr    = NULL;
-            script->scriptEditorVarCount = 0;
+            // Keep scriptEditorVarCount so editor-set values are preserved across play/unload.
             // Keep scriptName/scriptFullPath as is; useful for reload path calculation.
         }
     }
@@ -710,7 +710,9 @@ void AF_Script_Call_Destroy(AF_AppData* _appData){
 // globals before Start() is called, so scripts see editor-set values.
 // ===============================================================================
 void AF_Script_ApplyEditorVars(AF_CScript* _script) {
-    if (_script == NULL || _script->loadedScriptPtr == NULL) return;
+    if (_script == NULL || _script->loadedScriptPtr == NULL) {
+        return;
+    }
 
     uint32_t varCount = _script->scriptEditorVarCount;
     if (varCount > MAX_EDITOR_VARS_PER_SCRIPT) {
