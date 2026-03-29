@@ -1,4 +1,5 @@
 #include "AF_JSON.h"
+#include "AF_Project.h"
 #include "cJSON.h"
 
 // JSON to Component conversion functions
@@ -22,14 +23,14 @@ void AF_JSON_JsonToLight(cJSON* _lightJSON, AF_CLight* _light);
 
 // Component to JSON conversion functions
 cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _component);
-cJSON* AF_JSON_SpriteToJson(AF_CSprite* _component);
+cJSON* AF_JSON_SpriteToJson(AF_CSprite* _component, const char* _projectRoot);
 cJSON* AF_JSON_RigidbodyToJson(AF_C3DRigidbody* _component);
 cJSON* AF_JSON_ColliderToJson(AF_CCollider* _component);
 cJSON* AF_JSON_AnimationToJson(AF_CAnimation* _component);
 cJSON* AF_JSON_CameraToJson(AF_CCamera* _component);
-cJSON* AF_JSON_MeshToJson(AF_CMesh* _component);
+cJSON* AF_JSON_MeshToJson(AF_CMesh* _component, const char* _projectRoot);
 cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component);
-cJSON* AF_JSON_TextToJson(AF_CText* _component);
+cJSON* AF_JSON_TextToJson(AF_CText* _component, const char* _projectRoot);
 cJSON* AF_JSON_AudioSourceToJson(AF_CAudioSource* _component);
 cJSON* AF_JSON_PlayerDataToJson(AF_CPlayerData* _component);
 cJSON* AF_JSON_SkeletalAnimationToJson(AF_CSkeletalAnimation* _component);
@@ -346,7 +347,7 @@ af_bool_t AF_JSON_SaveProjectDataToJson(AF_ProjectData* _projectData, char* _cha
 
 }
 
-af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charBufferSize)
+af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, const char* _projectRoot, char* _charBuffer, uint32_t _charBufferSize)
 {
 	AF_Log("AF_JSON_SaveECSToJson: SaveECSToJSON\n");
 
@@ -388,7 +389,7 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		// Sprite
 		AF_CSprite* sprite = &_ecs->sprites[entityID];		// sprite cmponent
 		char spriteText[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* spriteJSON = AF_JSON_SpriteToJson(&_ecs->sprites[entityID]);
+		cJSON* spriteJSON = AF_JSON_SpriteToJson(&_ecs->sprites[entityID], _projectRoot);
 		cJSON_AddItemToObject(entityJSON, "sprite", spriteJSON);
 
 		// Rigidbody
@@ -418,7 +419,7 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		// Mesh
 		AF_CMesh* mesh = AF_ECS_GetMeshComponent(_ecs, entityID);
 		char meshTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* meshJSON = AF_JSON_MeshToJson(mesh);
+		cJSON* meshJSON = AF_JSON_MeshToJson(mesh, _projectRoot);
 		cJSON_AddItemToObject(entityJSON, "mesh", meshJSON);
 
 		// Terrain
@@ -429,7 +430,7 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charB
 		// Text
 		AF_CText* text = &_ecs->texts[entityID];
 		char textTextBuffer[AF_MAX_PATH_CHAR_SIZE] = "\0";
-		cJSON* textJSON = AF_JSON_TextToJson(&_ecs->texts[entityID]);
+		cJSON* textJSON = AF_JSON_TextToJson(&_ecs->texts[entityID], _projectRoot);
 		cJSON_AddItemToObject(entityJSON, "text", textJSON);
 
 		// Audio Source
@@ -2127,7 +2128,7 @@ cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _transform) {
 	return returnJSON;
 }
 
-cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
+cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite, const char* _projectRoot) {
 	// sprite json
 	cJSON* returnJSON = cJSON_CreateObject();
 
@@ -2230,12 +2231,14 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite) {
 	AF_JSON_Vec4ToJson("spriteColor", (Vec4*)_sprite->spriteColor, returnJSON);
 
 	// sprite path
-	const char* spritePath = _sprite->spriteMesh.material.diffuseTexture.path;
-	cJSON_AddStringToObject(returnJSON, "spriteTexturePath", spritePath);
+	char serializedSpritePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+	AF_Project_RelativizePath(_sprite->spriteMesh.material.diffuseTexture.path, _projectRoot, serializedSpritePath, sizeof(serializedSpritePath));
+	cJSON_AddStringToObject(returnJSON, "spriteTexturePath", serializedSpritePath);
 
 	// save the sprite mesh path
-	const char* spriteMeshPath = _sprite->spriteMesh.meshPath;
-	cJSON_AddStringToObject(returnJSON, "spriteMeshPath", spriteMeshPath);
+	char serializedSpriteMeshPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+	AF_Project_RelativizePath(_sprite->spriteMesh.meshPath, _projectRoot, serializedSpriteMeshPath, sizeof(serializedSpriteMeshPath));
+	cJSON_AddStringToObject(returnJSON, "spriteMeshPath", serializedSpriteMeshPath);
 
 	// save the sprite shader name
 	const char* spriteShaderName = _sprite->spriteMesh.shader.name;
@@ -2464,7 +2467,7 @@ cJSON* AF_JSON_CameraToJson(AF_CCamera* _component) {
 	return returnJSON;
 }
 
-cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
+cJSON* AF_JSON_MeshToJson(AF_CMesh* _component, const char* _projectRoot) {
     cJSON* returnJSON = cJSON_CreateObject();
 
 	AF_CMesh defaultMesh = AF_CMesh_ZERO();
@@ -2540,7 +2543,9 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
     cJSON_AddNumberToObject(returnJSON, "meshType", _component->meshType);
 
     // meshPath
-    cJSON_AddStringToObject(returnJSON, "meshPath", _component->meshPath);
+    char serializedMeshPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    AF_Project_RelativizePath(_component->meshPath, _projectRoot, serializedMeshPath, sizeof(serializedMeshPath));
+    cJSON_AddStringToObject(returnJSON, "meshPath", serializedMeshPath);
 
     // Shader
     cJSON* shaderJSON = cJSON_AddObjectToObject(returnJSON, "shader");
@@ -2552,7 +2557,9 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
     cJSON* materialJson = cJSON_AddObjectToObject(returnJSON, "material");
 
     //diffuse texture
-    cJSON_AddStringToObject(materialJson, "diffuseTexture", _component->material.diffuseTexture.path);
+    char serializedDiffuseTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    AF_Project_RelativizePath(_component->material.diffuseTexture.path, _projectRoot, serializedDiffuseTexturePath, sizeof(serializedDiffuseTexturePath));
+    cJSON_AddStringToObject(materialJson, "diffuseTexture", serializedDiffuseTexturePath);
 	cJSON_AddNumberToObject(materialJson, "textureType", _component->material.diffuseTexture.type);
 	cJSON_AddNumberToObject(materialJson, "renderTextureCameraEntityIndex", _component->material.renderTextureCameraEntityIndex);
 	cJSON_AddNumberToObject(materialJson, "uvOffsetX", _component->material.diffuseTexture.uvOffsetX);
@@ -2560,10 +2567,14 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component) {
     cJSON_AddNumberToObject(materialJson, "uvScaleX", _component->material.diffuseTexture.uvScaleX);
 	cJSON_AddNumberToObject(materialJson, "uvScaleY", _component->material.diffuseTexture.uvScaleY);
 	//specular texture
-    cJSON_AddStringToObject(materialJson, "specularTexture", _component->material.specularTexture.path);
+    char serializedSpecularTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    AF_Project_RelativizePath(_component->material.specularTexture.path, _projectRoot, serializedSpecularTexturePath, sizeof(serializedSpecularTexturePath));
+    cJSON_AddStringToObject(materialJson, "specularTexture", serializedSpecularTexturePath);
 
     //normal texture
-    cJSON_AddStringToObject(materialJson, "normalTexture", _component->material.normalTexture.path);
+    char serializedNormalTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    AF_Project_RelativizePath(_component->material.normalTexture.path, _projectRoot, serializedNormalTexturePath, sizeof(serializedNormalTexturePath));
+    cJSON_AddStringToObject(materialJson, "normalTexture", serializedNormalTexturePath);
 
     // Color
     // FIX: Add numbers to the array directly, without keys.
@@ -2701,7 +2712,7 @@ cJSON* AF_JSON_TerrainToJson(AF_CTerrain* _component) {
 	return returnJSON;
 }
 
-cJSON* AF_JSON_TextToJson(AF_CText* _component) {
+cJSON* AF_JSON_TextToJson(AF_CText* _component, const char* _projectRoot) {
     cJSON* returnJSON = cJSON_CreateObject();
 
     // has
@@ -2726,7 +2737,9 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
     cJSON_AddNumberToObject(returnJSON, "fontID", _component->fontID);
 
     // fontPath
-    cJSON_AddStringToObject(returnJSON, "fontPath", _component->fontPath);
+    char serializedTextFontPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    AF_Project_RelativizePath(_component->fontPath, _projectRoot, serializedTextFontPath, sizeof(serializedTextFontPath));
+    cJSON_AddStringToObject(returnJSON, "fontPath", serializedTextFontPath);
 
     // text
     cJSON_AddStringToObject(returnJSON, "text", _component->text);
@@ -2758,7 +2771,9 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component) {
     // font
     cJSON* fontJSON = cJSON_AddObjectToObject(returnJSON, "font");
     cJSON_AddStringToObject(fontJSON, "fontName", _component->font.fontName);
-    cJSON_AddStringToObject(fontJSON, "fontPath", _component->font.fontPath);
+    char serializedFontPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+    AF_Project_RelativizePath(_component->font.fontPath, _projectRoot, serializedFontPath, sizeof(serializedFontPath));
+    cJSON_AddStringToObject(fontJSON, "fontPath", serializedFontPath);
     cJSON_AddNumberToObject(fontJSON, "fontSize", _component->font.fontSize);
 
     // mesh shader paths (for text rendering)

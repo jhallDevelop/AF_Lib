@@ -105,6 +105,61 @@ static void AF_Project_ConvertPathSeparators(char* outPath, uint32_t outSize, co
     outPath[i] = '\0';
 }
 
+af_bool_t AF_Project_RelativizePath(const char* _inPath, const char* _projectRoot, char* _outPath, uint32_t _outPathSize) {
+    if (_inPath == NULL || _outPath == NULL || _outPathSize == 0) {
+        return AF_FALSE;
+    }
+
+    if (_inPath[0] == '\0') {
+        _outPath[0] = '\0';
+        return AF_FALSE;
+    }
+
+    // Preserve already-relative paths (non-absolute) as-is.
+    if (!AF_Project_IsAbsolutePath(_inPath)) {
+        // Normalize separators to '/' for storage
+        char normalized[MAX_PROJECTDATA_FILE_PATH] = {0};
+        AF_Project_ConvertPathSeparators(normalized, sizeof(normalized), _inPath, '\\', '/');
+        snprintf(_outPath, _outPathSize, "%s", normalized);
+        return AF_TRUE;
+    }
+
+    if (_projectRoot == NULL || _projectRoot[0] == '\0') {
+        // No project root provided, keep absolute as-is
+        snprintf(_outPath, _outPathSize, "%s", _inPath);
+        return AF_FALSE;
+    }
+
+    // Normalize path separators for comparison
+    char normalizedInput[MAX_PROJECTDATA_FILE_PATH] = {0};
+    AF_Project_ConvertPathSeparators(normalizedInput, sizeof(normalizedInput), _inPath, '\\', '/');
+    char normalizedRoot[MAX_PROJECTDATA_FILE_PATH] = {0};
+    AF_Project_ConvertPathSeparators(normalizedRoot, sizeof(normalizedRoot), _projectRoot, '\\', '/');
+
+    // Ensure root ends with '/' for exact matching
+    size_t rootLen = strlen(normalizedRoot);
+    char rootWithSlash[MAX_PROJECTDATA_FILE_PATH] = {0};
+    if (rootLen > 0 && normalizedRoot[rootLen - 1] != '/') {
+        snprintf(rootWithSlash, sizeof(rootWithSlash), "%s/", normalizedRoot);
+    } else {
+        snprintf(rootWithSlash, sizeof(rootWithSlash), "%s", normalizedRoot);
+    }
+
+    if (strncmp(normalizedInput, rootWithSlash, strlen(rootWithSlash)) == 0) {
+        const char* relStart = normalizedInput + strlen(rootWithSlash);
+        if (*relStart == '\0') {
+            snprintf(_outPath, _outPathSize, "%s", "");
+            return AF_TRUE;
+        }
+        snprintf(_outPath, _outPathSize, "%s", relStart);
+        return AF_TRUE;
+    }
+
+    // If not under project root, keep normalized absolute path
+    snprintf(_outPath, _outPathSize, "%s", normalizedInput);
+    return AF_FALSE;
+}
+
 static af_bool_t AF_Project_HasPrefixIgnoreCase(const char* str, const char* prefix) {
     if (!str || !prefix) {
         return AF_FALSE;

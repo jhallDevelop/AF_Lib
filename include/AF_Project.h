@@ -33,6 +33,10 @@ AF_LIB_API af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _filePath
 
 AF_LIB_API af_bool_t AF_LoadScene(AF_AppData* _appData, const char* _sceneFilePath);
 
+// Convert an absolute or project-rooted path to project-relative if possible.
+// If the input is already relative or cannot be relativized, target path is unchanged.
+AF_LIB_API af_bool_t AF_Project_RelativizePath(const char* _inPath, const char* _projectRoot, char* _outPath, uint32_t _outPathSize);
+
 // Request a scene change to be processed safely after the current script update frame.
 // Call this from scripts instead of AF_LoadScene to avoid unloading a running DLL mid-stack.
 AF_LIB_API void AF_RequestSceneChange(AF_AppData* _appData, const char* _sceneFilePath);

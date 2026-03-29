@@ -15,7 +15,7 @@ extern "C" {
 AF_LIB_API af_bool_t AF_JSON_LoadProjectDataJson(AF_ProjectData* _projectData, FILE* _file);
 AF_LIB_API af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file);
 af_bool_t AF_JSON_SaveProjectDataToJson(AF_ProjectData* _projectData, char* _charBuffer, uint32_t _charBufferSize);
-af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, char* _charBuffer, uint32_t _charBufferSize);
+af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, const char* _projectRoot, char* _charBuffer, uint32_t _charBufferSize);
 
 #ifdef __cplusplus
 }
