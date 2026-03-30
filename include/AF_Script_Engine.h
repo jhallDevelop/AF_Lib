@@ -20,6 +20,14 @@ Definitions for helper functions to load and use scripts
 
 #define MAX_FUNCTION_NAME 1024
 
+#if defined(_WIN32)
+#define AF_SCRIPT_PLATFORM_DIR "Win64"
+#elif defined(__APPLE__)
+#define AF_SCRIPT_PLATFORM_DIR "OSX"
+#else
+#define AF_SCRIPT_PLATFORM_DIR "LINUX"
+#endif
+
 #ifdef __cplusplus
 extern "C" {    
 #endif
@@ -28,7 +36,7 @@ extern "C" {
 
 void* AF_Script_Load(const char* _filePath);
 uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr);
-void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs);
+void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData);
 void AF_Script_UnLoad(void* _scriptSharedObjPtr);
 void AF_Script_UnloadScripts(AF_ECS* _ecs);
 ScriptFuncPtr AF_GetScriptFuncPtr(void* _sharedObjectPtr, const char* _funcName);

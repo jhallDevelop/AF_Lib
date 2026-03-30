@@ -115,6 +115,65 @@ static af_bool_t AF_Script_GetExecutableDir(char* outDir, uint32_t outDirSize) {
 #endif
 }
 
+static int AF_Script_BuildPathCandidates(const char* _filePath, const char* _projectRoot, const char* _platformName, char candidates[][AF_MAX_PATH_CHAR_SIZE], int maxCandidates)
+{
+    if (!_filePath || _filePath[0] == '\0' || maxCandidates <= 0) {
+        return 0;
+    }
+
+    int count = 0;
+
+    // direct path as provided
+    snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s", _filePath);
+    ++count;
+
+    // exe dir relatives
+    char exeDir[AF_MAX_PATH_CHAR_SIZE] = {0};
+    if (AF_Script_GetExecutableDir(exeDir, sizeof(exeDir)) == AF_TRUE) {
+        if (count < maxCandidates) {
+            snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s/%s", exeDir, _filePath);
+            ++count;
+        }
+        if (count < maxCandidates) {
+            snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s/scripts/%s", exeDir, _filePath);
+            ++count;
+        }
+    }
+
+    // current working directory / bin / platform
+    char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
+#if defined(_WIN32)
+    if (GetCurrentDirectoryA(sizeof(cwd), cwd) > 0) {
+#else
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+#endif
+        const char* platformCandidates[] = { AF_SCRIPT_PLATFORM_DIR, "Win64", "OSX", "LINUX", "WEB", NULL };
+        for (int i = 0; platformCandidates[i] != NULL && count < maxCandidates; ++i) {
+            snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s/bin/%s/%s", cwd, platformCandidates[i], _filePath);
+            ++count;
+        }
+    }
+
+    // projectRoot, if provided
+    if (_projectRoot && _projectRoot[0] != '\0') {
+        if (count < maxCandidates) {
+            snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s/%s", _projectRoot, _filePath);
+            ++count;
+        }
+
+        const char* projectPlatforms[] = { _platformName && _platformName[0] != '\0' ? _platformName : AF_SCRIPT_PLATFORM_DIR, "Win64", "OSX", "LINUX", "WEB", NULL };
+        for (int i = 0; projectPlatforms[i] != NULL && count < maxCandidates; ++i) {
+            if (count >= maxCandidates) {
+                break;
+            }
+            snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s/bin/%s/%s", _projectRoot, projectPlatforms[i], _filePath);
+            ++count;
+        }
+    }
+
+    return count;
+}
+
 #ifdef _WIN32
 static const char* AF_Script_GetWinHostSubdir(const char* exeName) {
     if (exeName != NULL && strstr(exeName, "AF_Editor") != NULL) {
@@ -142,35 +201,36 @@ void* AF_Script_Load(const char* _filePath){
     handle = LoadLibraryExA(_filePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 
     if (!handle) {
-        // If that fails, attempt to resolve relative paths against the executable directory
-        char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        if (GetModuleFileNameA(NULL, exePath, sizeof(exePath)) > 0) {
-            char *lastSlash = strrchr(exePath, '\\');
-            if (!lastSlash) {
-                lastSlash = strrchr(exePath, '/');
-            }
-            if (lastSlash) {
-                *lastSlash = '\0';
-            }
-
-            // Try exe dir + requested path
+        char candidates[16][AF_MAX_PATH_CHAR_SIZE] = {{0}};
+        const char* projectRoot = NULL;
+        const char* platformName = AF_SCRIPT_PLATFORM_DIR;
+        int candidateCount = AF_Script_BuildPathCandidates(_filePath, projectRoot, platformName, candidates, 16);
+        for (int i = 0; i < candidateCount && !handle; ++i) {
             char candidatePath[AF_MAX_PATH_CHAR_SIZE] = {0};
-            snprintf(candidatePath, sizeof(candidatePath), "%s/%s", exePath, _filePath);
+            snprintf(candidatePath, sizeof(candidatePath), "%s", candidates[i]);
             AF_Script_NormalizePath(candidatePath);
             handle = LoadLibraryExA(candidatePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
-
-            if (!handle) {
-                // Try exe dir + scripts subfolder
-                char candidateScriptPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-                snprintf(candidateScriptPath, sizeof(candidateScriptPath), "%s/scripts/%s", exePath, _filePath);
-                AF_Script_NormalizePath(candidateScriptPath);
-                handle = LoadLibraryExA(candidateScriptPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
-
-                if (handle) {
-                    AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidateScriptPath);
-                }
-            } else {
+            if (handle) {
                 AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
+                break;
+            }
+        }
+    }
+
+    // If still no handle, try resolving with common project/bin layout, then SetDllDirectory
+    if (!handle) {
+        char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
+        if (GetCurrentDirectoryA(sizeof(cwd), cwd) > 0) {
+            // Try runtime build editor/game scripts paths
+            const char* candidatePlatforms[] = {"Win64", "OSX", "LINUX", "WEB", NULL};
+            for (int i = 0; candidatePlatforms[i] != NULL && !handle; ++i) {
+                char candidatePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+                snprintf(candidatePath, sizeof(candidatePath), "%s/bin/%s/%s", cwd, candidatePlatforms[i], _filePath);
+                AF_Script_NormalizePath(candidatePath);
+                handle = LoadLibraryExA(candidatePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+                if (handle) {
+                    AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
+                }
             }
         }
     }
@@ -210,26 +270,41 @@ void* AF_Script_Load(const char* _filePath){
 
     scriptPtr = (void*)handle;
 #else
-    FILE* file = AF_File_OpenFile(_filePath, "rb");
-    if (file == NULL) {
-        AF_Log_Error("AF_Script_Load: FAILED to open file %s\n", _filePath);
-        return scriptPtr;
-    }
-    AF_File_CloseFile(file);
+    char candidates[16][AF_MAX_PATH_CHAR_SIZE] = {{0}};
+    const char* projectRoot = NULL; // optional, could be exposed from _appData in future
+    const char* platformName = AF_SCRIPT_PLATFORM_DIR;
+    int candidateCount = AF_Script_BuildPathCandidates(_filePath, projectRoot, platformName, candidates, 16);
 
-    #ifdef __EMSCRIPTEN__
-        scriptPtr = emscripten_dlopen(_filePath);
-        if (!scriptPtr) {
-            AF_Log_Error("AF_Script_Load: Failed to open side module %s: %s\n", _filePath, emscripten_dlerror());
-            return scriptPtr;
+    for (int i = 0; i < candidateCount; ++i) {
+        const char* candidate = candidates[i];
+        if (!candidate || candidate[0] == '\0') {
+            continue;
         }
-    #else
-        scriptPtr = dlopen(_filePath, RTLD_LOCAL | RTLD_LAZY);
-        if (!scriptPtr) {
-            AF_Log_Error("AF_Script_Load: Failed to open shared object %s: %s\n", _filePath, dlerror());
-            return scriptPtr;
+
+        if (AF_File_FileExists(candidate) != AF_TRUE) {
+            continue;
         }
-    #endif
+
+        #ifdef __EMSCRIPTEN__
+            scriptPtr = emscripten_dlopen(candidate);
+            if (scriptPtr) {
+                AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidate);
+                break;
+            }
+            AF_Log_Error("AF_Script_Load: Failed to open side module %s: %s\n", candidate, emscripten_dlerror());
+        #else
+            scriptPtr = dlopen(candidate, RTLD_LOCAL | RTLD_LAZY);
+            if (scriptPtr) {
+                AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidate);
+                break;
+            }
+            AF_Log_Error("AF_Script_Load: Failed to open shared object %s: %s\n", candidate, dlerror());
+        #endif
+    }
+
+    if (!scriptPtr) {
+        AF_Log_Error("AF_Script_Load: All POSIX candidates failed for %s\n", _filePath);
+    }
 #endif
 
     return scriptPtr;
@@ -288,7 +363,19 @@ uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr
 // If an entity has a script component with a valid path, then load the script, and then bind
 // binding the start, update and destroy function ptrs
 // ===============================================================================
-void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
+void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
+    if (_appData == NULL) {
+        AF_Log_Error("AF_Script_Load_And_Bind_Functions: _appData is NULL\n");
+        return;
+    }
+
+    AF_ECS* _ecs = &_appData->ecs;
+    const char* projectRoot = (_appData->projectData.projectRoot[0] != '\0') ? _appData->projectData.projectRoot : NULL;
+    const char* platformName = "";
+    if (_appData->projectData.platformData.platformType >= 0 && _appData->projectData.platformData.platformType < AF_PLATFORM_COUNT) {
+        platformName = AF_Platform_Mappings[_appData->projectData.platformData.platformType].name;
+    }
+
     char exeDir[AF_MAX_PATH_CHAR_SIZE] = {0};
     char exeName[AF_MAX_PATH_CHAR_SIZE] = {0};
     const char* scriptExt = AF_Script_GetBinaryExtension();
@@ -347,6 +434,36 @@ void AF_Script_Load_And_Bind_Functions(AF_ECS* _ecs){
             // Prefer an existing user-provided script path if valid
             if (script->scriptFullPath[0] != '\0' && AF_File_FileExists(script->scriptFullPath) == AF_TRUE) {
                 scriptPathResolved = AF_TRUE;
+            }
+
+            // Try project root paths when running inside the editor or from a workspace root.
+            if (scriptPathResolved == AF_FALSE && projectRoot != NULL && script->scriptFullPath[0] != '\0') {
+                char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
+                snprintf(candidate, sizeof(candidate), "%s/%s", projectRoot, script->scriptFullPath);
+                AF_Script_NormalizePath(candidate);
+                if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                    scriptPathResolved = AF_TRUE;
+                }
+            }
+
+            if (scriptPathResolved == AF_FALSE && projectRoot != NULL && script->scriptFullPath[0] != '\0') {
+                const char* searchPlatforms[] = {platformName, "Win64", "OSX", "LINUX", "WEB", NULL};
+                for (int p = 0; searchPlatforms[p] != NULL && scriptPathResolved == AF_FALSE; ++p) {
+                    const char* platformToTry = searchPlatforms[p];
+                    if (platformToTry == NULL || platformToTry[0] == '\0') {
+                        continue;
+                    }
+
+                    char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
+                    snprintf(candidate, sizeof(candidate), "%s/bin/%s/%s", projectRoot, platformToTry, script->scriptFullPath);
+                    AF_Script_NormalizePath(candidate);
+                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                        scriptPathResolved = AF_TRUE;
+                        AF_Log("AF_Script_Load_And_Bind_Functions: Resolved %s -> %s via project bin/%s\n", script->scriptName, script->scriptFullPath, platformToTry);
+                    }
+                }
             }
 
             if (scriptPathResolved == AF_FALSE && script->scriptName[0] != '\0') {

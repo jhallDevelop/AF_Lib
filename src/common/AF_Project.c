@@ -1091,7 +1091,7 @@ af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
         AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
         AF_Renderer_InitCollisionGeomtery(&_appData->ecs);
 
-        AF_Script_Load_And_Bind_Functions(&_appData->ecs);
+        AF_Script_Load_And_Bind_Functions(_appData);
         AF_Script_Call_Start(_appData);
 
         returnValue = AF_TRUE;
