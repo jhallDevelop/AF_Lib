@@ -1946,7 +1946,18 @@ void AF_JSON_JsonToScripts(cJSON* _scriptsJSON, AF_CScript* _scripts) {
 							}
 							break;
 						case AF_EDITOR_VAR_TYPE_EVENT:
-							_scripts->scriptEditorVarData[i].data.eventTypeValue = (uint32_t)editorVarValueJSON->valueint;
+							if (cJSON_IsNumber(editorVarValueJSON)) {
+								_scripts->scriptEditorVarData[i].data.eventTypeValue = (uint32_t)editorVarValueJSON->valueint;
+							} else if (cJSON_IsArray(editorVarValueJSON) && cJSON_GetArraySize(editorVarValueJSON) > 0) {
+								cJSON* firstItem = cJSON_GetArrayItem(editorVarValueJSON, 0);
+								if (firstItem != NULL && cJSON_IsNumber(firstItem)) {
+									_scripts->scriptEditorVarData[i].data.eventTypeValue = (uint32_t)firstItem->valueint;
+								} else {
+									_scripts->scriptEditorVarData[i].data.eventTypeValue = AF_EVENT_TYPE_NONE;
+								}
+							} else {
+								_scripts->scriptEditorVarData[i].data.eventTypeValue = AF_EVENT_TYPE_NONE;
+							}
 							break;
 						default:
 							break;

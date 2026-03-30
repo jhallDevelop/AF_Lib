@@ -854,7 +854,7 @@ void AF_Script_ApplyEditorVars(AF_CScript* _script) {
         sym = dlsym(_script->loadedScriptPtr, var->name);
 #endif
         if (sym == NULL) {
-            AF_Log_Error("AF_Script_ApplyEditorVars: Could not find symbol '%s' in script '%s'\n", var->name, _script->scriptName);
+            AF_Log_Warning("AF_Script_ApplyEditorVars: Symbol '%s' not found in script '%s'. This is expected for non-exported or removed editor vars.\n", var->name, _script->scriptName);
             continue;
         }
 
