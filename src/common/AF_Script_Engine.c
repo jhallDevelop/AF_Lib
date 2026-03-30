@@ -25,6 +25,11 @@ static void AF_Script_NormalizePath(char* path) {
         if (*p == '/') *p = '\\';
     }
 }
+#else
+static void AF_Script_NormalizePath(char* path) {
+    // POSIX uses '/' as path separator, nothing to normalize.
+    (void)path;
+}
 #endif
 
 static const char* AF_Script_GetBinaryExtension(void) {
