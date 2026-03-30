@@ -8,12 +8,29 @@ static void AF_Event_Dispatch(AF_EventRegistry_s* _registry, AF_Event_s* _event)
 
 /*
 ================
+AF_Event_ResetRegistry
+================
+*/
+void AF_Event_ResetRegistry(AF_EventRegistry_s* _registry)
+{
+    if (_registry == NULL) {
+        AF_Log_Error("AF_Event_ResetRegistry: _registry is NULL");
+        return;
+    }
+
+    memset(_registry, 0, sizeof(AF_EventRegistry_s));
+    AF_Log("AF_Event_ResetRegistry: Event registry cleared\n");
+}
+
+
+/*
+================
 AF_Event_Initialize
 ================
 */
 void AF_Event_Initialize(AF_EventRegistry_s* _registry)
 {
-    memset(_registry, 0, sizeof(AF_EventRegistry_s));
+    AF_Event_ResetRegistry(_registry);
     AF_Log("AF_Event_Initialize: Event System Initialized\n");
 }
 
@@ -136,6 +153,11 @@ AF_Event_Dispatch
 ================
 */
 void AF_Event_Dispatch(AF_EventRegistry_s* _registry, AF_Event_s* _event){
+    if(_registry == NULL){
+        AF_Log_Error("AF_Event_Dispatch: _registry is NULL");
+        return;
+    }
+
     if(_event == NULL){
         AF_Log_Error("AF_Event_Dispatch: _event is NULL");
         return;
@@ -149,7 +171,11 @@ void AF_Event_Dispatch(AF_EventRegistry_s* _registry, AF_Event_s* _event){
     
     AF_EventListenerList_s* registry = &_registry->registries[_event->type];
     for (uint32_t i = 0; i < registry->listenerCount; i++) {
-        registry->listeners[i](_event);
+        AF_EventListenerFuncPtr listener = registry->listeners[i];
+        if (listener == NULL) {
+            continue;
+        }
+        listener(_event);
     }
 }
 

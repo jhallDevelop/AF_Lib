@@ -1054,6 +1054,8 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
 af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
 {
     af_bool_t returnValue = AF_FALSE;
+    AF_Event_ResetRegistry(&_appData->eventRegistry);
+
     // Unload everything first
     AF_Script_Call_Destroy(_appData);
     AF_Script_UnloadScripts(&_appData->ecs);

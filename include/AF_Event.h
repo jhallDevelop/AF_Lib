@@ -75,6 +75,7 @@ typedef struct AF_Event_s {
 
 // Event manager 
 void AF_Event_Initialize(AF_EventRegistry_s* _registry);
+void AF_Event_ResetRegistry(AF_EventRegistry_s* _registry);
 void AF_Event_Shutdown(void);
 uint32_t AF_Event_RegisterListener(AF_EventRegistry_s* _registry, AF_Event_Type_e _type, AF_EventListenerFuncPtr _listener);
 uint32_t AF_Event_UnregisterListener(AF_EventRegistry_s* _registry, AF_Event_Type_e _type, AF_EventListenerFuncPtr _listener);
