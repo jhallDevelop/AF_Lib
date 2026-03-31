@@ -91,7 +91,11 @@ af_bool_t AF_LoadFont(AF_Font* _font) {
             glTexImage2D(
                 GL_TEXTURE_2D,
                 0,
+                #ifdef AF_WEB_BUILD
+                GL_R8,
+                #else
                 GL_RED,
+                #endif
                 width,
                 height,
                 0,

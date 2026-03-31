@@ -413,6 +413,34 @@ static void AF_Project_MigrateShaderToSelectedPlatform(AF_AppData* _appData, AF_
         snprintf(_shader->name, AF_MAX_PATH_CHAR_SIZE, "%s", resolvedShaderName);
     }
 
+    // Canonical policy: prefer base shader location assets/shaders/<name>.vert|frag
+    // before trying legacy platform-specific shader folders.
+    if (_shader->name[0] != '\0' && _appData->projectData.assetsPath[0] != '\0') {
+        char canonicalVertPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        char canonicalFragPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+
+        snprintf(
+            canonicalVertPath,
+            sizeof(canonicalVertPath),
+            "%s/shaders/%s.vert",
+            _appData->projectData.assetsPath,
+            _shader->name
+        );
+        snprintf(
+            canonicalFragPath,
+            sizeof(canonicalFragPath),
+            "%s/shaders/%s.frag",
+            _appData->projectData.assetsPath,
+            _shader->name
+        );
+
+        if (AF_File_FileExists(canonicalVertPath) == AF_TRUE && AF_File_FileExists(canonicalFragPath) == AF_TRUE) {
+            snprintf(_shader->vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", canonicalVertPath);
+            snprintf(_shader->fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", canonicalFragPath);
+            return;
+        }
+    }
+
     if (_shader->name[0] != '\0' && _appData->projectData.assetsPath[0] != '\0') {
         char selectedVertPath[AF_MAX_PATH_CHAR_SIZE] = {0};
         char selectedFragPath[AF_MAX_PATH_CHAR_SIZE] = {0};
@@ -480,7 +508,30 @@ static void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, con
         char translatedPath[MAX_PROJECTDATA_FILE_PATH] = {0};
         if (AF_Project_ResolveCrossPlatformAbsolutePath(_path, translatedPath, sizeof(translatedPath), _projectRoot)) {
             snprintf(_path, _pathSize, "%s", translatedPath);
+            return;
         }
+
+#ifdef AF_WEB_BUILD
+        // Web build fallback: absolute host paths are invalid in browser FS.
+        char fileName[MAX_PROJECTDATA_FILE_PATH] = {0};
+        AF_Project_GetFileNameOnly(_path, fileName, sizeof(fileName));
+        if (fileName[0] != '\0') {
+            char candidate[MAX_PROJECTDATA_FILE_PATH] = {0};
+            snprintf(candidate, sizeof(candidate), "data/%s", fileName);
+            if (AF_Project_PathExists(candidate)) {
+                snprintf(_path, _pathSize, "%s", candidate);
+                return;
+            }
+            snprintf(candidate, sizeof(candidate), "assets/%s", fileName);
+            if (AF_Project_PathExists(candidate)) {
+                snprintf(_path, _pathSize, "%s", candidate);
+                return;
+            }
+            snprintf(_path, _pathSize, "%s", fileName);
+            return;
+        }
+#endif
+
         return;
     }
 
@@ -577,6 +628,20 @@ static void AF_Project_ResolveShaderPathPlatform(AF_AppData* _appData, char* _sh
     char shaderFileName[AF_MAX_PATH_CHAR_SIZE] = {0};
     AF_Project_GetFileNameOnly(_shaderPath, shaderFileName, sizeof(shaderFileName));
     if (shaderFileName[0] != '\0' && _appData->projectData.assetsPath[0] != '\0') {
+        char canonicalPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        snprintf(
+            canonicalPath,
+            sizeof(canonicalPath),
+            "%s/shaders/%s",
+            _appData->projectData.assetsPath,
+            shaderFileName
+        );
+
+        if (AF_File_FileExists(canonicalPath) == AF_TRUE) {
+            snprintf(_shaderPath, _shaderPathSize, "%s", canonicalPath);
+            return;
+        }
+
         char selectedPlatformPath[AF_MAX_PATH_CHAR_SIZE] = {0};
         snprintf(
             selectedPlatformPath,
@@ -1009,6 +1074,58 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
         return AF_FALSE;
     }
 
+#ifndef AF_WEB_BUILD
+    // Native/editor loads may open a project JSON from outside the current working
+    // directory. Resolve a relative projectRoot from the appData file location first,
+    // so project assets stay anchored to the selected project rather than editor CWD.
+    if (AF_Project_IsAbsolutePath(_appData->projectData.projectRoot) == AF_FALSE &&
+        _appData->projectData.projectRoot[0] != '\0') {
+        char appDataDirectory[MAX_PROJECTDATA_FILE_PATH] = {0};
+        AF_Project_GetDirectoryPath(appDataPathAbsolute, appDataDirectory, sizeof(appDataDirectory));
+
+        if (appDataDirectory[0] != '\0') {
+            char candidateProjectRoot[MAX_PROJECTDATA_FILE_PATH] = {0};
+
+            snprintf(candidateProjectRoot, sizeof(candidateProjectRoot), "%s/../%s", appDataDirectory, _appData->projectData.projectRoot);
+            if (AF_Project_PathExists(candidateProjectRoot) == AF_TRUE) {
+                snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", candidateProjectRoot);
+            } else {
+                snprintf(candidateProjectRoot, sizeof(candidateProjectRoot), "%s/%s", appDataDirectory, _appData->projectData.projectRoot);
+                if (AF_Project_PathExists(candidateProjectRoot) == AF_TRUE) {
+                    snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", candidateProjectRoot);
+                }
+            }
+        }
+    }
+#endif
+
+#ifdef AF_WEB_BUILD
+    // Web runtime uses the preloaded virtual filesystem. Keep project paths portable
+    // instead of expanding them into host-machine absolute paths.
+    if (_appData->projectData.projectRoot[0] == '\0' || strcmp(_appData->projectData.projectRoot, ".") == 0) {
+        snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", ".");
+    }
+
+    AF_Project_NormaliseProjectDirectory(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), _appData->projectData.projectRoot, appDataPathAbsolute);
+    AF_Project_NormaliseProjectPath(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), _appData->projectData.projectRoot, appDataPathAbsolute);
+    AF_Project_NormaliseProjectPath(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), _appData->projectData.projectRoot, appDataPathAbsolute);
+
+    if (AF_Project_IsAbsolutePath(_appData->projectData.assetsPath) == AF_TRUE) {
+        snprintf(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), "%s", "assets");
+    }
+    if (AF_Project_IsAbsolutePath(_appData->projectData.defaultAppDataPath) == AF_TRUE) {
+        snprintf(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), "%s", "data/appData.json");
+    }
+    if (AF_Project_IsAbsolutePath(_appData->projectData.defaultScenePath) == AF_TRUE) {
+        char sceneFileName[MAX_PROJECTDATA_FILE_PATH] = {0};
+        AF_Project_GetFileNameOnly(_appData->projectData.defaultScenePath, sceneFileName, sizeof(sceneFileName));
+        if (sceneFileName[0] != '\0') {
+            snprintf(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), "data/%s", sceneFileName);
+        } else {
+            snprintf(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), "%s", "data/menu.scene");
+        }
+    }
+#else
     AF_Project_MakeAbsolutePath(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), cwd);
     AF_Project_NormaliseProjectDirectory(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), _appData->projectData.projectRoot, appDataPathAbsolute);
     AF_Project_NormaliseProjectPath(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), _appData->projectData.projectRoot, appDataPathAbsolute);
@@ -1017,7 +1134,7 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
     AF_Project_MakeAbsolutePath(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), cwd);
     AF_Project_MakeAbsolutePath(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), cwd);
     AF_Project_MakeAbsolutePath(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), cwd);
-    
+#endif
 
     // for now, clear ECS data as we will load the default scene
     AF_ECS_Init(&_appData->ecs); // Reset the ECS data

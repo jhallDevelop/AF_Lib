@@ -30,9 +30,14 @@ returns a pointer to the texture added in the assets/texture array
 ====================
 */
 void AF_Assets_AddTexture(AF_Assets* _assets, AF_Texture _texture){
+    if(_assets == NULL){
+        AF_Log_Warning("AF_Assets_AddTexture: passed null assets\n");
+        return;
+    }
+
     if(_assets->nextAvailableTexture < AF_ASSETS_MAX_TEXTURES){
-        _assets->nextAvailableTexture++;
         _assets->textures[_assets->nextAvailableTexture] = _texture;
+        _assets->nextAvailableTexture++;
     }else{
         AF_Log_Warning("AF_Assets_AddTexture: Max textures reached\n");
     }
@@ -47,9 +52,10 @@ returns a pointer to the texture added in the assets/texture array
 */
 AF_Texture AF_Assets_GetTexture(AF_Assets* _assets, const char* _texturePath){
     if(_assets == NULL){
-        AF_Log_Error("AF_Assets_AddTexture: passed null assets\n");
+        AF_Log_Error("AF_Assets_GetTexture: passed null assets\n");
+        return AF_Texture_ZERO();
     }
-    
+
     AF_Texture returnTexture = AF_Texture_ZERO();
     for(unsigned int j = 0; j < AF_ASSETS_MAX_TEXTURES; j++)
     {
@@ -84,7 +90,7 @@ AF_MeshData* AF_Assets_AddMesh(AF_Assets* _assets, AF_MeshData _mesh){
     if(_assets->nextAvailableMesh < AF_ASSETS_MAX_MESHES){
         _assets->meshes[_assets->nextAvailableMesh] = _mesh;
         _assets->nextAvailableMesh++;
-        return &_assets->meshes[_assets->nextAvailableTexture - 1];
+        return &_assets->meshes[_assets->nextAvailableMesh - 1];
     }else{
         AF_Log_Warning("AF_Assets_AddMesh: Max meshes reached\n");
         return NULL;

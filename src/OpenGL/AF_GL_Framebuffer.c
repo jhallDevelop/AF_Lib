@@ -170,22 +170,19 @@ uint32_t AF_GL_CreateFBOTexture(AF_FrameBufferData* _frameBufferData) {
 		format = GL_RGBA;
 		type = GL_UNSIGNED_BYTE;
 		#ifdef AF_WEB_BUILD
-			if ((GLenum)_frameBufferData->internalFormat == GL_SRGB8_ALPHA8) {
-				internalFormat = GL_SRGB8_ALPHA8;
-			} else {
-				internalFormat = GL_RGBA;
-			}
+			internalFormat = GL_RGBA8;
 		#else
 			internalFormat = _frameBufferData->internalFormat;
 		#endif
 	} else { // Default to RGB
-		format = GL_RGB;
-		type = GL_UNSIGNED_BYTE;
 		#ifdef AF_WEB_BUILD
-			internalFormat = GL_RGB;
+			format = GL_RGBA;
+			internalFormat = GL_RGBA8;
 		#else
+			format = GL_RGB;
 			internalFormat = GL_RGB8;
 		#endif
+		type = GL_UNSIGNED_BYTE;
 	}
 	
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat,

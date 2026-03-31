@@ -219,7 +219,9 @@ af_bool_t AF_Window_Create(void* _appData) {
     glfwMakeContextCurrent(glfwWindow);
 
     // This would disable the 120 FPS cap 
-    glfwSwapInterval(0); 
+    #ifndef AF_WEB_BUILD
+    glfwSwapInterval(0);
+    #endif
 
     /**/
     // Set the user ptr to that of type AF_Window struct.

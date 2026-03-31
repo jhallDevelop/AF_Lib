@@ -50,12 +50,16 @@ uint32_t AF_TextureLoader_LoadTexture(const char* path) {
 		GLenum internalFormat = GL_RGB;
 		GLenum dataFormat = GL_RGB;
 		if (nrComponents == 1) {
-			internalFormat = GL_RED; 
+			#ifdef AF_WEB_BUILD
+				internalFormat = GL_R8;
+			#else
+				internalFormat = GL_RED;
+			#endif
 			dataFormat = GL_RED;
 		}
 		else if (nrComponents == 3) {
 			#ifdef AF_WEB_BUILD
-				internalFormat = GL_RGB;
+				internalFormat = GL_RGB8;
 			#else
 				internalFormat = GL_RGB8; 
 			#endif
@@ -63,7 +67,7 @@ uint32_t AF_TextureLoader_LoadTexture(const char* path) {
 		}
 		else if (nrComponents == 4) {
 			#ifdef AF_WEB_BUILD
-				internalFormat = GL_RGBA;
+				internalFormat = GL_RGBA8;
 			#else
 				internalFormat = GL_RGBA8; // Use sized internal format on desktop
 			#endif

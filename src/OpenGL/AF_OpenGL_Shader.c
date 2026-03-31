@@ -199,6 +199,19 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     glAttachShader(returnShaderID, fragment);
     glLinkProgram(returnShaderID);
     compileResult = AF_Shader_CheckCompileErrors((uint32_t)returnShaderID, "PROGRAM");
+    if(compileResult == SHADER_FAILED_TO_LOAD || compileResult == 0){
+        AF_Log_Error(
+            "AF_Shader: Program link failed (vert: %s, frag: %s)\n",
+            _vertexShaderPath,
+            _fragmentShaderPath
+        );
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        glDeleteProgram(returnShaderID);
+        AF_Shader_FreeCharBuffer(vertexShaderSource);
+        AF_Shader_FreeCharBuffer(framgentShaderSource);
+        return SHADER_FAILED_TO_LOAD;
+    }
 
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);

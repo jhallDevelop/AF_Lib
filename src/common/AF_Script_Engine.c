@@ -15,7 +15,6 @@
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
-#include <emscripten/dlfcn.h>
 #endif
 
 #ifdef _WIN32
@@ -290,21 +289,21 @@ void* AF_Script_Load(const char* _filePath){
             continue;
         }
 
-        #ifdef __EMSCRIPTEN__
-            scriptPtr = emscripten_dlopen(candidate);
+#ifdef __EMSCRIPTEN__
+            scriptPtr = dlopen(candidate, RTLD_LOCAL | RTLD_LAZY);
             if (scriptPtr) {
-                AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidate);
+                AF_Log("AF_Script_Load: Web resolved %s -> %s\n", _filePath, candidate);
                 break;
             }
-            AF_Log_Error("AF_Script_Load: Failed to open side module %s: %s\n", candidate, emscripten_dlerror());
-        #else
+            AF_Log_Error("AF_Script_Load: Web failed to open shared object %s: %s\n", candidate, dlerror());
+#else
             scriptPtr = dlopen(candidate, RTLD_LOCAL | RTLD_LAZY);
             if (scriptPtr) {
                 AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidate);
                 break;
             }
             AF_Log_Error("AF_Script_Load: Failed to open shared object %s: %s\n", candidate, dlerror());
-        #endif
+#endif
     }
 
     if (!scriptPtr) {
@@ -374,6 +373,10 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
         return;
     }
 
+#ifdef __EMSCRIPTEN__
+    AF_Log_Warning("AF_Script_Load_And_Bind_Functions: Web build binding scripts from main module symbols.\n");
+#endif
+
     AF_ECS* _ecs = &_appData->ecs;
     const char* projectRoot = (_appData->projectData.projectRoot[0] != '\0') ? _appData->projectData.projectRoot : NULL;
     const char* platformName = "";
@@ -433,6 +436,45 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
             }
 
             AF_Script_DeriveNameFromPath(script);
+
+#ifdef __EMSCRIPTEN__
+            if (script->scriptName[0] == '\0') {
+                AF_Log_Error("AF_Script_Load_And_Bind_Functions: Web script has no scriptName (Entity: %u, Script: %u)\n", i, scriptID);
+                continue;
+            }
+
+            char startFuncName[MAX_FUNCTION_NAME] = {0};
+            char updateFuncName[MAX_FUNCTION_NAME] = {0};
+            char lateUpdateFuncName[MAX_FUNCTION_NAME] = {0};
+            char destroyFuncName[MAX_FUNCTION_NAME] = {0};
+            snprintf(startFuncName,      MAX_FUNCTION_NAME, "Start_%s",      script->scriptName);
+            snprintf(updateFuncName,     MAX_FUNCTION_NAME, "Update_%s",     script->scriptName);
+            snprintf(lateUpdateFuncName, MAX_FUNCTION_NAME, "LateUpdate_%s", script->scriptName);
+            snprintf(destroyFuncName,    MAX_FUNCTION_NAME, "Destroy_%s",    script->scriptName);
+
+            dlerror();
+            script->startFuncPtr = (ScriptFuncPtr)dlsym(RTLD_DEFAULT, startFuncName);
+            script->updateFuncPtr = (ScriptFuncPtr)dlsym(RTLD_DEFAULT, updateFuncName);
+            script->lateUpdateFuncPtr = (ScriptFuncPtr)dlsym(RTLD_DEFAULT, lateUpdateFuncName);
+            script->destroyFuncPtr = (ScriptFuncPtr)dlsym(RTLD_DEFAULT, destroyFuncName);
+
+            if (script->startFuncPtr != NULL &&
+                script->updateFuncPtr != NULL &&
+                script->lateUpdateFuncPtr != NULL &&
+                script->destroyFuncPtr != NULL) {
+                // Non-null sentinel so call paths treat the script as loaded.
+                script->loadedScriptPtr = (void*)script;
+                AF_Log("AF_Script_Load_And_Bind_Functions: Web bound static script '%s' (Entity: %u, Script: %u)\n", script->scriptName, i, scriptID);
+                continue;
+            }
+
+            AF_Log_Warning("AF_Script_Load_And_Bind_Functions: Web static symbols not found for '%s'; trying dynamic module path\n", script->scriptName);
+                script->startFuncPtr      = NULL;
+                script->updateFuncPtr     = NULL;
+                script->lateUpdateFuncPtr = NULL;
+                script->destroyFuncPtr    = NULL;
+                script->loadedScriptPtr   = NULL;
+#endif
 
             af_bool_t scriptPathResolved = AF_FALSE;
 
@@ -582,10 +624,8 @@ void AF_Script_UnLoad(void* _scriptSharedObjPtr){
 #ifdef _WIN32
     FreeLibrary((HMODULE)_scriptSharedObjPtr);
 #elif defined(__EMSCRIPTEN__)
-    int eret = emscripten_dlclose(_scriptSharedObjPtr);
-    if (eret != 0) {
-        AF_Log_Error("AF_Script_UnLoad: Failed to close side module: %s\n", emscripten_dlerror());
-    }
+    // No-op on Web build for dynamic module unloading. Side module loading is not supported in this path.
+    (void)_scriptSharedObjPtr;
 #else
     int eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {

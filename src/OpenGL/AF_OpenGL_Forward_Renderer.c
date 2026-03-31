@@ -257,7 +257,7 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, uint
 			.textureHeight = *_screenHeight,
 			.shaderTextureName = "screenTexture",
 			#ifdef AF_WEB_BUILD
-                .internalFormat = GL_SRGB8_ALPHA8, // Use sRGB format for WebGL for correct gamma
+				.internalFormat = GL_RGBA,
             #else
                 .internalFormat = GL_RGB,
             #endif
@@ -379,7 +379,7 @@ af_bool_t AF_Renderer_Start(AF_RenderingData* _renderingData, AF_ECS* _ecs, uint
 						.textureHeight = cameraComponent->renderTextureHeight, 
 						.shaderTextureName = "screenTexture",
 						#ifdef AF_WEB_BUILD
-							.internalFormat = GL_SRGB8_ALPHA8, // Use sRGB format for WebGL for correct gamma
+							.internalFormat = GL_RGBA,
 						#else
 							.internalFormat = GL_RGB,
 						#endif
@@ -471,13 +471,13 @@ void AF_Renderer_EarlyRendering(AF_RenderingData* _renderingData, Vec4 _backgrou
 	
 	// Clear the Debug buffers
 	AF_RendererFramebuffer_BindFrameBuffer(_renderingData->depthDebugFrameBufferData.fbo);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	AF_RendererFramebuffer_UnBindFrameBuffer();
 
 	AF_RendererFramebuffer_BindFrameBuffer(_renderingData->screenFrameBufferData.fbo);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	glClearColor(_backgroundColor.x, _backgroundColor.y,_backgroundColor.z, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	AF_RendererFramebuffer_UnBindFrameBuffer();
 }
 
@@ -1432,6 +1432,12 @@ void AF_Renderer_DrawMesh(Mat4* _modelMat, Mat4* _viewMat, Mat4* _projMat, AF_CM
 	uint32_t shader = (_shaderOverride == NO_SHARED_SHADER) ? _mesh->shader.shaderID : _shaderOverride;
 	glUseProgram(shader);
 
+	// Compatibility path: WEB shader variants use explicit view/projection uniforms
+	// while native shaders often read camera matrices from CameraData UBO.
+	// Setting these uniforms here is safe for both (missing uniforms resolve to -1 no-op).
+	AF_Shader_SetMat4(shader, "view", *_viewMat);
+	AF_Shader_SetMat4(shader, "projection", *_projMat);
+
 	for(uint32_t i = 0; i < _mesh->meshCount; i++){
 		// This is only used for render-to-texture scenarios.
 		if(_mesh->material.diffuseTexture.type == AF_Texture_TypeMappings[AF_TEXTURE_TYPE_RENDER_TEXTURE].type){
@@ -2019,6 +2025,10 @@ void AF_Renderer_DrawTerrain(uint32_t _terrainID, AF_CTerrain* _terrain, Mat4* _
     }
 	
     glUseProgram(shaderID);
+
+	// Compatibility path: WEB terrain shaders use explicit view/projection uniforms.
+	AF_Shader_SetMat4(shaderID, "view", *_viewMat);
+	AF_Shader_SetMat4(shaderID, "projection", *_projMat);
 
     // 1. Bind all textures (Diffuse unit 0, Shadow unit 1)
     AF_Renderer_BindMeshTextures(_mesh, _renderingData, shaderID);
