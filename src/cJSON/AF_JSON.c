@@ -205,13 +205,26 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		newEntity->id_tag = AF_ECS_AssignID(newEntity->id_tag, id); // Get ID tag from JSON
 		newEntity->id_tag = AF_ECS_AssignTag(newEntity->id_tag, tagID); // Get tag from JSON
 
-		newEntity->flags = AF_Component_SetEnabled(newEntity->flags, cJSON_GetObjectItem(entityJSON, "enabled")->valueint); // Get enabled flag from JSON
-		newEntity->flags = AF_Component_SetHas(newEntity->flags, cJSON_GetObjectItem(entityJSON, "has")->valueint); // Get has flag from JSON
+		cJSON* flagsNode = cJSON_GetObjectItem(entityJSON, "flags");
+		if (flagsNode) {
+			newEntity->flags = (AF_Flag8_t)flagsNode->valueint;
+		} else {
+			// Backwards compatibility for older JSON
+			newEntity->flags = AF_Component_SetEnabled(newEntity->flags, cJSON_GetObjectItem(entityJSON, "enabled")->valueint);
+			newEntity->flags = AF_Component_SetHas(newEntity->flags, cJSON_GetObjectItem(entityJSON, "has")->valueint);
+		}
+
+		// Backward compat for newly added flags:
+		if (AF_Component_GetHas(newEntity->flags) == AF_TRUE) {
+			newEntity->flags |= FLAG_EXIST; // Assume it exists if it has components
+		}
+
+		AF_Log("Entity %d flags loaded as: %d\n", id, newEntity->flags);
 
 		// get parent 
 		cJSON* parentIDJSON = cJSON_GetObjectItem(entityJSON, "parentID");
 		if(parentIDJSON != NULL){
-			newEntity->parentID = parentIDJSON->valueint;
+			newEntity->parentID_Tag = parentIDJSON->valueint;
 		}
 		
 		if (AF_Component_GetHas(newEntity->flags) == AF_FALSE) {
@@ -299,6 +312,26 @@ af_bool_t AF_JSON_LoadSceneJson(AF_AppData* _appData, FILE* _file)
 		ecs->currentEntity++; // Increment entity index for each entity found
 	}
 
+	// Normalize legacy parenting to prevent propagation failures
+	for (uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		AF_Entity* entity = &_appData->ecs.entities[i];
+		if (!AF_Component_GetHas(entity->flags)) continue;
+		uint32_t id = AF_ECS_GetID(entity->id_tag);
+		if (id != 0 && entity->parentID_Tag == 0) {
+			entity->parentID_Tag = id;
+		}
+	}
+
+	// Post-load propagation for inherited state
+	for (uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		AF_Entity* entity = &_appData->ecs.entities[i];
+		if (!AF_Component_GetHas(entity->flags)) continue;
+		uint32_t id = AF_ECS_GetID(entity->id_tag);
+		if (entity->parentID_Tag == id) {
+			AF_ECS_PropagateActiveState(&_appData->ecs, id, AF_TRUE);
+		}
+	}
+
 	cJSON_Delete(rootJSON);
 	return AF_TRUE;
 
@@ -367,12 +400,11 @@ af_bool_t AF_JSON_SaveECSToJson(AF_ECS* _ecs, const char* _projectRoot, char* _c
 		cJSON* entityJSON = cJSON_AddObjectToObject(rootJSON, "entity");
 		uint32_t entityID = AF_ECS_GetID(entity->id_tag);
 		uint32_t tagID =  AF_ECS_GetTag(entity->id_tag);
-		uint32_t parentID = entity->parentID;
+		uint32_t parentID = entity->parentID_Tag;
 		cJSON_AddNumberToObject(entityJSON, "id", entityID); // Add ID
 		cJSON_AddNumberToObject(entityJSON, "tag", tagID); // Add tag
-		cJSON_AddBoolToObject(entityJSON, "enabled", AF_Component_GetEnabled(entity->flags)); // Add enabled flag
-		cJSON_AddBoolToObject(entityJSON, "has", AF_Component_GetHas(entity->flags)); // Add has flag
-		cJSON_AddNumberToObject(entityJSON, "parentID", entity->parentID);
+		cJSON_AddNumberToObject(entityJSON, "flags", entity->flags); // Add combined flags byte
+		cJSON_AddNumberToObject(entityJSON, "parentID", entity->parentID_Tag);
 		
 		// for each component
 		af_bool_t flags = (af_bool_t)entity->flags; // TODO: extract the flags
@@ -2102,11 +2134,11 @@ void AF_JSON_JsonToEditorData(cJSON* _editorDataJSON, AF_CEditorData* _editorDat
 
 // COMPONENTS TO JSON CONVERTERS
 
-cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _transform) {
+cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _component) {
 	cJSON* returnJSON = cJSON_CreateObject();
 
 	// Has
-	af_bool_t has = AF_Component_GetHas(_transform->enabled);
+	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
 
 	if(has == AF_FALSE) {
@@ -2114,26 +2146,26 @@ cJSON* AF_JSON_TransformToJson(AF_CTransform3D* _transform) {
 	}
 
 	// Enabled
-	af_bool_t enabled = AF_Component_GetEnabled(_transform->enabled);
+	af_bool_t enabled = AF_Component_GetEnabled(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "enabled", enabled);
 
 	// Pos
-	Vec3 pos = _transform->pos;
+	Vec3 pos = _component->pos;
 	AF_JSON_Vec3ToJson("pos", &pos, returnJSON);
 
 	
 	// Rot
-	Vec4 rot = _transform->rot;
+	Vec4 rot = _component->rot;
 	AF_JSON_Vec4ToJson("rot", &rot, returnJSON);
 
 
 	// Scale
-	Vec3 scale = _transform->scale;
+	Vec3 scale = _component->scale;
 	AF_JSON_Vec3ToJson("scale", &scale, returnJSON);
 
 
 	// Model Mat
-	Mat4 modelMat = _transform->modelMat;
+	Mat4 modelMat = _component->modelMat;
 	AF_JSON_Mat4ToJson("modelMatrix", &modelMat, returnJSON);
 
 	return returnJSON;
@@ -2374,10 +2406,6 @@ cJSON* AF_JSON_AnimationToJson(AF_CAnimation* _component) {
 	// has
 	af_bool_t has = AF_Component_GetHas(_component->enabled);
 	cJSON_AddNumberToObject(returnJSON, "has", has);
-
-	if(has == AF_FALSE) {
-		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
-	}
 
 	if(has == AF_FALSE) {
 		return returnJSON; // if the component is not enabled, return early with just the has and enabled values
@@ -2874,19 +2902,19 @@ cJSON* AF_JSON_PlayerDataToJson(AF_CPlayerData* _component) {
 	// movementSpeed;
 	cJSON_AddNumberToObject(returnJSON, "movementSpeed", _component->movementSpeed);
 
-	// score;
+	// score
 	cJSON_AddNumberToObject(returnJSON, "score", _component->score);
 
-	// startPosition;
+	// startPosition
 	AF_JSON_Vec3ToJson("startPosition", &_component->startPosition, returnJSON);
 
-	// targetDestination;
+	// targetDestination
 	AF_JSON_Vec3ToJson("targetDestination", &_component->targetDestination, returnJSON);
 
-	// spawnTime;
+	// spawnTime
 	cJSON_AddNumberToObject(returnJSON, "spawnTime", _component->spawnTime);
 
-	// PLAYER_FACTION faction;
+	// faction
 	cJSON_AddNumberToObject(returnJSON, "faction", _component->faction);
 
 	return returnJSON;

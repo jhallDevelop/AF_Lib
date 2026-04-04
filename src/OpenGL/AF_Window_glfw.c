@@ -15,6 +15,10 @@
 #include "AF_AppData.h"
 #define GL_SILENCE_DEPRECATION
 
+#ifdef AF_WEB_BUILD
+#include <emscripten.h>
+#endif
+
 // ------- Create Platform Independent Window -------
 // TODO: make this get passed into create window
 const char* glfwWindowFileTitle = "AF_Window_GLFW:";
@@ -88,8 +92,11 @@ void AF_Window_Pos_Callback(GLFWwindow* _window, int _xpos, int _ypos){
 void AF_Window_Framebuffer_Size_Callback(GLFWwindow* _window, int _width, int _height)
 {
     (void)_window;
-    (void)_width;
-    (void)_height;
+    
+    // Store actual framebuffer dimensions (may differ from window size on high-DPI displays)
+    g_window->frameBufferWidth = _width;
+    g_window->frameBufferHeight = _height;
+    g_window->isWindowResized = AF_TRUE; // Signal app to rebuild renderer FBOs
 }
 
 // ====================
@@ -102,11 +109,14 @@ void AF_Window_Size_Callback(GLFWwindow* _window, int _width, int _height)
     (void)_height;
     (void)_window;
     
-    
-    g_window->windowWidth = _width;
-    g_window->windowHeight = _height;
-    
-	g_window->isWindowResized = AF_TRUE; // Set the window resized flag to true
+    g_window->windowWidth       = _width;
+    g_window->windowHeight      = _height;
+    // On web the framebuffer == window size; keep them in sync so the
+    // renderer always has valid dimensions even if the framebuffer callback
+    // doesn't fire separately.
+    g_window->frameBufferWidth  = _width;
+    g_window->frameBufferHeight = _height;
+    g_window->isWindowResized   = AF_TRUE;
 }
 
 
@@ -247,6 +257,26 @@ af_bool_t AF_Window_Create(void* _appData) {
     // Set the user ptr of the window to 
     glfwSetWindowTitle((GLFWwindow*) appData->window.window, appData->projectData.name);
 
+#ifdef AF_WEB_BUILD
+    // glfwCreateWindow stamps the canvas to the requested size (e.g. 1280x720),
+    // overwriting any JS-side resize. Read the real browser viewport and push
+    // it back through GLFW so framebuffer dimensions match the actual canvas.
+    {
+        int vpW = EM_ASM_INT({ return window.innerWidth; });
+        int vpH = EM_ASM_INT({ return window.innerHeight; });
+        if (vpW > 0 && vpH > 0) {
+            AF_Log("%s AF_Window_Create: Web viewport %ix%i, overriding GLFW canvas\n", glfwWindowFileTitle, vpW, vpH);
+            glfwSetWindowSize(glfwWindow, vpW, vpH);
+            // Explicitly sync framebuffer dimensions
+            g_window->frameBufferWidth  = (uint16_t)vpW;
+            g_window->frameBufferHeight = (uint16_t)vpH;
+            g_window->windowWidth       = (uint16_t)vpW;
+            g_window->windowHeight      = (uint16_t)vpH;
+            g_window->isWindowResized   = AF_TRUE;
+        }
+    }
+#endif
+
     return AF_TRUE;
 }
 
@@ -276,15 +306,10 @@ af_bool_t AF_Window_Update(AF_Window* _window){
 void AF_Window_Render(AF_Window* _window){
 
     if(g_window->isWindowResized == AF_TRUE || g_window->isFrameUpdated == AF_TRUE){
-        // Set the framebuffer sies
+        // Set the framebuffer size
         int width, height;
         glfwGetFramebufferSize((GLFWwindow*)_window->window, &width, &height);
         glViewport(0, 0, width, height);
-
-        //_window->frameBufferWidth = width; 
-        //_window->frameBufferHeight = height;
-        _window->windowWidth = width;
-        _window->windowHeight = height;
 
         g_window->isWindowResized = AF_FALSE; // Reset the window resized flag
         g_window->isFrameUpdated = AF_FALSE; // Reset the frame updated flag

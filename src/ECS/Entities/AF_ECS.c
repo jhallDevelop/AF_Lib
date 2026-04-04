@@ -53,7 +53,7 @@ void AF_ECS_Init(AF_ECS* _ecs){
 		entity->flags = 0;
 		entity->id_tag = AF_ECS_AssignID(entity->id_tag, i);
 		entity->id_tag = AF_ECS_AssignTag(entity->id_tag, 0);
-		entity->parentID = AF_ECS_GetID(entity->id_tag);	// set parentID to itself to indicate no parent
+		entity->parentID_Tag = AF_ECS_GetID(entity->id_tag);	// set parentID to itself to indicate no parent
 		// zero the terrain
 		_ecs->terrains[i] = AF_CTerrain_ZERO();
 	}
@@ -71,6 +71,8 @@ void AF_ECS_DeleteEntity(AF_ECS* _ecs, AF_Entity* _entity){
 	//entity->enabled = AF_TRUE;
 	_entity->flags = AF_Component_SetEnabled(_entity->flags, AF_FALSE);
 	_entity->flags = AF_Component_SetHas(_entity->flags, AF_FALSE);
+	_entity->flags &= ~FLAG_EXIST;
+	_entity->flags &= ~FLAG_ACTIVE_IN_HIERARCHY;
 	
 	// set the name
 	//snprintf(entity->name, sizeof(entity->name), "Entity: %u", i);
@@ -224,10 +226,12 @@ AF_Entity* AF_ECS_CreateEntity(AF_ECS* _ecs){
     PACKED_CHAR* componentState = &entity->flags;
 	entity->flags = AF_Component_SetHas(*componentState, AF_TRUE);
 	entity->flags = AF_Component_SetEnabled(*componentState, AF_TRUE);
+	entity->flags |= FLAG_EXIST;
+	entity->flags |= FLAG_ACTIVE_IN_HIERARCHY;
 
 
 	uint32_t entityID = AF_ECS_GetID(entity->id_tag);
-	entity->parentID = entityID; // default to root/self-parent in hierarchy
+	entity->parentID_Tag = entityID; // default to root/self-parent in hierarchy
 
 	// Zero ALL component arrays at this slot so no stale data from a previous
 	// scene leaks into the new entity.
@@ -314,8 +318,50 @@ AF_CMesh* AF_ECS_AddMeshComponent(AF_ECS* _ecs, uint32_t entityID){
 	return meshComponent;
 }
 
+// ====================
+// AF_ECS_PropagateActiveState
+// Updates FLAG_ACTIVE_IN_HIERARCHY for nodeID and all its children.
+// ====================
+void AF_ECS_PropagateActiveState(AF_ECS* _ecs, uint32_t nodeID, af_bool_t parentIsActive) {
+	if (nodeID >= AF_ECS_TOTAL_ENTITIES) {
+		return;
+	}
 
+	AF_Entity* entity = &_ecs->entities[nodeID];
+	if (!AF_Component_GetHas(entity->flags)) {
+		return;
+	}
 
+	// 1. Read local enabled state
+	af_bool_t localEnabled = (entity->flags & FLAG_ENABLED) ? AF_TRUE : AF_FALSE;
+
+	// 2. Computed active state = parentIsActive && localEnabled
+	af_bool_t computedActive = (parentIsActive && localEnabled);
+
+	// 3. Write FLAG_ACTIVE_IN_HIERARCHY
+	if (computedActive) {
+		entity->flags |= FLAG_ACTIVE_IN_HIERARCHY;
+	} else {
+		entity->flags &= ~FLAG_ACTIVE_IN_HIERARCHY;
+	}
+
+	// 4. Propagate to children
+	for (uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		AF_Entity* child = &_ecs->entities[i];
+		if (!AF_Component_GetHas(child->flags)) {
+			continue;
+		}
+
+		uint32_t childID = AF_ECS_GetID(child->id_tag);
+		if (childID == nodeID) {
+			continue;
+		}
+
+		if (child->parentID_Tag == nodeID) {
+			AF_ECS_PropagateActiveState(_ecs, childID, computedActive);
+		}
+	}
+}
 
 // ====================
 // AF_ECS_LoadEntities
@@ -338,6 +384,32 @@ void AF_ECS_LoadECSFromBinary(FILE* _filePtr, AF_ECS* _ecs){
         printf("AF_ECS_LoadECSFromBinary: Error while reading \n");
 		return;
     }
+	
+	// Backward compatibility fix for loaded binary structures
+	// If entities have components but no FLAG_EXIST, we add it.
+	// Normalize legacy parenting to prevent propagation failures
+	for (uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		AF_Entity* entity = &_ecs->entities[i];
+		if (AF_Component_GetHas(entity->flags) == AF_TRUE) {
+			entity->flags |= FLAG_EXIST;
+		}
+		
+		uint32_t id = AF_ECS_GetID(entity->id_tag);
+		if (id != 0 && entity->parentID_Tag == 0) {
+			entity->parentID_Tag = id;
+		}
+	}
+
+	// Post-load propagation for inherited state
+	for (uint32_t i = 0; i < AF_ECS_TOTAL_ENTITIES; ++i) {
+		AF_Entity* entity = &_ecs->entities[i];
+		if (!AF_Component_GetHas(entity->flags)) continue;
+		uint32_t id = AF_ECS_GetID(entity->id_tag);
+		if (entity->parentID_Tag == id) {
+			AF_ECS_PropagateActiveState(_ecs, id, AF_TRUE);
+		}
+	}
+
 	// resync the pointers so we don't get null reference
 	AF_ECS_ReSyncComponents(_ecs);
     

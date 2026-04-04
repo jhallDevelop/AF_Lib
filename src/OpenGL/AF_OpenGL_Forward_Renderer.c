@@ -145,7 +145,7 @@ static af_bool_t AF_Renderer_ResolveUIParentData(AF_ECS* _ecs, uint32_t _entityI
 
 	// Walk parent chain to compute cumulative parent transform (parent origin) for this node.
 	while(guardCount < _ecs->entitiesCount){
-		uint32_t parentID = _ecs->entities[currentID].parentID;
+		uint32_t parentID = _ecs->entities[currentID].parentID_Tag;
 		if(parentID == currentID || parentID >= _ecs->entitiesCount){
 			break;
 		}
@@ -737,7 +737,7 @@ void AF_Renderer_DrawSpriteMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData
     for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
         AF_Entity* entity = &_ecs->entities[i];
 		AF_CTransform3D* transform = &_ecs->transforms[i];
-        if (AF_Component_GetHasEnabled(entity->flags) == AF_FALSE) {
+        if ((entity->flags & (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)) != (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)) {
             continue;
         }
 
@@ -912,7 +912,7 @@ void AF_Renderer_DrawTextMeshes(AF_ECS* _ecs, AF_RenderingData* _renderingData) 
     // for each entity
     for (uint32_t i = 0; i < _ecs->entitiesCount; ++i) {
         AF_Entity* entity = &_ecs->entities[i];
-        if (AF_Component_GetHasEnabled(entity->flags) == AF_FALSE) {
+        if ((entity->flags & (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)) != (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)) {
             continue;
         }
 
@@ -1186,6 +1186,11 @@ void AF_Renderer_UnbindTextures(void){
 // =================================================================================================
 AF_CTerrain* AF_Renderer_FindActiveTerrain(AF_ECS* _ecs){
 	for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
+		AF_Entity* entity = &_ecs->entities[i];
+		if((entity->flags & (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)) != (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)){
+			continue;
+		}
+
 		AF_CTerrain* terrain = &_ecs->terrains[i];
 		if(AF_Component_GetHasEnabled(terrain->enabled) == AF_TRUE){
 			return terrain;
@@ -1249,7 +1254,14 @@ void AF_Renderer_SetTexture(const uint32_t _shaderID, const char* _shaderVarName
 void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* _cameraPos, AF_LightingData* _lightingData, uint32_t _shaderOverride, AF_RenderingData* _renderingData){
 	
 	for(uint32_t i = 0; i < _ecs->meshSparseSet.count; ++i){
+		uint32_t entityID = _ecs->meshSparseSet.denseToSparse[i];
+		AF_Entity* entity = &_ecs->entities[entityID];
 		
+		// Skip if entity does not exist or is disabled
+		if((entity->flags & (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)) != (FLAG_HAS | FLAG_EXIST | FLAG_ACTIVE_IN_HIERARCHY)){
+			continue;
+		}
+
 		AF_CMesh* mesh = &_ecs->meshSparseSet.denseComponent[i];
 		// Skip if there is no rendering component
 		if(AF_Component_GetHas(mesh->enabled) == AF_FALSE){ // || hasEnabled == AF_FALSE){
@@ -1271,7 +1283,6 @@ void AF_Renderer_DrawMeshes(Mat4* _viewMat, Mat4* _projMat, AF_ECS* _ecs, Vec3* 
 			}
 		}
 
-		uint32_t entityID = _ecs->meshSparseSet.denseToSparse[i];
 		AF_CTransform3D* modelTransform = &_ecs->transforms[entityID];
 
 		// Make a copy as we will apply some special transformation. e.g. rotation is stored in degrees and needs to be converted to radians

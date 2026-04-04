@@ -26,6 +26,7 @@
 #include "ECS/Components/AF_CInputController.h"
 #include "ECS/Components/AF_CScript.h"
 #include "ECS/Components/AF_CLight.h"
+#include "AF_Flags.h"
 
 #define AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY 4
 
@@ -46,9 +47,9 @@ If 2D game then loaded verts are known at compile time as its just a quad hard c
 */
 // Size of struct is exactly 64 bytes
 typedef struct AF_Entity {
-    flag_t flags;	            // Entity has ben enabled
+    AF_Flag8_t flags;	            // Entity has been enabled
     PACKED_UINT32 id_tag;		// Packed datatype holding both a tag and ID. id of the entity. ID can be 0 to 536, 870, 911, tag holds up to 8 variants    
-    uint32_t parentID;
+    PACKED_UINT32 parentID_Tag; // Packed datatype holding both the parent entity ID and tag, used for hierarchy. parentID of 0 means no parent, tag holds up to 8 variants
 } AF_Entity;
 
 // Little helper struct that can be use
