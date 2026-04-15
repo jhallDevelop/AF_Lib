@@ -20,13 +20,18 @@ Definitions for helper functions to load and use scripts
 
 #define MAX_FUNCTION_NAME 1024
 
-#if defined(_WIN32)
-#define AF_SCRIPT_PLATFORM_DIR "Win64"
-#elif defined(__APPLE__)
-#define AF_SCRIPT_PLATFORM_DIR "OSX"
-#else
-#define AF_SCRIPT_PLATFORM_DIR "LINUX"
-#endif
+// Windows
+#define AF_SCRIPT_WIN64_EXT ".dll"
+#define AF_SCRIPT_WIN64_FOLDER "WIN64"
+
+// OSX
+#define AF_SCRIPT_OSX_EXT ".dylib"
+#define AF_SCRIPT_OSX_FOLDER "OSX"
+
+// Linux/Web
+#define AF_SCRIPT_WEB_EXT ".so"
+#define AF_SCRIPT_WEB_FOLDER "WEB"
+
 
 #ifdef __cplusplus
 extern "C" {    
@@ -34,7 +39,7 @@ extern "C" {
 
 
 
-void* AF_Script_Load(const char* _filePath);
+void* AF_Script_Load(const char* _filePath, const char* _platformName);
 uint32_t AF_Script_Bind_Functions(AF_CScript* _script, void* _scriptSharedObjPtr);
 void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData);
 void AF_Script_UnLoad(void* _scriptSharedObjPtr);
@@ -47,7 +52,7 @@ void AF_Script_Call_Destroy(AF_AppData* _appData);
 void AF_Script_SerialiseEditorVars(const char* _scriptPath, AF_CScript* _scriptComponent);
 void AF_Script_ApplyEditorVars(AF_CScript* _script);
 AF_EDITOR_VAR_TYPE_e AF_Script_MapStringToEditorVarType(const char* _typeString);
-                
+const char* AF_Script_GetBinaryExtension(void);
 
 
 

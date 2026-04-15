@@ -1053,6 +1053,7 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
     snprintf(appDataPathAbsolute, sizeof(appDataPathAbsolute), "%s", _appDataPath);
     AF_Project_MakeAbsolutePath(appDataPathAbsolute, sizeof(appDataPathAbsolute), cwd);
     
+    AF_Log("AF_Project_Load: Attempting to load project data from %s\n", appDataPathAbsolute);
     // Load scene stored as default scene in the project data
     FILE* appDataFile = AF_File_OpenFile(appDataPathAbsolute, "rb");// switch to binary read mode as cause// "r");
     if (appDataFile == NULL) {
@@ -1168,7 +1169,7 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
     return AF_TRUE;
 }
 
-af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
+af_bool_t AF_Project_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
 {
     af_bool_t returnValue = AF_FALSE;
     AF_Event_ResetRegistry(&_appData->eventRegistry);
@@ -1185,7 +1186,7 @@ af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
     // Load the ECS from the file
     FILE* sceneFile = AF_File_OpenFile(_sceneFilePath, "rb");
     if (sceneFile == NULL) {
-        AF_Log_Error("AF_LoadScene: Failed to open scene file %s\n", _sceneFilePath);
+        AF_Log_Error("AF_Project_LoadScene: Failed to open scene file %s\n", _sceneFilePath);
         return AF_FALSE;
     }
 
@@ -1217,16 +1218,16 @@ af_bool_t AF_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
     } else {
         // Keep physics handle valid even when scene load fails.
         AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
-        AF_Log_Error("Editor_SceneBrowser_RenderSaveFile: Failed to load scene %s\n", _sceneFilePath);
+        AF_Log_Error("AF_Project_LoadScene: Failed to load scene %s\n", _sceneFilePath);
     }
     return returnValue;
 }
 
-void AF_RequestSceneChange(AF_AppData* _appData, const char* _sceneFilePath) {
+void AF_Project_RequestSceneChange(AF_AppData* _appData, const char* _sceneFilePath) {
     if (_appData == NULL || _sceneFilePath == NULL) {
         return;
     }
     snprintf(_appData->projectData.pendingScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
     _appData->projectData.hasPendingSceneChange = AF_TRUE;
-    AF_Log("AF_RequestSceneChange: Scene change to '%s' queued\n", _sceneFilePath);
+    AF_Log("AF_Project_RequestSceneChange: Scene change to '%s' queued\n", _sceneFilePath);
 }

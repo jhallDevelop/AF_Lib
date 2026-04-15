@@ -57,6 +57,10 @@ static af_bool_t AF_File_PathHasPrefix(const char* path, const char* prefix) {
 // Public platform implementations
 // ================================================================
 
+void AF_File_NormalisePath(char* path) {
+    (void)path; // No-op to avoid unused function warning if not used on this platform
+}
+
 /*
 ================================
 AF_File_OpenFile
@@ -123,12 +127,11 @@ FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands) {
 	return NULL;
 }
 
-/*
-================================
-AF_File_ListFiles
-Enumerate directory entries with opendir/readdir.
-================================
-*/
+
+// ================================
+// AF_File_ListFiles
+// Enumerate directory entries with opendir/readdir.
+// =================================
 void AF_File_ListFiles(const char* path, AF_FileList* _fileList, af_bool_t _isAlphabetical) {
 	if (MAX_FILELIST_BUFFER_SIZE > 0) _fileList->stringBuffer[0] = '\0';
 	_fileList->numberOfFiles = 0;

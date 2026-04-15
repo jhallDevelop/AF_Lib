@@ -12,6 +12,16 @@
 // Private helpers
 // ================================================================
 
+void AF_File_NormalisePath(char* path) {
+    if (!path) 
+	{
+		return;
+    }
+    for (char* p = path; *p; ++p) {
+        if (*p == '/') *p = '\\';
+    }
+}
+
 static const char* AF_File_GetEnv(const char* key, char* outBuffer, size_t outSize) {
 	if (!key || !outBuffer || outSize == 0) return NULL;
 	char* value = NULL;

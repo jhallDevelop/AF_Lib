@@ -28,6 +28,7 @@ AF_LIB_API FILE* AF_File_OpenFile(const char* _path, const char* _writeCommands)
 void AF_File_ListFiles(const char* path, AF_FileList* _fileList, af_bool_t _isAlphabetical);
 AF_LIB_API af_bool_t AF_File_MakeDirectory(const char* _filePath);
 AF_LIB_API void AF_File_SetWorkingDirectory(const char* projectRoot);
+AF_LIB_API void AF_File_NormalisePath(char* path);
 
 // ================================================================
 // Portable — static inline implementations

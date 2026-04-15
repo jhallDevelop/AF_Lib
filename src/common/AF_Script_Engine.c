@@ -17,29 +17,26 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#ifdef _WIN32
-static void AF_Script_NormalizePath(char* path) {
-    if (!path) return;
-    for (char* p = path; *p; ++p) {
-        if (*p == '/') *p = '\\';
-    }
-}
-#else
-static void AF_Script_NormalizePath(char* path) {
-    // POSIX uses '/' as path separator, nothing to normalize.
-    (void)path;
-}
-#endif
 
-static const char* AF_Script_GetBinaryExtension(void) {
+
+
+
+
+
+// ================================================================================
+// AF_Script_GetBinaryExtension
+// Get the appropriate binary extension for the current platform.
+// ================================================================================
+const char* AF_Script_GetBinaryExtension(void) {
 #ifdef __EMSCRIPTEN__
-    return ".so";
+    return AF_SCRIPT_WEB_EXT;
 #elif defined(_WIN32)
-    return ".dll";
+    return AF_SCRIPT_WIN64_EXT;
 #elif defined(__APPLE__)
-    return ".dylib";
+    AF_Log("AF_Script_GetBinaryExtension: using .dylib extension for macOS\n");
+    return AF_SCRIPT_OSX_EXT;
 #else
-    return ".so";
+    return AF_SCRIPT_WEB_EXT;
 #endif
 }
 
@@ -127,6 +124,7 @@ static int AF_Script_BuildPathCandidates(const char* _filePath, const char* _pro
 
     int count = 0;
 
+    
     // direct path as provided
     snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s", _filePath);
     ++count;
@@ -151,7 +149,7 @@ static int AF_Script_BuildPathCandidates(const char* _filePath, const char* _pro
 #else
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
 #endif
-        const char* platformCandidates[] = { AF_SCRIPT_PLATFORM_DIR, "Win64", "OSX", "LINUX", "WEB", NULL };
+        const char* platformCandidates[] = { _platformName, "Win64", "OSX", "LINUX", "WEB", NULL };
         for (int i = 0; platformCandidates[i] != NULL && count < maxCandidates; ++i) {
             snprintf(candidates[count], AF_MAX_PATH_CHAR_SIZE, "%s/bin/%s/%s", cwd, platformCandidates[i], _filePath);
             ++count;
@@ -165,7 +163,7 @@ static int AF_Script_BuildPathCandidates(const char* _filePath, const char* _pro
             ++count;
         }
 
-        const char* projectPlatforms[] = { _platformName && _platformName[0] != '\0' ? _platformName : AF_SCRIPT_PLATFORM_DIR, "Win64", "OSX", "LINUX", "WEB", NULL };
+        const char* projectPlatforms[] = { _platformName && _platformName[0] != '\0' ? _platformName : _platformName, "Win64", "OSX", "LINUX", "WEB", NULL };
         for (int i = 0; projectPlatforms[i] != NULL && count < maxCandidates; ++i) {
             if (count >= maxCandidates) {
                 break;
@@ -174,7 +172,7 @@ static int AF_Script_BuildPathCandidates(const char* _filePath, const char* _pro
             ++count;
         }
     }
-
+    
     return count;
 }
 
@@ -192,7 +190,7 @@ static const char* AF_Script_GetWinHostSubdir(const char* exeName) {
 // Take in a file path and attempt to load the script .o object as a shared object.AF_File_CloseFile
 // Return the pointer to the shared object
 // ===============================================================================
-void* AF_Script_Load(const char* _filePath){
+void* AF_Script_Load(const char* _filePath, const char* _platformName){
     void* scriptPtr = NULL;
     if(_filePath == NULL || _filePath[0] == '\0'){
         AF_Log_Error("AF_Script_Load: file path is empty\n");
@@ -207,12 +205,12 @@ void* AF_Script_Load(const char* _filePath){
     if (!handle) {
         char candidates[16][AF_MAX_PATH_CHAR_SIZE] = {{0}};
         const char* projectRoot = NULL;
-        const char* platformName = AF_SCRIPT_PLATFORM_DIR;
+        const char* platformName = _platformName;
         int candidateCount = AF_Script_BuildPathCandidates(_filePath, projectRoot, platformName, candidates, 16);
         for (int i = 0; i < candidateCount && !handle; ++i) {
             char candidatePath[AF_MAX_PATH_CHAR_SIZE] = {0};
             snprintf(candidatePath, sizeof(candidatePath), "%s", candidates[i]);
-            AF_Script_NormalizePath(candidatePath);
+            AF_File_NormalisePath(candidatePath);
             handle = LoadLibraryExA(candidatePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
             if (handle) {
                 AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
@@ -230,7 +228,7 @@ void* AF_Script_Load(const char* _filePath){
             for (int i = 0; candidatePlatforms[i] != NULL && !handle; ++i) {
                 char candidatePath[AF_MAX_PATH_CHAR_SIZE] = {0};
                 snprintf(candidatePath, sizeof(candidatePath), "%s/bin/%s/%s", cwd, candidatePlatforms[i], _filePath);
-                AF_Script_NormalizePath(candidatePath);
+                AF_File_NormalisePath(candidatePath);
                 handle = LoadLibraryExA(candidatePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
                 if (handle) {
                     AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
@@ -276,7 +274,7 @@ void* AF_Script_Load(const char* _filePath){
 #else
     char candidates[16][AF_MAX_PATH_CHAR_SIZE] = {{0}};
     const char* projectRoot = NULL; // optional, could be exposed from _appData in future
-    const char* platformName = AF_SCRIPT_PLATFORM_DIR;
+    const char* platformName = _platformName; //AF_SCRIPT_PLATFORM_DIR;
     int candidateCount = AF_Script_BuildPathCandidates(_filePath, projectRoot, platformName, candidates, 16);
 
     for (int i = 0; i < candidateCount; ++i) {
@@ -372,10 +370,6 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
         AF_Log_Error("AF_Script_Load_And_Bind_Functions: _appData is NULL\n");
         return;
     }
-
-#ifdef __EMSCRIPTEN__
-    AF_Log_Warning("AF_Script_Load_And_Bind_Functions: Web build binding scripts from main module symbols.\n");
-#endif
 
     AF_ECS* _ecs = &_appData->ecs;
     const char* projectRoot = (_appData->projectData.projectRoot[0] != '\0') ? _appData->projectData.projectRoot : NULL;
@@ -487,7 +481,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
             if (scriptPathResolved == AF_FALSE && projectRoot != NULL && script->scriptFullPath[0] != '\0') {
                 char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
                 snprintf(candidate, sizeof(candidate), "%s/%s", projectRoot, script->scriptFullPath);
-                AF_Script_NormalizePath(candidate);
+                AF_File_NormalisePath(candidate);
                 if (AF_File_FileExists(candidate) == AF_TRUE) {
                     snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                     scriptPathResolved = AF_TRUE;
@@ -504,7 +498,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 
                     char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
                     snprintf(candidate, sizeof(candidate), "%s/bin/%s/%s", projectRoot, platformToTry, script->scriptFullPath);
-                    AF_Script_NormalizePath(candidate);
+                    AF_File_NormalisePath(candidate);
                     if (AF_File_FileExists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
@@ -519,7 +513,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 #ifdef _WIN32
                 if (exeDir[0] != '\0') {
                     snprintf(candidate, sizeof(candidate), "%s/scripts/%s/%s%s", exeDir, winHostSubdir, script->scriptName, scriptExt);
-                    AF_Script_NormalizePath(candidate);
+                    AF_File_NormalisePath(candidate);
                     if (AF_File_FileExists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
@@ -528,7 +522,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 
                 if (scriptPathResolved == AF_FALSE && exeDir[0] != '\0') {
                     snprintf(candidate, sizeof(candidate), "%s/scripts/%s%s", exeDir, script->scriptName, scriptExt);
-                    AF_Script_NormalizePath(candidate);
+                    AF_File_NormalisePath(candidate);
                     if (AF_File_FileExists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
@@ -537,7 +531,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 
                 if (scriptPathResolved == AF_FALSE) {
                     snprintf(candidate, sizeof(candidate), "scripts/%s/%s%s", winHostSubdir, script->scriptName, scriptExt);
-                    AF_Script_NormalizePath(candidate);
+                    AF_File_NormalisePath(candidate);
                     if (AF_File_FileExists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
@@ -546,7 +540,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 
                 if (scriptPathResolved == AF_FALSE) {
                     snprintf(candidate, sizeof(candidate), "scripts/%s%s", script->scriptName, scriptExt);
-                    AF_Script_NormalizePath(candidate);
+                    AF_File_NormalisePath(candidate);
                     if (AF_File_FileExists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
@@ -581,7 +575,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 
             // attempt to load the script
             AF_Log("AF_Script_Load_And_Bind_Functions: loading script: %s (Entity: %u, Script: %u)\n", script->scriptFullPath, i, scriptID);
-            script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath);
+            script->loadedScriptPtr = AF_Script_Load(script->scriptFullPath, platformName);
 
             if (!script->loadedScriptPtr) {
                 AF_Log_Error("AF_Script_Load_And_Bind_Functions: failed to load script: %s (Entity: %u, Script: %u)\n", script->scriptFullPath, i, scriptID);
@@ -617,7 +611,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 void AF_Script_UnLoad(void* _scriptSharedObjPtr){
     
     if(_scriptSharedObjPtr == NULL){
-        //AF_Log_Error("AF_Script_UnLoad: Failed to unload scriptSharedObjPtr due to passing null reference\n");
+        AF_Log_Error("AF_Script_UnLoad: Failed to unload scriptSharedObjPtr due to passing null reference\n");
         return;
     }
 
@@ -627,6 +621,7 @@ void AF_Script_UnLoad(void* _scriptSharedObjPtr){
     // No-op on Web build for dynamic module unloading. Side module loading is not supported in this path.
     (void)_scriptSharedObjPtr;
 #else
+    // POSIX dlclose can fail and return non-zero, but there's not much we can do at this point except log the error.
     int eret = dlclose(_scriptSharedObjPtr);
     if (eret != 0) {
         AF_Log_Error("AF_Script_UnLoad: Failed to close shared object: %s\n", dlerror());
