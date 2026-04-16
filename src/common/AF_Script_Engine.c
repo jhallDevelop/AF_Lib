@@ -219,7 +219,10 @@ void* AF_Script_Load(const char* _filePath, const char* _platformName){
         }
     }
 
-    // If still no handle, try resolving with common project/bin layout, then SetDllDirectory
+    // If still no handle, try resolving with common project/bin layout.
+    // Use plain LoadLibraryA (standard search order) so dependency DLLs in the EXE
+    // directory (bin/) are found. LOAD_WITH_ALTERED_SEARCH_PATH changes the first
+    // search dir to the DLL's own directory, which breaks glew32.dll etc. lookups.
     if (!handle) {
         char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
         if (GetCurrentDirectoryA(sizeof(cwd), cwd) > 0) {
@@ -229,7 +232,7 @@ void* AF_Script_Load(const char* _filePath, const char* _platformName){
                 char candidatePath[AF_MAX_PATH_CHAR_SIZE] = {0};
                 snprintf(candidatePath, sizeof(candidatePath), "%s/bin/%s/%s", cwd, candidatePlatforms[i], _filePath);
                 AF_File_NormalisePath(candidatePath);
-                handle = LoadLibraryExA(candidatePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+                handle = LoadLibraryA(candidatePath);
                 if (handle) {
                     AF_Log("AF_Script_Load: Resolved %s -> %s\n", _filePath, candidatePath);
                 }
@@ -261,6 +264,33 @@ void* AF_Script_Load(const char* _filePath, const char* _platformName){
                 }
             } else {
                 AF_Log_Error("AF_Script_Load: SetDllDirectoryA failed for %s (error %lu)\n", scriptDir, (unsigned long)GetLastError());
+            }
+        }
+    }
+
+    if (!handle) {
+        char exeDir[AF_MAX_PATH_CHAR_SIZE] = {0};
+        char exePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        if (GetModuleFileNameA(NULL, exePath, sizeof(exePath)) > 0) {
+            char* lastSlash = strrchr(exePath, '\\');
+            if (!lastSlash) {
+                lastSlash = strrchr(exePath, '/');
+            }
+            if (lastSlash) {
+                *lastSlash = '\0';
+                snprintf(exeDir, sizeof(exeDir), "%s", exePath);
+            }
+        }
+
+        if (exeDir[0] != '\0') {
+            if (SetDllDirectoryA(exeDir)) {
+                handle = LoadLibraryExA(_filePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+                SetDllDirectoryA(NULL);
+                if (handle) {
+                    AF_Log("AF_Script_Load: Resolved %s with exeDir %s\n", _filePath, exeDir);
+                }
+            } else {
+                AF_Log_Error("AF_Script_Load: SetDllDirectoryA failed for exe dir %s (error %lu)\n", exeDir, (unsigned long)GetLastError());
             }
         }
     }
@@ -413,6 +443,32 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
     AF_Script_GetExecutableDir(exeDir, sizeof(exeDir));
 #endif
 
+    char resolvedProjectRoot[AF_MAX_PATH_CHAR_SIZE] = {0};
+    if (projectRoot != NULL) {
+        // Always canonicalize via the OS so that paths containing ".." or "." components
+        // (e.g. "D:\...\template_game\data\..\." from the project data file) are fully
+        // resolved before we do FileExists checks. GetFullPathNameA handles both absolute
+        // and relative inputs; getcwd is used as a fallback for the relative case on POSIX.
+#ifdef _WIN32
+        if (GetFullPathNameA(projectRoot, sizeof(resolvedProjectRoot), resolvedProjectRoot, NULL) == 0) {
+            // Fallback: copy and normalize slashes only.
+            snprintf(resolvedProjectRoot, sizeof(resolvedProjectRoot), "%s", projectRoot);
+        }
+#else
+        if (projectRoot[0] == '/') {
+            snprintf(resolvedProjectRoot, sizeof(resolvedProjectRoot), "%s", projectRoot);
+        } else {
+            // Relative: CWD was set to the project root by the caller.
+            if (getcwd(resolvedProjectRoot, sizeof(resolvedProjectRoot)) == NULL) {
+                snprintf(resolvedProjectRoot, sizeof(resolvedProjectRoot), "%s", projectRoot);
+            }
+        }
+#endif
+        AF_File_NormalisePath(resolvedProjectRoot);
+        projectRoot = resolvedProjectRoot;
+        AF_Log("AF_Script_Load_And_Bind_Functions: resolved project root: %s\n", projectRoot);
+    }
+
     for(uint32_t i = 0; i < _ecs->entitiesCount; i++){
         for(uint32_t j = 0; j < AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY; j++){
             uint32_t scriptID = (i * AF_ENTITY_TOTAL_SCRIPTS_PER_ENTITY) + j;
@@ -503,6 +559,32 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                         AF_Log("AF_Script_Load_And_Bind_Functions: Resolved %s -> %s via project bin/%s\n", script->scriptName, script->scriptFullPath, platformToTry);
+                    }
+                }
+            }
+
+            // CWD-based resolution: CWD is set to project root by Play-in-Editor even
+            // when projectData.projectRoot is empty. Covers the NULL projectRoot case.
+            if (scriptPathResolved == AF_FALSE && script->scriptFullPath[0] != '\0') {
+                char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
+                int cwdOk = 0;
+#ifdef _WIN32
+                cwdOk = (GetCurrentDirectoryA(sizeof(cwd), cwd) > 0);
+#else
+                cwdOk = (getcwd(cwd, sizeof(cwd)) != NULL);
+#endif
+                if (cwdOk) {
+                    const char* cwdPlatforms[] = {platformName, "Win64", "OSX", "LINUX", NULL};
+                    for (int p = 0; cwdPlatforms[p] != NULL && scriptPathResolved == AF_FALSE; ++p) {
+                        if (cwdPlatforms[p][0] == '\0') continue;
+                        char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
+                        snprintf(candidate, sizeof(candidate), "%s/bin/%s/%s", cwd, cwdPlatforms[p], script->scriptFullPath);
+                        AF_File_NormalisePath(candidate);
+                        if (AF_File_FileExists(candidate) == AF_TRUE) {
+                            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
+                            scriptPathResolved = AF_TRUE;
+                            AF_Log("AF_Script_Load_And_Bind_Functions: Resolved %s -> %s via CWD/bin/%s\n", script->scriptName, script->scriptFullPath, cwdPlatforms[p]);
+                        }
                     }
                 }
             }

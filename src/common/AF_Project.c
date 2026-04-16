@@ -1183,26 +1183,34 @@ af_bool_t AF_Project_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
     // Tear down old Bullet world first. Re-init happens after scene JSON is loaded.
     AF_Physics_Shutdown(&_appData->physicsEngineHandle);
 
+    // Normalize the requested scene path so editor-relative paths resolve consistently.
+    char resolvedScenePath[MAX_PROJECTDATA_FILE_PATH] = {0};
+    if (_sceneFilePath && _sceneFilePath[0] != '\0') {
+        snprintf(resolvedScenePath, sizeof(resolvedScenePath), "%s", _sceneFilePath);
+        AF_Project_NormaliseScenePath(_appData, resolvedScenePath, sizeof(resolvedScenePath));
+    }
+
     // Load the ECS from the file
-    FILE* sceneFile = AF_File_OpenFile(_sceneFilePath, "rb");
+    FILE* sceneFile = AF_File_OpenFile(resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath, "rb");
     if (sceneFile == NULL) {
-        AF_Log_Error("AF_Project_LoadScene: Failed to open scene file %s\n", _sceneFilePath);
+        AF_Log_Error("AF_Project_LoadScene: Failed to open scene file %s\n", resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath);
         return AF_FALSE;
     }
 
     af_bool_t sceneLoaded = AF_JSON_LoadSceneJson(_appData, sceneFile);
     AF_File_CloseFile(sceneFile);
 
-    AF_Log("AF_LoadScene: Finished loading scene from %s\n", _sceneFilePath);
+    AF_Log("AF_LoadScene: Finished loading scene from %s\n", resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath);
 
     if (sceneLoaded == AF_TRUE) {
-        AF_Log("AF_LoadScene: Successfully loaded scene from %s\n", _sceneFilePath);
+        const char* scenePathToStore = resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath;
+        AF_Log("AF_LoadScene: Successfully loaded scene from %s\n", scenePathToStore);
         // Track the active scene so menu-bar saves go to the right file
-        snprintf(_appData->projectData.defaultScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
+        snprintf(_appData->projectData.defaultScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", scenePathToStore);
 
         // Resolve shader paths now that scene JSON is loaded.
         // This matches AF_Project_Load behavior and avoids invalid shader references on runtime scene swap.
-        AF_Log("AF_LoadScene: expanding shader paths for scene %s\n", _sceneFilePath);
+        AF_Log("AF_LoadScene: expanding shader paths for scene %s\n", scenePathToStore);
         AF_Project_ExpandShaderPaths(_appData);
 
         AF_Project_SyncEntities(_appData);
@@ -1218,7 +1226,7 @@ af_bool_t AF_Project_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
     } else {
         // Keep physics handle valid even when scene load fails.
         AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
-        AF_Log_Error("AF_Project_LoadScene: Failed to load scene %s\n", _sceneFilePath);
+        AF_Log_Error("AF_Project_LoadScene: Failed to load scene %s\n", resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath);
     }
     return returnValue;
 }
@@ -1230,4 +1238,8 @@ void AF_Project_RequestSceneChange(AF_AppData* _appData, const char* _sceneFileP
     snprintf(_appData->projectData.pendingScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
     _appData->projectData.hasPendingSceneChange = AF_TRUE;
     AF_Log("AF_Project_RequestSceneChange: Scene change to '%s' queued\n", _sceneFilePath);
+}
+
+AF_LIB_API void AF_RequestSceneChange(AF_AppData* _appData, const char* _sceneFilePath) {
+    AF_Project_RequestSceneChange(_appData, _sceneFilePath);
 }
