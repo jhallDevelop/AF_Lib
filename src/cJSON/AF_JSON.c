@@ -1,6 +1,7 @@
 #include "AF_JSON.h"
 #include "AF_Project.h"
 #include "cJSON.h"
+#include "AF_File.h"
 
 // JSON to Component conversion functions
 void AF_JSON_JsonToTransform(cJSON* _transformJSON, AF_CTransform3D* _transform);
@@ -2275,12 +2276,12 @@ cJSON* AF_JSON_SpriteToJson(AF_CSprite* _sprite, const char* _projectRoot) {
 
 	// sprite path
 	char serializedSpritePath[AF_MAX_PATH_CHAR_SIZE] = {0};
-	AF_Project_RelativizePath(_sprite->spriteMesh.material.diffuseTexture.path, _projectRoot, serializedSpritePath, sizeof(serializedSpritePath));
+	AF_File_RelativizePath(_sprite->spriteMesh.material.diffuseTexture.path, _projectRoot, serializedSpritePath, sizeof(serializedSpritePath));
 	cJSON_AddStringToObject(returnJSON, "spriteTexturePath", serializedSpritePath);
 
 	// save the sprite mesh path
 	char serializedSpriteMeshPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-	AF_Project_RelativizePath(_sprite->spriteMesh.meshPath, _projectRoot, serializedSpriteMeshPath, sizeof(serializedSpriteMeshPath));
+	AF_File_RelativizePath(_sprite->spriteMesh.meshPath, _projectRoot, serializedSpriteMeshPath, sizeof(serializedSpriteMeshPath));
 	cJSON_AddStringToObject(returnJSON, "spriteMeshPath", serializedSpriteMeshPath);
 
 	// save the sprite shader name
@@ -2583,7 +2584,7 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component, const char* _projectRoot) {
 
     // meshPath
     char serializedMeshPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_Project_RelativizePath(_component->meshPath, _projectRoot, serializedMeshPath, sizeof(serializedMeshPath));
+    AF_File_RelativizePath(_component->meshPath, _projectRoot, serializedMeshPath, sizeof(serializedMeshPath));
     cJSON_AddStringToObject(returnJSON, "meshPath", serializedMeshPath);
 
     // Shader
@@ -2597,7 +2598,7 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component, const char* _projectRoot) {
 
     //diffuse texture
     char serializedDiffuseTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_Project_RelativizePath(_component->material.diffuseTexture.path, _projectRoot, serializedDiffuseTexturePath, sizeof(serializedDiffuseTexturePath));
+    AF_File_RelativizePath(_component->material.diffuseTexture.path, _projectRoot, serializedDiffuseTexturePath, sizeof(serializedDiffuseTexturePath));
     cJSON_AddStringToObject(materialJson, "diffuseTexture", serializedDiffuseTexturePath);
 	cJSON_AddNumberToObject(materialJson, "textureType", _component->material.diffuseTexture.type);
 	cJSON_AddNumberToObject(materialJson, "renderTextureCameraEntityIndex", _component->material.renderTextureCameraEntityIndex);
@@ -2607,12 +2608,12 @@ cJSON* AF_JSON_MeshToJson(AF_CMesh* _component, const char* _projectRoot) {
 	cJSON_AddNumberToObject(materialJson, "uvScaleY", _component->material.diffuseTexture.uvScaleY);
 	//specular texture
     char serializedSpecularTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_Project_RelativizePath(_component->material.specularTexture.path, _projectRoot, serializedSpecularTexturePath, sizeof(serializedSpecularTexturePath));
+    AF_File_RelativizePath(_component->material.specularTexture.path, _projectRoot, serializedSpecularTexturePath, sizeof(serializedSpecularTexturePath));
     cJSON_AddStringToObject(materialJson, "specularTexture", serializedSpecularTexturePath);
 
     //normal texture
     char serializedNormalTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_Project_RelativizePath(_component->material.normalTexture.path, _projectRoot, serializedNormalTexturePath, sizeof(serializedNormalTexturePath));
+    AF_File_RelativizePath(_component->material.normalTexture.path, _projectRoot, serializedNormalTexturePath, sizeof(serializedNormalTexturePath));
     cJSON_AddStringToObject(materialJson, "normalTexture", serializedNormalTexturePath);
 
     // Color
@@ -2777,7 +2778,7 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component, const char* _projectRoot) {
 
     // fontPath
     char serializedTextFontPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_Project_RelativizePath(_component->fontPath, _projectRoot, serializedTextFontPath, sizeof(serializedTextFontPath));
+    AF_File_RelativizePath(_component->fontPath, _projectRoot, serializedTextFontPath, sizeof(serializedTextFontPath));
     cJSON_AddStringToObject(returnJSON, "fontPath", serializedTextFontPath);
 
     // text
@@ -2811,7 +2812,7 @@ cJSON* AF_JSON_TextToJson(AF_CText* _component, const char* _projectRoot) {
     cJSON* fontJSON = cJSON_AddObjectToObject(returnJSON, "font");
     cJSON_AddStringToObject(fontJSON, "fontName", _component->font.fontName);
     char serializedFontPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_Project_RelativizePath(_component->font.fontPath, _projectRoot, serializedFontPath, sizeof(serializedFontPath));
+    AF_File_RelativizePath(_component->font.fontPath, _projectRoot, serializedFontPath, sizeof(serializedFontPath));
     cJSON_AddStringToObject(fontJSON, "fontPath", serializedFontPath);
     cJSON_AddNumberToObject(fontJSON, "fontSize", _component->font.fontSize);
 

@@ -21,7 +21,7 @@ af_bool_t AF_LoadFont(AF_Font* _font) {
         return AF_FALSE;
     }
 
-    FILE* fontFile = AF_File_OpenFile(_font->fontPath, "rb");
+    FILE* fontFile = AF_File_Open(_font->fontPath, "rb");
     if (fontFile == NULL) {
         AF_Log_Error("AF_FreeFont: AF_LoadFont: failed to open font %s\n", _font->fontPath);
         return AF_FALSE;
@@ -31,20 +31,20 @@ af_bool_t AF_LoadFont(AF_Font* _font) {
     long fileSize = ftell(fontFile);
     fseek(fontFile, 0, SEEK_SET);
     if (fileSize <= 0) {
-        AF_File_CloseFile(fontFile);
+        AF_File_Close(fontFile);
         AF_Log_Error("AF_FreeFont: AF_LoadFont: invalid file size for %s\n", _font->fontPath);
         return AF_FALSE;
     }
 
     unsigned char* ttfBuffer = (unsigned char*)malloc((size_t)fileSize);
     if (ttfBuffer == NULL) {
-        AF_File_CloseFile(fontFile);
+        AF_File_Close(fontFile);
         AF_Log_Error("AF_FreeFont: AF_LoadFont: out of memory for %s\n", _font->fontPath);
         return AF_FALSE;
     }
 
     size_t readBytes = fread(ttfBuffer, 1, (size_t)fileSize, fontFile);
-    AF_File_CloseFile(fontFile);
+    AF_File_Close(fontFile);
     if (readBytes != (size_t)fileSize) {
         free(ttfBuffer);
         AF_Log_Error("AF_FreeFont: AF_LoadFont: failed reading %s\n", _font->fontPath);

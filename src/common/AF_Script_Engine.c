@@ -313,7 +313,7 @@ void* AF_Script_Load(const char* _filePath, const char* _platformName){
             continue;
         }
 
-        if (AF_File_FileExists(candidate) != AF_TRUE) {
+        if (AF_File_Exists(candidate) != AF_TRUE) {
             continue;
         }
 
@@ -529,7 +529,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
             af_bool_t scriptPathResolved = AF_FALSE;
 
             // Prefer an existing user-provided script path if valid
-            if (script->scriptFullPath[0] != '\0' && AF_File_FileExists(script->scriptFullPath) == AF_TRUE) {
+            if (script->scriptFullPath[0] != '\0' && AF_File_Exists(script->scriptFullPath) == AF_TRUE) {
                 scriptPathResolved = AF_TRUE;
             }
 
@@ -538,7 +538,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                 char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
                 snprintf(candidate, sizeof(candidate), "%s/%s", projectRoot, script->scriptFullPath);
                 AF_File_NormalisePath(candidate);
-                if (AF_File_FileExists(candidate) == AF_TRUE) {
+                if (AF_File_Exists(candidate) == AF_TRUE) {
                     snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                     scriptPathResolved = AF_TRUE;
                 }
@@ -555,7 +555,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                     char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
                     snprintf(candidate, sizeof(candidate), "%s/bin/%s/%s", projectRoot, platformToTry, script->scriptFullPath);
                     AF_File_NormalisePath(candidate);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                         AF_Log("AF_Script_Load_And_Bind_Functions: Resolved %s -> %s via project bin/%s\n", script->scriptName, script->scriptFullPath, platformToTry);
@@ -580,7 +580,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                         char candidate[AF_MAX_PATH_CHAR_SIZE] = {0};
                         snprintf(candidate, sizeof(candidate), "%s/bin/%s/%s", cwd, cwdPlatforms[p], script->scriptFullPath);
                         AF_File_NormalisePath(candidate);
-                        if (AF_File_FileExists(candidate) == AF_TRUE) {
+                        if (AF_File_Exists(candidate) == AF_TRUE) {
                             snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                             scriptPathResolved = AF_TRUE;
                             AF_Log("AF_Script_Load_And_Bind_Functions: Resolved %s -> %s via CWD/bin/%s\n", script->scriptName, script->scriptFullPath, cwdPlatforms[p]);
@@ -596,7 +596,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                 if (exeDir[0] != '\0') {
                     snprintf(candidate, sizeof(candidate), "%s/scripts/%s/%s%s", exeDir, winHostSubdir, script->scriptName, scriptExt);
                     AF_File_NormalisePath(candidate);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                     }
@@ -605,7 +605,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                 if (scriptPathResolved == AF_FALSE && exeDir[0] != '\0') {
                     snprintf(candidate, sizeof(candidate), "%s/scripts/%s%s", exeDir, script->scriptName, scriptExt);
                     AF_File_NormalisePath(candidate);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                     }
@@ -614,7 +614,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                 if (scriptPathResolved == AF_FALSE) {
                     snprintf(candidate, sizeof(candidate), "scripts/%s/%s%s", winHostSubdir, script->scriptName, scriptExt);
                     AF_File_NormalisePath(candidate);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                     }
@@ -623,7 +623,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                 if (scriptPathResolved == AF_FALSE) {
                     snprintf(candidate, sizeof(candidate), "scripts/%s%s", script->scriptName, scriptExt);
                     AF_File_NormalisePath(candidate);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                     }
@@ -631,7 +631,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 #else
                 if (exeDir[0] != '\0') {
                     snprintf(candidate, sizeof(candidate), "%s/scripts/%s%s", exeDir, script->scriptName, scriptExt);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                     }
@@ -639,7 +639,7 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
 
                 if (scriptPathResolved == AF_FALSE) {
                     snprintf(candidate, sizeof(candidate), "scripts/%s%s", script->scriptName, scriptExt);
-                    if (AF_File_FileExists(candidate) == AF_TRUE) {
+                    if (AF_File_Exists(candidate) == AF_TRUE) {
                         snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s", candidate);
                         scriptPathResolved = AF_TRUE;
                     }
@@ -1045,7 +1045,7 @@ void AF_Script_SerialiseEditorVars(const char *_scriptPath, AF_CScript *_scriptC
         AF_Log_Error("AF_Script_SerialiseEditorVars: Failed to allocate memory for script buffer\n");
         return;
     }
-    af_bool_t readSuccess = AF_File_ReadFile(scriptBuffer, scriptBufferSize, _scriptPath, "r");
+    af_bool_t readSuccess = AF_File_Read(scriptBuffer, scriptBufferSize, _scriptPath, "r");
 
     // search the script line by line for EDITOR_VAR tags.
     if(readSuccess == AF_FALSE){
