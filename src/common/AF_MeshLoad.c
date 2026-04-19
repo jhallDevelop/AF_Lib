@@ -1,6 +1,7 @@
 #include "AF_MeshLoad.h"
 #include "AF_Renderer.h"
 #include "AF_RendererBuffer.h"
+#include "AF_String.h"
 //#include "AF_Util.h"
 //#include "AF_File.h"
 
@@ -81,7 +82,7 @@ Check the editor assets to see if the shader is already loaded
 ====================*/
 uint32_t AF_MeshLoad_Shader_LoadFromAssets(AF_Assets* _assetsLoaded, const char* _vertPath, const char* _fragPath)
 {
-    if(AF_STRING_IS_EMPTY(_vertPath) || AF_STRING_IS_EMPTY(_fragPath)) {
+    if(AF_String_IsEmpty(_vertPath) || AF_String_IsEmpty(_fragPath)) {
         AF_Log_Warning("AF_MeshLoad_Shader_LoadFromAssets: shader path is empty\n");
         return SHADER_FAILED_TO_LOAD;
     }

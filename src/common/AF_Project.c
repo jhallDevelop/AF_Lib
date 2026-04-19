@@ -172,7 +172,7 @@ void AF_Project_MigrateShaderToSelectedPlatform(AF_AppData* _appData, AF_Shader*
 
 // TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
 // This is very messy
-static void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
+void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
     if (_path == NULL || _path[0] == '\0') {
         return;
     }
@@ -608,8 +608,8 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             AF_RendererBuffer_InitSpriteMeshBuffer(spriteComponent);
 
             // Guard against empty or dummy shader paths
-            if (AF_STRING_IS_EMPTY(spriteComponent->spriteMesh.shader.vertPath) || 
-                AF_STRING_IS_EMPTY(spriteComponent->spriteMesh.shader.fragPath) ||
+            if (AF_String_IsEmpty(spriteComponent->spriteMesh.shader.vertPath) || 
+                AF_String_IsEmpty(spriteComponent->spriteMesh.shader.fragPath) ||
                 (strstr(spriteComponent->spriteMesh.shader.vertPath, ".vert") == (spriteComponent->spriteMesh.shader.vertPath + strlen(spriteComponent->spriteMesh.shader.vertPath) - 5) && 
                  (strlen(spriteComponent->spriteMesh.shader.vertPath) < 10))) { // rough check for just ".vert"
                 spriteComponent->spriteMesh.shader.shaderID = SHADER_FAILED_TO_LOAD;
@@ -641,16 +641,16 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             // paths (e.g. "assets/font/...") that should be relative to projectRoot.
             char resolvedFontPath[AF_MAX_PATH_CHAR_SIZE] = {0};
             const char* preferredFontPath = textComponent->font.fontPath;
-            if (AF_STRING_IS_EMPTY(preferredFontPath) && !AF_STRING_IS_EMPTY(textComponent->fontPath)) {
+            if (AF_String_IsEmpty(preferredFontPath) && !AF_String_IsEmpty(textComponent->fontPath)) {
                 preferredFontPath = textComponent->fontPath;
             }
 
-            if (!AF_STRING_IS_EMPTY(preferredFontPath)) {
+            if (!AF_String_IsEmpty(preferredFontPath)) {
                 FILE* fontFile = AF_File_Open(preferredFontPath, "rb");
                 if (fontFile != NULL) {
                     AF_File_Close(fontFile);
                     snprintf(resolvedFontPath, AF_MAX_PATH_CHAR_SIZE, "%s", preferredFontPath);
-                } else if (!AF_STRING_IS_EMPTY(_appData->projectData.projectRoot)) {
+                } else if (!AF_String_IsEmpty(_appData->projectData.projectRoot)) {
                     snprintf(
                         resolvedFontPath,
                         AF_MAX_PATH_CHAR_SIZE,
@@ -668,7 +668,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
             }
 
             // Last-resort fallback so text components still render if project font moved.
-            if (AF_STRING_IS_EMPTY(resolvedFontPath)) {
+            if (AF_String_IsEmpty(resolvedFontPath)) {
                 const char* fallbackFontPath = "assets/font/Montserrat/static/Montserrat-Medium.ttf";
                 FILE* fallbackFile = AF_File_Open(fallbackFontPath, "rb");
                 if (fallbackFile != NULL) {
@@ -678,15 +678,15 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
                 }
             }
 
-            if (!AF_STRING_IS_EMPTY(resolvedFontPath)) {
+            if (!AF_String_IsEmpty(resolvedFontPath)) {
                 snprintf(textComponent->font.fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", resolvedFontPath);
                 snprintf(textComponent->fontPath, AF_MAX_PATH_CHAR_SIZE, "%s", resolvedFontPath);
             }
 
             // Load the shader for the text mesh
             // Guard against empty or dummy shader paths
-            if (AF_STRING_IS_EMPTY(textComponent->mesh.shader.vertPath) || 
-                AF_STRING_IS_EMPTY(textComponent->mesh.shader.fragPath) ||
+            if (AF_String_IsEmpty(textComponent->mesh.shader.vertPath) || 
+                AF_String_IsEmpty(textComponent->mesh.shader.fragPath) ||
                 (strstr(textComponent->mesh.shader.vertPath, ".vert") == (textComponent->mesh.shader.vertPath + strlen(textComponent->mesh.shader.vertPath) - 5) && 
                 (strlen(textComponent->mesh.shader.vertPath) < 10))) {
                 textComponent->mesh.shader.shaderID = SHADER_FAILED_TO_LOAD;

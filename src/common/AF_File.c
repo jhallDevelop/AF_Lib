@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "AF_String.h"
 
 
 
@@ -25,41 +26,91 @@
 
 // =================================================
 // AF_File_Open
-// Try as-given
+// safely open a file with error handling and logging
 // =================================================
 FILE* AF_File_Open(const char* path, const char* mode) {
-	return fopen(path, mode);
+    if (AF_String_IsEmpty(path) == AF_TRUE) {
+        AF_Log_Error("AF_File_Open: Empty file path provided\n");
+        return NULL;
+    }
+
+    if(mode == NULL || mode[0] == '\0') {
+        AF_Log_Error("AF_File_Open: Empty file mode provided\n");
+        return NULL;
+    }
+
+    if(AF_File_PathExists(path) == AF_FALSE) {
+        AF_Log_Error("AF_File_Open: File does not exist: %s\n", path);
+        return NULL;
+    }
+
+    FILE* filePtr = NULL;
+    int32_t result = 0;
+    result = fopen_s(&filePtr, path, mode);
+    if (result != 0) {  
+        AF_Log_Error("AF_File_Open: Failed to open file: %s with mode: %s\n", path, mode);
+        return NULL;
+    }
+    
+
+	return filePtr;
 }
 
 
-void AF_File_Close(FILE* _filePtr) {
+// =================================================
+// AF_File_Close
+// Closes a file pointer, checking for errors.
+// =================================================
+af_bool_t AF_File_Close(FILE* _filePtr) {
 	if (_filePtr == NULL) {
 		AF_Log_Error("AF_File_CloseFile: FAILED to close buffer. _filePtr is NULL\n");
-		return;
+		return AF_FALSE;
 	}
 
 	if (ferror(_filePtr)) {
 		AF_Log_Warning("AF_File_CloseFile: File had errors before closing\n");
+        return AF_FALSE;
 	}
 
 	if (fclose(_filePtr) != 0) {
 		AF_Log_Error("AF_File_CloseFile: Error while closing file\n");
+        return AF_FALSE;
 	}
+	return AF_TRUE;
 }
 
 
 
+// ================================
+// AF_File_ChangeDirectory
+// Changes the current working directory to the specified path.
+// Returns AF_TRUE on success, AF_FALSE on failure.
+// ================================
+af_bool_t AF_File_ChangeDirectory(const char* path) {
+	if (!path || path[0] == '\0') {
+        return AF_FALSE;
+    }
 
-af_bool_t AF_File_TryChangeDirectory(const char* path) {
-	if (!path || path[0] == '\0') return AF_FALSE;
-	if (chdir(path) == 0) {
-		AF_Log("AF_File_SetWorkingDirectory: SUCCESS: %s\n", path);
+    int32_t result = 0;
+    // Platform dependent
+    #ifdef _WIN32
+        result = _chdir(path) == -1;
+    #else
+        result = chdir(path) == -1;
+    #endif
+
+	if (result == 0) {
+		AF_Log("AF_File_ChangeDirectory: SUCCESS: %s\n", path);
 		return AF_TRUE;
 	}
 	return AF_FALSE;
 }
 
-
+// ================================
+// AF_File_NormalizePathSeparators
+// Converts all occurrences of 'from' character to 'to' character in the input path.
+// This is used to ensure consistent path formats across platforms and codebase.
+// ================================
 void AF_File_NormalizePathSeparators(char* outPath, size_t outSize, const char* inPath, char from, char to) {
 	if (!outPath || !inPath || outSize == 0) return;
 	size_t i = 0;
@@ -172,131 +223,18 @@ void AF_File_ListFiles(const char* path, AF_FileList* _fileList, af_bool_t _isAl
 // Create a directory with full permissions.
 // ================================
 af_bool_t AF_File_MakeDirectory(const char* _filePath) {
+    int32_t result = 0;
 	#ifdef _WIN32
-        if (_mkdir(_filePath) == -1) {
+        result = _mkdir(_filePath) == -1;
     #else
-        if (mkdir(_filePath, 0777) == -1) {
+        result = mkdir(_filePath, 0777) == -1;
     #endif
-            AF_Log_Error("AF_Util_MakeFolder: FAILED to make directory %s\n", _filePath);
-            return AF_FALSE;
-        }
+    if (result != 0) {
+        AF_Log_Error("AF_Util_MakeFolder: Failed to create directory %s\n", _filePath);
+        return AF_FALSE;
+    }
+    return AF_TRUE;
 }
-
-
-
-// ================================
-// AF_File_SetWorkingDirectory
-// Try as-given, then normalize separators, then cwd-relative.
-// ================================
-void AF_File_SetWorkingDirectory(const char* _projectRoot) {
-	if (_projectRoot == NULL || _projectRoot[0] == '\0') {
-		AF_Log_Error("AF_File_SetWorkingDirectory: Invalid project root\n");
-		return;
-	}
-
-	if (AF_File_TryChangeDirectory(_projectRoot)) return;
-
-	char tryPath[AF_MAX_PATH_CHAR_SIZE];
-	AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _projectRoot, '\\', '/');
-	if (AF_File_TryChangeDirectory(tryPath)) return;
-
-	char cwd[AF_MAX_PATH_CHAR_SIZE];
-	if (getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
-		char combined[AF_MAX_PATH_CHAR_SIZE];
-		snprintf(combined, sizeof(combined), "%s/%s", cwd, tryPath);
-		if (AF_File_TryChangeDirectory(combined)) return;
-	}
-
-	AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
-}
-
-/*
-// ================================
-// AF_File_SetWorkingDirectory
-// Try as-given, normalize separators, USERPROFILE remap,
-// drive-letter prefix, then cwd-key and cwd-relative fallbacks.
-// ================================
-void AF_File_SetWorkingDirectory(const char* _projectRoot) {
-	if (_projectRoot == NULL || _projectRoot[0] == '\0') {
-		AF_Log_Error("AF_File_SetWorkingDirectory: Invalid project root\n");
-		return;
-	}
-
-	if (AF_File_TryChangeDirectory(_projectRoot)) return;
-
-	char tryPath[AF_MAX_PATH_CHAR_SIZE];
-	AF_File_NormalizePathSeparators(tryPath, sizeof(tryPath), _projectRoot, '/', '\\');
-	if (AF_File_TryChangeDirectory(tryPath)) return;
-
-	if (AF_File_PathHasPrefix(tryPath, "\\Users\\") || AF_File_PathHasPrefix(tryPath, "\\users\\")) {
-		char userProfile[AF_MAX_PATH_CHAR_SIZE] = {0};
-		if (AF_File_GetEnv("USERPROFILE", userProfile, sizeof(userProfile))) {
-			const char* rest = tryPath + 7;
-			if (rest[0] == '\\') rest++;
-			char mappedPath[AF_MAX_PATH_CHAR_SIZE];
-			snprintf(mappedPath, sizeof(mappedPath), "%s\\%s", userProfile, rest);
-			if (AF_File_TryChangeDirectory(mappedPath)) return;
-		}
-	}
-
-	if (tryPath[0] == '\\') {
-		char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
-		if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
-			char currentDrive[4] = { cwd[0], ':', '\0' };
-			char drivePrefixed[AF_MAX_PATH_CHAR_SIZE];
-			snprintf(drivePrefixed, sizeof(drivePrefixed), "%s%s", currentDrive, tryPath);
-			if (AF_File_TryChangeDirectory(drivePrefixed)) return;
-		}
-	}
-
-	{
-		const char* keys[] = {"AF_Editor", "game_projects", NULL};
-		for (int i = 0; keys[i] != NULL; ++i) {
-			const char* keyLoc = strstr(tryPath, keys[i]);
-			if (keyLoc) {
-				char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
-				if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
-					const char* suffix = keyLoc + strlen(keys[i]);
-					while (*suffix == '\\' || *suffix == '/') suffix++;
-
-					char* editorKey = strstr(cwd, "AF_Editor");
-					if (editorKey) {
-						size_t rootLen = (size_t)(editorKey - cwd + strlen("AF_Editor"));
-						char basePath[AF_MAX_PATH_CHAR_SIZE];
-						if (rootLen >= sizeof(basePath)) break;
-						memcpy(basePath, cwd, rootLen);
-						basePath[rootLen] = '\0';
-						char mapped[AF_MAX_PATH_CHAR_SIZE];
-						if (suffix[0] != '\0')
-							snprintf(mapped, sizeof(mapped), "%s\\%s", basePath, suffix);
-						else
-							snprintf(mapped, sizeof(mapped), "%s", basePath);
-						if (AF_File_TryChangeDirectory(mapped)) return;
-					}
-
-					char mapped2[AF_MAX_PATH_CHAR_SIZE];
-					if (suffix[0] != '\0')
-						snprintf(mapped2, sizeof(mapped2), "%s\\%s", cwd, suffix);
-					else
-						snprintf(mapped2, sizeof(mapped2), "%s", cwd);
-					if (AF_File_TryChangeDirectory(mapped2)) return;
-				}
-			}
-		}
-	}
-
-	{
-		char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
-		if (_getcwd(cwd, sizeof(cwd)) != NULL && cwd[0] != '\0') {
-			char combined[AF_MAX_PATH_CHAR_SIZE];
-			snprintf(combined, sizeof(combined), "%s\\%s", cwd, tryPath);
-			if (AF_File_TryChangeDirectory(combined)) return;
-		}
-	}
-
-	AF_Log_Error("AF_File_SetWorkingDirectory: Failed to set working directory %s\n", _projectRoot);
-}
-*/
 
 
 // ================================================
@@ -308,6 +246,7 @@ af_bool_t AF_File_Exists(const char* _filePath) {
 		return AF_FALSE;
 	}
 
+    // Use stat to check for file existence, which works for both files and directories and handles long paths on Windows.
 	struct stat fileStat;
 	if (stat(_filePath, &fileStat) == 0) {
 		return AF_TRUE;
@@ -326,12 +265,14 @@ uint32_t AF_File_GetFileSize(const char* _filePath) {
 		return 0;
 	}
 
+    // Use stat to get the file size, which works for both files and directories and handles long paths on Windows.
 	struct stat fileStat;
 	if (stat(_filePath, &fileStat) != 0) {
         AF_Log_Error("AF_Util: Failed to get file size for %s\n", _filePath);
 		return 0;
 	}
 
+    // Check if it's a regular file
 	if (fileStat.st_size < 0) {
         AF_Log_Error("AF_Util: Size of file: Failed to get file size for %s\n", _filePath);
 		return 0;
@@ -353,6 +294,8 @@ void AF_File_PrintTextBuffer(FILE* _filePtr) {
 	}
 	char buf[1024];
 	size_t nread;
+
+    // Read the file line by line and log each line. This handles large files without loading the entire content into memory.
 	while ((nread = fread(buf, sizeof(buf[0]), sizeof(buf) - 1, _filePtr)) != 0) {
 		buf[nread] = '\0';
 		char* s = buf;
@@ -383,6 +326,8 @@ void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize) {
 		AF_Log_Error("AF_File_WriteFile: FAILED to open file. _filePtr is NULL\n");
 		return;
 	}
+
+    // Write the data to the file and check for errors.
 	size_t num_written = fwrite(_data, dataSize, 1, _filePtr);
 	if (num_written != 1) {
 		AF_Log_Error("AF_File_WriteFile: Error writing to file");
@@ -398,10 +343,18 @@ void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize) {
 // AF_File_CompareItemsByValue
 // Comparison function for qsort to sort file names alphabetically.
 // ================================ 
-int AF_File_CompareItemsByValue(const void* lhs, const void* rhs) {
+int32_t AF_File_CompareItemsByValue(const void* lhs, const void* rhs) {
+
+    if(lhs == NULL || rhs == NULL) {
+        AF_Log_Error("AF_File_CompareItemsByValue: NULL pointer passed to comparison function\n");
+        return 0; // Consider them equal to avoid sorting issues
+    }
+    // Cast the void pointers to char** to compare the strings they point to.
 	const char* a = *(const char**)lhs;
 	const char* b = *(const char**)rhs;
-	return strcmp(a, b);
+    // Use the AF_String_Compare function to compare the two strings, with a maximum size of AF_MAX_PATH_CHAR_SIZE to prevent buffer overflows.
+    int32_t result = AF_String_Compare(a, b, AF_MAX_PATH_CHAR_SIZE); 
+	return result;
 }
 
 // ================================
@@ -413,6 +366,7 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
 		_fileList->isSorted = AF_TRUE;
 		return;
 	}
+
 	char tempBuffer[MAX_FILELIST_BUFFER_SIZE];
 	snprintf(tempBuffer, MAX_FILELIST_BUFFER_SIZE, "%s", _fileList->stringBuffer);
 	tempBuffer[MAX_FILELIST_BUFFER_SIZE - 1] = '\0';
@@ -420,10 +374,14 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
 	uint32_t fileCount = 0;
 	char* savePtr = NULL;
 	char* token = AF_StrtokR(tempBuffer, ",", &savePtr);
+
+    // Tokenize the file list string and store pointers to each file name in an array for sorting.
 	while (token != NULL && fileCount < MAX_FILELIST_BUFFER_SIZE) {
 		filePointers[fileCount++] = token;
 		token = AF_StrtokR(NULL, ",", &savePtr);
 	}
+
+    // Sort the file name pointers alphabetically using qsort and the comparison function.
 	qsort(filePointers, fileCount, sizeof(char*), AF_File_CompareItemsByValue);
 	size_t bufferPosition = 0;
 	for (uint32_t i = 0; i < fileCount; i++) {
@@ -431,6 +389,8 @@ void AF_File_OrderAlphabetically(AF_FileList* _fileList) {
 		snprintf(_fileList->stringBuffer + bufferPosition, MAX_FILELIST_BUFFER_SIZE - bufferPosition, "%s,", filePointers[i]);
 		bufferPosition += nameLength + 1;
 	}
+
+    // Ensure the string buffer is null-terminated and does not end with an extra comma.
 	if (bufferPosition > 0) {
 		_fileList->stringBuffer[bufferPosition - 1] = '\0';
 	}

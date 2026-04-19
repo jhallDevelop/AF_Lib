@@ -60,22 +60,6 @@ static inline void AF_Util_Mat4_Log(Mat4 _mat4){
 }
 
 
-/*
-====================
-AF_STRING_EMPTY
-Check if a const char* is empty
-Return 1 if string is empty
-REturn 0 if string is not empty
-====================
-*/
-static inline af_bool_t AF_STRING_IS_EMPTY(const char* _string){
-    // null check the const char*, then see if the first element is a end of line
-    if ((_string == NULL) || (_string[0] == '\0')) {
-        return AF_TRUE;
-    }else {
-        return AF_FALSE;
-    }
-}
 
 #define AF_UNUSED(x) ((void)(x))
 

@@ -24,7 +24,7 @@ static AF_HashTable shaderUniformLocationCache;
 int32_t AF_Shader_GetGLUniformLocation(uint32_t ID, const char* name){
 
     // check name is not null or empty
-    if(AF_STRING_IS_EMPTY(name)){
+    if(AF_String_IsEmpty(name)){
         AF_Log_Error("AF_Shader_GetUniformLocation: Given uniform name is null or empty\n");
         return -1;
     }
@@ -60,7 +60,7 @@ uint32_t AF_Shader_CheckCompileErrors(uint32_t shader, const char* type)
     // Check for shader compile errors
     GLint success = SHADER_FAILED_TO_LOAD;
     GLchar infoLog[1024];
-    if(AF_STRING_IS_EMPTY(type)){
+    if(AF_String_IsEmpty(type)){
         AF_Log_Error("AF_Shader: CheckCompileErrors given an empty type\n");
         return (uint32_t)success;
     }
@@ -107,7 +107,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     uint32_t returnShaderID = SHADER_FAILED_TO_LOAD;
     
     // Check if shader paths are empty
-    if(AF_STRING_IS_EMPTY(_vertexShaderPath) || AF_STRING_IS_EMPTY(_fragmentShaderPath)){
+    if(AF_String_IsEmpty(_vertexShaderPath) || AF_String_IsEmpty(_fragmentShaderPath)){
         AF_Log_Error("AF_Shader: vertex or fragment shader path is empty\n");
         return SHADER_FAILED_TO_LOAD;
     }
@@ -157,7 +157,7 @@ uint32_t AF_Shader_Load(const char* _vertexShaderPath, const char* _fragmentShad
     }
 
     // Check for empty shader code
-    if(AF_STRING_IS_EMPTY(vertexShaderSource) || AF_STRING_IS_EMPTY(framgentShaderSource)){
+    if(AF_String_IsEmpty(vertexShaderSource) || AF_String_IsEmpty(framgentShaderSource)){
         AF_Log_Error("AF_Shader: vertex or fragment shader source is empty \n");
         AF_Shader_FreeCharBuffer(vertexShaderSource);
         AF_Shader_FreeCharBuffer(framgentShaderSource);
