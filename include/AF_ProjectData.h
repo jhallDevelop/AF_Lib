@@ -4,7 +4,6 @@
 #include "AF_BuildData.h"
 #include "AF_RenderingData.h"
 #include "AF_PlatformData.h"
-#define MAX_PROJECTDATA_FILE_PATH 1024
 
 #define DEFAULT_GAME_NAME "template_game"
 #define DEFAULT_ASSETS_DIR "assets"
@@ -18,13 +17,13 @@
 
 // Project data struct
 typedef struct AF_ProjectData{
-    char name[MAX_PROJECTDATA_FILE_PATH];
-    char projectRoot[MAX_PROJECTDATA_FILE_PATH];
-    char assetsPath[MAX_PROJECTDATA_FILE_PATH];
-    char defaultAppDataPath[MAX_PROJECTDATA_FILE_PATH];
-    char defaultScenePath[MAX_PROJECTDATA_FILE_PATH];
+    char name[AF_MAX_PATH_CHAR_SIZE];
+    char projectRoot[AF_MAX_PATH_CHAR_SIZE];
+    char assetsPath[AF_MAX_PATH_CHAR_SIZE];
+    char defaultAppDataPath[AF_MAX_PATH_CHAR_SIZE];
+    char defaultScenePath[AF_MAX_PATH_CHAR_SIZE];
     // Deferred scene change: set by scripts, processed by the host game loop AFTER all scripts return
-    char pendingScenePath[MAX_PROJECTDATA_FILE_PATH];
+    char pendingScenePath[AF_MAX_PATH_CHAR_SIZE];
     af_bool_t hasPendingSceneChange;
 
     AF_PlatformData platformData;

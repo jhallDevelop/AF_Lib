@@ -31,405 +31,44 @@
 // TODO: why is this needed
 #include "../../../stb/stb_image.h"
 
+#define GAME_PROJECTS_DIR "game_projects"
 
 
 
-void AF_Project_NormaliseScenePath(AF_AppData* _appData, char* _path, uint32_t _pathSize);
-void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath);
-void AF_Project_NormaliseProjectDirectory(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath);
-void AF_Project_ResolveShaderPathPlatform(AF_AppData* _appData, char* _shaderPath, uint32_t _shaderPathSize);
-void AF_Project_SanitiseShaderName(const char* _nameInput, char* _outName, uint32_t _outNameSize);
-void AF_Project_MigrateShaderToSelectedPlatform(AF_AppData* _appData, AF_Shader* _shader);
 
 
-// TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
-// This is very messy
-void AF_Project_SanitiseShaderName(const char* _nameInput, char* _outName, uint32_t _outNameSize) {
-    if (_outName == NULL || _outNameSize == 0) {
-        return;
+// Forward declarations
+void AF_Project_SetProjectRoot(AF_AppData* _appData);
+
+// ================
+// Editor_SetProjectRoot
+// Sets the project root to the editor's project folder, which is the parent of the editor executable.
+// ================
+void AF_Project_SetProjectRoot(AF_AppData* _appData){
+    // Set the correct project root.
+    // We are in the editor, so project root should be a path of the folder for the editor, unlike a game which would set project root at "./"
+    // Project root will be "cwd/game_projects/game_name"
+    char absoluteProjectRoot[AF_MAX_PATH_CHAR_SIZE] = {0};
+    // Current working director
+    char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
+    if (AF_Project_GetCWD(cwd, sizeof(cwd)) == NULL) {
+        cwd[0] = '\0';
     }
-    _outName[0] = '\0';
-
-    if (_nameInput == NULL || _nameInput[0] == '\0') {
-        return;
-    }
-
-    char shaderFileName[AF_MAX_PATH_CHAR_SIZE] = {0};
-    char shaderStem[AF_MAX_PATH_CHAR_SIZE] = {0};
-
-    AF_File_GetFileNameOnly(_nameInput, shaderFileName, sizeof(shaderFileName));
-    AF_File_GetFileStemNoExt(shaderFileName, shaderStem, sizeof(shaderStem));
-
-    if (shaderStem[0] != '\0') {
-        snprintf(_outName, _outNameSize, "%s", shaderStem);
-    }
-}
-
-
-// TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
-// This is very messy
-void AF_Project_MigrateShaderToSelectedPlatform(AF_AppData* _appData, AF_Shader* _shader) {
-    if (_appData == NULL || _shader == NULL) {
-        return;
-    }
-
-    char resolvedShaderName[AF_MAX_PATH_CHAR_SIZE] = {0};
-
-    AF_Project_SanitiseShaderName(_shader->name, resolvedShaderName, sizeof(resolvedShaderName));
-    if (resolvedShaderName[0] == '\0') {
-        AF_Project_SanitiseShaderName(_shader->vertPath, resolvedShaderName, sizeof(resolvedShaderName));
-    }
-    if (resolvedShaderName[0] == '\0') {
-        AF_Project_SanitiseShaderName(_shader->fragPath, resolvedShaderName, sizeof(resolvedShaderName));
-    }
-
-    if (resolvedShaderName[0] != '\0') {
-        snprintf(_shader->name, AF_MAX_PATH_CHAR_SIZE, "%s", resolvedShaderName);
-    }
-
-    // Canonical policy: prefer base shader location assets/shaders/<name>.vert|frag
-    // before trying legacy platform-specific shader folders.
-    if (_shader->name[0] != '\0' && _appData->projectData.assetsPath[0] != '\0') {
-        char canonicalVertPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        char canonicalFragPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-
-        snprintf(
-            canonicalVertPath,
-            sizeof(canonicalVertPath),
-            "%s/shaders/%s.vert",
-            _appData->projectData.assetsPath,
-            _shader->name
-        );
-        snprintf(
-            canonicalFragPath,
-            sizeof(canonicalFragPath),
-            "%s/shaders/%s.frag",
-            _appData->projectData.assetsPath,
-            _shader->name
-        );
-
-        if (AF_File_Exists(canonicalVertPath) == AF_TRUE && AF_File_Exists(canonicalFragPath) == AF_TRUE) {
-            snprintf(_shader->vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", canonicalVertPath);
-            snprintf(_shader->fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", canonicalFragPath);
-            return;
-        }
-    }
-
-    if (_shader->name[0] != '\0' && _appData->projectData.assetsPath[0] != '\0') {
-        char selectedVertPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        char selectedFragPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-
-        snprintf(
-            selectedVertPath,
-            sizeof(selectedVertPath),
-            "%s/shaders/%s/%s.vert",
-            _appData->projectData.assetsPath,
-            AF_Platform_Mappings[_appData->projectData.platformData.platformType].name,
-            _shader->name
-        );
-        snprintf(
-            selectedFragPath,
-            sizeof(selectedFragPath),
-            "%s/shaders/%s/%s.frag",
-            _appData->projectData.assetsPath,
-            AF_Platform_Mappings[_appData->projectData.platformData.platformType].name,
-            _shader->name
-        );
-
-        if (AF_File_Exists(selectedVertPath) == AF_TRUE && AF_File_Exists(selectedFragPath) == AF_TRUE) {
-            snprintf(_shader->vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", selectedVertPath);
-            snprintf(_shader->fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", selectedFragPath);
-            return;
-        }
-    }
-
-    // Fallback path keeps legacy scenes loading if selected-platform shaders are missing.
-    // For bare filenames (e.g. "sprite.vert"), try to resolve from any platform.
-    AF_Project_ResolveShaderPathPlatform(_appData, _shader->vertPath, sizeof(_shader->vertPath));
-    AF_Project_ResolveShaderPathPlatform(_appData, _shader->fragPath, sizeof(_shader->fragPath));
+    snprintf(absoluteProjectRoot, sizeof(absoluteProjectRoot), "%s/%s/%s", cwd, GAME_PROJECTS_DIR, _appData->projectData.name);
+    AF_File_NormalisePath(absoluteProjectRoot);
+    AF_Log("AF_Project_SetProjectRoot: absolute project root %s\n", absoluteProjectRoot);
     
-    // If paths are still bare filenames after resolution, try to ensure full paths are built.
-    // This handles the case where JSON contains just "sprite.vert" and we need to expand it.
-    if (strstr(_shader->vertPath, "/") == NULL && _appData->projectData.assetsPath[0] != '\0' && _shader->name[0] != '\0') {
-        char attemptVertPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        char attemptFragPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        
-        // Try ALL platforms to find the shader
-        for (uint32_t i = 0; i < AF_PLATFORM_COUNT; ++i) {
-            snprintf(attemptVertPath, sizeof(attemptVertPath), "%s/shaders/%s/%s.vert",
-                _appData->projectData.assetsPath, AF_Platform_Mappings[i].name, _shader->name);
-            snprintf(attemptFragPath, sizeof(attemptFragPath), "%s/shaders/%s/%s.frag",
-                _appData->projectData.assetsPath, AF_Platform_Mappings[i].name, _shader->name);
-            
-            if (AF_File_Exists(attemptVertPath) == AF_TRUE && AF_File_Exists(attemptFragPath) == AF_TRUE) {
-                snprintf(_shader->vertPath, AF_MAX_PATH_CHAR_SIZE, "%s", attemptVertPath);
-                snprintf(_shader->fragPath, AF_MAX_PATH_CHAR_SIZE, "%s", attemptFragPath);
-                return;
-            }
-        }
-    }
+    // set the project root in app data, which is used by other systems to resolve paths.
+    snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", absoluteProjectRoot);
 }
 
-// TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
-// This is very messy
-void AF_Project_NormaliseProjectPath(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
-    if (_path == NULL || _path[0] == '\0') {
-        return;
-    }
-
-    if (AF_File_IsAbsolutePath(_path) == AF_TRUE) {
-        if (AF_File_PathExists(_path)) {
-            return;
-        }
-        char translatedPath[MAX_PROJECTDATA_FILE_PATH] = {0};
-        if (AF_File_ResolveCrossPlatformAbsolutePath(_path, translatedPath, sizeof(translatedPath))) {
-            snprintf(_path, _pathSize, "%s", translatedPath);
-            return;
-        }
-
-#ifdef AF_WEB_BUILD
-        // Web build fallback: absolute host paths are invalid in browser FS.
-        char fileName[MAX_PROJECTDATA_FILE_PATH] = {0};
-        AF_File_GetFileNameOnly(_path, fileName, sizeof(fileName));
-        if (fileName[0] != '\0') {
-            char candidate[MAX_PROJECTDATA_FILE_PATH] = {0};
-            snprintf(candidate, sizeof(candidate), "data/%s", fileName);
-            if (AF_File_PathExists(candidate)) {
-                snprintf(_path, _pathSize, "%s", candidate);
-                return;
-            }
-            snprintf(candidate, sizeof(candidate), "assets/%s", fileName);
-            if (AF_File_PathExists(candidate)) {
-                snprintf(_path, _pathSize, "%s", candidate);
-                return;
-            }
-            snprintf(_path, _pathSize, "%s", fileName);
-            return;
-        }
-#endif
-
-        return;
-    }
-
-    char originalPath[MAX_PROJECTDATA_FILE_PATH];
-    snprintf(originalPath, sizeof(originalPath), "%s", _path);
-
-    char resolvedPath[MAX_PROJECTDATA_FILE_PATH];
-    if (_projectRoot != NULL && _projectRoot[0] != '\0') {
-        snprintf(resolvedPath, sizeof(resolvedPath), "%s/%s", _projectRoot, originalPath);
-        if (AF_File_Exists(resolvedPath) == AF_TRUE) {
-            snprintf(_path, _pathSize, "%s", resolvedPath);
-            return;
-        }
-    }
-
-    char appDataDirectory[MAX_PROJECTDATA_FILE_PATH];
-    AF_File_GetDirectoryPath(_appDataPath, appDataDirectory, sizeof(appDataDirectory));
-    if (appDataDirectory[0] != '\0') {
-        snprintf(resolvedPath, sizeof(resolvedPath), "%s/../%s", appDataDirectory, originalPath);
-        if (AF_File_Exists(resolvedPath) == AF_TRUE) {
-            snprintf(_path, _pathSize, "%s", resolvedPath);
-            return;
-        }
-    }
-
-    if (AF_File_Exists(originalPath) == AF_TRUE) {
-        return;
-    }
-}
-
-// TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
-void AF_Project_NormaliseProjectDirectory(char* _path, uint32_t _pathSize, const char* _projectRoot, const char* _appDataPath) {
-    if (_path == NULL || _path[0] == '\0') {
-        return;
-    }
-
-    if (AF_File_IsAbsolutePath(_path) == AF_TRUE) {
-        if (AF_File_PathExists(_path)) {
-            return;
-        }
-        char translatedPath[MAX_PROJECTDATA_FILE_PATH] = {0};
-        if (AF_File_ResolveCrossPlatformAbsolutePath(_path, translatedPath, sizeof(translatedPath))) {
-            snprintf(_path, _pathSize, "%s", translatedPath);
-        }
-        return;
-    }
-
-    char originalPath[MAX_PROJECTDATA_FILE_PATH];
-    snprintf(originalPath, sizeof(originalPath), "%s", _path);
-
-    if (_projectRoot != NULL && _projectRoot[0] != '\0') {
-        char projectRootCandidate[MAX_PROJECTDATA_FILE_PATH];
-        snprintf(projectRootCandidate, sizeof(projectRootCandidate), "%s/%s", _projectRoot, originalPath);
-        if (AF_File_PathExists(projectRootCandidate) == AF_TRUE) {
-            snprintf(_path, _pathSize, "%s", projectRootCandidate);
-            return;
-        }
-    }
-
-    char appDataDirectory[MAX_PROJECTDATA_FILE_PATH];
-    AF_File_GetDirectoryPath(_appDataPath, appDataDirectory, sizeof(appDataDirectory));
-    if (appDataDirectory[0] != '\0') {
-        char appDataCandidate[MAX_PROJECTDATA_FILE_PATH];
-        snprintf(appDataCandidate, sizeof(appDataCandidate), "%s/../%s", appDataDirectory, originalPath);
-        if (AF_File_PathExists(appDataCandidate) == AF_TRUE) {
-            snprintf(_path, _pathSize, "%s", appDataCandidate);
-            return;
-        }
-    }
-
-    if (AF_File_PathExists(originalPath) == AF_TRUE) {
-        // Preserve the existing relative path only if no project-root or app-data-based resolution applied.
-        return;
-    }
-}
-
-// ================
-// AF_Project_NormaliseScenePath
-// Normalises a scene path by attempting to resolve it from the project root and app data directories.
-// ================
-void AF_Project_NormaliseScenePath(AF_AppData* _appData, char* _path, uint32_t _pathSize) {
-    if (_appData == NULL || _path == NULL || _path[0] == '\0') {
-        return;
-    }
-
-    AF_Project_NormaliseProjectDirectory(
-        _path,
-        _pathSize,
-        _appData->projectData.projectRoot,
-        _appData->projectData.defaultAppDataPath
-    );
-}
-
-// TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
-
-void AF_Project_ResolveShaderPathPlatform(AF_AppData* _appData, char* _shaderPath, uint32_t _shaderPathSize) {
-    if (_appData == NULL || _shaderPath == NULL || _shaderPath[0] == '\0') {
-        return;
-    }
-
-    char shaderFileName[AF_MAX_PATH_CHAR_SIZE] = {0};
-    AF_File_GetFileNameOnly(_shaderPath, shaderFileName, sizeof(shaderFileName));
-    if (shaderFileName[0] != '\0' && _appData->projectData.assetsPath[0] != '\0') {
-        char canonicalPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        snprintf(
-            canonicalPath,
-            sizeof(canonicalPath),
-            "%s/shaders/%s",
-            _appData->projectData.assetsPath,
-            shaderFileName
-        );
-
-        if (AF_File_Exists(canonicalPath) == AF_TRUE) {
-            snprintf(_shaderPath, _shaderPathSize, "%s", canonicalPath);
-            return;
-        }
-
-        char selectedPlatformPath[AF_MAX_PATH_CHAR_SIZE] = {0};
-        snprintf(
-            selectedPlatformPath,
-            sizeof(selectedPlatformPath),
-            "%s/shaders/%s/%s",
-            _appData->projectData.assetsPath,
-            AF_Platform_Mappings[_appData->projectData.platformData.platformType].name,
-            shaderFileName
-        );
-
-        if (AF_File_Exists(selectedPlatformPath) == AF_TRUE) {
-            snprintf(_shaderPath, _shaderPathSize, "%s", selectedPlatformPath);
-            return;
-        }
-    }
-
-    AF_Project_NormaliseScenePath(_appData, _shaderPath, _shaderPathSize);
-    if (AF_File_Exists(_shaderPath) == AF_TRUE) {
-        return;
-    }
-
-    const char* shaderMarker = strstr(_shaderPath, "/shaders/");
-    if (shaderMarker == NULL) {
-        return;
-    }
-
-    const char* platformStart = shaderMarker + strlen("/shaders/");
-    const char* platformEnd = strchr(platformStart, '/');
-    if (platformEnd == NULL) {
-        return;
-    }
-
-    int prefixLength = (int)(platformStart - _shaderPath);
-    const char* fileSuffix = platformEnd + 1;
-
-    char candidatePath[AF_MAX_PATH_CHAR_SIZE];
-    for (uint32_t i = 0; i < AF_PLATFORM_COUNT; ++i) {
-        snprintf(
-            candidatePath,
-            sizeof(candidatePath),
-            "%.*s%s/%s",
-            prefixLength,
-            _shaderPath,
-            AF_Platform_Mappings[i].name,
-            fileSuffix
-        );
-
-        if (AF_File_Exists(candidatePath) == AF_TRUE) {
-            snprintf(_shaderPath, _shaderPathSize, "%s", candidatePath);
-            return;
-        }
-    }
-}
-
-
-// AF_File_ExpandShaderPaths
-// Expands bare shader names in loaded ECS to full platform-specific paths
-// Does NOT initialize mesh buffers (requires OpenGL context)
-// ================
-static void AF_File_ExpandShaderPaths(AF_AppData* _appData) {
-    if (_appData == NULL) {
-        return;
-    }
-
-    // Expand shader paths in mesh components
-    for (uint32_t i = 0; i < _appData->ecs.meshSparseSet.count; ++i) {
-        AF_CMesh* meshComponent = &_appData->ecs.meshSparseSet.denseComponent[i];
-        if (meshComponent != NULL && AF_Component_GetHas(meshComponent->enabled) == AF_TRUE) {
-            AF_Project_MigrateShaderToSelectedPlatform(_appData, &meshComponent->shader);
-        }
-    }
-
-    // Expand shader paths in sprite components
-    for (uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i) {
-        if (AF_Component_GetHas(_appData->ecs.sprites[i].enabled) == AF_TRUE) {
-            AF_Project_MigrateShaderToSelectedPlatform(_appData, &_appData->ecs.sprites[i].spriteMesh.shader);
-        }
-    }
-
-    // Expand shader paths in text components
-    for (uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i) {
-        if (AF_Component_GetHas(_appData->ecs.texts[i].enabled) == AF_TRUE) {
-            AF_Project_MigrateShaderToSelectedPlatform(_appData, &_appData->ecs.texts[i].mesh.shader);
-        }
-    }
-}
 
 // ================
 // AF_File_SyncEntities
 // Sync the entities loaded
 // ================
 void AF_Project_SyncEntities(AF_AppData* _appData) {
-
-    // TODO: maybe put this back in
-    //AF_Log_Warning("AF_Project_SyncEntities: disabled destroying mesh buffers before ecs sync. may need to re-implement. Currently cause\n");
-    /*
-    for(uint32_t i = 0; i < _appData->ecs.entitiesCount; ++i){
-        af_bool_t hasMesh = AF_Component_GetHas(_appData->ecs.meshes[i].enabled);
-        if(hasMesh == AF_FALSE){
-            continue;
-        }
-        AF_Renderer_DestroyMeshBuffers(&_appData->ecs.meshes[i]);
-    }*/
-
-    // Load ecs data from file
+    // Sync the entities loaded    // Load ecs data from file
     // resync the pointers so we don't get null reference
     AF_ECS_ReSyncComponents(&_appData->ecs);
     // update thje model matrix for all transforms
@@ -476,6 +115,7 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
     // Reset the assets loaded,
     _appData->assets = AF_Assets_ZERO();
 
+
     // Load Reload meshes
     for (uint32_t i = 0; i < _appData->ecs.meshSparseSet.count; ++i) {
         // Load Mesh
@@ -484,20 +124,44 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
              AF_Log_Error("AF_Project_SyncEntities: Failed to get mesh component for entity %u\n", i);
              continue;
         }
+
+        // Mesh Path
+        // Normalise the mesh path to ensure it's correct relative to the project root
+        char absoluteMeshPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        snprintf(absoluteMeshPath, sizeof(absoluteMeshPath), "%s/%s", _appData->projectData.projectRoot, meshComponent->meshPath);
+        AF_File_NormalisePath(absoluteMeshPath);
+        snprintf(meshComponent->meshPath, sizeof(meshComponent->meshPath), "%s", absoluteMeshPath);
+
+        // Shader Paths
+        char absoluteVertexShaderPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        char absoluteFragmentShaderPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        snprintf(absoluteVertexShaderPath, sizeof(absoluteVertexShaderPath), "%s/%s", _appData->projectData.projectRoot, meshComponent->shader.vertPath);
+        snprintf(absoluteFragmentShaderPath, sizeof(absoluteFragmentShaderPath), "%s/%s", _appData->projectData.projectRoot, meshComponent->shader.fragPath);
+        AF_File_NormalisePath(absoluteVertexShaderPath);
+        AF_File_NormalisePath(absoluteFragmentShaderPath);
+        snprintf(meshComponent->shader.vertPath, sizeof(meshComponent->shader.vertPath), "%s", absoluteVertexShaderPath);
+        snprintf(meshComponent->shader.fragPath, sizeof(meshComponent->shader.fragPath), "%s", absoluteFragmentShaderPath);
+
+        // Texture Paths
+        char absoluteDiffuseTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+        snprintf(absoluteDiffuseTexturePath, sizeof(absoluteDiffuseTexturePath), "%s/%s", _appData->projectData.projectRoot, meshComponent->material.diffuseTexture.path);
+        AF_File_NormalisePath(absoluteDiffuseTexturePath);
+        snprintf(meshComponent->material.diffuseTexture.path, sizeof(meshComponent->material.diffuseTexture.path), "%s", absoluteDiffuseTexturePath);
+
+
+
+
         if(AF_Component_GetHas(meshComponent->enabled) == AF_FALSE){
             continue;
         }
 
-        AF_Project_NormaliseScenePath(_appData, meshComponent->meshPath, sizeof(meshComponent->meshPath));
-        AF_Log("AF_Project:sync entities: disabled migrate shader \n");
-        //AF_Project_MigrateShaderToSelectedPlatform(_appData, &meshComponent->shader);
-        AF_Project_NormaliseScenePath(_appData, meshComponent->material.diffuseTexture.path, sizeof(meshComponent->material.diffuseTexture.path));
-        
         af_bool_t meshLoadSuccess = AF_MeshLoad_InitMesh(&_appData->assets, meshComponent, meshComponent->meshPath);
         if(meshLoadSuccess == AF_FALSE){
             AF_Log_Error("AF_Project_SyncEntities: Failed to load mesh for entity %u from path %s\n", i, meshComponent->meshPath);
             continue;
         }
+
+        // Load diffuse texture if there is one
         if (meshComponent->material.diffuseTexture.path[0] != '\0') {
                 AF_TextureLoader_ReLoadTexture(&_appData->assets, &meshComponent->material.diffuseTexture);
         }
@@ -517,7 +181,12 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         af_bool_t hasTerrain = AF_Component_GetHas(_appData->ecs.terrains[i].enabled);
         if (hasTerrain == AF_TRUE) {
             AF_CTerrain* terrainComponent = &_appData->ecs.terrains[i];
-            AF_Project_NormaliseScenePath(_appData, terrainComponent->heightMapPath, sizeof(terrainComponent->heightMapPath));
+            //AF_Project_NormaliseScenePath(_appData, terrainComponent->heightMapPath, sizeof(terrainComponent->heightMapPath));
+            char absoluteHeightMapPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            snprintf(absoluteHeightMapPath, sizeof(absoluteHeightMapPath), "%s/%s", _appData->projectData.projectRoot, terrainComponent->heightMapPath);
+            AF_File_NormalisePath(absoluteHeightMapPath);
+                snprintf(terrainComponent->heightMapPath, sizeof(terrainComponent->heightMapPath), "%s", absoluteHeightMapPath);
+
             if (terrainComponent->heightMapPath[0] != '\0') {
                 terrainComponent->heightmapTextureID = AF_TextureLoader_LoadTexture(terrainComponent->heightMapPath);
             }
@@ -579,29 +248,17 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         if (hasSprite == AF_TRUE) {
             AF_CSprite* spriteComponent = &_appData->ecs.sprites[i];
 
-            AF_Project_NormaliseScenePath(_appData, spriteComponent->spriteMesh.meshPath, sizeof(spriteComponent->spriteMesh.meshPath));
-            AF_Log("AF_Project_SyncEntities: disabled migrate shader for sprite component %u\n", i);
-            //AF_Project_MigrateShaderToSelectedPlatform(_appData, &spriteComponent->spriteMesh.shader);
-            AF_Project_NormaliseScenePath(_appData, spriteComponent->spriteMesh.material.diffuseTexture.path, sizeof(spriteComponent->spriteMesh.material.diffuseTexture.path));
+            
+            // Shader Paths
+            char absoluteVertexShaderPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            char absoluteFragmentShaderPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            snprintf(absoluteVertexShaderPath, sizeof(absoluteVertexShaderPath), "%s/%s", _appData->projectData.projectRoot, spriteComponent->spriteMesh.shader.vertPath);
+            snprintf(absoluteFragmentShaderPath, sizeof(absoluteFragmentShaderPath), "%s/%s", _appData->projectData.projectRoot, spriteComponent->spriteMesh.shader.fragPath);
+            AF_File_NormalisePath(absoluteVertexShaderPath);
+            AF_File_NormalisePath(absoluteFragmentShaderPath);
+            snprintf(spriteComponent->spriteMesh.shader.vertPath, sizeof(spriteComponent->spriteMesh.shader.vertPath), "%s", absoluteVertexShaderPath);
+            snprintf(spriteComponent->spriteMesh.shader.fragPath, sizeof(spriteComponent->spriteMesh.shader.fragPath), "%s", absoluteFragmentShaderPath);
 
-            // Legacy scene compatibility: older editor versions could save sprite components
-            // with mesh shaders like "unlit" or "litShadowTexture" which are 3D world-space.
-            // Sprite rendering expects the 2D screen-space sprite shader.
-            /**/
-            if ((strcmp(spriteComponent->spriteMesh.shader.name, "unlit") == 0) ||
-                (strcmp(spriteComponent->spriteMesh.shader.name, "litShadowTexture") == 0)) {
-                snprintf(spriteComponent->spriteMesh.shader.name, AF_MAX_PATH_CHAR_SIZE, "%s", "sprite");
-                snprintf(
-                    spriteComponent->spriteMesh.shader.vertPath,
-                    AF_MAX_PATH_CHAR_SIZE,
-                    "%s/shaders/sprite.vert",
-                    _appData->projectData.assetsPath                );
-                snprintf(
-                    spriteComponent->spriteMesh.shader.fragPath,
-                    AF_MAX_PATH_CHAR_SIZE,
-                    "%s/shaders/sprite.frag",
-                    _appData->projectData.assetsPath                );
-            }
             
             // Reload the sprite's mesh and texture from their file paths.
             // AF_MeshLoad_FromFile will handle loading the model data and shader.
@@ -617,6 +274,12 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
                 spriteComponent->spriteMesh.shader.shaderID = AF_MeshLoad_Shader_LoadFromAssets(&_appData->assets, spriteComponent->spriteMesh.shader.vertPath, spriteComponent->spriteMesh.shader.fragPath);
             }
 
+            // sprite texture paths
+            char absoluteDiffuseTexturePath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            snprintf(absoluteDiffuseTexturePath, sizeof(absoluteDiffuseTexturePath), "%s/%s", _appData->projectData.projectRoot, spriteComponent->spriteMesh.material.diffuseTexture.path);
+            AF_File_NormalisePath(absoluteDiffuseTexturePath);
+            snprintf(spriteComponent->spriteMesh.material.diffuseTexture.path, sizeof(spriteComponent->spriteMesh.material.diffuseTexture.path), "%s", absoluteDiffuseTexturePath);
+
             //snprintf(spriteComponent->spriteMesh.material.diffuseTexture.path, AF_MAX_PATH_CHAR_SIZE, "assets/textures/%s", spriteComponent->spriteMesh.material.diffuseTexture.path);
             if (spriteComponent->spriteMesh.material.diffuseTexture.path[0] != '\0') {
                AF_TextureLoader_ReLoadTexture(&_appData->assets, &spriteComponent->spriteMesh.material.diffuseTexture);
@@ -627,11 +290,18 @@ void AF_Project_SyncEntities(AF_AppData* _appData) {
         af_bool_t hasText = AF_Component_GetHas(_appData->ecs.texts[i].enabled);
         if (hasText == AF_TRUE) {
             AF_CText* textComponent = &_appData->ecs.texts[i];
-            AF_Project_NormaliseScenePath(_appData, textComponent->mesh.meshPath, sizeof(textComponent->mesh.meshPath));
-            AF_Log("AF_Project_SyncEntities: disabled migrate shader for text component %u\n", i);
-            //AF_Project_MigrateShaderToSelectedPlatform(_appData, &textComponent->mesh.shader);
-            AF_Project_NormaliseScenePath(_appData, textComponent->font.fontPath, sizeof(textComponent->font.fontPath));
-            AF_Project_NormaliseScenePath(_appData, textComponent->fontPath, sizeof(textComponent->fontPath));
+            
+            // Shader
+            char absoluteVertexShaderPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            char absoluteFragmentShaderPath[AF_MAX_PATH_CHAR_SIZE] = {0};
+            snprintf(absoluteVertexShaderPath, sizeof(absoluteVertexShaderPath), "%s/%s", _appData->projectData.projectRoot, textComponent->mesh.shader.vertPath);
+            snprintf(absoluteFragmentShaderPath, sizeof(absoluteFragmentShaderPath), "%s/%s", _appData->projectData.projectRoot, textComponent->mesh.shader.fragPath);
+            AF_File_NormalisePath(absoluteVertexShaderPath);
+            AF_File_NormalisePath(absoluteFragmentShaderPath);
+            snprintf(textComponent->mesh.shader.vertPath, sizeof(textComponent->mesh.shader.vertPath), "%s", absoluteVertexShaderPath);
+            snprintf(textComponent->mesh.shader.fragPath, sizeof(textComponent->mesh.shader.fragPath), "%s", absoluteFragmentShaderPath);
+            
+            
             uint32_t fontSize = 1;
             if(textComponent->font.fontSize > 0) {
                 fontSize = textComponent->font.fontSize;
@@ -727,20 +397,23 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
         return AF_FALSE;
     }
 
-    char cwd[MAX_PROJECTDATA_FILE_PATH] = {0};
-    if (AF_PROJECT_GETCWD(cwd, sizeof(cwd)) == NULL) {
+    // Current working director
+    char cwd[AF_MAX_PATH_CHAR_SIZE] = {0};
+    if (AF_Project_GetCWD(cwd, sizeof(cwd)) == NULL) {
         cwd[0] = '\0';
     }
 
-    char appDataPathAbsolute[MAX_PROJECTDATA_FILE_PATH] = {0};
-    snprintf(appDataPathAbsolute, sizeof(appDataPathAbsolute), "%s", _appDataPath);
-    AF_File_MakeAbsolutePath(appDataPathAbsolute, sizeof(appDataPathAbsolute), cwd);
+    // Create the appData Absolute path
+    char appDataPathAbsolute[AF_MAX_PATH_CHAR_SIZE] = {0};
+    snprintf(appDataPathAbsolute, sizeof(appDataPathAbsolute), "%s/%s", cwd, _appDataPath);
+    AF_File_NormalisePath(appDataPathAbsolute);
+    
     
     AF_Log("AF_Project_Load: Attempting to load project data from %s\n", appDataPathAbsolute);
     // Load scene stored as default scene in the project data
     FILE* appDataFile = AF_File_Open(appDataPathAbsolute, "rb");// switch to binary read mode as cause// "r");
     if (appDataFile == NULL) {
-        AF_Log_Error("Editor_Utils_OpenProject: Failed to open project data file %s\n", appDataPathAbsolute);
+        AF_Log_Error("AF_Project_Load: Failed to open project data file %s\n", appDataPathAbsolute);
         return AF_FALSE;
     }
 
@@ -758,103 +431,15 @@ af_bool_t AF_Project_Load(AF_AppData* _appData, const char* _appDataPath) {
         return AF_FALSE;
     }
 
-#ifndef AF_WEB_BUILD
-    // Native/editor loads may open a project JSON from outside the current working
-    // directory. Resolve a relative projectRoot from the appData file location first,
-    // so project assets stay anchored to the selected project rather than editor CWD.
-    if (AF_File_IsAbsolutePath(_appData->projectData.projectRoot) == AF_FALSE &&
-        _appData->projectData.projectRoot[0] != '\0') {
-        char appDataDirectory[MAX_PROJECTDATA_FILE_PATH] = {0};
-        AF_File_GetDirectoryPath(appDataPathAbsolute, appDataDirectory, sizeof(appDataDirectory));
+    // set the project root.
+    AF_Project_SetProjectRoot(_appData);
 
-        if (appDataDirectory[0] != '\0') {
-            char candidateProjectRoot[MAX_PROJECTDATA_FILE_PATH] = {0};
-
-            snprintf(candidateProjectRoot, sizeof(candidateProjectRoot), "%s/../%s", appDataDirectory, _appData->projectData.projectRoot);
-            if (AF_File_PathExists(candidateProjectRoot) == AF_TRUE) {
-                snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", candidateProjectRoot);
-            } else {
-                snprintf(candidateProjectRoot, sizeof(candidateProjectRoot), "%s/%s", appDataDirectory, _appData->projectData.projectRoot);
-                if (AF_File_PathExists(candidateProjectRoot) == AF_TRUE) {
-                    snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", candidateProjectRoot);
-                }
-            }
-        }
-    }
-#endif
-
-#ifdef AF_WEB_BUILD
-    // Web runtime uses the preloaded virtual filesystem. Keep project paths portable
-    // instead of expanding them into host-machine absolute paths.
-    if (_appData->projectData.projectRoot[0] == '\0' || strcmp(_appData->projectData.projectRoot, ".") == 0) {
-        snprintf(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), "%s", ".");
-    }
-
-    AF_Project_NormaliseProjectDirectory(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), _appData->projectData.projectRoot, appDataPathAbsolute);
-    AF_Project_NormaliseProjectPath(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), _appData->projectData.projectRoot, appDataPathAbsolute);
-    AF_Project_NormaliseProjectPath(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), _appData->projectData.projectRoot, appDataPathAbsolute);
-
-    if (AF_File_IsAbsolutePath(_appData->projectData.assetsPath) == AF_TRUE) {
-        snprintf(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), "%s", "assets");
-    }
-    if (AF_File_IsAbsolutePath(_appData->projectData.defaultAppDataPath) == AF_TRUE) {
-        snprintf(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), "%s", "data/appData.json");
-    }
-    if (AF_File_IsAbsolutePath(_appData->projectData.defaultScenePath) == AF_TRUE) {
-        char sceneFileName[MAX_PROJECTDATA_FILE_PATH] = {0};
-        AF_Project_GetFileNameOnly(_appData->projectData.defaultScenePath, sceneFileName, sizeof(sceneFileName));
-        if (sceneFileName[0] != '\0') {
-            snprintf(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), "data/%s", sceneFileName);
-        } else {
-            snprintf(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), "%s", "data/menu.scene");
-        }
-    }
-#else
-    AF_File_MakeAbsolutePath(_appData->projectData.projectRoot, sizeof(_appData->projectData.projectRoot), cwd);
-    AF_Project_NormaliseProjectDirectory(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), _appData->projectData.projectRoot, appDataPathAbsolute);
-    AF_Project_NormaliseProjectPath(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), _appData->projectData.projectRoot, appDataPathAbsolute);
-    AF_Project_NormaliseProjectPath(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), _appData->projectData.projectRoot, appDataPathAbsolute);
-
-    AF_File_MakeAbsolutePath(_appData->projectData.assetsPath, sizeof(_appData->projectData.assetsPath), cwd);
-    AF_File_MakeAbsolutePath(_appData->projectData.defaultAppDataPath, sizeof(_appData->projectData.defaultAppDataPath), cwd);
-    AF_File_MakeAbsolutePath(_appData->projectData.defaultScenePath, sizeof(_appData->projectData.defaultScenePath), cwd);
-#endif
-
-    // for now, clear ECS data as we will load the default scene
-    AF_ECS_Init(&_appData->ecs); // Reset the ECS data
-
-    // Load scene stored as default scene in the project data
-    FILE* sceneFile = AF_File_Open(_appData->projectData.defaultScenePath, "rb");// switch to binary read mode as cause// "r");
-    if (sceneFile == NULL) {
-        AF_Log_Error("Editor_Utils_OpenProject: Failed to open default scene file %s\n", _appData->projectData.defaultScenePath);
-        return AF_FALSE;
-    }
-
-    // Load the JSON data from the file
-    AF_Log("Editor_Utils_OpenProject: Loading default scene from %s\n", _appData->projectData.defaultScenePath);
-    // Load the JSON data into the ECS
-    af_bool_t sceneResult = AF_JSON_LoadSceneJson(_appData, sceneFile);
-    if(sceneResult == AF_FALSE){
-       AF_Log_Error("Editor_Utils_OpenProject: Failed to load default scene from %s\n", _appData->projectData.defaultScenePath);
-       return AF_FALSE;
-    }
-    AF_File_Close(sceneFile);
-
-    // Expand shader paths from bare names (e.g. "sprite.vert") to full platform-specific paths
-    // This is needed because scenes are now persisted with portable shader identity (name only),
-    // and must be expanded to the selected platform's shader directory at load time.
-    // We do NOT initialize mesh buffers here (requires OpenGL context not yet created).
-    AF_File_ExpandShaderPaths(_appData);
-
-    // Clean up the render objects first as some data is malloc
-   AF_Log("AF_Project_Load: Finished Loading\n");
-    // Return true only if the platform string was successfully found and extracted
     return AF_TRUE;
 }
 
 // TODO: refactor this, should it be exposed as a public function? maybe not, but it is used in multiple places in the editor codebase.
 
-af_bool_t AF_Project_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
+af_bool_t AF_Project_LoadScene(AF_AppData *_appData, const char *_sceneJSONFilePath)
 {
     af_bool_t returnValue = AF_FALSE;
     AF_Event_ResetRegistry(&_appData->eventRegistry);
@@ -863,57 +448,35 @@ af_bool_t AF_Project_LoadScene(AF_AppData *_appData, const char *_sceneFilePath)
     AF_Script_Call_Destroy(_appData);
     AF_Script_UnloadScripts(&_appData->ecs);
 
-    AF_ECS_Init(&_appData->ecs);
-
     // Tear down old Bullet world first. Re-init happens after scene JSON is loaded.
     AF_Physics_Shutdown(&_appData->physicsEngineHandle);
 
-    // Normalize the requested scene path so editor-relative paths resolve consistently.
-    char resolvedScenePath[MAX_PROJECTDATA_FILE_PATH] = {0};
-    if (_sceneFilePath && _sceneFilePath[0] != '\0') {
-        snprintf(resolvedScenePath, sizeof(resolvedScenePath), "%s", _sceneFilePath);
-        AF_Project_NormaliseScenePath(_appData, resolvedScenePath, sizeof(resolvedScenePath));
-    }
+    // Clear the ECS to remove all existing entities and components before loading the new scene.
+    AF_ECS_Init(&_appData->ecs);
+
 
     // Load the ECS from the file
-    FILE* sceneFile = AF_File_Open(resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath, "rb");
+    FILE* sceneFile = AF_File_Open(_sceneJSONFilePath, "rb");
     if (sceneFile == NULL) {
-        AF_Log_Error("AF_Project_LoadScene: Failed to open scene file %s\n", resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath);
+        AF_Log_Error("AF_Project_LoadScene: Failed to open scene file %s\n", _sceneJSONFilePath);
         return AF_FALSE;
     }
 
     af_bool_t sceneLoaded = AF_JSON_LoadSceneJson(_appData, sceneFile);
     AF_File_Close(sceneFile);
 
-    AF_Log("AF_LoadScene: Finished loading scene from %s\n", resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath);
+    AF_Log("AF_LoadScene: Finished loading scene from %s\n", _sceneJSONFilePath);
 
-    if (sceneLoaded == AF_TRUE) {
-        const char* scenePathToStore = resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath;
-        AF_Log("AF_LoadScene: Successfully loaded scene from %s\n", scenePathToStore);
-        // Track the active scene so menu-bar saves go to the right file
-        snprintf(_appData->projectData.defaultScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", scenePathToStore);
+    AF_Project_SyncEntities(_appData);
 
-        // Resolve shader paths now that scene JSON is loaded.
-        // This matches AF_Project_Load behavior and avoids invalid shader references on runtime scene swap.
-        AF_Log("AF_LoadScene: expanding shader paths for scene %s\n", scenePathToStore);
-        AF_File_ExpandShaderPaths(_appData);
+    // Build Bullet bodies from the freshly loaded/synced ECS scene.
+    AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
+    AF_Renderer_InitCollisionGeomtery(&_appData->ecs);
 
-        AF_Project_SyncEntities(_appData);
+    AF_Script_Load_And_Bind_Functions(_appData);
+    AF_Script_Call_Start(_appData);
 
-        // Build Bullet bodies from the freshly loaded/synced ECS scene.
-        AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
-        AF_Renderer_InitCollisionGeomtery(&_appData->ecs);
-
-        AF_Script_Load_And_Bind_Functions(_appData);
-        AF_Script_Call_Start(_appData);
-
-        returnValue = AF_TRUE;
-    } else {
-        // Keep physics handle valid even when scene load fails.
-        AF_Physics_Init(&_appData->ecs, &_appData->physicsEngineHandle);
-        AF_Log_Error("AF_Project_LoadScene: Failed to load scene %s\n", resolvedScenePath[0] != '\0' ? resolvedScenePath : _sceneFilePath);
-    }
-    return returnValue;
+    return AF_TRUE;
 }
 
 // ================
@@ -925,7 +488,7 @@ void AF_Project_RequestSceneChange(AF_AppData* _appData, const char* _sceneFileP
     if (_appData == NULL || _sceneFilePath == NULL) {
         return;
     }
-    snprintf(_appData->projectData.pendingScenePath, MAX_PROJECTDATA_FILE_PATH, "%s", _sceneFilePath);
+    snprintf(_appData->projectData.pendingScenePath, AF_MAX_PATH_CHAR_SIZE, "%s", _sceneFilePath);
     _appData->projectData.hasPendingSceneChange = AF_TRUE;
     AF_Log("AF_Project_RequestSceneChange: Scene change to '%s' queued\n", _sceneFilePath);
 }

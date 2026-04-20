@@ -775,7 +775,7 @@ af_bool_t AF_Physics_Raycast(const Ray* _ray, AF_ECS* _ecs, void* _physicsEngine
 af_bool_t AF_Physics_Shutdown(void** _physicsEngineHandle) {
 	AF_Log("AF_Physics_Shutdown: Shutting down Bullet physics engine.\n");
 	if (_physicsEngineHandle == nullptr || *_physicsEngineHandle == nullptr) {
-		AF_Log_Error("AF_Physics_Shutdown: Physics engine handle is null during shutdown.\n");
+		AF_Log_Warning("AF_Physics_Shutdown: Physics engine handle is null during shutdown or doesn't exist.\n");
 		return AF_FALSE;
 	}
 	

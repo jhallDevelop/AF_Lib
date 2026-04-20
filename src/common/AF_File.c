@@ -486,7 +486,7 @@ af_bool_t AF_File_PathExists(const char* _path) {
     if (_path == NULL || _path[0] == '\0') {
         return AF_FALSE;
     }
-    return (AF_PROJECT_ACCESS(_path, 0) == 0) ? AF_TRUE : AF_FALSE;
+    return (AF_Project_ACCESS(_path, 0) == 0) ? AF_TRUE : AF_FALSE;
 }
 
 // ================
@@ -638,8 +638,7 @@ af_bool_t AF_File_ResolveCrossPlatformAbsolutePath(const char* sourcePath, char*
 // Converts a given path to an absolute path based on a provided base directory.
 // If the input path is already absolute, it resolves it to a canonical absolute path.
 // If the input path is relative, it combines it with the base directory to form an absolute path.
-// The resulting absolute path is stored in the provided output buffer, which has a specified size to
-// prevent buffer overflows.
+// The resulting absolute path is stored in the provided output buffer, which has a specified size to prevent buffer overflows.
 // ================
 void AF_File_MakeAbsolutePath(char* _path, uint32_t _pathSize, const char* _baseDir) {
     if (_path == NULL || _path[0] == '\0' || _baseDir == NULL || _baseDir[0] == '\0') {
@@ -663,7 +662,7 @@ void AF_File_MakeAbsolutePath(char* _path, uint32_t _pathSize, const char* _base
 // AF_File_GetDirectoryPath
 // Extracts the directory path from a full file path and stores it in the provided buffer.
 // This function takes a full file path as input and extracts the directory portion of the path, excluding the file name.
-// The extracted directory path is stored in the provided output buffer, which has a specified size to
+// The extracted directory path is stored in the provided output buffer, which has a specified size to prevent buffer overflows.
 // ================
 void AF_File_GetDirectoryPath(const char* _filePath, char* _directoryPath, uint32_t _directoryPathSize) {
     if (_directoryPath == NULL || _directoryPathSize == 0) {
@@ -694,8 +693,7 @@ void AF_File_GetDirectoryPath(const char* _filePath, char* _directoryPath, uint3
 // AF_File_GetFileNameOnly
 // Extracts the file name from a full file path and stores it in the provided buffer.
 // This function takes a full file path as input and extracts the file name portion of the path.
-// The extracted file name is stored in the provided output buffer, which has a specified size to
-// prevent buffer overflows.
+// The extracted file name is stored in the provided output buffer, which has a specified size to prevent buffer overflows.
 // ================
 void AF_File_GetFileNameOnly(const char* _path, char* _outFileName, uint32_t _outFileNameSize) {
     if (_outFileName == NULL || _outFileNameSize == 0) {

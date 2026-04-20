@@ -18,15 +18,14 @@
 #ifdef _WIN32
 #include <direct.h>
 #include <io.h>
-#define AF_PROJECT_GETCWD _getcwd
-#define AF_PROJECT_ACCESS _access
+#define AF_Project_GetCWD _getcwd
+#define AF_Project_ACCESS _access
 #else
 #include <unistd.h>
-#define AF_PROJECT_GETCWD getcwd
-#define AF_PROJECT_ACCESS access
+#define AF_Project_GetCWD getcwd
+#define AF_Project_ACCESS access
 #endif
 
-#define DEFAULT_CHAR_BUFF_SIZE 1024
 #define LARGE_CHAR_BUFF_SIZE 2048
 
 #ifdef __cplusplus
@@ -44,7 +43,7 @@ AF_LIB_API void AF_File_WriteFile(FILE* _filePtr, void* _data, size_t dataSize);
 AF_LIB_API void AF_File_ListFiles(const char* path, AF_FileList* _fileList, af_bool_t _isAlphabetical);
 AF_LIB_API af_bool_t AF_File_MakeDirectory(const char* _filePath);
 AF_LIB_API af_bool_t AF_File_ChangeDirectory(const char* path);
-int32_t AF_File_CompareItemsByValue(const void* lhs, const void* rhs);
+AF_LIB_API int32_t AF_File_CompareItemsByValue(const void* lhs, const void* rhs);
 AF_LIB_API void AF_File_NormalisePath(char* path);
 AF_LIB_API af_bool_t AF_File_RelativizePath(const char* _inPath, const char* _projectRoot, char* _outPath, uint32_t _outPathSize);
 AF_LIB_API af_bool_t AF_File_IsAbsolutePath(const char* _path);
