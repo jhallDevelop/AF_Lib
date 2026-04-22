@@ -646,14 +646,10 @@ void AF_Script_Load_And_Bind_Functions(AF_AppData* _appData){
                 }
 #endif
             }
+            
 
-            if (scriptPathResolved == AF_FALSE && script->scriptName[0] != '\0') {
-#ifdef _WIN32
-                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s/%s%s", winHostSubdir, script->scriptName, scriptExt);
-#else
-                snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "scripts/%s%s", script->scriptName, scriptExt);
-#endif
-            }
+            snprintf(script->scriptFullPath, AF_MAX_PATH_CHAR_SIZE, "%s/bin/%s/scripts/%s%s", _appData->projectData.projectRoot, platformName, script->scriptName, scriptExt);
+            AF_File_NormalisePath(script->scriptFullPath);
 
             // attempt to load the script
             AF_Log("AF_Script_Load_And_Bind_Functions: loading script: %s (Entity: %u, Script: %u)\n", script->scriptFullPath, i, scriptID);
