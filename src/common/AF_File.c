@@ -46,8 +46,12 @@ FILE* AF_File_Open(const char* path, const char* mode) {
 
     FILE* filePtr = NULL;
     int32_t result = 0;
-    result = fopen_s(&filePtr, path, mode);
-    if (result != 0) {  
+    #if defined(_WIN64)
+        result = fopen_s(&filePtr, path, mode);
+    #else
+        filePtr = fopen(path, mode);
+    #endif
+    if (result != 0 || filePtr == NULL) {  
         AF_Log_Error("AF_File_Open: Failed to open file: %s with mode: %s\n", path, mode);
         return NULL;
     }
